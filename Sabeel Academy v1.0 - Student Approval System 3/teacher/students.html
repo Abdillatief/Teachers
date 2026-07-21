@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - طلابي</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .modal-card {
+      background-color: var(--bg-secondary); border-radius: var(--border-radius);
+      border: 1px solid var(--border-color); width: 100%; max-width: 650px; padding: 2rem;
+      max-height: 90vh; overflow-y: auto;
+    }
+    /* تحسين شكل المدخلات */
+    .form-group label {
+      font-weight: 700;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.4rem;
+      display: block;
+    }
+    .form-control {
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0;">الطلاب والدارسون المنتسبون إليك</h1>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">استعراض وتعديل جميع بيانات الطلاب الموكلين لك، جدول الحصص، ومتابعة حضورهم ومستواهم التراكمي.</p>
+          </div>
+        </div>
+
+        <!-- شريط البحث الفوري التفاعلي -->
+        <div class="card" style="margin-bottom: 1.5rem; padding: 1rem;">
+          <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <i data-lucide="search" style="color: var(--text-muted); width: 20px; height: 20px; flex-shrink: 0;"></i>
+            <input type="text" id="studentSearchInput" class="form-control" placeholder="ابحث فوريًا عن الدارس بالاسم الكريم..." style="margin: 0; font-size: 0.9rem; border: none; outline: none; background: transparent; width: 100%;">
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-container" style="margin-top: 0;">
+            <table>
+              <thead>
+                <tr>
+                  <th>اسم الطالب</th>
+                  <th>العمر</th>
+                  <th>حالة القيد</th>
+                  <th>الأيام المحددة للحصة</th>
+                  <th>موعد الحصة الموحد</th>
+                  <th>آخر حضور</th>
+                  <th>التحكم</th>
+                </tr>
+              </thead>
+              <tbody id="teacherStudentsTableBody">
+                <tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">جاري مزامنة وجلب قائمة الدارسين...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- مودال تعديل بيانات الدارس التفاعلي - يدعم جميع الحقول بالكامل -->
+  <div id="editStudentModal" class="modal-overlay">
+    <div class="modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+        <h3 style="font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="edit-3" style="color: var(--primary-color);"></i> تعديل جميع معلومات الدارس
+        </h3>
+        <!-- تجنب كسر المعالج بسبب استبدال لوكيد للايقونة عبر استخدام سبان كغلاف للنقرة -->
+        <span id="btnCloseEditModalBtn" style="cursor: pointer; padding: 0.25rem; display: flex; align-items: center; justify-content: center;">
+          <i data-lucide="x" style="color: var(--text-muted);"></i>
+        </span>
+      </div>
+
+      <form id="editStudentForm">
+        <!-- قسم المعلومات الشخصية الأساسية -->
+        <h4 style="font-size: 0.85rem; font-weight: 800; color: var(--primary-color); margin-bottom: 1rem; border-right: 3px solid var(--primary-color); padding-right: 0.5rem; line-height: 1;">المعلومات الأساسية وقيد الدراسة</h4>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label for="editStudentName">الاسم الشخصي للدارس</label>
+            <input type="text" id="editStudentName" class="form-control" required placeholder="اكتب اسم الطالب بالكامل">
+          </div>
+          <div class="form-group">
+            <label for="editStudentAge">العمر (بالسنوات)</label>
+            <input type="number" id="editStudentAge" class="form-control" required placeholder="مثال: 12">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+          <div class="form-group">
+            <label for="editStudentStatus">حالة القيد الدراسية</label>
+            <select id="editStudentStatus" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
+              <option value="active">نشط ومستمر (Active) ✅</option>
+              <option value="Suspended">موقوف مؤقتاً (Suspended) ⚠️</option>
+              <option value="archived">مؤرشف / منتهي (Archived) 📦</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="editStudentTime">موعد الحصة الموحد</label>
+            <input type="text" id="editStudentTime" class="form-control" placeholder="مثال: 05:30 مساءً">
+          </div>
+        </div>
+
+        <!-- ملاحظات وإعدادات إضافية للدارس -->
+
+        <!-- قسم الملاحظات -->
+        <div class="form-group" style="margin-top: 1rem;">
+          <label for="editStudentNotes">ملاحظات الأداء والمستوى التعليمي</label>
+          <textarea id="editStudentNotes" class="form-control" rows="2" style="resize: vertical; font-family: inherit; font-size: 0.9rem;" placeholder="اكتب ملاحظات المستوى أو الأداء الأكاديمي للدارس الكريم..."></textarea>
+        </div>
+
+        <!-- قسم الأيام المجدولة -->
+        <h4 style="font-size: 0.85rem; font-weight: 800; color: var(--primary-color); margin-top: 1.5rem; margin-bottom: 1rem; border-right: 3px solid var(--primary-color); padding-right: 0.5rem; line-height: 1;">أيام الحصص المجدولة أسبوعيًا</h4>
+        
+        <div class="form-group">
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem;" id="editStudentDaysContainer">
+            <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;"><input type="checkbox" value="السبت"> السبت</label>
+            <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;"><input type="checkbox" value="الأحد"> الأحد</label>
+            <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;"><input type="checkbox" value="الاثنين"> الاثنين</label>
+            <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;"><input type="checkbox" value="الثلاثاء"> الثلاثاء</label>
+            <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;"><input type="checkbox" value="الأربعاء"> الأربعاء</label>
+            <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;"><input type="checkbox" value="الخميس"> الخميس</label>
+            <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;"><input type="checkbox" value="الجمعة"> الجمعة</label>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 1.25rem;">
+          <button type="submit" class="btn btn-primary" id="btnSubmitEditStudent">حفظ وحفظ التغييرات</button>
+          <button type="button" class="btn btn-secondary" id="btnCancelEditStudent">إلغاء</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- مودال لوحة التقدم البصري التفاعلي للقرآن الكريم (Quran Visualizer) -->
+  <div id="quranVisualizerModal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 800px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+        <h3 style="font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="compass" style="color: var(--success);"></i> لوحة التقدم البصري التفاعلي للقرآن الكريم
+        </h3>
+        <span id="btnCloseVisualizerModalBtn" style="cursor: pointer; padding: 0.25rem; display: flex; align-items: center; justify-content: center;">
+          <i data-lucide="x" style="color: var(--text-muted);"></i>
+        </span>
+      </div>
+
+      <div style="margin-bottom: 1.5rem; background: var(--bg-primary); border-radius: 8px; padding: 1rem; border: 1px solid var(--border-color);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <span style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">الدارس المستهدف:</span>
+            <strong id="visualizerStudentName" style="font-size: 1.1rem; color: var(--text-primary);">-</strong>
+          </div>
+          <div style="display: flex; gap: 1.5rem;">
+            <div>
+              <span style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">آخر حفظ مسجل:</span>
+              <strong id="visualizerLastProgress" style="font-size: 0.9rem; color: var(--success);">-</strong>
+            </div>
+            <div>
+              <span style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">نسبة إنجاز المصحف الشريف:</span>
+              <strong id="visualizerPercent" style="font-size: 0.9rem; color: var(--primary-color);">-</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- دلالة الألوان التفاعلية -->
+      <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; font-size: 0.8rem; font-weight: 700; background: rgba(0,0,0,0.02); padding: 0.5rem; border-radius: 6px;">
+        <div style="display: flex; align-items: center; gap: 0.35rem;">
+          <span style="width: 14px; height: 14px; background-color: var(--success); border-radius: 3px; display: inline-block;"></span>
+          <span style="color: var(--text-secondary);">تم الحفظ والختام 🟢</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.35rem;">
+          <span style="width: 14px; height: 14px; background-color: var(--warning); border-radius: 3px; display: inline-block;"></span>
+          <span style="color: var(--text-secondary);">جاري العمل والحفظ حالياً 🟡</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.35rem;">
+          <span style="width: 14px; height: 14px; background-color: #cbd5e1; border-radius: 3px; display: inline-block;"></span>
+          <span style="color: var(--text-secondary);">متبقي للحفظ والتلاوة ⚪</span>
+        </div>
+      </div>
+
+      <!-- شبكة الأجزاء الثلاثون التفاعلية -->
+      <h4 style="font-size: 0.85rem; font-weight: 800; color: var(--text-primary); margin: 1.5rem 0 0.75rem 0; border-right: 3px solid var(--success); padding-right: 0.5rem; line-height: 1;">رسم بياني لأجزاء القرآن الكريم (اضغط على الجزء للتفاصيل)</h4>
+      
+      <div id="quranJuzGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem;">
+        <!-- سيتم ملؤها عبر جافا سكريبت -->
+      </div>
+
+      <!-- لوحة السور والآيات التفصيلية للجزء المختار -->
+      <div id="juzDetailsPanel" style="display: none; border-top: 1px solid var(--border-color); padding-top: 1.25rem; margin-top: 1rem;">
+        <h4 style="font-size: 0.85rem; font-weight: 800; color: var(--success); margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.35rem;">
+          <i data-lucide="book-open" style="width: 16px; height: 16px;"></i> سور ومنهج تفصيلي لـ <span id="selectedJuzName" style="color: var(--text-primary);">الجزء المحدد</span>
+        </h4>
+
+        <div id="juzSurahList" style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 250px; overflow-y: auto; padding-left: 0.5rem; border: 1px solid var(--border-color); padding: 1rem; border-radius: 8px; background: rgba(0,0,0,0.01);">
+          <!-- سيتم ملؤها ديناميكيًا -->
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+        <button type="button" class="btn btn-secondary" id="btnCancelVisualizer">إغلاق اللوحة</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { collection, onSnapshot, query, where, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+    import { quranSurahs } from '../assets/js/shared/utils/quranData.js';
+
+    protectRoute('teacher');
+
+    let studentsCached = [];
+    let selectedStudentForEdit = null;
+
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        try {
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          const teacherName = userDoc.exists() ? userDoc.data().name : 'المعلم المعتمد';
+          
+          renderSidebar('students', 'teacher');
+          renderNavbar('شؤون طلابي المعتمدين', { name: teacherName, roleName: 'معلم' });
+          initTeacherStudentsList(user.uid);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    });
+
+    // البحث الفوري التفاعلي
+    document.getElementById('studentSearchInput').addEventListener('input', () => {
+      renderStudentsTable();
+    });
+
+    function initTeacherStudentsList(teacherId) {
+      const q = query(collection(db, "students"), where("teacherId", "==", teacherId));
+
+      onSnapshot(q, (snapshot) => {
+        studentsCached = [];
+        snapshot.forEach(docSnap => {
+          studentsCached.push({ id: docSnap.id, ...docSnap.data() });
+        });
+
+        renderStudentsTable();
+      });
+    }
+
+    function renderStudentsTable() {
+      const tbody = document.getElementById('teacherStudentsTableBody');
+      if (!tbody) return;
+
+      if (studentsCached.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 2rem;">لا توجد طلاب معينين لك حالياً من الإدارة العامة للأكاديمية.</td></tr>`;
+        return;
+      }
+
+      const queryVal = document.getElementById('studentSearchInput').value.trim().toLowerCase();
+      const filtered = studentsCached.filter(student => student.name?.toLowerCase().includes(queryVal));
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 2rem;">لا توجد نتائج مطابقة لبحثك الكريم.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(student => {
+        const days = (student.schedule && student.schedule.days) ? student.schedule.days : (student.sessionDays || []);
+        const daysLabel = days.join(' • ') || 'غير محدد';
+        const uniformTime = student.schedule?.uniformTime || student.sessionTime || 'مرن';
+
+        // تنسيق حالة الدارس
+        let statusBadgeHtml = '';
+        if (student.status === "archived") {
+          statusBadgeHtml = `<span class="badge" style="position:static; background-color: var(--danger-light); color: var(--danger); font-weight:700; font-size:0.75rem;">مؤرشف 📦</span>`;
+        } else if (student.status === "Suspended") {
+          statusBadgeHtml = `<span class="badge" style="position:static; background-color: var(--warning-light); color: var(--warning); font-weight:700; font-size:0.75rem;">موقوف ⚠️</span>`;
+        } else {
+          statusBadgeHtml = `<span class="badge" style="position:static; background-color: var(--success-light); color: var(--success); font-weight:700; font-size:0.75rem;">نشط ✅</span>`;
+        }
+
+        return `
+          <tr>
+            <td><strong>${student.name}</strong></td>
+            <td>${student.age} سنة</td>
+            <td>${statusBadgeHtml}</td>
+            <td><span style="font-weight: 600; font-size: 0.85rem; color: var(--primary-color);">${daysLabel}</span></td>
+            <td>🕒 ${uniformTime}</td>
+            <td>${student.lastSessionDate || 'لا يوجد تسجيل'}</td>
+            <td>
+              <div style="display: flex; gap: 0.35rem;">
+                <button class="btn btn-secondary edit-student-btn" data-id="${student.id}" style="padding: 0.4rem 0.6rem; font-size: 0.75rem; display: flex; align-items: center; gap: 0.25rem;">
+                  <i data-lucide="edit" style="width: 12px; height: 12px;"></i> تعديل
+                </button>
+                <button class="btn btn-primary quran-visualizer-btn" data-id="${student.id}" style="padding: 0.4rem 0.6rem; font-size: 0.75rem; display: flex; align-items: center; gap: 0.25rem; background-color: var(--success); border-color: var(--success); cursor: pointer;">
+                  <i data-lucide="compass" style="width: 12px; height: 12px;"></i> لوحة القرآن 📊
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+
+      // ربط أزرار التعديل لفتح المودال بالبيانات التلقائية
+      document.querySelectorAll('.edit-student-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id;
+          selectedStudentForEdit = studentsCached.find(s => s.id === id);
+          if (selectedStudentForEdit) {
+            openEditStudentModal(selectedStudentForEdit);
+          }
+        });
+      });
+
+      // ربط أزرار المتابعة والتقدم البصري للقرآن الكريم
+      document.querySelectorAll('.quran-visualizer-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id;
+          const student = studentsCached.find(s => s.id === id);
+          if (student) {
+            openQuranVisualizer(student);
+          }
+        });
+      });
+    }
+
+    const editModal = document.getElementById('editStudentModal');
+    const visualizerModal = document.getElementById('quranVisualizerModal');
+
+    function openQuranVisualizer(student) {
+      document.getElementById('visualizerStudentName').textContent = student.name;
+      
+      const lastSurah = student.lastMemorizedSurahName || 'الفاتحة';
+      const lastVerse = student.lastMemorizedVerse || 0;
+      document.getElementById('visualizerLastProgress').textContent = `${lastSurah} (آية ${lastVerse})`;
+
+      // حساب إجمالي الآيات المحفوظة بناءً على السور المكتملة
+      let totalVersesMemorized = 0;
+      const completedSurahsList = student.completedSurahs || [];
+      completedSurahsList.forEach(sid => {
+        const sObj = quranSurahs.find(s => s.id === parseInt(sid));
+        if (sObj) totalVersesMemorized += sObj.verses;
+      });
+
+      // إضافة آيات السورة قيد الحفظ إن وجدت ولم تكن مكتملة بالكامل ومضافة
+      const currentSurahId = parseInt(student.lastMemorizedSurahId) || 1;
+      if (!completedSurahsList.includes(currentSurahId)) {
+        totalVersesMemorized += parseInt(student.lastMemorizedVerse) || 0;
+      }
+
+      const totalQuranVerses = 6236;
+      const percent = Math.min(100, Math.round((totalVersesMemorized / totalQuranVerses) * 100));
+      document.getElementById('visualizerPercent').textContent = `${percent}% (${totalVersesMemorized} آية من 6236)`;
+
+      // بناء شبكة الأجزاء الثلاثون
+      renderJuzGrid(student);
+
+      // إخفاء تفاصيل السور لحين الضغط على جزء محدد
+      document.getElementById('juzDetailsPanel').style.display = 'none';
+
+      visualizerModal.style.display = 'flex';
+    }
+
+    function renderJuzGrid(student) {
+      const grid = document.getElementById('quranJuzGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      const completedSurahsList = (student.completedSurahs || []).map(id => parseInt(id));
+      const currentSurahId = parseInt(student.lastMemorizedSurahId) || 1;
+
+      for (let j = 1; j <= 30; j++) {
+        const juzSurahs = quranSurahs.filter(s => s.juz === j);
+        let status = 'remaining'; // الافتراضي
+        
+        // هل تم حفظ جميع سور هذا الجزء بالكامل؟
+        const isAllCompleted = juzSurahs.length > 0 && juzSurahs.every(s => completedSurahsList.includes(s.id));
+        // هل هذا الجزء يحتوي على السورة الحالية قيد الحفظ؟
+        const isCurrentlyWorking = juzSurahs.some(s => s.id === currentSurahId);
+
+        if (isAllCompleted) {
+          status = 'completed';
+        } else if (isCurrentlyWorking) {
+          status = 'in-progress';
+        }
+
+        let bgStyle = 'background-color: #f1f5f9; border: 1px solid var(--border-color); color: var(--text-secondary);';
+        let statusLabel = '⚪ متبقي';
+        
+        if (status === 'completed') {
+          bgStyle = 'background-color: var(--success-light); border: 1px solid var(--success); color: var(--success); font-weight: 700;';
+          statusLabel = '🟢 مكتمل';
+        } else if (status === 'in-progress') {
+          bgStyle = 'background-color: var(--warning-light); border: 1px solid var(--warning); color: var(--warning); font-weight: 700;';
+          statusLabel = '🟡 جاري الحفظ';
+        }
+
+        const card = document.createElement('div');
+        card.style = `padding: 0.85rem 0.5rem; border-radius: 8px; text-align: center; cursor: pointer; transition: all 0.2s; ${bgStyle}`;
+        card.className = 'juz-card';
+        card.innerHTML = `
+          <div style="font-size: 0.85rem; font-weight: 800;">الجزء ${j}</div>
+          <div style="font-size: 0.65rem; margin-top: 0.25rem;">${statusLabel}</div>
+        `;
+        
+        card.addEventListener('click', () => {
+          document.querySelectorAll('.juz-card').forEach(c => {
+            c.style.transform = 'none';
+            c.style.boxShadow = 'none';
+          });
+          card.style.transform = 'scale(1.05)';
+          card.style.boxShadow = '0 4px 10px rgba(0,0,0,0.15)';
+          showJuzDetails(j, student);
+        });
+
+        grid.appendChild(card);
+      }
+    }
+
+    function showJuzDetails(juzId, student) {
+      const panel = document.getElementById('juzDetailsPanel');
+      const selectedJuzName = document.getElementById('selectedJuzName');
+      const listContainer = document.getElementById('juzSurahList');
+
+      selectedJuzName.textContent = `الجزء ${juzId}`;
+      listContainer.innerHTML = '';
+
+      const juzSurahs = quranSurahs.filter(s => s.juz === juzId);
+      const completedSurahsList = (student.completedSurahs || []).map(id => parseInt(id));
+      const currentSurahId = parseInt(student.lastMemorizedSurahId) || 1;
+      const currentVerse = parseInt(student.lastMemorizedVerse) || 0;
+
+      juzSurahs.forEach(surah => {
+        const isCompleted = completedSurahsList.includes(surah.id);
+        const isWorking = surah.id === currentSurahId;
+
+        let surahStatusHtml = '';
+        if (isCompleted) {
+          surahStatusHtml = `<span style="color: var(--success); font-weight: 700; font-size: 0.8rem;">🟢 تم الحفظ بالكامل</span>`;
+        } else if (isWorking) {
+          surahStatusHtml = `<span style="color: var(--warning); font-weight: 700; font-size: 0.8rem;">🟡 قيد الحفظ حالياً (آية ${currentVerse} من ${surah.verses})</span>`;
+        } else {
+          surahStatusHtml = `<span style="color: var(--text-muted); font-size: 0.8rem;">⚪ متبقي للبدء</span>`;
+        }
+
+        const item = document.createElement('div');
+        item.style = 'display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 0.5rem;';
+        item.innerHTML = `
+          <div>
+            <strong style="color: var(--text-primary); font-size: 0.9rem;">سورة ${surah.name}</strong>
+            <span style="font-size: 0.7rem; color: var(--text-secondary); margin-right: 0.5rem;">(${surah.verses} آية)</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            ${surahStatusHtml}
+            <button class="btn btn-secondary toggle-surah-status-btn" data-surah-id="${surah.id}" style="font-size: 0.7rem; padding: 0.25rem 0.5rem; border-color: var(--border-color); color: var(--text-primary); cursor: pointer;">
+              ${isCompleted ? 'تغيير كقيد الحفظ' : 'تحديد كمكتملة 🎯'}
+            </button>
+          </div>
+        `;
+
+        item.querySelector('.toggle-surah-status-btn').addEventListener('click', async (e) => {
+          e.preventDefault();
+          const sid = parseInt(e.target.dataset.surahId);
+          const studentRef = doc(db, "students", student.id);
+          
+          let updatedCompleted = [...completedSurahsList];
+          if (isCompleted) {
+            updatedCompleted = updatedCompleted.filter(id => id !== sid);
+          } else {
+            if (!updatedCompleted.includes(sid)) {
+              updatedCompleted.push(sid);
+            }
+          }
+
+          try {
+            await updateDoc(studentRef, {
+              completedSurahs: updatedCompleted
+            });
+            Toast.success(`تم تحديث حالة سورة ${surah.name} بنجاح! 🎉`);
+            student.completedSurahs = updatedCompleted;
+            openQuranVisualizer(student);
+            showJuzDetails(juzId, student);
+          } catch (err) {
+            console.error("خطأ تحديث حالة السورة:", err);
+            Toast.danger("عفوًا، فشل تحديث حالة السورة.");
+          }
+        });
+
+        listContainer.appendChild(item);
+      });
+
+      panel.style.display = 'block';
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+    }
+
+    function closeQuranVisualizer() {
+      visualizerModal.style.display = 'none';
+    }
+
+    document.getElementById('btnCloseVisualizerModalBtn').addEventListener('click', closeQuranVisualizer);
+    document.getElementById('btnCancelVisualizer').addEventListener('click', closeQuranVisualizer);
+
+    function openEditStudentModal(student) {
+      document.getElementById('editStudentName').value = student.name || "";
+      document.getElementById('editStudentAge').value = student.age || "";
+      document.getElementById('editStudentTime').value = student.schedule?.uniformTime || student.sessionTime || "";
+      document.getElementById('editStudentNotes').value = student.notes || "";
+      document.getElementById('editStudentStatus').value = student.status || "active";
+
+      // تحديد الأيام المختارة
+      const scheduleDays = student.schedule?.days || student.sessionDays || [];
+      const checkboxes = document.getElementById('editStudentDaysContainer').querySelectorAll('input[type="checkbox"]');
+      checkboxes.forEach(cb => {
+        cb.checked = scheduleDays.includes(cb.value);
+      });
+
+      editModal.style.display = 'flex';
+    }
+
+    function closeEditStudentModal() {
+      editModal.style.display = 'none';
+      selectedStudentForEdit = null;
+    }
+
+    // غلق المودال بطريقة آمنة لتجنب كسر لوكيد
+    document.getElementById('btnCloseEditModalBtn').addEventListener('click', closeEditStudentModal);
+    document.getElementById('btnCancelEditStudent').addEventListener('click', closeEditStudentModal);
+
+    // معالجة وحفظ التعديلات بقاعدة البيانات
+    document.getElementById('editStudentForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (!selectedStudentForEdit) return;
+
+      const updatedName = document.getElementById('editStudentName').value.trim();
+      const updatedAge = parseInt(document.getElementById('editStudentAge').value);
+      const updatedTime = document.getElementById('editStudentTime').value.trim();
+      const updatedNotes = document.getElementById('editStudentNotes').value.trim();
+      const updatedStatus = document.getElementById('editStudentStatus').value;
+
+      // تجميع الأيام المختارة
+      const checkboxes = document.getElementById('editStudentDaysContainer').querySelectorAll('input[type="checkbox"]');
+      const updatedDays = [];
+      checkboxes.forEach(cb => {
+        if (cb.checked) updatedDays.push(cb.value);
+      });
+
+      const submitBtn = document.getElementById('btnSubmitEditStudent');
+      submitBtn.disabled = true;
+
+      try {
+        const studentRef = doc(db, "students", selectedStudentForEdit.id);
+        
+        await updateDoc(studentRef, {
+          name: updatedName,
+          age: updatedAge,
+          notes: updatedNotes,
+          status: updatedStatus,
+          sessionDays: updatedDays,
+          sessionTime: updatedTime,
+          schedule: {
+            days: updatedDays,
+            uniformTime: updatedTime,
+            differentTimes: selectedStudentForEdit.schedule?.differentTimes || false,
+            times: selectedStudentForEdit.schedule?.times || {}
+          }
+        });
+
+        Toast.success("تم تحديث جميع بيانات الدارس بنجاح في قاعدة البيانات ✅");
+        closeEditStudentModal();
+      } catch (err) {
+        console.error("خطأ تحديث بيانات الدارس:", err);
+        Toast.danger("حدث خطأ أثناء محاولة تحديث بيانات الطالب.");
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+  </script>
+</body>
+</html>

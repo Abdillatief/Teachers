@@ -1,0 +1,212 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap');
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Cairo', 'Segoe UI', sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* Layout Grid for Sabeel Academy */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+}
+
+.sidebar {
+  width: 260px;
+  background-color: var(--bg-secondary);
+  border-left: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 100;
+  transition: transform var(--transition-normal), width var(--transition-normal);
+}
+
+.main-wrapper {
+  margin-right: 260px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0; /* Prevents flex items from overflowing */
+  min-height: 100vh;
+  transition: margin-right var(--transition-normal);
+}
+
+/* Sidebar collapsed state for desktop */
+body.sidebar-collapsed .sidebar {
+  width: 75px;
+}
+
+body.sidebar-collapsed .main-wrapper {
+  margin-right: 75px;
+}
+
+body.sidebar-collapsed .sidebar .logo span,
+body.sidebar-collapsed .sidebar .sidebar-menu-item span,
+body.sidebar-collapsed .sidebar .sidebar-footer span,
+body.sidebar-collapsed .sidebar .sidebar-brand-text {
+  display: none !important;
+}
+
+body.sidebar-collapsed .sidebar .sidebar-header {
+  padding: 0;
+  justify-content: center;
+}
+
+body.sidebar-collapsed .sidebar .logo img {
+  max-width: 45px !important;
+  max-height: 45px !important;
+}
+
+body.sidebar-collapsed .sidebar .sidebar-footer {
+  padding: 1rem 0;
+  display: flex;
+  justify-content: center;
+}
+
+body.sidebar-collapsed .sidebar .sidebar-menu {
+  padding: 1rem 0.25rem;
+}
+
+body.sidebar-collapsed .sidebar .sidebar-menu-item {
+  padding: 0.75rem;
+  justify-content: center;
+  gap: 0;
+}
+
+.navbar {
+  height: 70px;
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 90;
+}
+
+.content-body {
+  padding: 2rem;
+  flex-grow: 1;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Toast Container */
+#toast-container {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  z-index: 11000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 360px;
+  width: 100%;
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+  .sidebar {
+    transform: translateX(100%);
+  }
+  .sidebar.active {
+    transform: translateX(0);
+  }
+  .main-wrapper {
+    margin-right: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .content-body {
+    padding: 1.25rem 0.75rem !important;
+  }
+  .navbar {
+    padding: 0 1rem !important;
+  }
+  
+  /* Auto-stacking utility for inline hardcoded grids on mobile */
+  div[style*="grid-template-columns: 1fr 1fr"],
+  div[style*="grid-template-columns: 1fr 1fr 1fr"],
+  div[style*="grid-template-columns: 2fr 1fr"],
+  div[style*="grid-template-columns: 1.5fr 1fr"],
+  div[style*="grid-template-columns: 1fr 1.2fr"],
+  div[style*="grid-template-columns: repeat(2, 1fr)"],
+  div[style*="grid-template-columns: repeat(3, 1fr)"],
+  div[style*="grid-template-columns: repeat(4, 1fr)"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ضمان التفاف الجداول وحمايتها من التمدد الأفقي على شاشات الهواتف */
+  .table-container,
+  table {
+    display: block;
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* تصحيح هوامش وحجم الخطوط وتجنب الازدحام على الهواتف */
+@media (max-width: 576px) {
+  .card {
+    padding: 1rem !important;
+  }
+  .modal-card {
+    padding: 1.25rem !important;
+  }
+  .navbar-user span {
+    display: none !important;
+  }
+  .navbar-brand {
+    font-size: 1.05rem !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
+  }
+  .btn {
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.85rem !important;
+  }
+  /* تصغير الفراغات لزيادة مساحة العرض على الشاشات الصغيرة جداً */
+  .content-body {
+    padding: 1rem 0.5rem !important;
+  }
+}

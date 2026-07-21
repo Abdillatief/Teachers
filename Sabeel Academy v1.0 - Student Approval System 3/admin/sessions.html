@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - مراقبة الحصص</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        <div style="margin-bottom: 2rem;">
+          <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary);">إدارة ومراقبة الحصص الدراسية</h1>
+          <p style="color: var(--text-secondary); font-size: 0.9rem;">استعراض ومراجعة الحصص المسجلة من المعلمين، والموافقة عليها لاعتماد إدراجها بالمرتبات.</p>
+        </div>
+
+        <div class="card">
+          <div class="table-container" style="margin-top: 0;">
+            <table>
+              <thead>
+                <tr>
+                  <th>تاريخ الحصة</th>
+                  <th>المعلم المشرف</th>
+                  <th>اسم الطالب والنوع</th>
+                  <th>مدة الجلسة والتقييم</th>
+                  <th>الحالة</th>
+                  <th>حالة الاعتماد</th>
+                  <th>خيارات المراقبة</th>
+                </tr>
+              </thead>
+              <tbody id="adminSessionsTableBody">
+                <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">جاري جلب ومزامنة سجلات الحصص...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { collection, onSnapshot, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+    import { softDeleteToTrash } from '../assets/js/features/trash/trashService.js';
+
+    protectRoute('admin');
+
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        renderSidebar('sessions', 'admin');
+        renderNavbar('إدارة ومراقبة الحصص', { name: 'الإدارة العامة', roleName: 'مدير الأكاديمية' });
+        initSessionsRealtime();
+      }
+    });
+
+    function initSessionsRealtime() {
+      const tbody = document.getElementById('adminSessionsTableBody');
+      if (!tbody) return;
+
+      onSnapshot(collection(db, "sessions"), (snapshot) => {
+        if (snapshot.empty) {
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">لا توجد حصص مسجلة حالياً بانتظار الاعتماد.</td></tr>`;
+          return;
+        }
+
+        const sessions = [];
+        snapshot.forEach(docSnap => {
+          sessions.push({ id: docSnap.id, ...docSnap.data() });
+        });
+
+        // ترتيب من الأحدث للأقدم تنازليًا
+        sessions.sort((a,b) => b.date.localeCompare(a.date));
+
+        tbody.innerHTML = sessions.map(s => {
+          const approved = s.approved || false;
+          const approvalBadge = approved 
+            ? `<span class="badge" style="position:static; background-color: var(--success-light); color: var(--success); font-weight:700;">معتمدة ومدرجة 💰</span>`
+            : `<span class="badge" style="position:static; background-color: var(--warning-light); color: var(--warning); font-weight:700;">معلقة بانتظار المراجعة ⏳</span>`;
+
+          let statusLabel = "";
+          let statusColor = "";
+          if (s.status === "completed") {
+            statusLabel = "تمت بنجاح";
+            statusColor = "color: var(--success);";
+          } else if (s.status === "student_absent") {
+            statusLabel = s.absenceType === "unexcused" ? "غياب بدون عذر 🔴" : "غياب بعذر مقبول 🟢";
+            statusColor = "color: var(--warning);";
+          } else {
+            statusLabel = s.status === "delayed" ? "مؤجلة" : "ملغاة";
+            statusColor = "color: var(--danger);";
+          }
+
+          return `
+            <tr>
+              <td><strong>${s.date}</strong></td>
+              <td>${s.teacherName}</td>
+              <td><strong>${s.studentName}</strong><div style="font-size:0.75rem; color:var(--text-secondary);">${s.type === 'group' ? 'حصة جماعية 👥' : 'حصة فردية 👤'}</div></td>
+              <td><strong>${s.duration} دقيقة</strong><div style="color:var(--warning); font-size:0.75rem;">⭐ ${s.rating || 5.0}</div></td>
+              <td><strong style="${statusColor}">${statusLabel}</strong></td>
+              <td>${approvalBadge}</td>
+              <td>
+                <div style="display: flex; gap: 0.25rem;">
+                  ${!approved ? `<button class="btn btn-primary approve-btn" data-id="${s.id}" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;"><i data-lucide="check-check"></i> اعتماد الصرف</button>` : ''}
+                  <button class="btn btn-secondary delete-btn" data-id="${s.id}" style="padding: 0.25rem; color: var(--danger);" title="حذف وترحيل للسلة"><i data-lucide="trash-2" style="width: 14px; height: 14px;"></i></button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+        setupSessionsActionListeners(sessions);
+      });
+    }
+
+    function setupSessionsActionListeners(list) {
+      // 1. اعتماد وموافقة على الصرف المالي للحصة
+      document.querySelectorAll('.approve-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const id = e.target.closest('.approve-btn').dataset.id;
+          const sessionRef = doc(db, "sessions", id);
+          
+          await updateDoc(sessionRef, { approved: true });
+          Toast.success("تم اعتماد وموافقة الحصة، وإدراج مستحقاتها المالية في مرتب المعلم فوريًا ✅");
+        });
+      });
+
+      // 2. حذف الحصة وترحيلها كليًا لسلة المحذوفات الآمنة (Soft Delete)
+      document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const id = e.target.closest('.delete-btn').dataset.id;
+          const s = list.find(item => item.id === id);
+          if (!s) return;
+
+          if (confirm(`هل تريد ترحيل وحذف سجل حصة الطالب (${s.studentName}) لسلة المحذوفات؟`)) {
+            try {
+              await softDeleteToTrash("sessions", id, s, `حذف حصة دراسية من المشرف العام`);
+              Toast.danger("تم إزالة الحصة من جدول المراقبة وترحيلها لسلة المحذوفات الآمنة.");
+            } catch (err) {
+              console.error(err);
+              Toast.danger("فشل معالجة حذف وترحيل الحصة.");
+            }
+          }
+        });
+      });
+    }
+  </script>
+</body>
+</html>
