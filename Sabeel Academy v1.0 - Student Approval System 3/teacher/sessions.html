@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - سجل الحصص والتحضير</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .sessions-layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+    @media (min-width: 1024px) {
+      .sessions-layout {
+        grid-template-columns: 1fr 380px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0;">تسجيل الحصص والأرشيف</h1>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">تسجيل حصة جديدة يدويًا ومتابعة أرشيف الحصص المنجزة وحالة اعتمادها المالي.</p>
+          </div>
+        </div>
+
+        <div class="sessions-layout">
+          <!-- العمود الأول (نموذج تسجيل حصة جديدة يدويًا - في أول الصفحة) -->
+          <div class="card" style="margin: 0;">
+            <h3 style="font-weight: 800; font-size: 1.1rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem; color: var(--text-primary);">
+              <i data-lucide="plus-circle" style="color: var(--primary-color);"></i> تسجيل وإثبات حصة جديدة
+            </h3>
+
+            <form id="manualRecordSessionForm">
+              <div class="form-group">
+                <label for="recStudent">الاسم الشخصي للدارس</label>
+                <select id="recStudent" class="form-control" required style="border: 1px solid var(--border-color);">
+                  <option value="" disabled selected>اختر الدارس الكريم...</option>
+                </select>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1rem;">
+                <div class="form-group">
+                  <label for="recDate">تاريخ الحصة</label>
+                  <input type="date" id="recDate" class="form-control" required>
+                </div>
+                <div class="form-group">
+                  <label for="recTime">وقت الحصة</label>
+                  <input type="time" id="recTime" class="form-control" required>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1rem;">
+                <div class="form-group">
+                  <label for="recDuration">مدة الحصة</label>
+                  <select id="recDuration" class="form-control">
+                    <option value="30">30 دقيقة</option>
+                    <option value="45">45 دقيقة</option>
+                    <option value="60" selected>60 دقيقة (ساعة)</option>
+                    <option value="90">90 دقيقة</option>
+                    <option value="120">120 دقيقة (ساعتان)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="recType">تصنيف الدرس</label>
+                  <select id="recType" class="form-control">
+                    <option value="individual" selected>فردي (Indiv)</option>
+                    <option value="group">مجموعة جماعية (Group)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-top: 1rem;">
+                <label for="recStatus">حالة الحضور والتسجيل</label>
+                <select id="recStatus" class="form-control" style="border: 2px solid var(--primary-color);">
+                  <option value="completed" selected>حاضر ومكتمل (Completed) ✅</option>
+                  <option value="student_absent">غياب الطالب (Student Absent) 🔴</option>
+                  <option value="delayed">تأجيل الحصة لزمن آخر (Delayed) ⏳</option>
+                  <option value="cancelled">ملغاة من الأكاديمية (Cancelled) ❌</option>
+                </select>
+              </div>
+
+              <!-- تفاصيل غياب الطالب -->
+              <div id="absenceTypeContainer" class="form-group" style="display: none; margin-top: 1rem; padding: 1rem; background-color: var(--bg-primary); border: 1px dashed var(--border-color); border-radius: 8px;">
+                <label for="recAbsenceType">تفاصيل ومبرر الغياب</label>
+                <select id="recAbsenceType" class="form-control">
+                  <option value="unexcused" selected>غياب غير مبرر (بدون عذر) - يُحسب في الأجر 🔴</option>
+                  <option value="excused">غياب مبرر (بعذر مسبق) - لا يُحسب في الأجر 🟢</option>
+                </select>
+              </div>
+
+              <!-- تفاصيل الموعد البديل للتأجيل -->
+              <div id="postponeContainer" class="form-group" style="display: none; margin-top: 1rem; padding: 1rem; background-color: var(--bg-primary); border: 1px dashed var(--border-color); border-radius: 8px;">
+                <h4 style="font-size: 0.8rem; font-weight: 800; color: var(--primary-color); margin-bottom: 0.75rem;"><i data-lucide="clock"></i> جدولة الموعد البديل للحصة</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                  <div class="form-group">
+                    <label style="font-size: 0.75rem;">التاريخ الجديد</label>
+                    <input type="date" id="recNewDate" class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label style="font-size: 0.75rem;">الوقت الجديد</label>
+                    <input type="time" id="recNewTime" class="form-control">
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-top: 1rem;">
+                <label for="recRating">تقييم فهم ومشاركة الطالب</label>
+                <select id="recRating" class="form-control">
+                  <option value="5">ممتاز (5/5) ⭐⭐⭐⭐⭐</option>
+                  <option value="4">جيد جداً (4/5) ⭐⭐⭐⭐</option>
+                  <option value="3">متوسط (3/5) ⭐⭐⭐</option>
+                  <option value="2">ضعيف (2/5) ⭐⭐</option>
+                  <option value="1">يحتاج تحسين (1/5) ⭐</option>
+                </select>
+              </div>
+
+              <!-- مساعد المنهج والواجب الذكي للقرآن -->
+              <div id="smartQuranHelperCard" class="card" style="display: none; margin-top: 1rem; padding: 1rem; background-color: var(--bg-primary); border: 1px dashed var(--success); border-radius: 8px;">
+                <h4 style="font-size: 0.8rem; font-weight: 800; color: var(--success); margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.35rem;">
+                  <i data-lucide="sparkles" style="width: 16px; height: 16px;"></i> نظام الاقتراح الذكي للواجب والمنهج
+                </h4>
+                <p id="smartQuranSuggestionText" style="font-size: 0.8rem; color: var(--text-secondary); margin: 0 0 0.75rem 0; line-height: 1.4;"></p>
+                
+                <button type="button" id="btnApplySmartSuggestion" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.35rem 0.75rem; border-color: var(--success); color: var(--success); font-weight: 700; width: 100%; justify-content: center; display: flex; align-items: center; gap: 0.25rem; background: transparent;">
+                  <i data-lucide="check" style="width: 14px; height: 14px;"></i> تطبيق الاقتراح التلقائي في الملاحظات والواجب
+                </button>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.75rem; border-top: 1px dashed var(--border-color); padding-top: 0.75rem;">
+                  <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem;">السورة المحفوظة اليوم</label>
+                    <select id="smartActualSurahId" class="form-control" style="font-size: 0.75rem; height: auto; padding: 0.35rem;"></select>
+                  </div>
+                  <div class="form-group" style="margin: 0;">
+                    <label style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem;">آخر آية تم حفظها اليوم</label>
+                    <input type="number" id="smartActualVerse" class="form-control" style="font-size: 0.75rem; height: auto; padding: 0.35rem;" placeholder="مثال: 15">
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-top: 1rem; margin-bottom: 1.5rem;">
+                <label for="recNotes">ملاحظات الدرس والواجب</label>
+                <input type="text" id="recNotes" class="form-control" placeholder="اكتب الآيات المنجزة أو الواجب المدرسي...">
+              </div>
+
+              <button type="submit" class="btn btn-primary" id="btnSubmitRecord" style="width: 100%; font-weight: 700; margin-bottom: 1rem;">
+                <i data-lucide="plus"></i> تسجيل الحصة الآن فوريًا
+              </button>
+            </form>
+          </div>
+
+          <!-- العمود الثاني (جدول الأرشيف التاريخي الكستارة) -->
+          <div class="card" style="margin: 0; display: flex; flex-direction: column;">
+            <div id="btnToggleHistory" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; padding: 0.25rem 0;">
+              <h3 style="font-weight: 800; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem; color: var(--text-primary); margin: 0;">
+                <i data-lucide="archive" style="color: var(--primary-color);"></i> أرشيف وسجل الحصص التاريخي
+              </h3>
+              <div style="display: flex; align-items: center; gap: 0.5rem; background: var(--bg-secondary); padding: 0.35rem 0.75rem; border-radius: 8px; border: 1px solid var(--border-color);">
+                <span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700;" id="toggleHistoryLabel">عرض الأرشيف</span>
+                <i data-lucide="chevron-down" id="toggleHistoryIcon" style="color: var(--text-secondary); transition: transform 0.3s ease; width: 16px; height: 16px;"></i>
+              </div>
+            </div>
+            
+            <div id="historyArchiveCollapse" style="max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin-top: 0;">
+              <div class="table-container" style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem; flex-grow: 1;">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>تاريخ وساعة الحصة</th>
+                      <th>اسم الطالب والنوع</th>
+                      <th>المدة الزمنية</th>
+                      <th>حالة الجلسة والغياب</th>
+                      <th>تقييم الطالب</th>
+                      <th>الواجب والملاحظات</th>
+                      <th>حالة الاعتماد المالي</th>
+                    </tr>
+                  </thead>
+                  <tbody id="teacherHistorySessionsTableBody">
+                    <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">جاري جلب وفهرسة وتحديث أرشيف الحصص المنجزة...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { collection, onSnapshot, query, where, getDoc, doc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+    import { writeAuditLog } from '../assets/js/features/audit/auditService.js';
+    import { quranSurahs, getNextHomeworkSuggestion } from '../assets/js/shared/utils/quranData.js';
+
+    protectRoute('teacher');
+
+    let currentTeacher = null;
+    let studentsCached = [];
+
+    // تعيين التاريخ والوقت الافتراضي لليوم
+    const todayStr = new Date().toISOString().split('T')[0];
+    document.getElementById('recDate').value = todayStr;
+    const nowTimeStr = new Date().toTimeString().split(' ')[0].substring(0, 5);
+    document.getElementById('recTime').value = nowTimeStr;
+
+    // تفعيل خاصية الستارة للأرشيف التاريخي
+    const btnToggleHistory = document.getElementById('btnToggleHistory');
+    const historyArchiveCollapse = document.getElementById('historyArchiveCollapse');
+    const toggleHistoryIcon = document.getElementById('toggleHistoryIcon');
+    const toggleHistoryLabel = document.getElementById('toggleHistoryLabel');
+
+    if (btnToggleHistory && historyArchiveCollapse) {
+      btnToggleHistory.addEventListener('click', () => {
+        const isOpen = historyArchiveCollapse.style.maxHeight && historyArchiveCollapse.style.maxHeight !== '0px';
+        if (isOpen) {
+          historyArchiveCollapse.style.maxHeight = '0px';
+          if (toggleHistoryIcon) toggleHistoryIcon.style.transform = 'rotate(0deg)';
+          if (toggleHistoryLabel) toggleHistoryLabel.textContent = 'عرض الأرشيف';
+        } else {
+          historyArchiveCollapse.style.maxHeight = '2000px'; // ample space for the table
+          if (toggleHistoryIcon) toggleHistoryIcon.style.transform = 'rotate(180deg)';
+          if (toggleHistoryLabel) toggleHistoryLabel.textContent = 'إخفاء الأرشيف';
+        }
+      });
+    }
+
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        try {
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          if (userDoc.exists()) {
+            currentTeacher = { uid: user.uid, ...userDoc.data() };
+            
+            renderSidebar('sessions', 'teacher');
+            renderNavbar('تسجيل الحصص والتحضير', { name: currentTeacher.name, roleName: 'معلم' });
+            
+            initTeacherStudentsDropdown(user.uid);
+            initTeacherSessionsHistory(user.uid);
+          }
+        } catch (err) {
+          console.error("خطأ قراءة بيانات المعلم:", err);
+        }
+      }
+    });
+
+    // تحميل الطلاب لتغذية قائمة الخيارات المنسدلة
+    function initTeacherStudentsDropdown(teacherId) {
+      const q = query(collection(db, "students"), where("teacherId", "==", teacherId));
+      onSnapshot(q, (snapshot) => {
+        studentsCached = [];
+        const select = document.getElementById('recStudent');
+        select.innerHTML = '<option value="" disabled selected>اختر الدارس الكريم...</option>';
+
+        snapshot.forEach(docSnap => {
+          const student = { id: docSnap.id, ...docSnap.data() };
+          if (student.status !== "archived" && student.status !== "Suspended") {
+            studentsCached.push(student);
+            const opt = document.createElement('option');
+            opt.value = student.id;
+            opt.textContent = student.name;
+            select.appendChild(opt);
+          }
+        });
+      });
+    }
+
+    // الاستماع المتغير لحالة الحضور لإظهار حقول إضافية
+    const recStatus = document.getElementById('recStatus');
+    const absenceTypeContainer = document.getElementById('absenceTypeContainer');
+    const postponeContainer = document.getElementById('postponeContainer');
+
+    recStatus.addEventListener('change', () => {
+      const state = recStatus.value;
+      absenceTypeContainer.style.display = state === "student_absent" ? "block" : "none";
+      postponeContainer.style.display = state === "delayed" ? "block" : "none";
+    });
+
+    // ملء قائمة السور للذكاء الاصطناعي
+    const actualSurahSelect = document.getElementById('smartActualSurahId');
+    if (actualSurahSelect) {
+      actualSurahSelect.innerHTML = quranSurahs.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    }
+
+    const recStudentSelect = document.getElementById('recStudent');
+    const smartQuranHelperCard = document.getElementById('smartQuranHelperCard');
+    const smartQuranSuggestionText = document.getElementById('smartQuranSuggestionText');
+    const btnApplySmartSuggestion = document.getElementById('btnApplySmartSuggestion');
+    const smartActualVerse = document.getElementById('smartActualVerse');
+
+    recStudentSelect.addEventListener('change', () => {
+      const studentId = recStudentSelect.value;
+      const activeStudent = studentsCached.find(s => s.id === studentId);
+      
+      if (!activeStudent) {
+        smartQuranHelperCard.style.display = 'none';
+        return;
+      }
+
+      const recDurationSelect = document.getElementById('recDuration');
+      if (recDurationSelect) {
+        recDurationSelect.value = activeStudent.sessionDuration || activeStudent.duration || activeStudent.schedule?.duration || 30;
+      }
+
+      // تحديد الاقتراح الذكي للواجب والمنهج
+      const studentProgress = {
+        lastMemorizedSurahId: parseInt(activeStudent.lastMemorizedSurahId) || 1,
+        lastMemorizedVerse: parseInt(activeStudent.lastMemorizedVerse) || 0
+      };
+
+      const suggestion = getNextHomeworkSuggestion(studentProgress);
+
+      smartQuranSuggestionText.innerHTML = `
+        آخر آية مسجلة للدارس الكريم: <strong style="color: var(--text-primary);">${activeStudent.lastMemorizedSurahName || 'الفاتحة'} (الآية ${activeStudent.lastMemorizedVerse || 0})</strong>.<br>
+        المنهج والواجب التلقائي المقترح التالي: <strong style="color: var(--success);">${suggestion.text}</strong>.
+      `;
+
+      // تعبئة الافتراضي الفعلي لتسهيل الحفظ
+      if (actualSurahSelect) actualSurahSelect.value = suggestion.surahId;
+      if (smartActualVerse) smartActualVerse.value = suggestion.endVerse;
+
+      smartQuranHelperCard.style.display = 'block';
+
+      // زر تطبيق الملاحظات
+      btnApplySmartSuggestion.onclick = (e) => {
+        e.preventDefault();
+        document.getElementById('recNotes').value = suggestion.text;
+        Toast.success("تم إدراج الواجب المقترح في حقل الملاحظات! ✨");
+      };
+    });
+
+    // معالجة تسجيل الحصة فوريًا
+    document.getElementById('manualRecordSessionForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const studentId = document.getElementById('recStudent').value;
+      const recDateVal = document.getElementById('recDate').value;
+      const recTimeVal = document.getElementById('recTime').value;
+      const duration = parseInt(document.getElementById('recDuration').value);
+      const type = document.getElementById('recType').value;
+      const status = recStatus.value;
+      const rating = parseFloat(document.getElementById('recRating').value);
+      const notes = document.getElementById('recNotes').value.trim();
+      const absenceType = document.getElementById('recAbsenceType').value;
+      
+      const newDate = document.getElementById('recNewDate').value;
+      const newTime = document.getElementById('recNewTime').value;
+
+      if (!studentId) {
+        Toast.warning("يرجى اختيار الدارس الكريم أولًا.");
+        return;
+      }
+
+      const activeStudent = studentsCached.find(s => s.id === studentId);
+      if (!activeStudent) return;
+
+      const submitBtn = document.getElementById('btnSubmitRecord');
+      submitBtn.disabled = true;
+
+      try {
+        let finalDate = recDateVal;
+        let finalTime = recTimeVal;
+        let postponedFrom = "";
+
+        if (status === "delayed") {
+          if (!newDate || !newTime) {
+            Toast.warning("يرجى تحديد التاريخ والوقت البديل لجدولة الحصة المؤجلة.");
+            submitBtn.disabled = false;
+            return;
+          }
+          finalDate = newDate;
+          finalTime = newTime;
+          postponedFrom = recDateVal;
+        }
+
+        const sessionDocRef = doc(collection(db, "sessions"));
+        const sessionPayload = {
+          id: sessionDocRef.id,
+          studentId: activeStudent.id,
+          studentName: activeStudent.name,
+          teacherId: currentTeacher.uid,
+          teacherName: currentTeacher.name,
+          date: finalDate,
+          time: finalTime,
+          duration: duration,
+          type: type,
+          status: status,
+          absenceType: status === "student_absent" ? absenceType : "",
+          rating: rating,
+          notes: notes,
+          postponedFrom: postponedFrom,
+          approved: false, // بانتظار موافقة الأدمن للاعتماد المالي
+          createdAt: serverTimestamp()
+        };
+
+        // 1. إدراج الحصة
+        await setDoc(sessionDocRef, sessionPayload);
+
+        // 2. تحديث عداد الحصص في ملف الدارس
+        if (status === "completed" || (status === "student_absent" && absenceType === "unexcused")) {
+          const currentCount = parseInt(activeStudent.sessionsCount || 0);
+          const studentDocRef = doc(db, "students", activeStudent.id);
+          const updateFields = {
+            sessionsCount: currentCount + 1,
+            lastSessionDate: recDateVal
+          };
+
+          if (status === "completed") {
+            const actualSurahIdSelect = document.getElementById('smartActualSurahId');
+            const actualVerseInput = document.getElementById('smartActualVerse');
+            if (actualSurahIdSelect && actualVerseInput) {
+              const actualSurahId = parseInt(actualSurahIdSelect.value);
+              const actualVerse = parseInt(actualVerseInput.value) || 0;
+              const actualSurahObj = quranSurahs.find(s => s.id === actualSurahId);
+              if (actualSurahObj) {
+                updateFields.lastMemorizedSurahId = actualSurahId;
+                updateFields.lastMemorizedVerse = actualVerse;
+                updateFields.lastMemorizedSurahName = actualSurahObj.name;
+
+                // تحديث قائمة السور المكتملة للأرشيف البصري
+                const completedSurahsList = activeStudent.completedSurahs || [];
+                if (actualVerse >= actualSurahObj.verses && !completedSurahsList.includes(actualSurahId)) {
+                  completedSurahsList.push(actualSurahId);
+                  updateFields.completedSurahs = completedSurahsList;
+                }
+              }
+            }
+          }
+
+          await updateDoc(studentDocRef, updateFields);
+        }
+
+        // 3. تدوين سجل نشاط المعلم للتدقيق
+        const actionType = type === "group" ? "ADD_GROUP_SESSIONS" : "ADD_INDIVIDUAL_SESSION";
+        await writeAuditLog(currentTeacher.uid, currentTeacher.name, actionType, null, { studentName: activeStudent.name, duration, status });
+
+        Toast.success("تم تسجيل وبث الحصة وتحديث أرشيفك بنجاح ✅");
+        
+        // إعادة تهيئة الحقول
+        document.getElementById('manualRecordSessionForm').reset();
+        document.getElementById('recDate').value = todayStr;
+        document.getElementById('recTime').value = nowTimeStr;
+        absenceTypeContainer.style.display = "none";
+        postponeContainer.style.display = "none";
+        if (smartQuranHelperCard) smartQuranHelperCard.style.display = "none";
+
+      } catch (err) {
+        console.error(err);
+        Toast.danger("حدث خطأ أثناء محاولة حفظ وتسجيل الحصة.");
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    // جلب وبناء الأرشيف التاريخي
+    function initTeacherSessionsHistory(teacherId) {
+      const tbody = document.getElementById('teacherHistorySessionsTableBody');
+      if (!tbody) return;
+
+      const q = query(collection(db, "sessions"), where("teacherId", "==", teacherId));
+
+      onSnapshot(q, (snapshot) => {
+        if (snapshot.empty) {
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">لم تقم بتسجيل أي حصص دراسية سابقة في الأكاديمية حتى الآن.</td></tr>`;
+          return;
+        }
+
+        const sessions = [];
+        snapshot.forEach(docSnap => {
+          sessions.push({ id: docSnap.id, ...docSnap.data() });
+        });
+
+        // ترتيب من الأحدث للأقدم تنازليًا
+        sessions.sort((a,b) => {
+          const dateComp = b.date.localeCompare(a.date);
+          if (dateComp !== 0) return dateComp;
+          return (b.time || '').localeCompare(a.time || '');
+        });
+
+        tbody.innerHTML = sessions.map(s => {
+          const approved = s.approved || false;
+          const approvalHtml = approved 
+            ? `<span class="badge" style="position:static; background-color: var(--success-light); color: var(--success); font-weight:700;">معتمدة وجاهزة للصرف ✅</span>`
+            : `<span class="badge" style="position:static; background-color: var(--warning-light); color: var(--warning); font-weight:700;">قيد المراجعة والتدقيق ⏳</span>`;
+
+          let statusLabel = "";
+          let statusColor = "";
+          if (s.status === "completed") {
+            statusLabel = "تمت بنجاح";
+            statusColor = "color: var(--success);";
+          } else if (s.status === "student_absent") {
+            statusLabel = s.absenceType === "unexcused" ? "غياب بدون عذر 🔴" : "غياب بعذر مقبول 🟢";
+            statusColor = "color: var(--warning);";
+          } else if (s.status === "delayed") {
+            statusLabel = "مؤجلة";
+            statusColor = "color: var(--primary-color);";
+          } else {
+            statusLabel = "ملغاة";
+            statusColor = "color: var(--danger);";
+          }
+
+          return `
+            <tr>
+              <td><strong>${s.date}</strong><div style="font-size:0.75rem; color:var(--text-muted);">${s.time}</div></td>
+              <td><strong>${s.studentName}</strong><div style="font-size:0.75rem; color:var(--text-secondary);">${s.type === 'group' ? 'حصة جماعية 👥' : 'حصة فردية 👤'}</div></td>
+              <td><strong>${s.duration} دقيقة</strong></td>
+              <td><strong style="${statusColor}">${statusLabel}</strong></td>
+              <td>
+                <div style="display: flex; align-items: center; gap: 0.15rem; color: var(--warning);">
+                  <i data-lucide="star" style="width: 12px; height: 12px; fill: var(--warning);"></i>
+                  <span style="font-weight: 700; font-size: 0.85rem; color: var(--text-primary);">${s.rating || 5}</span>
+                </div>
+              </td>
+              <td style="max-width: 250px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${s.notes || ''}</td>
+              <td>${approvalHtml}</td>
+            </tr>
+          `;
+        }).join('');
+
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - إدارة الطلاب</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .modal-card {
+      background-color: var(--bg-secondary); border-radius: var(--border-radius);
+      border: 1px solid var(--border-color); width: 100%; max-width: 650px; padding: 2rem;
+      max-height: 90vh; overflow-y: auto;
+    }
+    .form-group label {
+      font-weight: 700;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.4rem;
+      display: block;
+    }
+    .form-control {
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0;">إدارة شؤون الطلاب والدارسين</h1>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">إضافة طلاب جدد، توزيع وتعيين الإشراف للمعلمين، وأرشفة الملفات المنتهية دراسياً.</p>
+          </div>
+          
+          <button class="btn btn-primary" id="openAddStudentModal"><i data-lucide="user-plus"></i> تسجيل طالب جديد</button>
+        </div>
+
+        <!-- شريط البحث الفوري التفاعلي -->
+        <div class="card" style="margin-bottom: 1.5rem; padding: 1rem;">
+          <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <i data-lucide="search" style="color: var(--text-muted); width: 20px; height: 20px; flex-shrink: 0;"></i>
+            <input type="text" id="adminStudentSearchInput" class="form-control" placeholder="ابحث فوريًا عن الدارس بالاسم الكريم..." style="margin: 0; font-size: 0.9rem; border: none; outline: none; background: transparent; width: 100%;">
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-container" style="margin-top: 0;">
+            <table>
+              <thead>
+                <tr>
+                  <th>اسم الدارس</th>
+                  <th>عمر الطالب</th>
+                  <th>المعلم المشرف المعتمد</th>
+                  <th>عدد الحصص المسجلة</th>
+                  <th>ملاحظات الأداء التعليمي</th>
+                  <th>متوسط تقييم الفهم والاستيعاب</th>
+                  <th>حالة القيد الدراسية</th>
+                  <th>خيارات الإدارة</th>
+                </tr>
+              </thead>
+              <tbody id="studentsTableBody">
+                <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">جاري جلب وفهرسة مستندات الطلاب...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- مودال تعديل بيانات الدارس التفاعلي - يدعم جميع الحقول بالكامل -->
+  <div id="editStudentModal" class="modal-overlay">
+    <div class="modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+        <h3 style="font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="edit-3" style="color: var(--primary-color);"></i> تعديل جميع معلومات الدارس
+        </h3>
+        <span id="btnCloseEditModalBtn" style="cursor: pointer; padding: 0.25rem; display: flex; align-items: center; justify-content: center;">
+          <i data-lucide="x" style="color: var(--text-muted);"></i>
+        </span>
+      </div>
+
+      <form id="editStudentForm">
+        <!-- قسم المعلومات الشخصية الأساسية -->
+        <h4 style="font-size: 0.85rem; font-weight: 800; color: var(--primary-color); margin-bottom: 1rem; border-right: 3px solid var(--primary-color); padding-right: 0.5rem; line-height: 1;">المعلومات الأساسية وقيد الدراسة</h4>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label for="editStudentName">الاسم الشخصي للدارس</label>
+            <input type="text" id="editStudentName" class="form-control" required placeholder="اكتب اسم الطالب بالكامل">
+          </div>
+          <div class="form-group">
+            <label for="editStudentAge">العمر (بالسنوات)</label>
+            <input type="number" id="editStudentAge" class="form-control" required placeholder="مثال: 12">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+          <div class="form-group">
+            <label for="editStudentStatus">حالة القيد الدراسية</label>
+            <select id="editStudentStatus" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
+              <option value="active">نشط ومستمر (Active) ✅</option>
+              <option value="Suspended">موقوف مؤقتاً (Suspended) ⚠️</option>
+              <option value="archived">مؤرشف / منتهي (Archived) 📦</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="editStudentTeacher">المعلم المشرف المعتمد</label>
+            <select id="editStudentTeacher" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
+              <!-- سيتم ملؤه ديناميكياً -->
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+          <div class="form-group">
+            <label for="editStudentDuration">مدة الحصة الافتراضية (بالدقائق)</label>
+            <select id="editStudentDuration" class="form-control" style="border: 1px solid var(--border-color); width: 100%;">
+              <option value="15">15 دقيقة</option>
+              <option value="30" selected>30 دقيقة</option>
+              <option value="45">45 دقيقة</option>
+              <option value="60">60 دقيقة (ساعة كاملة)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="editStudentScheduleMode">نظام مواعيد الحصص</label>
+            <select id="editStudentScheduleMode" class="form-control" style="border: 1px solid var(--border-color); width: 100%;">
+              <option value="uniform">موعد موحد لجميع الأيام</option>
+              <option value="different">مواعيد مختلفة لكل يوم 📅</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- قسم الموعد الموحد -->
+        <div id="editStudentUniformContainer" style="margin-top: 1rem;">
+          <div class="form-group">
+            <label for="editStudentTime">موعد الحصة الموحد</label>
+            <select id="editStudentTime" class="form-control" style="border: 1px solid var(--border-color); width: 100%;">
+              <option value="">-- اختر وقت الحصة --</option>
+              <option value="08:00 صباحاً">08:00 صباحاً</option>
+              <option value="08:30 صباحاً">08:30 صباحاً</option>
+              <option value="09:00 صباحاً">09:00 صباحاً</option>
+              <option value="09:30 صباحاً">09:30 صباحاً</option>
+              <option value="10:00 صباحاً">10:00 صباحاً</option>
+              <option value="10:30 صباحاً">10:30 صباحاً</option>
+              <option value="11:00 صباحاً">11:00 صباحاً</option>
+              <option value="11:30 صباحاً">11:30 صباحاً</option>
+              <option value="12:00 مساءً">12:00 مساءً</option>
+              <option value="12:30 مساءً">12:30 مساءً</option>
+              <option value="01:00 مساءً">01:00 مساءً</option>
+              <option value="01:30 مساءً">01:30 مساءً</option>
+              <option value="02:00 مساءً">02:00 مساءً</option>
+              <option value="02:30 مساءً">02:30 مساءً</option>
+              <option value="03:00 مساءً">03:00 مساءً</option>
+              <option value="03:30 مساءً">03:30 مساءً</option>
+              <option value="04:00 مساءً">04:00 مساءً</option>
+              <option value="04:30 مساءً">04:30 مساءً</option>
+              <option value="05:00 مساءً">05:00 مساءً</option>
+              <option value="05:30 مساءً">05:30 مساءً</option>
+              <option value="06:00 مساءً">06:00 مساءً</option>
+              <option value="06:30 مساءً">06:30 مساءً</option>
+              <option value="07:00 مساءً">07:00 مساءً</option>
+              <option value="07:30 مساءً">07:30 مساءً</option>
+              <option value="08:00 مساءً">08:00 مساءً</option>
+              <option value="08:30 مساءً">08:30 مساءً</option>
+              <option value="09:00 مساءً">09:00 مساءً</option>
+              <option value="09:30 مساءً">09:30 مساءً</option>
+              <option value="10:00 مساءً">10:00 مساءً</option>
+              <option value="10:30 مساءً">10:30 مساءً</option>
+              <option value="11:00 مساءً">11:00 مساءً</option>
+              <option value="11:30 مساءً">11:30 مساءً</option>
+            </select>
+          </div>
+          
+          <h4 style="font-size: 0.85rem; font-weight: 800; color: var(--primary-color); margin-top: 1.25rem; margin-bottom: 0.75rem; border-right: 3px solid var(--primary-color); padding-right: 0.5rem; line-height: 1;">أيام الحصص المجدولة أسبوعيًا</h4>
+          <div class="form-group">
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem;" id="editStudentDaysContainer">
+              <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;"><input type="checkbox" value="السبت"> السبت</label>
+              <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;"><input type="checkbox" value="الأحد"> الأحد</label>
+              <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;"><input type="checkbox" value="الاثنين"> الاثنين</label>
+              <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;"><input type="checkbox" value="الثلاثاء"> الثلاثاء</label>
+              <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;"><input type="checkbox" value="الأربعاء"> الأربعاء</label>
+              <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;"><input type="checkbox" value="الخميس"> الخميس</label>
+              <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;"><input type="checkbox" value="الجمعة"> الجمعة</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- قسم المواعيد المختلفة لكل يوم -->
+        <div id="editStudentDifferentContainer" style="display: none; margin-top: 1rem; background: var(--bg-primary); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
+          <h4 style="font-size: 0.85rem; font-weight: 800; color: var(--primary-color); margin-bottom: 0.75rem; border-right: 3px solid var(--primary-color); padding-right: 0.5rem; line-height: 1;">تحديد موعد منفصل لكل يوم دراسي</h4>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;" id="editStudentPerDayGrid">
+            <!-- سيتم توليده عبر الجافاسكربت -->
+          </div>
+        </div>
+
+        <!-- قسم الإحصائيات والأرقام -->
+        <h4 style="font-size: 0.85rem; font-weight: 800; color: var(--primary-color); margin-top: 1.5rem; margin-bottom: 1rem; border-right: 3px solid var(--primary-color); padding-right: 0.5rem; line-height: 1;">الإحصائيات والتحصيل التراكمي</h4>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label for="editStudentSessionsCount">الحصص المكتملة</label>
+            <input type="number" id="editStudentSessionsCount" class="form-control" min="0" placeholder="0">
+          </div>
+          <div class="form-group">
+            <label for="editStudentHoursCount">إجمالي الساعات</label>
+            <input type="number" id="editStudentHoursCount" step="0.01" class="form-control" min="0" placeholder="0.00">
+          </div>
+          <div class="form-group">
+            <label for="editStudentAverageRating">التقييم العام للدارس</label>
+            <input type="number" id="editStudentAverageRating" step="0.1" min="0" max="5" class="form-control" placeholder="5.0">
+          </div>
+        </div>
+
+        <!-- قسم الملاحظات -->
+        <div class="form-group" style="margin-top: 1rem;">
+          <label for="editStudentNotes">ملاحظات الأداء والمستوى التعليمي</label>
+          <textarea id="editStudentNotes" class="form-control" rows="2" style="resize: vertical; font-family: inherit; font-size: 0.9rem;" placeholder="اكتب ملاحظات المستوى أو الأداء الأكاديمي للدارس الكريم..."></textarea>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 1.25rem;">
+          <button type="submit" class="btn btn-primary" id="btnSubmitEditStudent">حفظ التغييرات</button>
+          <button type="button" class="btn btn-secondary" id="btnCancelEditStudent">إلغاء</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module" src="../assets/js/features/students/studentsController.js"></script>
+</body>
+</html>
