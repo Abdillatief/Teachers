@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - إعدادات الأكاديمية</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        <div style="margin-bottom: 2rem;">
+          <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary);">إعدادات الهوية والتخصيص</h1>
+          <p style="color: var(--text-secondary); font-size: 0.9rem;">تحديث شعار الأكاديمية الرسمي، لون الهوية البصرية، والتحكم بمكونات الأكاديمية.</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.5rem; flex-wrap: wrap;">
+          
+          <!-- نموذج إعدادات الهوية البصرية (Academy Visual Identity & Branding Settings) -->
+          <div class="card">
+            <h3 style="font-weight: 700; font-size: 1.15rem; margin-bottom: 1.25rem;"><i data-lucide="palette"></i> الهوية البصرية الموحدة (شعار وألوان الأكاديمية)</h3>
+            <form id="academyBrandingForm">
+              
+              <div class="form-group">
+                <label for="academyNameInput">اسم الأكاديمية الرسمي</label>
+                <input type="text" id="academyNameInput" class="form-control" placeholder="أكاديمية سبيل لتعليم القرآن الكريم..." required style="font-weight: bold;">
+              </div>
+
+              <div class="form-group" style="margin-top: 1rem;">
+                <label for="academyDescInput">وصف الأكاديمية (يظهر أسفل الاسم في السايد بار وشاشة الدخول)</label>
+                <input type="text" id="academyDescInput" class="form-control" placeholder="أكاديمية لتعليم القرآن الكريم والقراءات والتجويد..." style="font-size: 0.9rem;">
+              </div>
+
+              <div class="form-group" style="margin-top: 1.25rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">شعار الأكاديمية الموحد</label>
+                
+                <!-- صندوق السحب والإفلات وتحديد الملف -->
+                <div id="logoUploadZone" style="border: 2px dashed var(--border-color); border-radius: var(--border-radius); padding: 1.5rem; text-align: center; cursor: pointer; transition: all 0.25s; background-color: var(--bg-primary); display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
+                  <i data-lucide="image-plus" id="uploadZoneIcon" style="width: 32px; height: 32px; color: var(--primary-color);"></i>
+                  <span id="uploadZoneText" style="font-size: 0.85rem; font-weight: bold; color: var(--text-primary);">اسحب وأفلت شعار الأكاديمية هنا، أو اضغط للتصفح</span>
+                  <span style="font-size: 0.72rem; color: var(--text-muted); line-height: 1.4;">يدعم PNG, JPG, SVG. سيتم تكييف المقاسات وقص المساحات الفارغة تلقائياً (Auto Crop & Trim) ليتلاءم تماماً مع المنصة.</span>
+                  <input type="file" id="logoFileInput" accept="image/*" style="display: none;">
+                </div>
+                
+                <!-- خيار بديل لوضع رابط URL للمرونة القصوى -->
+                <div style="margin-top: 0.5rem;">
+                  <button type="button" id="toggleUrlBtn" style="font-size: 0.75rem; color: var(--primary-color); background: none; border: none; cursor: pointer; text-decoration: underline; font-weight: bold; padding: 0;">أو أدخل رابط الشعار يدوياً (URL)</button>
+                  <div id="urlInputContainer" style="display: none; margin-top: 0.5rem;">
+                    <input type="text" id="academyLogoInput" class="form-control" placeholder="ضع رابط صورة الشعار هنا (SVG, PNG, JPG)...">
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-top: 1rem; margin-bottom: 1.5rem;">
+                <label for="academyColorInput">لون الهوية البصرية الأساسي (Theme Brand Accent)</label>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                  <input type="color" id="academyColorInput" style="width: 50px; height: 38px; border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
+                  <span style="font-size: 0.82rem; color: var(--text-secondary); font-weight: 600;">اختر درجة اللون التي تعبر عن الأكاديمية (سيطبق على كافة الأزرار والهيدر والروابط النشطة).</span>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary" style="width: 100%; font-weight: 700;"><i data-lucide="save"></i> حفظ وتعميم الهوية البصرية فوريًا</button>
+            </form>
+          </div>
+
+          <!-- معاينة الهوية الحالية ومستوى الأمان وقفل التبويبات -->
+          <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <div class="card" style="text-align: center;">
+              <h3 style="font-weight: 700; font-size: 1.1rem; margin-bottom: 1rem;">معاينة الشعار المعتمد</h3>
+              <div style="background-color: var(--bg-primary); padding: 1.5rem; border-radius: var(--border-radius); border: 1px dashed var(--border-color); display: flex; align-items: center; justify-content: center; min-height: 120px;">
+                <img id="brandingLogoPreview" src="" style="max-height: 80px; border-radius: 4px; object-fit: contain; display: none;" alt="Preview Logo">
+                <span id="noLogoPreviewText" style="color: var(--text-muted); font-size: 0.85rem;">لا توجد صورة شعار مخصصة حالياً.</span>
+              </div>
+            </div>
+
+            <!-- معلومات النظام وأزرار الدعم الفني -->
+            <div class="card">
+              <h3 style="font-weight: 700; font-size: 1.1rem; margin-bottom: 0.75rem;"><i data-lucide="info"></i> معلومات منصة سَبِيل</h3>
+              <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.85rem;">
+                <div style="display: flex; justify-content: space-between;"><span>نسخة النظام:</span><strong>v1.4.0 (Stable)</strong></div>
+                <div style="display: flex; justify-content: space-between;"><span>حالة الربط بقاعدة البيانات:</span><strong style="color: var(--success);">نشط ومتزامن 🟢</strong></div>
+                <div style="display: flex; justify-content: space-between;"><span>أمن الاتصال والشبكة:</span><strong>SSL / Firestore Security Active</strong></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- قسم النسخ الاحتياطي واستيراد البيانات وإعادة التعيين (Data Management Panel) -->
+        <div class="card" style="margin-top: 1.5rem; padding: 2rem;">
+          <h3 style="font-weight: 800; font-size: 1.25rem; color: var(--text-primary); margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i data-lucide="database" style="color: var(--primary-color);"></i> إدارة البيانات والنسخ الاحتياطي للأكاديمية
+          </h3>
+          <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.5rem;">
+            يمكنك حفظ نسخة كاملة من جميع البيانات والوثائق (الطلاب، المعلمين، الحصص، المدفوعات، الباقات، الاشتراكات، الرواتب) وتحميلها على جهازك الشخصي لاسترجاعها في أي وقت، أو إجراء إعادة تعيين مخصصة للبيانات بالكامل أو لكل قسم على حدة.
+          </p>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+            <!-- النسخ الاحتياطي والاستيراد -->
+            <div style="background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <h4 style="font-weight: 700; font-size: 1rem; color: var(--text-primary); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.35rem;">
+                  <i data-lucide="archive" style="color: var(--primary-color);"></i> حفظ واستعادة البيانات
+                </h4>
+                <p style="color: var(--text-secondary); font-size: 0.8rem; line-height: 1.5;">
+                  قم بتصدير جميع بيانات الأكاديمية المخزنة على السيرفر كملف JSON مشفر لحمايتها، أو قم برفع ملف نسخة احتياطية سابق لاستعادة الأكاديمية بالكامل بالحال.
+                </p>
+              </div>
+              <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem;">
+                <button class="btn btn-primary" id="btnExportBackup" style="flex: 1; font-size: 0.8rem; gap: 0.25rem; background: var(--success); border-color: var(--success);">
+                  <i data-lucide="download" style="width: 14px; height: 14px;"></i> تصدير النسخة
+                </button>
+                <button class="btn btn-secondary" id="btnImportBackup" style="flex: 1; font-size: 0.8rem; gap: 0.25rem;">
+                  <i data-lucide="upload" style="width: 14px; height: 14px;"></i> استيراد نسخة
+                </button>
+                <!-- Input مخفي لرفع الملف -->
+                <input type="file" id="backupFileInput" accept=".json" style="display: none;">
+              </div>
+            </div>
+
+            <!-- إعادة تعيين البيانات الكلية والجزئية -->
+            <div style="background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 1.5rem;">
+              <h4 style="font-weight: 700; font-size: 1rem; color: var(--danger); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.35rem;">
+                <i data-lucide="alert-triangle" style="color: var(--danger);"></i> إعادة تعيين تهيئة المنصة
+              </h4>
+              <p style="color: var(--text-secondary); font-size: 0.8rem; line-height: 1.5; margin-bottom: 1rem;">
+                احذر! هذا الإجراء يقوم بحذف وتصفير كلي أو جزئي لبيانات الأكاديمية. يمكنك تحديد الجداول والبيانات المراد حذفها بدقة بالأسفل لمرونة تحكم كاملة.
+              </p>
+              
+              <!-- خيارات الحذف التفصيلي (Granular Reset Options) -->
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin-bottom: 1rem; background: var(--bg-secondary); padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; color: var(--text-secondary); cursor: pointer;">
+                  <input type="checkbox" class="reset-item-chk" value="students" checked> كشوف الطلاب
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; color: var(--text-secondary); cursor: pointer;">
+                  <input type="checkbox" class="reset-item-chk" value="teachers" checked> سجلات المعلمين
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; color: var(--text-secondary); cursor: pointer;">
+                  <input type="checkbox" class="reset-item-chk" value="sessions" checked> سجل الحصص الجارية
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; color: var(--text-secondary); cursor: pointer;">
+                  <input type="checkbox" class="reset-item-chk" value="payments" checked> فواتير المدفوعات
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; color: var(--text-secondary); cursor: pointer;">
+                  <input type="checkbox" class="reset-item-chk" value="subscriptions" checked> الاشتراكات النشطة
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; color: var(--text-secondary); cursor: pointer;">
+                  <input type="checkbox" class="reset-item-chk" value="salaryArchive" checked> أرشيف الرواتب
+                </label>
+              </div>
+
+              <button class="btn btn-secondary" id="btnGranularReset" style="width: 100%; font-size: 0.85rem; color: var(--danger); border-color: var(--danger); background: transparent; font-weight: 700; gap: 0.35rem; transition: all 0.2s;">
+                <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i> تصفير وإعادة تعيين البيانات المحددة
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <!-- مودال قص وتعديل الشعار (Logo Crop Selection & Editing Modal) -->
+  <div id="logoCropModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 1rem;">
+    <div class="card modal-card" style="width: 100%; max-width: 520px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; box-shadow: var(--shadow-lg);">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+        <h3 style="font-weight: 800; font-size: 1.1rem; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="crop" style="color: var(--primary-color);"></i> معالجة وقص الشعار
+        </h3>
+        <button type="button" id="closeCropModalBtn" style="background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center;"><i data-lucide="x" style="width: 20px; height: 20px;"></i></button>
+      </div>
+
+      <!-- الخطوة الأولى: اختيار طريقة المعالجة -->
+      <div id="cropChoiceStep" style="display: flex; flex-direction: column; gap: 1rem; text-align: center; padding: 1rem 0;">
+        <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; margin: 0;">
+          لقد قمت برفع ملف الشعار بنجاح. كيف ترغب في قص وتهيئة الصورة لتناسب شريط القائمة الرئيسي بالأكاديمية؟
+        </p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.5rem;">
+          <button type="button" id="btnAutoCropChoice" class="btn btn-primary" style="flex-direction: column; padding: 1.5rem 1rem; gap: 0.75rem; border-radius: 12px; font-weight: 800; font-size: 0.95rem; height: auto; display: flex; align-items: center; justify-content: center;">
+            <i data-lucide="sparkles" style="width: 28px; height: 28px;"></i>
+            <span>تلقائي ذكي فوري</span>
+            <span style="font-size: 0.7rem; font-weight: normal; opacity: 0.85;">قص تلقائي للمساحات البيضاء والفارغة</span>
+          </button>
+          <button type="button" id="btnManualCropChoice" class="btn btn-secondary" style="flex-direction: column; padding: 1.5rem 1rem; gap: 0.75rem; border-radius: 12px; font-weight: 800; font-size: 0.95rem; border: 1px solid var(--primary-color); color: var(--primary-color); height: auto; display: flex; align-items: center; justify-content: center; background: transparent;">
+            <i data-lucide="crop" style="width: 28px; height: 28px;"></i>
+            <span>قص يدوي مخصص</span>
+            <span style="font-size: 0.7rem; font-weight: normal; opacity: 0.85;">تحكم في حجم الصورة، تحريكها وموضعها</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- الخطوة الثانية: واجهة القص اليدوي بالتمرير أو السلايدر -->
+      <div id="manualCropStep" style="display: none; flex-direction: column; gap: 1rem;">
+        <p style="color: var(--text-secondary); font-size: 0.82rem; margin: 0; line-height: 1.4;">
+          قم بضبط أبعاد وموضع الشعار داخل منطقة القص المستهدفة (المستطيل الموضح) لتبدو بأفضل مظهر متناسق:
+        </p>
+        
+        <!-- مساحة المعاينة التفاعلية للقص -->
+        <div style="position: relative; width: 100%; display: flex; justify-content: center; background-color: #111; border-radius: 8px; overflow: hidden; padding: 1.5rem; border: 1px solid var(--border-color);">
+          <canvas id="cropCanvas" style="max-width: 100%; height: auto; display: block; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"></canvas>
+          <div style="position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.7); color: #fff; font-size: 0.65rem; padding: 0.15rem 0.35rem; border-radius: 4px; pointer-events: none;" class="font-mono">
+            مقاس العرض: 250 × 75
+          </div>
+        </div>
+
+        <!-- السلايدرات والتحكم -->
+        <div style="display: flex; flex-direction: column; gap: 0.75rem; background: var(--bg-primary); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color);">
+          <div class="form-group" style="margin: 0;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 0.25rem; font-weight: bold;">
+              <span style="color: var(--text-primary);">تكبير / تصغير الصورة (Zoom)</span>
+              <span id="zoomVal" class="font-mono">100%</span>
+            </div>
+            <input type="range" id="cropZoomRange" min="10" max="300" value="100" style="width: 100%; accent-color: var(--primary-color); cursor: pointer;">
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            <div class="form-group" style="margin: 0;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 0.25rem; font-weight: bold;">
+                <span style="color: var(--text-primary);">إزاحة أفقية (X)</span>
+                <span id="xOffsetVal" class="font-mono">0px</span>
+              </div>
+              <input type="range" id="cropXRange" min="-200" max="200" value="0" style="width: 100%; accent-color: var(--primary-color); cursor: pointer;">
+            </div>
+            
+            <div class="form-group" style="margin: 0;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 0.25rem; font-weight: bold;">
+                <span style="color: var(--text-primary);">إزاحة رأسية (Y)</span>
+                <span id="yOffsetVal" class="font-mono">0px</span>
+              </div>
+              <input type="range" id="cropYRange" min="-200" max="200" value="0" style="width: 100%; accent-color: var(--primary-color); cursor: pointer;">
+            </div>
+          </div>
+        </div>
+
+        <!-- الأزرار -->
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
+          <button type="button" id="btnBackToChoice" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 1rem;"><i data-lucide="arrow-right"></i> رجوع</button>
+          <button type="button" id="btnConfirmManualCrop" class="btn btn-primary" style="font-size: 0.85rem; background: var(--success); border-color: var(--success); font-weight: bold; padding: 0.5rem 1.25rem;">
+            <i data-lucide="check"></i> تأكيد وحفظ القص
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { doc, getDoc, setDoc, serverTimestamp, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+
+    protectRoute('admin');
+
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        renderSidebar('settings', 'admin');
+        renderNavbar('إعدادات وتخصيص الأكاديمية', { name: 'الإدارة العامة', roleName: 'مدير الأكاديمية' });
+        loadAcademySettings();
+      }
+    });
+
+    // دالة قص هوامش الشعار وتصغيره تلقائياً ليتناسب مع الواجهة
+    function autoCropAndResizeImage(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            
+            let targetX = 0;
+            let targetY = 0;
+            let targetWidth = img.width;
+            let targetHeight = img.height;
+            
+            try {
+              const imgData = ctx.getImageData(0, 0, img.width, img.height);
+              const data = imgData.data;
+              
+              let minX = img.width;
+              let minY = img.height;
+              let maxX = 0;
+              let maxY = 0;
+              let hasContent = false;
+              
+              // مسح بكسلات الصورة للتعرف على المساحة الفارغة والبيضاء
+              for (let y = 0; y < img.height; y++) {
+                for (let x = 0; x < img.width; x++) {
+                  const alphaIndex = ((y * img.width) + x) * 4 + 3;
+                  const alpha = data[alphaIndex];
+                  const r = data[alphaIndex - 3];
+                  const g = data[alphaIndex - 2];
+                  const b = data[alphaIndex - 1];
+                  
+                  // البكسل الممتلئ هو غير الشفاف وغير الأبيض النقي
+                  const isWhite = r > 248 && g > 248 && b > 248;
+                  if (alpha > 15 && !isWhite) {
+                    if (x < minX) minX = x;
+                    if (x > maxX) maxX = x;
+                    if (y < minY) minY = y;
+                    if (y > maxY) maxY = y;
+                    hasContent = true;
+                  }
+                }
+              }
+              
+              if (hasContent) {
+                const pad = 4; // هامش حماية بسيط
+                targetX = Math.max(0, minX - pad);
+                targetY = Math.max(0, minY - pad);
+                targetWidth = Math.min(img.width - targetX, (maxX - minX) + (pad * 2));
+                targetHeight = Math.min(img.height - targetY, (maxY - minY) + (pad * 2));
+              }
+            } catch (err) {
+              console.warn("تعذر حساب حدود البكسل تلقائياً (قيود أمان المتصفح)، سيتم الاكتفاء بتعديل المقاسات مباشرة.", err);
+            }
+            
+            // ضبط مقاسات الشعار ليتلاءم تماماً مع الهيدر والسايد بار
+            const MAX_W = 250;
+            const MAX_H = 75;
+            let finalWidth = targetWidth;
+            let finalHeight = targetHeight;
+            
+            if (finalWidth > MAX_W) {
+              finalHeight *= (MAX_W / finalWidth);
+              finalWidth = MAX_W;
+            }
+            if (finalHeight > MAX_H) {
+              finalWidth *= (MAX_H / finalHeight);
+              finalHeight = MAX_H;
+            }
+            
+            const outCanvas = document.createElement('canvas');
+            outCanvas.width = finalWidth;
+            outCanvas.height = finalHeight;
+            const outCtx = outCanvas.getContext('2d');
+            
+            outCtx.imageSmoothingEnabled = true;
+            outCtx.imageSmoothingQuality = 'high';
+            
+            outCtx.drawImage(
+              img,
+              targetX, targetY, targetWidth, targetHeight,
+              0, 0, finalWidth, finalHeight
+            );
+            
+            resolve(outCanvas.toDataURL('image/png', 0.92));
+          };
+          img.onerror = () => reject(new Error("تعذر تحميل ملف الصورة."));
+          img.src = e.target.result;
+        };
+        reader.onerror = () => reject(new Error("تعذر قراءة ملف الصورة."));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // تهيئة ميزات رفع ملف الشعار بالسحب والإفلات والتصفح
+    const logoUploadZone = document.getElementById('logoUploadZone');
+    const logoFileInput = document.getElementById('logoFileInput');
+    const uploadZoneText = document.getElementById('uploadZoneText');
+    const uploadZoneIcon = document.getElementById('uploadZoneIcon');
+    const academyLogoInput = document.getElementById('academyLogoInput');
+    const toggleUrlBtn = document.getElementById('toggleUrlBtn');
+    const urlInputContainer = document.getElementById('urlInputContainer');
+
+    if (logoUploadZone && logoFileInput) {
+      logoUploadZone.addEventListener('click', () => logoFileInput.click());
+
+      // تأثيرات السحب فوق الصندوق
+      logoUploadZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        logoUploadZone.style.borderColor = 'var(--primary-color)';
+        logoUploadZone.style.backgroundColor = 'rgba(13, 148, 136, 0.05)';
+      });
+
+      logoUploadZone.addEventListener('dragleave', () => {
+        logoUploadZone.style.borderColor = 'var(--border-color)';
+        logoUploadZone.style.backgroundColor = 'var(--bg-primary)';
+      });
+
+      logoUploadZone.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        logoUploadZone.style.borderColor = 'var(--border-color)';
+        logoUploadZone.style.backgroundColor = 'var(--bg-primary)';
+        
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          await handleLogoFile(files[0]);
+        }
+      });
+
+      logoFileInput.addEventListener('change', async (e) => {
+        const files = e.target.files;
+        if (files && files.length > 0) {
+          await handleLogoFile(files[0]);
+        }
+      });
+    }
+
+    // تبديل إدخال رابط الشعار يدوياً
+    if (toggleUrlBtn && urlInputContainer) {
+      toggleUrlBtn.addEventListener('click', () => {
+        if (urlInputContainer.style.display === 'none') {
+          urlInputContainer.style.display = 'block';
+          toggleUrlBtn.textContent = "إخفاء رابط الشعار اليدوي";
+        } else {
+          urlInputContainer.style.display = 'none';
+          toggleUrlBtn.textContent = "أو أدخل رابط الشعار يدوياً (URL)";
+        }
+      });
+    }
+
+    let currentUploadedFile = null;
+    let sourceImg = null;
+
+    // تهيئة عناصر مودال قص وتعديل الشعار
+    const logoCropModal = document.getElementById('logoCropModal');
+    const closeCropModalBtn = document.getElementById('closeCropModalBtn');
+    const cropChoiceStep = document.getElementById('cropChoiceStep');
+    const manualCropStep = document.getElementById('manualCropStep');
+    
+    const btnAutoCropChoice = document.getElementById('btnAutoCropChoice');
+    const btnManualCropChoice = document.getElementById('btnManualCropChoice');
+    const btnBackToChoice = document.getElementById('btnBackToChoice');
+    const btnConfirmManualCrop = document.getElementById('btnConfirmManualCrop');
+
+    const cropCanvas = document.getElementById('cropCanvas');
+    const cropZoomRange = document.getElementById('cropZoomRange');
+    const cropXRange = document.getElementById('cropXRange');
+    const cropYRange = document.getElementById('cropYRange');
+    
+    const zoomVal = document.getElementById('zoomVal');
+    const xOffsetVal = document.getElementById('xOffsetVal');
+    const yOffsetVal = document.getElementById('yOffsetVal');
+
+    if (closeCropModalBtn) {
+      closeCropModalBtn.addEventListener('click', () => {
+        logoCropModal.style.display = 'none';
+      });
+    }
+
+    if (btnBackToChoice) {
+      btnBackToChoice.addEventListener('click', () => {
+        manualCropStep.style.display = 'none';
+        cropChoiceStep.style.display = 'flex';
+      });
+    }
+
+    async function handleLogoFile(file) {
+      if (!file.type.startsWith('image/')) {
+        Toast.danger("عذراً، يجب اختيار ملف صورة صالح.");
+        return;
+      }
+      
+      currentUploadedFile = file;
+      
+      // فتح المودال والبدء بالخطوة الأولى
+      logoCropModal.style.display = 'flex';
+      cropChoiceStep.style.display = 'flex';
+      manualCropStep.style.display = 'none';
+      
+      // قراءة الصورة لتهيئتها في الكانفاس والتحكم اليدوي
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        sourceImg = new Image();
+        sourceImg.onload = () => {
+          // تصفير وإعادة تعيين القيم والحدود للسلايدر
+          cropZoomRange.value = 100;
+          cropXRange.value = 0;
+          cropYRange.value = 0;
+          
+          const maxDim = Math.max(sourceImg.width, sourceImg.height, 300);
+          cropXRange.min = -maxDim;
+          cropXRange.max = maxDim;
+          cropYRange.min = -maxDim;
+          cropYRange.max = maxDim;
+          
+          updateSliderLabels();
+        };
+        sourceImg.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // دالة تحديث القيم النصية للسلايدرات ورسم المعاينة فورياً
+    function updateSliderLabels() {
+      if (zoomVal) zoomVal.textContent = `${cropZoomRange.value}%`;
+      if (xOffsetVal) xOffsetVal.textContent = `${cropXRange.value}px`;
+      if (yOffsetVal) yOffsetVal.textContent = `${cropYRange.value}px`;
+      drawCropPreview();
+    }
+
+    // ربط السلايدرات بحدث التمرير
+    [cropZoomRange, cropXRange, cropYRange].forEach(input => {
+      if (input) {
+        input.addEventListener('input', updateSliderLabels);
+      }
+    });
+
+    // دالة رسم المعاينة الحية في الكانفاس
+    function drawCropPreview() {
+      if (!sourceImg || !cropCanvas) return;
+      const ctx = cropCanvas.getContext('2d');
+      
+      // تحديد دقة الكانفاس بوضوح فائق (High DPI 2x)
+      cropCanvas.width = 500;
+      cropCanvas.height = 150;
+      
+      ctx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
+      
+      const zoom = parseInt(cropZoomRange.value) / 100;
+      const xOffset = parseInt(cropXRange.value);
+      const yOffset = parseInt(cropYRange.value);
+      
+      // حساب الأبعاد بناءً على القياس المثالي للكانفاس لضمان تماشي الصورة
+      const baseScale = Math.min(cropCanvas.width / sourceImg.width, cropCanvas.height / sourceImg.height);
+      const drawWidth = sourceImg.width * baseScale * zoom;
+      const drawHeight = sourceImg.height * baseScale * zoom;
+      
+      const x = (cropCanvas.width / 2) - (drawWidth / 2) + xOffset;
+      const y = (cropCanvas.height / 2) - (drawHeight / 2) + yOffset;
+      
+      // تفعيل تنعيم الحواف لضمان المظهر الجمالي الاحترافي
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      
+      ctx.drawImage(sourceImg, x, y, drawWidth, drawHeight);
+      
+      // رسم إطار استرشادي منقط
+      ctx.strokeStyle = 'rgba(14, 165, 233, 0.4)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      ctx.strokeRect(4, 4, cropCanvas.width - 8, cropCanvas.height - 8);
+      ctx.setLineDash([]);
+    }
+
+    // معالجة اختيار القص التلقائي الذكي
+    if (btnAutoCropChoice) {
+      btnAutoCropChoice.addEventListener('click', async () => {
+        if (!currentUploadedFile) return;
+        logoCropModal.style.display = 'none';
+        Toast.success("جاري معالجة وقص الشعار تلقائياً...");
+        try {
+          const croppedBase64 = await autoCropAndResizeImage(currentUploadedFile);
+          applyCroppedLogo(croppedBase64, currentUploadedFile.name, "تلقائي");
+        } catch (err) {
+          console.error(err);
+          Toast.danger("حدث خطأ أثناء معالجة وقص الشعار تلقائياً.");
+        }
+      });
+    }
+
+    // معالجة اختيار القص اليدوي المخصص
+    if (btnManualCropChoice) {
+      btnManualCropChoice.addEventListener('click', () => {
+        cropChoiceStep.style.display = 'none';
+        manualCropStep.style.display = 'flex';
+        drawCropPreview();
+      });
+    }
+
+    // معالجة تأكيد وحفظ القص اليدوي وتصديره بجودة ممتازة
+    if (btnConfirmManualCrop) {
+      btnConfirmManualCrop.addEventListener('click', () => {
+        if (!cropCanvas || !sourceImg) return;
+        
+        // إعادة الرسم بدقة وبدون الإطار التوجيهي تمهيداً للتصدير النظيف
+        const ctx = cropCanvas.getContext('2d');
+        ctx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
+        
+        const zoom = parseInt(cropZoomRange.value) / 100;
+        const xOffset = parseInt(cropXRange.value);
+        const yOffset = parseInt(cropYRange.value);
+        
+        const baseScale = Math.min(cropCanvas.width / sourceImg.width, cropCanvas.height / sourceImg.height);
+        const drawWidth = sourceImg.width * baseScale * zoom;
+        const drawHeight = sourceImg.height * baseScale * zoom;
+        
+        const x = (cropCanvas.width / 2) - (drawWidth / 2) + xOffset;
+        const y = (cropCanvas.height / 2) - (drawHeight / 2) + yOffset;
+        
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(sourceImg, x, y, drawWidth, drawHeight);
+
+        const croppedBase64 = cropCanvas.toDataURL('image/png', 0.95);
+        applyCroppedLogo(croppedBase64, currentUploadedFile ? currentUploadedFile.name : "cropped_logo.png", "يدوي");
+        logoCropModal.style.display = 'none';
+      });
+    }
+
+    // دالة تطبيق الشعار وتحديث معينات اللوحة فوريًا
+    function applyCroppedLogo(croppedBase64, filename, mode) {
+      academyLogoInput.value = croppedBase64;
+      
+      const previewImg = document.getElementById('brandingLogoPreview');
+      if (previewImg) {
+        previewImg.src = croppedBase64;
+        previewImg.style.display = 'block';
+        document.getElementById('noLogoPreviewText').style.display = 'none';
+      }
+      
+      if (uploadZoneText) {
+        uploadZoneText.textContent = `تم تحديث وقص الشعار بنجاح (${mode}): ${filename} ✅`;
+        uploadZoneText.style.color = 'var(--primary-color)';
+      }
+      if (uploadZoneIcon) {
+        uploadZoneIcon.setAttribute('data-lucide', 'check-circle');
+        if (window.lucide) window.lucide.createIcons();
+      }
+      Toast.success(`تم حفظ الشعار المقتص (${mode}) بنجاح! اضغط على "حفظ وتعميم الهوية البصرية" في الأسفل للتأكيد.`);
+    }
+
+    async function loadAcademySettings() {
+      try {
+        const settingsSnap = await getDoc(doc(db, "settings", "academy"));
+        if (settingsSnap.exists()) {
+          const data = settingsSnap.data();
+          if (data.academyName) {
+            document.getElementById('academyNameInput').value = data.academyName;
+          }
+          if (data.academyDesc) {
+            document.getElementById('academyDescInput').value = data.academyDesc;
+          }
+          if (data.logoURL) {
+            document.getElementById('academyLogoInput').value = data.logoURL;
+            const img = document.getElementById('brandingLogoPreview');
+            img.src = data.logoURL;
+            img.style.display = 'block';
+            document.getElementById('noLogoPreviewText').style.display = 'none';
+            if (uploadZoneText) {
+              uploadZoneText.textContent = "تم تعيين شعار مخصص نشط (اضغط لتغييره أو اسحب صورة جديدة)";
+              uploadZoneText.style.color = 'var(--text-primary)';
+            }
+          }
+          if (data.brandColor) {
+            document.getElementById('academyColorInput').value = data.brandColor;
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        Toast.danger("تعذر تحميل الإعدادات الحالية من قاعدة البيانات.");
+      }
+    }
+
+    // حفظ وتحديث الهوية البصرية كلياً وإشعار المستخدم بالتحديث
+    document.getElementById('academyBrandingForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const name = document.getElementById('academyNameInput').value.trim();
+      const desc = document.getElementById('academyDescInput').value.trim();
+      const logoUrl = document.getElementById('academyLogoInput').value.trim();
+      const color = document.getElementById('academyColorInput').value;
+
+      try {
+        const settingsRef = doc(db, "settings", "academy");
+        await setDoc(settingsRef, {
+          academyName: name,
+          academyDesc: desc,
+          logoURL: logoUrl,
+          brandColor: color,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+
+        // تخزين الكاش فوريًا لتفادي أي وميض وتلوين الواجهات
+        localStorage.setItem('academy_brand_color', color);
+        localStorage.setItem('academy_logo_url', logoUrl);
+        localStorage.setItem('academy_desc', desc);
+        document.documentElement.style.setProperty('--primary-color', color);
+
+        // تحديث الصور المعاينة والسايد بار وشريط التنقل بالصفحة فوريًا
+        const previewImg = document.getElementById('brandingLogoPreview');
+        if (previewImg) {
+          previewImg.src = logoUrl;
+          previewImg.style.display = 'block';
+          document.getElementById('noLogoPreviewText').style.display = 'none';
+        }
+
+        Toast.success("تم تحديث وحفظ الهوية البصرية والوصف بنجاح، وستنعكس تلقائياً على كافة الأجهزة واللوحات ✅");
+        
+        // إعادة تحميل خفيفة للسايد بار لإظهار الشعار الجديد والوصف بالحال
+        renderSidebar('settings', 'admin');
+      } catch (err) {
+        console.error(err);
+        Toast.danger("حدث خطأ أثناء حفظ وتعميم الإعدادات الجديدة.");
+      }
+    });
+
+    // 1. تصدير جميع بيانات الأكاديمية كملف JSON (Backup)
+    document.getElementById('btnExportBackup')?.addEventListener('click', async () => {
+      Toast.success("جاري تحضير وتجميع النسخة الاحتياطية للأكاديمية...");
+      try {
+        const backupData = {};
+        const collectionsList = ["students", "teachers", "sessions", "payments", "subscriptions", "packages", "salaryArchive"];
+        
+        for (const colName of collectionsList) {
+          const snapshot = await getDocs(collection(db, colName));
+          backupData[colName] = [];
+          snapshot.forEach(docSnap => {
+            backupData[colName].push({ id: docSnap.id, ...docSnap.data() });
+          });
+        }
+
+        // تحويل وتنزيل الملف
+        const dataStr = JSON.stringify(backupData, null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        const dateStr = new Date().toISOString().split('T')[0];
+        a.download = `sabiel_academy_backup_${dateStr}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        Toast.success("تم تصدير وحفظ النسخة الاحتياطية بنجاح على جهازك 💾");
+      } catch (err) {
+        console.error("خطأ تصدير النسخة الاحتياطية:", err);
+        Toast.danger("عذرًا، حدث خطأ أثناء محاولة تصدير البيانات من الخادم.");
+      }
+    });
+
+    // 2. استيراد النسخ الاحتياطية (Restore)
+    document.getElementById('btnImportBackup')?.addEventListener('click', () => {
+      document.getElementById('backupFileInput').click();
+    });
+
+    document.getElementById('backupFileInput')?.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          const importedData = JSON.parse(event.target.result);
+          
+          if (confirm("🚨 تحذير هام 🚨\n\nاستيراد النسخة الاحتياطية سيقوم بدمج وكتابة السجلات الحالية المخزنة بنفس المعرفات.\n\nهل أنت متأكد تمامًا من رغبتك في المتابعة واسترجاع البيانات؟")) {
+            Toast.success("جاري فك تشفير واستيراد السجلات إلى قاعدة البيانات...");
+            
+            for (const colName in importedData) {
+              const docsList = importedData[colName];
+              if (Array.isArray(docsList)) {
+                for (const docObj of docsList) {
+                  const { id, ...data } = docObj;
+                  if (id) {
+                    await setDoc(doc(db, colName, id), data);
+                  }
+                }
+              }
+            }
+            Toast.success("تم استيراد واستعادة النسخة الاحتياطية بنجاح تام! 🎉");
+            loadAcademySettings();
+          }
+        } catch (err) {
+          console.error("خطأ استيراد الملف:", err);
+          Toast.danger("عذرًا، تنسيق ملف النسخة الاحتياطية المرفوع غير صالح أو تالف.");
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = ''; // تصفير الاختيار
+    });
+
+    // 3. تصفير وإعادة تعيين البيانات المحددة تفصيلياً (Granular Selective Reset)
+    document.getElementById('btnGranularReset')?.addEventListener('click', async () => {
+      const checkedChks = document.querySelectorAll('.reset-item-chk:checked');
+      if (checkedChks.length === 0) {
+        Toast.warning("يرجى تحديد قسم واحد على الأقل من القائمة لتصفيته.");
+        return;
+      }
+
+      const collectionNames = Array.from(checkedChks).map(chk => chk.value);
+      const arabNames = {
+        students: "كشوف الطلاب والدارسين",
+        teachers: "سجلات الطاقم والمعلمين",
+        sessions: "دفتر سجل الحصص الجارية",
+        payments: "سجلات الإيرادات والمدفوعات",
+        subscriptions: "خطط الاشتراكات والخطط النشطة",
+        salaryArchive: "سجل أرشيف الرواتب"
+      };
+
+      const itemsStr = collectionNames.map(col => arabNames[col] || col).join(' و ');
+      
+      const doubleConfirm = confirm(`⚠️🚨 تحذير أمني شديد الخطورة 🚨⚠️\n\nأنت على وشك تصفير وإعادة تعيين نهائي لبيانات:\n(${itemsStr})\n\nهذا الإجراء سيقوم بمسح كلي وفوري لجميع السجلات من السيرفر ولا يمكن التراجع عنه بأي شكل!\n\nهل تريد المتابعة وتدمير هذه البيانات المحددة؟`);
+      
+      if (doubleConfirm) {
+        const finalWord = prompt(`يرجى كتابة كلمة "تأكيد" بالأسفل لإتمام الحذف النهائي:`);
+        if (finalWord === "تأكيد") {
+          Toast.success("جاري تصفير ومسح السجلات المحددة من قاعدة البيانات...");
+          try {
+            for (const colName of collectionNames) {
+              const snapshot = await getDocs(collection(db, colName));
+              for (const docSnap of snapshot.docs) {
+                await deleteDoc(doc(db, colName, docSnap.id));
+              }
+            }
+            Toast.success("تم تصفير وإعادة تعيين جميع السجلات والأقسام المحددة بنجاح تام! 🧼");
+          } catch (err) {
+            console.error("خطأ تصفير البيانات الجزئي:", err);
+            Toast.danger("فشل تصفير بعض البيانات بسبب قيود الأمان أو الشبكة.");
+          }
+        } else {
+          Toast.warning("تم إلغاء تصفير البيانات بسبب إدخال كلمة تأكيد غير صحيحة.");
+        }
+      }
+    });
+  </script>
+</body>
+</html>

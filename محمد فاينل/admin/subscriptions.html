@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - إدارة الاشتراكات الدراسية</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .modal-card {
+      background-color: var(--bg-secondary); border-radius: var(--border-radius);
+      border: 1px solid var(--border-color); width: 100%; max-width: 600px; padding: 2rem;
+      max-height: 90vh; overflow-y: auto;
+    }
+    .form-group label {
+      font-weight: 700;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.4rem;
+      display: block;
+    }
+    .form-control {
+      font-size: 0.9rem;
+    }
+    .package-item {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 0.85rem;
+      transition: all 0.2s ease;
+    }
+    .package-item:hover {
+      border-color: var(--primary-color);
+      transform: translateY(-2px);
+    }
+    .curtain-section {
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease, padding 0.5s ease, margin-bottom 0.5s ease;
+      margin-bottom: 0;
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+      border: none !important;
+    }
+    .curtain-section.open {
+      max-height: 800px;
+      opacity: 1;
+      margin-bottom: 1.5rem;
+      padding-top: 1.5rem !important;
+      padding-bottom: 1.5rem !important;
+      border: 1px solid var(--border-color) !important;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0;">الاشتراكات والخطط الدراسية للطلاب</h1>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">متابعة خطط اشتراك الدارسين، الباقات المستحقة، وتنبيهات تجديد الخطط المنتهية.</p>
+          </div>
+          <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <button class="btn btn-secondary" id="togglePackagesBtn" style="gap: 0.35rem; background: var(--primary-color); border-color: var(--primary-color); color: #fff;"><i data-lucide="package" style="width:16px;height:16px;"></i> عرض الباقات المتاحة</button>
+            <button class="btn btn-secondary" id="addPackageBtn" style="gap: 0.35rem;"><i data-lucide="package-plus" style="width:16px;height:16px;"></i> إضافة باقة جديدة</button>
+            <button class="btn btn-primary" id="createNewSubscriptionBtn" style="gap: 0.35rem;"><i data-lucide="plus" style="width:16px;height:16px;"></i> إضافة اشتراك</button>
+          </div>
+        </div>
+
+        <!-- قائمة الباقات المتاحة حالياً تنزل كستارة -->
+        <div class="card curtain-section" id="packagesCardSection" style="margin: 0; padding: 1.5rem;">
+          <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 1.25rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+            <i data-lucide="box" style="color: var(--primary-color);"></i> الباقات التعليمية المتاحة للأكاديمية
+          </h3>
+          <div id="packagesContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem;">
+            <div style="text-align: center; color: var(--text-muted); padding: 1rem; font-size: 0.9rem;">جاري جلب وفهرسة الباقات من الخادم...</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; align-items: start; transition: all 0.3s ease;" id="subscriptionsGridLayout">
+          <!-- جدول الاشتراكات الفعالة للطلاب -->
+          <div class="card" style="margin: 0;">
+            <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 1.25rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+              <i data-lucide="credit-card" style="color: var(--primary-color);"></i> اشتراكات الطلاب النشطة
+            </h3>
+            <div class="table-container" style="margin-top: 0;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>اسم الطالب</th>
+                    <th>خطة الاشتراك المحددة</th>
+                    <th>المبلغ المالي</th>
+                    <th>تاريخ الصلاحية</th>
+                    <th>حالة التجديد الحالية</th>
+                    <th>خيارات الخطة</th>
+                  </tr>
+                </thead>
+                <tbody id="subscriptionsTableBody">
+                  <tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">جاري مزامنة خطط الاشتراكات مع الخادم...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- مودال إضافة باقة جديدة -->
+  <div id="addPackageModal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 450px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+        <h3 style="font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="package-plus" style="color: var(--primary-color);"></i> إضافة باقة تعليمية جديدة
+        </h3>
+        <span id="btnClosePackageModal" style="cursor: pointer; padding: 0.25rem; display: flex; align-items: center; justify-content: center;">
+          <i data-lucide="x" style="color: var(--text-muted);"></i>
+        </span>
+      </div>
+      <form id="addPackageForm">
+        <div class="form-group">
+          <label for="packageName">اسم الباقة (مثال: الباقة الذهبية - 12 حصة)</label>
+          <input type="text" id="packageName" class="form-control" required placeholder="ادخل اسم الباقة الكريم">
+        </div>
+        <div class="form-group" style="margin-top: 1rem;">
+          <label for="packagePrice">سعر الباقة (ج.م)</label>
+          <input type="number" id="packagePrice" class="form-control" required placeholder="مثال: 600">
+        </div>
+        <div class="form-group" style="margin-top: 1rem;">
+          <label for="packageSessions">عدد الحصص المشمولة شهرياً</label>
+          <input type="number" id="packageSessions" class="form-control" required placeholder="مثال: 12">
+        </div>
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+          <button type="submit" class="btn btn-primary">إضافة الباقة المعتمدة</button>
+          <button type="button" class="btn btn-secondary" id="btnCancelPackageModal">إلغاء</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- مودال إضافة اشتراك للدارس -->
+  <div id="addSubscriptionModal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 550px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+        <h3 style="font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="user-plus" style="color: var(--primary-color);"></i> إضافة خطة اشتراك للدارس
+        </h3>
+        <span id="btnCloseAddSubModal" style="cursor: pointer; padding: 0.25rem; display: flex; align-items: center; justify-content: center;">
+          <i data-lucide="x" style="color: var(--text-muted);"></i>
+        </span>
+      </div>
+      <form id="addSubscriptionForm">
+        <div style="display: grid; grid-template-columns: 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label for="subStudentSelect">اختر الطالب المستفيد</label>
+            <select id="subStudentSelect" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
+              <option value="">-- اختر طالباً --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="subPackageSelect">استيراد من باقة جاهزة (اختياري)</label>
+            <select id="subPackageSelect" class="form-control" style="border: 1px solid var(--border-color); width: 100%;">
+              <option value="">-- باقة مخصصة / لا توجد باقة معينة --</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+          <div class="form-group">
+            <label for="subPlanName">اسم الخطة الدراسية</label>
+            <input type="text" id="subPlanName" class="form-control" required placeholder="مثال: الباقة الشهرية - 8 حصص">
+          </div>
+          <div class="form-group">
+            <label for="subPrice">القيمة المالية للاشتراك (ج.م)</label>
+            <input type="number" id="subPrice" class="form-control" required placeholder="مثال: 500">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+          <div class="form-group">
+            <label for="subStartDate">تاريخ بدء الاشتراك</label>
+            <input type="date" id="subStartDate" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="subEndDate">تاريخ انتهاء الاشتراك</label>
+            <input type="date" id="subEndDate" class="form-control" required>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+          <button type="submit" class="btn btn-primary">تفعيل واضافة الاشتراك</button>
+          <button type="button" class="btn btn-secondary" id="btnCancelAddSubModal">إلغاء</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- مودال تعديل الاشتراك التفاعلي -->
+  <div id="editSubscriptionModal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 500px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+        <h3 style="font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="edit-3" style="color: var(--primary-color);"></i> تعديل بيانات اشتراك الدارس
+        </h3>
+        <span id="btnCloseEditSubModal" style="cursor: pointer; padding: 0.25rem; display: flex; align-items: center; justify-content: center;">
+          <i data-lucide="x" style="color: var(--text-muted);"></i>
+        </span>
+      </div>
+      <form id="editSubscriptionForm">
+        <div class="form-group">
+          <label>اسم الطالب الكريم (غير قابل للتعديل)</label>
+          <input type="text" id="editSubStudentName" class="form-control" readonly disabled style="background-color: var(--bg-primary);">
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+          <div class="form-group">
+            <label for="editSubPlanName">اسم خطة الاشتراك</label>
+            <select id="editSubPlanName" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
+              <!-- سيتم تعبئتها بالباقات المتاحة -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="editSubPrice">القيمة المالية (ج.م)</label>
+            <input type="number" id="editSubPrice" class="form-control" required placeholder="السعر">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+          <div class="form-group">
+            <label for="editSubStartDate">تاريخ بدء الاشتراك</label>
+            <input type="date" id="editSubStartDate" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="editSubEndDate">تاريخ انتهاء الاشتراك</label>
+            <input type="date" id="editSubEndDate" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 1rem;">
+          <label for="editSubStatus">حالة الاشتراك الحالية</label>
+          <select id="editSubStatus" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
+            <option value="active">نشط ومجدد ✅</option>
+            <option value="expired">منتهي الصلاحية ❌</option>
+            <option value="pending">معلق الانتظار ⏳</option>
+          </select>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+          <button type="submit" class="btn btn-primary">حفظ وتعديل الاشتراك</button>
+          <button type="button" class="btn btn-secondary" id="btnCancelEditSubModal">إلغاء</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { collection, onSnapshot, doc, addDoc, getDocs, deleteDoc, serverTimestamp, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+
+    protectRoute('admin');
+
+    let allStudents = [];
+    let allPackages = [];
+    let allSubscriptions = [];
+    let currentEditingSubId = null;
+
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        renderSidebar('subscriptions', 'admin');
+        renderNavbar('💳 الاشتراكات والخطط', { name: 'الإدارة العامة', roleName: 'مدير الأكاديمية' });
+        
+        // تشغيل الخدمات الفورية
+        initSubscriptionsRealtime();
+        initPackagesRealtime();
+        preloadStudentsList();
+      }
+    });
+
+    // تفعيل إظهار وإخفاء الباقات التعليمية
+    document.getElementById('togglePackagesBtn')?.addEventListener('click', () => {
+      const pSec = document.getElementById('packagesCardSection');
+      const btn = document.getElementById('togglePackagesBtn');
+
+      if (!pSec.classList.contains('open')) {
+        pSec.classList.add('open');
+        btn.innerHTML = '<i data-lucide="package-2"></i> إخفاء قسم الباقات';
+        btn.style.background = 'var(--success)';
+        btn.style.borderColor = 'var(--success)';
+        Toast.success("تم عرض قسم الباقات التعليمية بنجاح ✅");
+      } else {
+        pSec.classList.remove('open');
+        btn.innerHTML = '<i data-lucide="package"></i> عرض الباقات المتاحة';
+        btn.style.background = 'var(--primary-color)';
+        btn.style.borderColor = 'var(--primary-color)';
+        Toast.success("تم إخفاء قسم الباقات التعليمية بنجاح 📦");
+      }
+      if (window.lucide) window.lucide.createIcons();
+    });
+
+    // 1. تحميل قائمة الطلاب لاستخدامها في الربط
+    async function preloadStudentsList() {
+      try {
+        const snap = await getDocs(collection(db, "students"));
+        allStudents = [];
+        snap.forEach(d => {
+          allStudents.push({ id: d.id, ...d.data() });
+        });
+
+        const select = document.getElementById('subStudentSelect');
+        if (select) {
+          select.innerHTML = '<option value="">-- اختر طالباً من الأكاديمية --</option>' +
+            allStudents.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+        }
+      } catch (err) {
+        console.error("خطأ جلب الطلاب:", err);
+      }
+    }
+
+    // 2. الخدمة الفورية للاشتراكات المفعّلة
+    function initSubscriptionsRealtime() {
+      const tbody = document.getElementById('subscriptionsTableBody');
+      if (!tbody) return;
+
+      onSnapshot(collection(db, "subscriptions"), (snapshot) => {
+        if (snapshot.empty) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2.5rem;">لا توجد خطط اشتراكات دراسية مضافة حالياً.</td></tr>`;
+          return;
+        }
+
+        allSubscriptions = [];
+        snapshot.forEach(docSnap => {
+          allSubscriptions.push({ id: docSnap.id, ...docSnap.data() });
+        });
+
+        tbody.innerHTML = allSubscriptions.map(sub => {
+          let statusText = 'نشط ✅';
+          let statusBg = 'rgba(16, 185, 129, 0.12)';
+          let statusColor = 'var(--success)';
+
+          if (sub.status === 'expired') {
+            statusText = 'منتهي ❌';
+            statusBg = 'rgba(239, 68, 68, 0.12)';
+            statusColor = 'var(--danger)';
+          } else if (sub.status === 'pending') {
+            statusText = 'معلق ⏳';
+            statusBg = 'rgba(245, 158, 11, 0.12)';
+            statusColor = 'var(--warning)';
+          }
+
+          return `
+            <tr>
+              <td><strong>${sub.studentName}</strong></td>
+              <td><span class="badge" style="position:static; background-color: var(--primary-light); color: var(--primary-color); font-weight:700;">${sub.planName}</span></td>
+              <td><strong style="color: var(--success); font-size: 0.95rem;">${sub.price} ج.م</strong></td>
+              <td style="font-size: 0.8rem; color: var(--text-secondary);">من: ${sub.startDate || '-'} <br> إلى: ${sub.endDate || '-'}</td>
+              <td>
+                <span style="font-size: 0.8rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: 9999px; background-color: ${statusBg}; color: ${statusColor};">
+                  ${statusText}
+                </span>
+              </td>
+              <td>
+                <div style="display: flex; gap: 0.4rem;">
+                  <button class="btn btn-primary edit-sub-btn" data-id="${sub.id}" style="padding:0.4rem; background: var(--primary-color); border-color: var(--primary-color);" title="تعديل الاشتراك بالكامل">
+                    <i data-lucide="edit-3" style="width:14px;height:14px;color:#fff;"></i>
+                  </button>
+                  <button class="btn btn-secondary delete-sub-btn" data-id="${sub.id}" style="padding:0.4rem; color:var(--danger);" title="إلغاء الاشتراك">
+                    <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+        setupSubscriptionListeners();
+      });
+    }
+
+    // 3. الخدمة الفورية للباقات المعتمدة
+    function initPackagesRealtime() {
+      const container = document.getElementById('packagesContainer');
+      if (!container) return;
+
+      onSnapshot(collection(db, "packages"), (snapshot) => {
+        allPackages = [];
+        snapshot.forEach(docSnap => {
+          allPackages.push({ id: docSnap.id, ...docSnap.data() });
+        });
+
+        // إذا كانت فارغة، نقوم بإضافة باقات افتراضية مجاناً لتسهيل العرض والعملية
+        if (allPackages.length === 0) {
+          container.innerHTML = `
+            <div style="text-align: center; color: var(--text-muted); padding: 1.5rem; font-size: 0.85rem; border: 1px dashed var(--border-color); border-radius: var(--border-radius);">
+              لا توجد باقات مدخلة حالياً. اضغط "إضافة باقة جديدة" بالأعلى لتشيد واحدة.
+            </div>
+          `;
+          updatePackageSelectOptions([]);
+          return;
+        }
+
+        container.innerHTML = allPackages.map(pkg => `
+          <div class="package-item">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <strong style="color: var(--text-primary); font-size:0.9rem;">${pkg.name}</strong>
+                <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:0.15rem;">
+                  الحصص: ${pkg.sessions || 0} • السعر: <span style="color:var(--success); font-weight:700;">${pkg.price} ج.م</span>
+                </div>
+              </div>
+              <button class="btn btn-secondary delete-pkg-btn" data-id="${pkg.id}" style="padding:0.3rem; border:none; color:var(--danger); background: transparent;" title="حذف الباقة">
+                <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+              </button>
+            </div>
+          </div>
+        `).join('');
+
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+
+        setupPackageListeners();
+        updatePackageSelectOptions(allPackages);
+      });
+    }
+
+    // 4. تحديث قائمة اختيار الباقة في موديولات الإضافة والتعديل
+    function updatePackageSelectOptions(pkgs) {
+      const select = document.getElementById('subPackageSelect');
+      if (select) {
+        select.innerHTML = '<option value="">-- باقة مخصصة / لا توجد باقة معينة --</option>' +
+          pkgs.map(p => `<option value="${p.id}">${p.name} (${p.price} ج.م)</option>`).join('');
+      }
+
+      const editSelect = document.getElementById('editSubPlanName');
+      if (editSelect) {
+        editSelect.innerHTML = pkgs.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+      }
+    }
+
+    // 5. ربط أحداث تعديل وحذف الاشتراكات
+    function setupSubscriptionListeners() {
+      // حذف اشتراك
+      document.querySelectorAll('.delete-sub-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const id = e.target.closest('.delete-sub-btn').dataset.id;
+          const sub = allSubscriptions.find(s => s.id === id);
+          if (confirm(`هل أنت متأكد من رغبتك بإلغاء وإزالة اشتراك الدارس (${sub?.studentName || ''}) نهائياً؟`)) {
+            await deleteDoc(doc(db, "subscriptions", id));
+            Toast.danger("تم إلغاء خطة اشتراك الدارس بنجاح.");
+          }
+        });
+      });
+
+      // فتح مودال تعديل الاشتراك
+      document.querySelectorAll('.edit-sub-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.target.closest('.edit-sub-btn').dataset.id;
+          const sub = allSubscriptions.find(s => s.id === id);
+          if (!sub) return;
+
+          currentEditingSubId = id;
+          document.getElementById('editSubStudentName').value = sub.studentName || '';
+          
+          // تأكيد وجود الباقة المحددة في خيارات السيلكت لتفادي المشاكل
+          const editSelect = document.getElementById('editSubPlanName');
+          if (editSelect) {
+            editSelect.value = sub.planName || '';
+          }
+          
+          document.getElementById('editSubPrice').value = sub.price || '';
+          document.getElementById('editSubStartDate').value = sub.startDate || '';
+          document.getElementById('editSubEndDate').value = sub.endDate || '';
+          document.getElementById('editSubStatus').value = sub.status || 'active';
+
+          document.getElementById('editSubscriptionModal').style.display = 'flex';
+        });
+      });
+
+      // ربط التحديث التلقائي للسعر عند اختيار باقة مختلفة في وضع التعديل
+      document.getElementById('editSubPlanName')?.addEventListener('change', (e) => {
+        const selectedPlanName = e.target.value;
+        const pkg = allPackages.find(p => p.name === selectedPlanName);
+        if (pkg) {
+          document.getElementById('editSubPrice').value = pkg.price || '';
+        }
+      });
+    }
+
+    // 6. ربط حذف الباقات
+    function setupPackageListeners() {
+      document.querySelectorAll('.delete-pkg-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const id = e.target.closest('.delete-pkg-btn').dataset.id;
+          const pkg = allPackages.find(p => p.id === id);
+          if (confirm(`هل تريد إزالة عرض الباقة (${pkg?.name}) نهائياً من خيارات الأكاديمية؟`)) {
+            await deleteDoc(doc(db, "packages", id));
+            Toast.danger("تم إزالة الباقة المعتمدة بنجاح.");
+          }
+        });
+      });
+    }
+
+    // --- مودال إضافة باقة ---
+    const addPkgModal = document.getElementById('addPackageModal');
+    document.getElementById('addPackageBtn')?.addEventListener('click', () => {
+      document.getElementById('addPackageForm').reset();
+      addPkgModal.style.display = 'flex';
+    });
+    document.getElementById('btnClosePackageModal')?.addEventListener('click', () => { addPkgModal.style.display = 'none'; });
+    document.getElementById('btnCancelPackageModal')?.addEventListener('click', () => { addPkgModal.style.display = 'none'; });
+
+    document.getElementById('addPackageForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('packageName').value.trim();
+      const price = parseFloat(document.getElementById('packagePrice').value) || 0;
+      const sessions = parseInt(document.getElementById('packageSessions').value) || 0;
+
+      try {
+        await addDoc(collection(db, "packages"), {
+          name,
+          price,
+          sessions,
+          createdAt: serverTimestamp()
+        });
+        Toast.success("تم إضافة وتشييد الباقة التعليمية بنجاح ✅");
+        addPkgModal.style.display = 'none';
+      } catch (err) {
+        console.error(err);
+        Toast.danger("عذرًا، حدث خطأ أثناء إضافة الباقة.");
+      }
+    });
+
+    // --- مودال إضافة اشتراك للدارس ---
+    const addSubModal = document.getElementById('addSubscriptionModal');
+    document.getElementById('createNewSubscriptionBtn')?.addEventListener('click', async () => {
+      await preloadStudentsList();
+      document.getElementById('addSubscriptionForm').reset();
+      
+      // تعبئة التواريخ افتراضياً (اليوم و30 يوماً لاحقاً)
+      const today = new Date().toISOString().split('T')[0];
+      const thirtyDays = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      document.getElementById('subStartDate').value = today;
+      document.getElementById('subEndDate').value = thirtyDays;
+
+      addSubModal.style.display = 'flex';
+    });
+
+    // كود تفاعلي: عند اختيار باقة، يتم تعبئة اسم الخطة والسعر تلقائياً
+    document.getElementById('subPackageSelect')?.addEventListener('change', (e) => {
+      const pkgId = e.target.value;
+      if (!pkgId) return;
+
+      const pkg = allPackages.find(p => p.id === pkgId);
+      if (pkg) {
+        document.getElementById('subPlanName').value = pkg.name;
+        document.getElementById('subPrice').value = pkg.price;
+      }
+    });
+
+    document.getElementById('btnCloseAddSubModal')?.addEventListener('click', () => { addSubModal.style.display = 'none'; });
+    document.getElementById('btnCancelAddSubModal')?.addEventListener('click', () => { addSubModal.style.display = 'none'; });
+
+    document.getElementById('addSubscriptionForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const studentId = document.getElementById('subStudentSelect').value;
+      const student = allStudents.find(s => s.id === studentId);
+      if (!student) {
+        Toast.warning("يرجى اختيار دارس مستفيد أولاً.");
+        return;
+      }
+
+      const planName = document.getElementById('subPlanName').value.trim();
+      const price = parseFloat(document.getElementById('subPrice').value) || 0;
+      const start = document.getElementById('subStartDate').value;
+      const end = document.getElementById('subEndDate').value;
+
+      try {
+        await addDoc(collection(db, "subscriptions"), {
+          studentId: student.id,
+          studentName: student.name,
+          planName,
+          price,
+          startDate: start,
+          endDate: end,
+          status: 'active',
+          createdAt: serverTimestamp()
+        });
+        Toast.success("تم تفعيل وتوثيق اشتراك الطالب بنجاح ✅");
+        addSubModal.style.display = 'none';
+      } catch (err) {
+        console.error(err);
+        Toast.danger("فشل تفعيل الاشتراك المالي.");
+      }
+    });
+
+    // --- مودال تعديل الاشتراك ---
+    const editSubModal = document.getElementById('editSubscriptionModal');
+    document.getElementById('btnCloseEditSubModal')?.addEventListener('click', () => { editSubModal.style.display = 'none'; });
+    document.getElementById('btnCancelEditSubModal')?.addEventListener('click', () => { editSubModal.style.display = 'none'; });
+
+    document.getElementById('editSubscriptionForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!currentEditingSubId) return;
+
+      const planName = document.getElementById('editSubPlanName').value.trim();
+      const price = parseFloat(document.getElementById('editSubPrice').value) || 0;
+      const startDate = document.getElementById('editSubStartDate').value;
+      const endDate = document.getElementById('editSubEndDate').value;
+      const status = document.getElementById('editSubStatus').value;
+
+      try {
+        const docRef = doc(db, "subscriptions", currentEditingSubId);
+        await updateDoc(docRef, {
+          planName,
+          price,
+          startDate,
+          endDate,
+          status
+        });
+        Toast.success("تم تعديل وحفظ بيانات الاشتراك بنجاح ✅");
+        editSubModal.style.display = 'none';
+      } catch (err) {
+        console.error(err);
+        Toast.danger("عذرًا، فشل حفظ تعديل الاشتراك.");
+      }
+    });
+  </script>
+</body>
+</html>
