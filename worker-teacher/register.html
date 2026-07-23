@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>أكاديمية سبيل - تسجيل معلم جديد</title>
+  
+  <link rel="stylesheet" href="assets/css/variables.css">
+  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background-color: var(--bg-primary); padding: 2rem 1rem;">
+
+  <!-- Language Switcher Bar -->
+  <div style="display: flex; justify-content: flex-end; width: 100%; max-width: 500px; margin-bottom: 0.75rem;">
+    <button type="button" id="langToggleBtn" class="btn btn-secondary" style="gap: 0.45rem; padding: 0.4rem 0.85rem; font-size: 0.85rem; font-weight: 700; border-radius: 20px; box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); background: var(--bg-card);">
+      <i data-lucide="globe" style="width:16px;height:16px; color: var(--primary-color);"></i>
+      <span id="langToggleText" data-i18n="languageSwitcher">English</span>
+    </button>
+  </div>
+
+  <div class="card" style="width: 100%; max-width: 500px; box-shadow: var(--shadow-lg);">
+    <div style="text-align: center; margin-bottom: 1.5rem;">
+      <div class="logo" style="justify-content: center; margin-bottom: 0.5rem; font-size: 2rem;">
+        <i data-lucide="user-plus" style="width:40px;height:40px;color:var(--primary-color);"></i>
+        <span style="font-weight:800;" data-i18n="registerHeader">انضم كمعلم</span>
+      </div>
+      <p style="color: var(--text-secondary); font-size: 0.9rem;" data-i18n="registerSubHeader">سجل حسابك وسيقوم المسؤول بمراجعته وتفعيله</p>
+    </div>
+
+    <form id="registerForm">
+      <div class="form-group">
+        <label for="name" data-i18n="fullNameLabel">الاسم الكامل</label>
+        <input type="text" id="name" class="form-control" placeholder="أدخل اسمك الثلاثي أو الرباعي" data-i18n-placeholder="fullNamePlaceholder" required>
+      </div>
+
+      <div class="form-group">
+        <label for="phone" data-i18n="phoneLabel">رقم الهاتف</label>
+        <input type="tel" id="phone" class="form-control" placeholder="05xxxxxxxx" data-i18n-placeholder="phonePlaceholder" required>
+      </div>
+
+      <div class="form-group">
+        <label for="emailPrefix" data-i18n="emailTeacherLabel">البريد الإلكتروني للمعلم</label>
+        <div style="display: flex; align-items: stretch; position: relative; direction: ltr;">
+          <input type="text" id="emailPrefix" class="form-control" placeholder="أدخل اسم الحساب فقط (مثال: ahmed123)" data-i18n-placeholder="emailTeacherPlaceholder" required style="border-top-right-radius: 0; border-bottom-right-radius: 0; text-align: left; direction: ltr; font-weight: 600;">
+          <span style="background: var(--bg-primary); color: var(--primary-color); border: 1px solid var(--border-color); border-left: none; border-top-right-radius: 8px; border-bottom-right-radius: 8px; padding: 0.625rem 0.85rem; font-weight: 800; font-size: 0.9rem; user-select: none; display: flex; align-items: center; justify-content: center; white-space: nowrap;">@gmail.com</span>
+        </div>
+        <small style="color: var(--text-muted); font-size: 0.78rem; margin-top: 0.25rem; display: block;" data-i18n="emailHelpText">البريد الإلكتروني ينتهي تلقائياً بـ @gmail.com</small>
+      </div>
+
+      <div class="form-group">
+        <label for="password" data-i18n="passwordLabel">كلمة المرور</label>
+        <input type="password" id="password" class="form-control" placeholder="••••••••" data-i18n-placeholder="passwordPlaceholder" minlength="8" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem; gap: 0.5rem; font-weight:700;">
+        <i data-lucide="send"></i> <span data-i18n="submitRegisterBtn">إرسال طلب الانضمام</span>
+      </button>
+    </form>
+
+    <div style="margin-top: 1.5rem; text-align: center; font-size: 0.9rem; color: var(--text-secondary);">
+      <span data-i18n="alreadyHaveAccount">لديك حساب بالفعل؟</span>
+      <a href="index.html" style="color: var(--primary-color); text-decoration: none; font-weight: 600; margin-right: 0.25rem;" data-i18n="loginLink">تسجيل الدخول</a>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module" src="assets/js/features/auth/registerController.js"></script>
+
+  <script>
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
+  </script>
+</body>
+</html>
