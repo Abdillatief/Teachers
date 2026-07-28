@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - أرشيف التعديلات والتدقيق</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0;">أرشيف التعديلات والنشاط الرقابي</h1>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">سجل شامل لتدقيق عمليات النظام وسجل حركة الأموال وتعديلات أجور الساعات المحدثة.</p>
+          </div>
+          <button class="btn btn-secondary" id="clearOldLogsBtn" style="color: var(--danger);"><i data-lucide="trash-2"></i> تصفية الأرشيف القديم</button>
+        </div>
+
+        <div class="card">
+          <div class="table-container" style="margin-top: 0;">
+            <table>
+              <thead>
+                <tr>
+                  <th>تاريخ الإجراء</th>
+                  <th>المستخدم المسؤول</th>
+                  <th>نوع العملية</th>
+                  <th>البيانات السابقة</th>
+                  <th>البيانات اللاحقة والمستهدفة</th>
+                </tr>
+              </thead>
+              <tbody id="auditTableBody">
+                <tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">جاري مزامنة وتحميل سجل التدقيق الأمني...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { collection, onSnapshot, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+
+    protectRoute('admin');
+
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        renderSidebar('version-history', 'admin');
+        renderNavbar('أرشيف التدقيق والعمليات', { name: 'الإدارة العامة', roleName: 'مدير الأكاديمية' });
+        initAuditRealtime();
+      }
+    });
+
+    function initAuditRealtime() {
+      const tbody = document.getElementById('auditTableBody');
+      if (!tbody) return;
+
+      onSnapshot(collection(db, "auditLogs"), (snapshot) => {
+        if (snapshot.empty) {
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">لا توجد سجلات تعديل أو نشاط أمني مسجل حالياً.</td></tr>`;
+          return;
+        }
+
+        const logs = [];
+        snapshot.forEach(docSnap => {
+          logs.push({ id: docSnap.id, ...docSnap.data() });
+        });
+
+        // ترتيب من الأحدث للأقدم تنازليًا
+        logs.sort((a, b) => {
+          const timeA = a.timestamp?.seconds || 0;
+          const timeB = b.timestamp?.seconds || 0;
+          return timeB - timeA;
+        });
+
+        tbody.innerHTML = logs.map(log => {
+          const dateStr = log.timestamp ? new Date(log.timestamp.seconds * 1000).toLocaleString('ar-EG') : 'غير محدد';
+          return `
+            <tr>
+              <td><strong>${dateStr}</strong></td>
+              <td>${log.userName || 'النظام'}<div style="font-size: 0.75rem; color: var(--text-muted);">UID: ${log.userId || '-'}</div></td>
+              <td><span class="badge" style="position: static; font-weight: 700; background-color: var(--primary-light); color: var(--primary-color);">${log.actionType}</span></td>
+              <td style="font-family: monospace; font-size: 0.75rem; max-width: 200px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title='${JSON.stringify(log.dataBefore || {})}' style="direction: ltr;">${log.dataBefore ? JSON.stringify(log.dataBefore) : 'لا يوجد'}</td>
+              <td style="font-family: monospace; font-size: 0.75rem; max-width: 250px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title='${JSON.stringify(log.dataAfter || {})}' style="direction: ltr;">${log.dataAfter ? JSON.stringify(log.dataAfter) : 'لا يوجد'}</td>
+            </tr>
+          `;
+        }).join('');
+
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      });
+    }
+
+    // تصفية الأرشيف القديم نهائياً بمسح المستندات المخزنة بـ auditLogs
+    document.getElementById('clearOldLogsBtn').addEventListener('click', async () => {
+      if (confirm("🚨 تحذير: هل أنت متأكد تماماً من إزالة وتصفية أرشيف التدقيق الأمني؟ سيتم إتلاف كافة التدوينات السابقة نهائياً من الخادم!")) {
+        const querySnapshot = await getDocs(collection(db, "auditLogs"));
+        const batchPromises = [];
+        querySnapshot.forEach((docSnap) => {
+          batchPromises.push(deleteDoc(doc(db, "auditLogs", docSnap.id)));
+        });
+        await Promise.all(batchPromises);
+        Toast.danger("تم تصفية وإفراغ أرشيف التعديلات بنجاح.");
+      }
+    });
+  </script>
+</body>
+</html>
