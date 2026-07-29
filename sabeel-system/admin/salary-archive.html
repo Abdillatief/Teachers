@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - أرشيف الرواتب العام</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .modal-card {
+      background-color: var(--bg-secondary); border-radius: var(--border-radius);
+      border: 1px solid var(--border-color); width: 100%; max-width: 600px; padding: 2rem;
+      max-height: 90vh; overflow-y: auto;
+    }
+    .form-group label {
+      font-weight: 700;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.4rem;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0;">أرشيف رواتب المعلمين</h1>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">إغلاق الدورات المالية الشهرية، صرف الرواتب وأرشفتها رسمياً في قاعدة البيانات.</p>
+          </div>
+          
+          <button class="btn btn-primary" id="openArchiveModalBtn"><i data-lucide="badge-dollar-sign"></i> صرف وأرشفة دورة راتب جديدة</button>
+        </div>
+
+        <!-- فلاتر التصفية والبحث في الأرشيف -->
+        <div class="card" style="margin-bottom: 1.5rem; padding: 1.25rem;">
+          <div style="display: grid; grid-template-columns: 1fr 220px 200px; gap: 1rem; align-items: center;">
+            <div style="display: flex; gap: 0.75rem; align-items: center; border: 1px solid var(--border-color); padding: 0.5rem 0.75rem; border-radius: var(--border-radius); background: var(--bg-primary);">
+              <i data-lucide="search" style="color: var(--text-muted); width: 18px; height: 18px;"></i>
+              <input type="text" id="archiveSearchInput" placeholder="البحث باسم المعلم..." style="border: none; outline: none; background: transparent; width: 100%; font-size: 0.85rem; color: var(--text-primary);">
+            </div>
+
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <span style="font-size: 0.8rem; color: var(--text-secondary); white-space: nowrap;">الشهر:</span>
+              <select id="archiveMonthFilter" class="form-control" style="margin: 0; font-size: 0.85rem; height: auto; padding: 0.45rem 1rem; border: 1px solid var(--border-color);">
+                <option value="">-- جميع الشهور --</option>
+              </select>
+            </div>
+
+            <button class="btn btn-secondary" id="btnClearFilters" style="padding: 0.5rem;"><i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i> إعادة ضبط التصفية</button>
+          </div>
+        </div>
+
+        <!-- جدول الأرشيف التاريخي -->
+        <div class="card">
+          <h3 style="font-weight: 800; font-size: 1.1rem; margin-bottom: 1rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+            <i data-lucide="archive" style="color: var(--primary-color);"></i> سجل الرواتب المصروفة والمؤرشفة مسبقاً
+          </h3>
+          <div class="table-container" style="margin-top: 0;">
+            <table>
+              <thead>
+                <tr>
+                  <th>الشهر المالي</th>
+                  <th>اسم المعلم</th>
+                  <th>الحصص المعتمدة</th>
+                  <th>ساعات العمل</th>
+                  <th>صافي المبلغ المصروف</th>
+                  <th>الحالة</th>
+                  <th>طريقة وتاريخ الصرف</th>
+                  <th>ملاحظات الإدارة</th>
+                  <th>خيارات الإدارة</th>
+                </tr>
+              </thead>
+              <tbody id="archiveTableBody">
+                <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">جاري تحميل سجلات الأرشيف المالي...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- مودال صرف وأرشفة راتب جديد -->
+  <div id="addArchiveModal" class="modal-overlay">
+    <div class="modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+        <h3 style="font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="badge-dollar-sign" style="color: var(--primary-color);"></i> صرف وتسجيل راتب معلم بالأرشيف
+        </h3>
+        <span id="btnCloseArchiveModal" style="cursor: pointer; padding: 0.25rem; display: flex; align-items: center; justify-content: center;">
+          <i data-lucide="x" style="color: var(--text-muted);"></i>
+        </span>
+      </div>
+      <form id="addArchiveForm">
+        <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label for="archiveTeacherSelect">اختر المعلم المستفيد</label>
+            <select id="archiveTeacherSelect" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
+              <option value="">-- اختر معلماً --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="archiveMonth">الشهر المستهدف</label>
+            <select id="archiveMonth" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
+              <option value="">-- اختر الشهر --</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- زر الحساب التلقائي اللحظي من سجل الحصص -->
+        <button type="button" class="btn btn-secondary" id="btnCalculateSalary" style="width: 100%; margin: 1rem 0; background-color: var(--primary-light); color: var(--primary-color); border-color: var(--primary-color);">
+          <i data-lucide="calculator"></i> احتساب الساعات والأجر التلقائي للشهر المختار
+        </button>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; background-color: var(--bg-primary); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 1rem;">
+          <div>
+            <span style="font-size: 0.75rem; color: var(--text-secondary); display: block;">الحصص المعتمدة المحسوبة</span>
+            <strong id="calcSessionsCount" style="color: var(--text-primary);">0 حصة</strong>
+          </div>
+          <div>
+            <span style="font-size: 0.75rem; color: var(--text-secondary); display: block;">ساعات العمل الإجمالية</span>
+            <strong id="calcHoursCount" style="color: var(--text-primary);">0.00 ساعة</strong>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+          <div class="form-group">
+            <label for="archiveAmount">صافي المبلغ المصروف (ج.م)</label>
+            <input type="number" id="archiveAmount" class="form-control" required placeholder="مثال: 1200" min="1">
+          </div>
+          <div class="form-group">
+            <label for="archiveMethod">طريقة الصرف والتحويل</label>
+            <select id="archiveMethod" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
+              <option value="فودافون كاش (Vodafone Cash)">فودافون كاش (Vodafone Cash)</option>
+              <option value="إنستا باي (InstaPay)">إنستا باي (InstaPay)</option>
+              <option value="وي باي (WE Pay)">وي باي (WE Pay)</option>
+              <option value="تحويل بنكي مباشر">تحويل بنكي مباشر</option>
+              <option value="نقدي (كاش) ليد المعلم">نقدي (كاش) ليد المعلم</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 1rem;">
+          <label for="archiveNotes">ملاحظات الصرف والتحويل (اختياري)</label>
+          <textarea id="archiveNotes" class="form-control" rows="3" placeholder="ملاحظات الحسابات، رقم كود المعاملة، تفاصيل المكافأة أو الخصومات إن وجدت..." style="resize: vertical; font-family: inherit; font-size: 0.9rem;"></textarea>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+          <button type="submit" class="btn btn-primary" style="background: var(--success); border-color: var(--success);">توثيق الصرف والأرشفة</button>
+          <button type="button" class="btn btn-secondary" id="btnCancelArchiveModal">إلغاء</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { collection, onSnapshot, addDoc, doc, deleteDoc, getDocs, serverTimestamp, query, where, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+    import { calculateTeacherSalaryAdvanced } from '../assets/js/shared/utils/helpers.js';
+
+    protectRoute('admin');
+
+    let allArchive = [];
+    let allTeachers = [];
+    let currentAdminName = "مشرف الإدارة";
+
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        currentAdminName = user.displayName || "مدير الأكاديمية";
+        renderSidebar('salary-archive', 'admin');
+        renderNavbar('أرشيف رواتب المعلمين العام', { name: 'الإدارة العامة', roleName: 'مدير الأكاديمية' });
+        
+        populateArchiveMonths();
+        initArchiveRealtime();
+        preloadTeachersList();
+        setupFilters();
+      }
+    });
+
+    // تعبئة الشهور ديناميكياً
+    function populateArchiveMonths() {
+      const select = document.getElementById('archiveMonth');
+      const filterSelect = document.getElementById('archiveMonthFilter');
+
+      const monthsAr = [
+        "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+        "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+      ];
+
+      let options = '<option value="">-- اختر الشهر المالي --</option>';
+      let filterOptions = '<option value="">-- جميع الشهور --</option>';
+      
+      const now = new Date();
+      for (let i = 0; i < 24; i++) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const year = d.getFullYear();
+        const monthNum = String(d.getMonth() + 1).padStart(2, '0');
+        const monthVal = `${year}-${monthNum}`;
+        const monthLabel = `${monthsAr[d.getMonth()]} ${year}`;
+        options += `<option value="${monthVal}">${monthLabel}</option>`;
+        filterOptions += `<option value="${monthVal}">${monthLabel}</option>`;
+      }
+
+      if (select) select.innerHTML = options;
+      if (filterSelect) filterSelect.innerHTML = filterOptions;
+    }
+
+    // جلب المعلمين المعتمدين لملء الاختيارات
+    async function preloadTeachersList() {
+      try {
+        const snap = await getDocs(collection(db, "users"));
+        allTeachers = [];
+        snap.forEach(d => {
+          const u = d.data();
+          if (u.role === "teacher" && u.status === "approved") {
+            allTeachers.push({ uid: d.id, ...u });
+          }
+        });
+
+        const select = document.getElementById('archiveTeacherSelect');
+        if (select) {
+          select.innerHTML = '<option value="">-- اختر معلماً مشرفاً --</option>' +
+            allTeachers.map(t => `<option value="${t.uid}">${t.name}</option>`).join('');
+        }
+      } catch (err) {
+        console.error("خطأ جلب المعلمين للأرشيف المالي:", err);
+      }
+    }
+
+    // جلب الأرشيف لحظياً
+    function initArchiveRealtime() {
+      onSnapshot(collection(db, "salaryArchive"), (snapshot) => {
+        allArchive = [];
+        snapshot.forEach(docSnap => {
+          allArchive.push({ id: docSnap.id, ...docSnap.data() });
+        });
+
+        // ترتيب الأحدث للأقدم
+        allArchive.sort((a,b) => {
+          return b.month.localeCompare(a.month) || (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+        });
+
+        renderArchiveTable(allArchive);
+      });
+    }
+
+    // عرض جدول الأرشيف
+    function renderArchiveTable(list) {
+      const tbody = document.getElementById('archiveTableBody');
+      if (!tbody) return;
+
+      if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 2rem;">أرشيف الرواتب فارغ حالياً. يمكنك أرشفة وصرف دورة جديدة بالضغط على الزر بالأعلى.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = list.map(a => {
+        const payDateStr = a.createdAt ? new Date(a.createdAt.seconds * 1000).toLocaleDateString('ar-EG') : 'غير مسجل';
+        
+        // تفاصيل الحالة
+        let statusBadge = '';
+        let payActionBtn = '';
+        if (a.status === "pending_admin_transfer") {
+          statusBadge = `<span class="badge animate-pulse" style="position:static; background-color: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.3); font-weight:700; padding: 0.35rem 0.6rem;">بانتظار التحويل ⏳</span>`;
+          payActionBtn = `
+            <button class="btn btn-success pay-confirm-btn" data-id="${a.id}" style="padding: 0.35rem 0.6rem; font-size: 0.72rem; font-weight: 700; border-radius: 6px;" title="تأكيد تحويل الراتب وصرفه للمعلم">
+              <i data-lucide="check" style="width:12px;height:12px;"></i> صرف الراتب
+            </button>
+          `;
+        } else {
+          statusBadge = `<span class="badge" style="position:static; background-color: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.3); font-weight:700; padding: 0.35rem 0.6rem;">تم الصرف والاعتماد ✅</span>`;
+        }
+
+        return `
+          <tr style="${a.status === 'pending_admin_transfer' ? 'background-color: rgba(245, 158, 11, 0.02);' : ''}">
+            <td><strong class="badge" style="position:static; background-color: var(--primary-light); color: var(--primary-color); font-size:0.9rem;">${a.month}</strong></td>
+            <td>
+              <div style="font-weight: 800; color: var(--text-primary);">${a.teacherName}</div>
+              <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.15rem;">بواسطة: ${a.adminName || 'النظام التلقائي'}</div>
+            </td>
+            <td><strong>${a.sessionsCount || 0} حصة معتمدة</strong></td>
+            <td>${(a.totalHours || 0).toFixed(2)} ساعة تدريس</td>
+            <td><strong style="color: var(--success); font-weight: 800; font-size:1.15rem;">${a.amount} ج.م</strong></td>
+            <td>${statusBadge}</td>
+            <td>
+              <div style="font-weight:700; color:var(--text-primary); font-size: 0.85rem;">${a.method}</div>
+              <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:0.15rem;" class="font-mono">تاريخ الصرف: ${payDateStr}</div>
+            </td>
+            <td><div style="max-width: 220px; font-size:0.8rem; color:var(--text-secondary); line-height: 1.4;" title="${a.notes || ''}">${a.notes || 'لا يوجد ملاحظات'}</div></td>
+            <td>
+              <div style="display: flex; gap: 0.35rem; align-items: center;">
+                ${payActionBtn}
+                <button class="btn btn-secondary delete-archive-btn" data-id="${a.id}" style="padding: 0.4rem; color: var(--danger); border-radius: 6px;" title="حذف هذا السجل">
+                  <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+
+      // ربط أزرار تأكيد الصرف الفوري
+      document.querySelectorAll('.pay-confirm-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const id = e.target.closest('.pay-confirm-btn').dataset.id;
+          const target = allArchive.find(item => item.id === id);
+          if (!target) return;
+          
+          if (confirm(`هل قمت بالفعل بتحويل صافي راتب (${target.amount} ج.م) للمعلم (${target.teacherName}) عبر (${target.method})؟`)) {
+            try {
+              btn.disabled = true;
+              btn.textContent = 'جاري الصرف...';
+              
+              const archiveRef = doc(db, "salaryArchive", id);
+              await updateDoc(archiveRef, {
+                status: "paid",
+                notes: target.notes + ` (تم تأكيد وتوثيق تحويل وصرف الراتب رسمياً من الإدارة بواسطة: ${currentAdminName})`,
+                adminName: currentAdminName,
+                createdAt: serverTimestamp()
+              });
+              
+              Toast.success("تم توثيق وتأكيد صرف الراتب للمعلم الكريم بنجاح! ✅");
+            } catch (err) {
+              console.error("Error confirming payment:", err);
+              Toast.danger("عذرًا، فشل تأكيد عملية الصرف.");
+              btn.disabled = false;
+              btn.innerHTML = '<i data-lucide="check" style="width:12px;height:12px;"></i> صرف الراتب';
+            }
+          }
+        });
+      });
+
+      // ربط أزرار الحذف
+      document.querySelectorAll('.delete-archive-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const id = e.target.closest('.delete-archive-btn').dataset.id;
+          const target = allArchive.find(item => item.id === id);
+          if (confirm(`هل أنت متأكد من رغبتك في حذف سجل صرف راتب المعلم (${target?.teacherName}) لشهر (${target?.month}) نهائياً من الأرشيف؟`)) {
+            await deleteDoc(doc(db, "salaryArchive", id));
+            Toast.danger("تم إزالة سجل الراتب المصروف من الأرشيف التاريخي.");
+          }
+        });
+      });
+    }
+
+    // تفعيل فلاتر البحث والفرز
+    function setupFilters() {
+      const searchInput = document.getElementById('archiveSearchInput');
+      const monthFilter = document.getElementById('archiveMonthFilter');
+      const btnClear = document.getElementById('btnClearFilters');
+
+      const applyFilters = () => {
+        const queryText = searchInput.value.trim().toLowerCase();
+        const selectedMonth = monthFilter.value; // format: "YYYY-MM"
+
+        const filtered = allArchive.filter(a => {
+          const matchTeacher = !queryText || (a.teacherName && a.teacherName.toLowerCase().includes(queryText));
+          const matchMonth = !selectedMonth || a.month === selectedMonth;
+          return matchTeacher && matchMonth;
+        });
+
+        renderArchiveTable(filtered);
+      };
+
+      searchInput?.addEventListener('input', applyFilters);
+      monthFilter?.addEventListener('change', applyFilters);
+
+      btnClear?.addEventListener('click', () => {
+        searchInput.value = '';
+        monthFilter.value = '';
+        renderArchiveTable(allArchive);
+        Toast.success("تم إعادة ضبط فلاتر البحث.");
+      });
+    }
+
+    // فتح وإغلاق مودال الأرشيف
+    const archiveModal = document.getElementById('addArchiveModal');
+    document.getElementById('openArchiveModalBtn')?.addEventListener('click', async () => {
+      await preloadTeachersList();
+      document.getElementById('addArchiveForm').reset();
+      document.getElementById('calcSessionsCount').textContent = '0 حصة';
+      document.getElementById('calcHoursCount').textContent = '0.00 ساعة';
+      archiveModal.style.display = 'flex';
+    });
+
+    document.getElementById('btnCloseArchiveModal')?.addEventListener('click', () => { archiveModal.style.display = 'none'; });
+    document.getElementById('btnCancelArchiveModal')?.addEventListener('click', () => { archiveModal.style.display = 'none'; });
+
+    // الحساب التلقائي اللحظي بناءً على معلم وشهر محددين
+    document.getElementById('btnCalculateSalary')?.addEventListener('click', async () => {
+      const teacherId = document.getElementById('archiveTeacherSelect').value;
+      const month = document.getElementById('archiveMonth').value;
+
+      if (!teacherId || !month) {
+        Toast.warning("يرجى تحديد المعلم والشهر المستهدف أولاً للاحتساب.");
+        return;
+      }
+
+      const teacher = allTeachers.find(t => t.uid === teacherId);
+      if (!teacher) return;
+
+      Toast.success("جاري تحليل سجل الحصص والاعتمادات...");
+
+      try {
+        const snap = await getDocs(collection(db, "sessions"));
+        const sessions = [];
+        snap.forEach(d => {
+          const s = d.data();
+          if (s.teacherId === teacherId) {
+            sessions.push(s);
+          }
+        });
+
+        // تصفية أجر الشهر
+        const currentMonthData = calculateTeacherSalaryAdvanced(sessions, teacher, "month");
+
+        // حساب عدد الحصص المعتمدة
+        const approvedCount = sessions.filter(s => 
+          s.date && s.date.startsWith(month) && 
+          s.approved === true && 
+          (s.status === "completed" || (s.status === "student_absent" && s.absenceType === "unexcused"))
+        ).length;
+
+        // تحديث الحقول وعرض النتائج المقترحة
+        document.getElementById('calcSessionsCount').textContent = `${approvedCount} حصة معتمدة`;
+        document.getElementById('calcHoursCount').textContent = `${currentMonthData.totalHours.toFixed(2)} ساعة عمل`;
+        document.getElementById('archiveAmount').value = Math.round(currentMonthData.salary);
+
+        Toast.success("تم احتساب المستحقات المقترحة بنجاح ✅");
+      } catch (err) {
+        console.error("خطأ الاحتساب المالي اللحظي:", err);
+        Toast.danger("فشل احتساب المستحقات التلقائية.");
+      }
+    });
+
+    // حفظ عملية الصرف بالأرشيف
+    document.getElementById('addArchiveForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const teacherId = document.getElementById('archiveTeacherSelect').value;
+      const month = document.getElementById('archiveMonth').value;
+      const amount = parseFloat(document.getElementById('archiveAmount').value) || 0;
+      const method = document.getElementById('archiveMethod').value;
+      const notes = document.getElementById('archiveNotes').value.trim();
+
+      const teacher = allTeachers.find(t => t.uid === teacherId);
+      if (!teacher) {
+        Toast.warning("يرجى اختيار معلم صحيح.");
+        return;
+      }
+
+      // جلب تفاصيل الساعات والعدد التي حسبناها أو ملأناها
+      const sessionsTxt = document.getElementById('calcSessionsCount').textContent;
+      const hoursTxt = document.getElementById('calcHoursCount').textContent;
+      const sessionsCount = parseInt(sessionsTxt) || 0;
+      const totalHours = parseFloat(hoursTxt) || 0.00;
+
+      try {
+        await addDoc(collection(db, "salaryArchive"), {
+          teacherId,
+          teacherName: teacher.name,
+          month,
+          amount,
+          method,
+          notes,
+          sessionsCount,
+          totalHours,
+          adminName: currentAdminName,
+          createdAt: serverTimestamp()
+        });
+
+        Toast.success("تم تجميد وحفظ وصرف راتب المعلم الكريم بنجاح بالأرشيف العام ✅");
+        archiveModal.style.display = 'none';
+      } catch (err) {
+        console.error("خطأ حفظ سجل الراتب:", err);
+        Toast.danger("عذرًا، حدث خطأ أثناء توثيق الصرف المالي.");
+      }
+    });
+  </script>
+</body>
+</html>
