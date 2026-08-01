@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - الإحصائيات العامة</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        <div style="margin-bottom: 2rem;">
+          <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary);">الإحصائيات والتحليلات البيانية</h1>
+          <p style="color: var(--text-secondary); font-size: 0.9rem;">قراءة تفاعلية ومؤشرات للنمو الأكاديمي وساعات التحصيل المنجزة.</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+          <div class="card">
+            <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem;">إجمالي الطلاب والنمو</h3>
+            <div style="font-size: 2rem; font-weight: 800;" id="statsTotalStudentsCount">0</div>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.5rem;">طلاب ملتحقين بالحصص الفعالة</p>
+          </div>
+
+          <div class="card">
+            <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem;">إجمالي المعلمين</h3>
+            <div style="font-size: 2rem; font-weight: 800;" id="statsTotalTeachersCount">0</div>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.5rem;">معلمون معتمدون في الأكاديمية</p>
+          </div>
+
+          <div class="card">
+            <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem;">ساعات التدريس التراكمية</h3>
+            <div style="font-size: 2rem; font-weight: 800; color: var(--primary-color);" id="statsTotalHoursCount">0 ساعة</div>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.5rem;">احتساب الساعات الكلية المكتملة</p>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    protectRoute('admin');
+
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        renderSidebar('academy-stats', 'admin');
+        renderNavbar('الإحصائيات العامة', { name: 'الإدارة العامة', roleName: 'مدير الأكاديمية' });
+        initStatsPageRealtime();
+      }
+    });
+
+    function initStatsPageRealtime() {
+      // 1. جلب وحساب الطلاب
+      onSnapshot(collection(db, "students"), (snapshot) => {
+        document.getElementById('statsTotalStudentsCount').textContent = snapshot.size;
+      });
+
+      // 2. جلب وحساب المعلمين
+      onSnapshot(collection(db, "users"), (snapshot) => {
+        let teachersCount = 0;
+        snapshot.forEach(docSnap => {
+          if (docSnap.data().role === "teacher" && docSnap.data().status === "approved") {
+            teachersCount++;
+          }
+        });
+        document.getElementById('statsTotalTeachersCount').textContent = teachersCount;
+      });
+
+      // 3. جلب وحساب الساعات التراكمية
+      onSnapshot(collection(db, "sessions"), (snapshot) => {
+        let totalMinutes = 0;
+        snapshot.forEach(docSnap => {
+          const s = docSnap.data();
+          if (s.status === "completed") {
+            totalMinutes += parseInt(s.duration || 0);
+          }
+        });
+        const totalHours = (totalMinutes / 60).toFixed(1);
+        document.getElementById('statsTotalHoursCount').textContent = `${totalHours} ساعة`;
+      });
+    }
+  </script>
+</body>
+</html>
