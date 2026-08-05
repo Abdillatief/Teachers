@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - تفاصيل المعلم والملف المالي</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .teacher-details-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .teacher-header-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .teacher-header-info {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .teacher-header-avatar {
+      width: 85px;
+      height: 85px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid var(--primary-light);
+      flex-shrink: 0;
+    }
+
+    .teacher-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      flex-wrap: wrap;
+    }
+
+    .tabs-nav-bar {
+      display: flex;
+      gap: 0.5rem;
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 0.5rem;
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+
+    .tab-item-btn {
+      background: none;
+      border: none;
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 0.65rem 1.15rem;
+      border-radius: 8px;
+      transition: all var(--transition-fast);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .tab-item-btn.active, .tab-item-btn:hover {
+      background-color: var(--primary-light);
+      color: var(--primary-color);
+    }
+
+    .tab-item-btn.financial-tab.active {
+      background-color: rgba(34, 197, 94, 0.12);
+      color: var(--success);
+    }
+
+    .tab-section {
+      display: none;
+    }
+
+    .tab-section.active {
+      display: block;
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .kpi-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .kpi-card .kpi-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .kpi-card .kpi-value {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: var(--text-primary);
+    }
+
+    .section-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.75rem;
+    }
+
+    /* Proof Image Preview Modal */
+    .img-preview-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div id="sidebar-container"></div>
+
+  <div class="main-content">
+    <div id="navbar-container"></div>
+
+    <div class="content-body">
+      <!-- Top Breadcrumb & Return Link -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: var(--text-secondary); font-weight: 700;">
+          <a href="teachers.html" style="color: var(--primary-color); text-decoration: none; display: flex; align-items: center; gap: 0.3rem;">
+            <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i> قائمة المعلمين
+          </a>
+          <span>/</span>
+          <span id="breadcrumbTeacherName" style="color: var(--text-primary);">تفاصيل المعلم</span>
+        </div>
+
+        <a href="teachers.html" class="btn btn-secondary" style="font-weight: 700; gap: 0.4rem; font-size: 0.85rem;">
+          <i data-lucide="list"></i> العودة لإدارة المعلمين
+        </a>
+      </div>
+
+      <!-- Main Teacher Profile Card Header -->
+      <div class="teacher-header-card">
+        <div class="teacher-header-info">
+          <img id="headerAvatar" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=120" class="teacher-header-avatar" alt="Avatar">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem;">
+              <h2 id="headerName" style="font-size: 1.4rem; font-weight: 900; color: var(--text-primary); margin: 0;">-</h2>
+              <span id="headerStatusBadge" class="badge" style="background-color: var(--success-light); color: var(--success); font-weight: 800; padding: 0.3rem 0.65rem;">نشط</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;">
+              <span><i data-lucide="mail" style="width: 15px; height: 15px; vertical-align: middle; color: var(--primary-color);"></i> <span id="headerEmail">-</span></span>
+              <span><i data-lucide="phone" style="width: 15px; height: 15px; vertical-align: middle; color: var(--primary-color);"></i> <span id="headerPhone">-</span></span>
+              <span><i data-lucide="book-open" style="width: 15px; height: 15px; vertical-align: middle; color: var(--primary-color);"></i> <span id="headerSubject">-</span></span>
+              <span><i data-lucide="clock" style="width: 15px; height: 15px; vertical-align: middle; color: var(--primary-color);"></i> آخر دخول: <span id="headerLastLogin">-</span></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="teacher-header-actions">
+          <button id="btnToggleStatus" class="btn btn-secondary" style="font-weight: 700; gap: 0.4rem; font-size: 0.85rem;">
+            <i data-lucide="power"></i> <span id="lblToggleStatus">إيقاف الحساب</span>
+          </button>
+          <button id="btnResetPassword" class="btn btn-secondary" style="font-weight: 700; gap: 0.4rem; font-size: 0.85rem;">
+            <i data-lucide="key-round"></i> إرسال كلمة المرور
+          </button>
+          <button id="btnDeleteTeacher" class="btn btn-secondary" style="font-weight: 700; gap: 0.4rem; font-size: 0.85rem; color: var(--danger); border-color: rgba(239, 68, 68, 0.3);">
+            <i data-lucide="trash-2"></i> حذف المعلم
+          </button>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs Header -->
+      <div class="tabs-nav-bar" style="margin-top: 1.25rem;">
+        <button class="tab-item-btn active" data-tab-id="tab-profile">
+          <i data-lucide="user"></i> الملف الشخصي والبيانات
+        </button>
+        <button class="tab-item-btn financial-tab" data-tab-id="tab-payroll">
+          <i data-lucide="wallet"></i> الملف المالي والرواتب
+        </button>
+
+        <button class="tab-item-btn" data-tab-id="tab-channels">
+          <i data-lucide="credit-card"></i> قنوات الاستلام المالية
+        </button>
+        <button class="tab-item-btn" data-tab-id="tab-students-sessions">
+          <i data-lucide="users"></i> الطلاب والحصص
+        </button>
+        <button class="tab-item-btn" data-tab-id="tab-audit">
+          <i data-lucide="history"></i> سجل العمليات Timeline
+        </button>
+      </div>
+
+      <!-- TAB 1: الملف الشخصي والبيانات -->
+      <div id="tab-profile" class="tab-section active" style="margin-top: 1.25rem;">
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
+          <!-- Form to edit profile -->
+          <div class="section-card">
+            <h3 class="section-title">
+              <i data-lucide="user-check" style="color: var(--primary-color);"></i> تعديل البيانات الشخصية والمهنية
+            </h3>
+            <form id="editProfileForm">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div class="form-group">
+                  <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">الاسم الكامل للمعلم</label>
+                  <input type="text" id="profName" class="form-control" required style="font-weight: 700;">
+                </div>
+                <div class="form-group">
+                  <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">البريد الإلكتروني (الحساب الرسمي)</label>
+                  <input type="email" id="profEmail" class="form-control" readonly style="background-color: var(--bg-primary); color: var(--text-muted); font-family: monospace;">
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div class="form-group">
+                  <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">رقم الهاتف (واتساب)</label>
+                  <input type="tel" id="profPhone" class="form-control" placeholder="01xxxxxxxxx" style="font-weight: 700; direction: ltr; text-align: right;">
+                </div>
+                <div class="form-group">
+                  <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">المادة / التخصص التعليمي</label>
+                  <input type="text" id="profSubject" class="form-control" placeholder="مثال: القرآن الكريم والتجويد" style="font-weight: 700;">
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 1.25rem;">
+                <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">ملاحظات خاصة بالإدارة عن المعلم</label>
+                <textarea id="profNotes" class="form-control" rows="3" placeholder="أضف أية ملاحظات إدارية هنا..."></textarea>
+              </div>
+
+              <button type="submit" class="btn btn-primary" style="font-weight: 800; gap: 0.5rem; padding: 0.75rem 1.5rem;">
+                <i data-lucide="save"></i> حفظ التحديثات الشخصية
+              </button>
+            </form>
+          </div>
+
+          <!-- Quick Overview Box -->
+          <div>
+            <div class="section-card">
+              <h3 class="section-title">
+                <i data-lucide="shield-check" style="color: var(--success);"></i> حالة الحساب والأمان
+              </h3>
+              <div style="display: flex; flex-direction: column; gap: 0.85rem; font-size: 0.88rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border-color); padding-bottom: 0.5rem;">
+                  <span style="color: var(--text-secondary); font-weight: 600;">تاريخ الانضمام:</span>
+                  <strong id="cardJoinDate" style="color: var(--text-primary);">-</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border-color); padding-bottom: 0.5rem;">
+                  <span style="color: var(--text-secondary); font-weight: 600;">معرف الحساب (UID):</span>
+                  <strong id="cardUid" style="font-family: monospace; font-size: 0.75rem; color: var(--text-muted);">-</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="color: var(--text-secondary); font-weight: 600;">عدد الطلاب الحاليين:</span>
+                  <strong id="cardStudentsCount" style="color: var(--primary-color); font-size: 1.1rem;">0 طالب</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: الملف المالي والرواتب -->
+      <div id="tab-payroll" class="tab-section" style="margin-top: 1.25rem;">
+        <!-- KPI Row -->
+        <div class="kpi-grid">
+          <div class="kpi-card" style="border-right: 4px solid var(--success);">
+            <div class="kpi-title"><i data-lucide="coins" style="color: var(--success);"></i> صافي المستحقات الحالية</div>
+            <div id="kpiNetSalary" class="kpi-value" style="color: var(--success);">0 ج.م</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted);">عن الدورة المالية الحالية الجارية</div>
+          </div>
+
+          <div class="kpi-card" style="border-right: 4px solid var(--primary-color);">
+            <div class="kpi-title"><i data-lucide="clock" style="color: var(--primary-color);"></i> مجموع الساعات المنجزة</div>
+            <div id="kpiTotalHours" class="kpi-value">0 ساعة</div>
+            <div id="kpiSubHours" style="font-size: 0.78rem; color: var(--text-muted);">0 فردي | 0 جماعي</div>
+          </div>
+
+          <div class="kpi-card" style="border-right: 4px solid #8b5cf6;">
+            <div class="kpi-title"><i data-lucide="calendar-check" style="color: #8b5cf6;"></i> الحصص المكتملة والمحسوبة</div>
+            <div id="kpiTotalSessions" class="kpi-value">0 حصة</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted);">تشمل حصص غياب الطالب المعتمدة</div>
+          </div>
+
+          <div class="kpi-card" style="border-right: 4px solid var(--warning);">
+            <div class="kpi-title"><i data-lucide="credit-card" style="color: var(--warning);"></i> قناة التحويل المفضلة</div>
+            <div id="kpiPreferredMethod" class="kpi-value" style="font-size: 1.1rem; color: var(--text-primary); margin-top: 0.25rem;">-</div>
+            <div id="kpiLastUpdatedFinancial" style="font-size: 0.75rem; color: var(--text-muted);">آخر تحديث: -</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.5rem;">
+          <!-- Detailed Breakdown and Pricing Config -->
+          <div class="section-card">
+            <h3 class="section-title">
+              <i data-lucide="calculator" style="color: var(--success);"></i> تفاصيل الاحتساب والأسعار المعتمدة
+            </h3>
+
+            <div style="overflow-x: auto; margin-bottom: 1.5rem;">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>نوع الحصة</th>
+                    <th>تسعيرة الساعة المعتمدة</th>
+                    <th>ساعات العمل</th>
+                    <th>إجمالي المبلغ المستحق</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>فردي (Individual)</strong></td>
+                    <td><strong id="tblRateInd">0</strong> ج.م/ساعة</td>
+                    <td><span id="tblHoursInd">0</span> ساعة</td>
+                    <td><strong id="tblGrossInd" style="color: var(--success);">0</strong> ج.م</td>
+                  </tr>
+                  <tr>
+                    <td><strong>جماعي (Group)</strong></td>
+                    <td><strong id="tblRateGrp">0</strong> ج.م/ساعة</td>
+                    <td><span id="tblHoursGrp">0</span> ساعة</td>
+                    <td><strong id="tblGrossGrp" style="color: var(--success);">0</strong> ج.م</td>
+                  </tr>
+                  <tr style="background-color: rgba(34, 197, 94, 0.04);">
+                    <td colspan="3"><strong>المكافآت والحوافز (+)</strong></td>
+                    <td><strong id="tblBonuses" style="color: var(--success);">+0</strong> ج.م</td>
+                  </tr>
+                  <tr style="background-color: rgba(239, 68, 68, 0.04);">
+                    <td colspan="3"><strong>الخصومات والتسويات (-)</strong></td>
+                    <td><strong id="tblDeductions" style="color: var(--danger);">-0</strong> ج.م</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Form to edit rate / bonuses -->
+            <form id="formUpdateRates" style="background-color: var(--bg-primary); padding: 1.25rem; border-radius: var(--border-radius); border: 1px solid var(--border-color);">
+              <h4 style="font-weight: 800; font-size: 0.95rem; margin-bottom: 1rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.4rem;">
+                <i data-lucide="settings-2" style="width: 18px; color: var(--primary-color);"></i> ضبط تسعيرة الحصص والمكافآت والخصومات
+              </h4>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div class="form-group">
+                  <label style="font-weight: 700; font-size: 0.82rem; color: var(--text-primary);">أجر الساعة الفردية (ج.م)</label>
+                  <input type="number" id="inputRateInd" class="form-control" required min="0" style="font-weight: 800;">
+                </div>
+                <div class="form-group">
+                  <label style="font-weight: 700; font-size: 0.82rem; color: var(--text-primary);">أجر الساعة الجماعية (ج.م)</label>
+                  <input type="number" id="inputRateGrp" class="form-control" required min="0" style="font-weight: 800;">
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                <div class="form-group">
+                  <label style="font-weight: 700; font-size: 0.82rem; color: var(--text-primary);">المكافآت والحوافز (ج.م)</label>
+                  <input type="number" id="inputBonuses" class="form-control" min="0" style="font-weight: 800;">
+                </div>
+                <div class="form-group">
+                  <label style="font-weight: 700; font-size: 0.82rem; color: var(--text-primary);">الخصومات والتسويات (ج.م)</label>
+                  <input type="number" id="inputDeductions" class="form-control" min="0" style="font-weight: 800;">
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary" style="font-weight: 800; gap: 0.4rem; padding: 0.65rem 1.25rem;">
+                <i data-lucide="check"></i> تحديث التسعيرة والمكافآت
+              </button>
+            </form>
+          </div>
+
+          <!-- Payout & Proof Upload Form -->
+          <div>
+            <div class="section-card" style="border-top: 4px solid var(--success);">
+              <h3 class="section-title">
+                <i data-lucide="file-check-2" style="color: var(--success);"></i> توثيق تحويل المرتب الشهرية
+              </h3>
+
+              <form id="formUploadPayoutProof">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                  <label style="font-weight: 700; font-size: 0.85rem;">اختر شهر المستحقات</label>
+                  <input type="month" id="payoutMonth" class="form-control" required style="font-weight: 800;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1rem;">
+                  <label style="font-weight: 700; font-size: 0.85rem;">المبلغ المحول إثباته (ج.م)</label>
+                  <input type="number" id="payoutAmount" class="form-control" required min="0" style="font-weight: 800;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1rem;">
+                  <label style="font-weight: 700; font-size: 0.85rem;">صورة / إيصال تحويل المرتب (اختياري)</label>
+                  <input type="file" id="payoutFile" class="form-control" accept="image/*">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                  <label style="font-weight: 700; font-size: 0.85rem;">ملاحظات التحويل</label>
+                  <input type="text" id="payoutNotes" class="form-control" placeholder="مثال: تم التحويل عبر فودافون كاش">
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; font-weight: 800; gap: 0.5rem; justify-content: center; background-color: var(--success); border-color: var(--success);">
+                  <i data-lucide="upload-cloud"></i> إرفاق الإيصال وأرشفة المستحقات
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Historical Salary Archive Table for this Teacher -->
+        <div class="section-card" style="margin-top: 1.5rem;">
+          <h3 class="section-title">
+            <i data-lucide="archive" style="color: var(--primary-color);"></i> أرشيف الرواتب والتحويلات المسجلة للمعلم
+          </h3>
+
+          <div style="overflow-x: auto;">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>الشهر / الدورة</th>
+                  <th>المبلغ الأرشيفي</th>
+                  <th>عدد الحصص والساعات</th>
+                  <th>طريقة التحويل</th>
+                  <th>الحالة</th>
+                  <th>إيصال التحويل</th>
+                  <th>تاريخ التوثيق</th>
+                </tr>
+              </thead>
+              <tbody id="tblTeacherSalaryArchive">
+                <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">جاري تحميل الأرشيف...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: قنوات الاستلام المالية -->
+      <div id="tab-channels" class="tab-section" style="margin-top: 1.25rem;">
+        <div class="section-card">
+          <h3 class="section-title">
+            <i data-lucide="credit-card" style="color: var(--success);"></i> بيانات وقنوات استلام الأجور والرواتب
+          </h3>
+
+          <form id="formAdminChannels">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+              <div class="form-group">
+                <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">محفظة كاش (Vodafone / Orange / WE Cash)</label>
+                <input type="tel" id="chnVodafone" class="form-control" placeholder="01xxxxxxxxx" style="font-weight: 800; direction: ltr; text-align: right;">
+              </div>
+
+              <div class="form-group">
+                <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">معرف انستاباي (InstaPay ID)</label>
+                <input type="text" id="chnInstapay" class="form-control" placeholder="username@instapay" style="font-weight: 800; direction: ltr; text-align: right;">
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+              <div class="form-group">
+                <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">الحساب البنكي / رقم الـ IBAN الرسمي</label>
+                <textarea id="chnBankAccount" class="form-control" rows="2" placeholder="رقم الحساب البنكي أو الـ IBAN..." style="font-weight: 700; font-size: 0.88rem;"></textarea>
+              </div>
+
+              <div class="form-group">
+                <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">طريقة التحويل المفضلة</label>
+                <select id="chnPreferred" class="form-control" style="font-weight: 700;">
+                  <option value="فودافون كاش (Vodafone Cash)">فودافون كاش (Vodafone Cash)</option>
+                  <option value="انستاباي (InstaPay)">انستاباي (InstaPay)</option>
+                  <option value="حساب بنكي (Bank Transfer)">حساب بنكي (Bank Transfer)</option>
+                  <option value="أورنج كاش (Orange Cash)">أورنج كاش (Orange Cash)</option>
+                  <option value="وي باي (WE Pay)">وي باي (WE Pay)</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-primary); padding: 0.85rem 1rem; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 1.25rem; font-size: 0.85rem; color: var(--text-secondary);">
+              <span><i data-lucide="info" style="width: 16px; height: 16px; vertical-align: middle; color: var(--primary-color);"></i> آخر تعديل لقنوات التحويل بواسطة المعلم: <strong id="chnLastTeacherUpdate" style="color: var(--text-primary);">-</strong></span>
+            </div>
+
+            <button type="submit" class="btn btn-secondary" style="font-weight: 800; gap: 0.5rem; color: var(--success); border-color: rgba(34, 197, 94, 0.4); padding: 0.75rem 1.5rem;">
+              <i data-lucide="check-circle"></i> حفظ تعديلات قنوات الصرف المالي
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- TAB 4: الطلاب والحصص -->
+      <div id="tab-students-sessions" class="tab-section" style="margin-top: 1.25rem;">
+        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1.5rem;">
+          <!-- Assigned Students -->
+          <div class="section-card">
+            <h3 class="section-title">
+              <i data-lucide="users" style="color: var(--primary-color);"></i> الطلاب المسندين للمعلم
+            </h3>
+            <div style="overflow-x: auto;">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>اسم الطالب</th>
+                    <th>المرحلة</th>
+                  </tr>
+                </thead>
+                <tbody id="tblAssignedStudents">
+                  <tr><td colspan="2" style="text-align: center; color: var(--text-muted);">جاري التحميل...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Session History -->
+          <div class="section-card">
+            <h3 class="section-title">
+              <i data-lucide="calendar" style="color: var(--primary-color);"></i> سجل الحصص الأخيرة
+            </h3>
+            <div style="overflow-x: auto;">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>الطالب</th>
+                    <th>التاريخ</th>
+                    <th>المدة</th>
+                    <th>النوع</th>
+                    <th>الحالة</th>
+                  </tr>
+                </thead>
+                <tbody id="tblTeacherSessions">
+                  <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">جاري التحميل...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 5: سجل العمليات Timeline -->
+      <div id="tab-audit" class="tab-section" style="margin-top: 1.25rem;">
+        <div class="section-card">
+          <h3 class="section-title">
+            <i data-lucide="history" style="color: var(--primary-color);"></i> سجل النشاط والعمليات الخاص بالمعلم
+          </h3>
+          <div style="overflow-x: auto;">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>التاريخ والوقت</th>
+                  <th>نوع العملية</th>
+                  <th>تفاصيل النشاط</th>
+                </tr>
+              </thead>
+              <tbody id="tblAuditLogs">
+                <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">جاري تحميل السجل...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Image Modal Viewer -->
+  <div id="imgPreviewModal" class="img-preview-modal" onclick="closeImgModal()">
+    <div style="position: relative; max-width: 90vw; max-height: 90vh;" onclick="event.stopPropagation()">
+      <button onclick="closeImgModal()" style="position: absolute; top: -15px; left: -15px; background: red; color: white; border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-weight: bold; font-size: 16px;">✕</button>
+      <img id="imgPreviewTarget" src="" style="max-width: 100%; max-height: 85vh; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);" alt="إيصال التحويل">
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { doc, onSnapshot, updateDoc, collection, query, where, getDocs, addDoc, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+    import { showCustomConfirm } from '../assets/js/shared/utils/helpers.js';
+
+    protectRoute('admin');
+    renderSidebar('teachers', 'admin');
+    renderNavbar();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const teacherId = urlParams.get('id');
+    const defaultTabId = urlParams.get('tab') || 'tab-profile';
+
+    if (!teacherId) {
+      Toast.danger("لم يتم تحديد المعلم المطلوبة تفاصيله.");
+      setTimeout(() => window.location.href = 'teachers.html', 1500);
+    }
+
+    let activeTeacher = null;
+    let teacherSessions = [];
+    let teacherStudents = [];
+
+    // Setup Tabs Navigation
+    document.querySelectorAll('[data-tab-id]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tabId = btn.dataset.tabId;
+        switchTab(tabId);
+      });
+    });
+
+    function switchTab(tabId) {
+      document.querySelectorAll('[data-tab-id]').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
+
+      const activeBtn = document.querySelector(`[data-tab-id="${tabId}"]`);
+      if (activeBtn) activeBtn.classList.add('active');
+      const activeSection = document.getElementById(tabId);
+      if (activeSection) activeSection.classList.add('active');
+
+      // Update URL search param without reload
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.set('tab', tabId);
+      window.history.replaceState({}, '', newUrl);
+    }
+
+    // Default activate tab
+    switchTab(defaultTabId);
+
+    // Real-time listener on Teacher doc
+    auth.onAuthStateChanged((user) => {
+      if (!user) return;
+
+      onSnapshot(doc(db, "users", teacherId), async (docSnap) => {
+        if (!docSnap.exists()) {
+          Toast.danger("حساب المعلم غير موجود أو تم حذفه.");
+          setTimeout(() => window.location.href = 'teachers.html', 1500);
+          return;
+        }
+
+        activeTeacher = { uid: docSnap.id, ...docSnap.data() };
+        renderTeacherHeader();
+        renderProfileTab();
+        renderChannelsTab();
+        await loadSubCollections();
+      });
+    });
+
+    function renderTeacherHeader() {
+      document.getElementById('breadcrumbTeacherName').textContent = activeTeacher.name || "معلم";
+      document.getElementById('headerAvatar').src = activeTeacher.photoURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=120';
+      document.getElementById('headerName').textContent = activeTeacher.name || "-";
+      document.getElementById('headerEmail').textContent = activeTeacher.email || "-";
+      document.getElementById('headerPhone').textContent = activeTeacher.phone || "غير مسجل";
+      document.getElementById('headerSubject').textContent = activeTeacher.subject || activeTeacher.specialty || "عام";
+      
+      const lastLogin = activeTeacher.lastLogin 
+        ? new Date(activeTeacher.lastLogin.seconds ? activeTeacher.lastLogin.seconds * 1000 : activeTeacher.lastLogin).toLocaleString('ar-EG')
+        : 'لم يسجل دخول بعد';
+      document.getElementById('headerLastLogin').textContent = lastLogin;
+
+      const isSuspended = activeTeacher.status === 'suspended';
+      const badge = document.getElementById('headerStatusBadge');
+      badge.textContent = isSuspended ? "موقوف" : "نشط";
+      badge.style.backgroundColor = isSuspended ? "var(--danger-light)" : "var(--success-light)";
+      badge.style.color = isSuspended ? "var(--danger)" : "var(--success)";
+
+      document.getElementById('lblToggleStatus').textContent = isSuspended ? "تنشيط الحساب" : "إيقاف الحساب";
+    }
+
+    function renderProfileTab() {
+      document.getElementById('profName').value = activeTeacher.name || "";
+      document.getElementById('profEmail').value = activeTeacher.email || "";
+      document.getElementById('profPhone').value = activeTeacher.phone || "";
+      document.getElementById('profSubject').value = activeTeacher.subject || activeTeacher.specialty || "";
+      document.getElementById('profNotes').value = activeTeacher.adminNotes || activeTeacher.notes || "";
+
+      document.getElementById('cardJoinDate').textContent = activeTeacher.createdAt ? new Date(activeTeacher.createdAt.seconds * 1000).toLocaleDateString('ar-EG') : '-';
+      document.getElementById('cardUid').textContent = activeTeacher.uid || '-';
+    }
+
+    function renderChannelsTab() {
+      document.getElementById('chnVodafone').value = activeTeacher.paymentVodafone || "";
+      document.getElementById('chnInstapay').value = activeTeacher.paymentInstapay || "";
+      document.getElementById('chnBankAccount').value = activeTeacher.paymentBankAccount || "";
+      if (activeTeacher.paymentPreferred) {
+        document.getElementById('chnPreferred').value = activeTeacher.paymentPreferred;
+      }
+
+      document.getElementById('chnLastTeacherUpdate').textContent = activeTeacher.paymentLastUpdated 
+        ? new Date(activeTeacher.paymentLastUpdated).toLocaleString('ar-EG')
+        : 'لم يقم المعلم بتحديث القنوات مؤخراً';
+    }
+
+    async function loadSubCollections() {
+      try {
+        // 1. Students list
+        const qStd = query(collection(db, "students"), where("teacherId", "==", teacherId));
+        const stdSnap = await getDocs(qStd);
+        teacherStudents = [];
+        stdSnap.forEach(d => teacherStudents.push(d.data()));
+
+        document.getElementById('cardStudentsCount').textContent = `${teacherStudents.length} طالب`;
+        document.getElementById('tblAssignedStudents').innerHTML = teacherStudents.map(s => `
+          <tr>
+            <td><strong>${s.name}</strong></td>
+            <td><span class="badge" style="background-color: var(--primary-light); color: var(--primary-color);">${s.stage || 'عام'}</span></td>
+          </tr>
+        `).join('') || '<tr><td colspan="2" style="text-align: center; color: var(--text-muted);">لا يوجد طلاب مسندين لهذا المعلم</td></tr>';
+
+        // 2. Sessions list
+        const qSess = query(collection(db, "sessions"), where("teacherId", "==", teacherId));
+        const sessSnap = await getDocs(qSess);
+        teacherSessions = [];
+        sessSnap.forEach(d => teacherSessions.push({ id: d.id, ...d.data() }));
+
+        teacherSessions.sort((a,b) => (b.date || '').localeCompare(a.date || ''));
+
+        const displayedSessions = [];
+        const seenGroupSessionsInTable = new Set();
+        teacherSessions.forEach(s => {
+          if (s.isStudentRecordOnly === true || s.isSalaryRecord === false) return;
+          const gId = s.groupSessionId || s.groupBatchId;
+          const isGroup = s.type === 'group' || s.sessionType === 'group';
+          if (isGroup && gId) {
+            if (seenGroupSessionsInTable.has(gId)) return;
+            seenGroupSessionsInTable.add(gId);
+          }
+          displayedSessions.push(s);
+        });
+
+        document.getElementById('tblTeacherSessions').innerHTML = displayedSessions.slice(0, 15).map(s => `
+          <tr>
+            <td><strong>${(s.type === 'group' || s.sessionType === 'group') ? (s.groupName || s.studentName || 'حصة جماعية') : (s.studentName || '-')}</strong></td>
+            <td>${s.date || '-'}</td>
+            <td>${s.duration || 0} د</td>
+            <td><span style="font-size: 0.8rem; font-weight: 700; color: ${(s.type === 'group' || s.sessionType === 'group') ? 'var(--warning)' : 'var(--primary-color)'}">${(s.type === 'group' || s.sessionType === 'group') ? 'جماعي' : 'فردي'}</span></td>
+            <td><span class="badge" style="background-color: ${s.status === 'completed' ? 'var(--success-light); color: var(--success)' : 'var(--bg-primary); color: var(--text-muted)'}">${s.status === 'completed' ? 'مكتملة' : s.status}</span></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">لا توجد حصص مسجلة مسبقاً</td></tr>';
+
+        // 3. Financial Calculations
+        calculatePayroll();
+
+        // 4. Salary Archive Table
+        await loadSalaryArchive();
+
+        // 5. Audit Logs
+        await loadAuditLogs();
+
+      } catch (err) {
+        console.error("Error loading subcollections:", err);
+      }
+    }
+
+    function calculatePayroll() {
+      const processedGroupSessions = new Set();
+      const activeSess = teacherSessions.filter(s => {
+        if (s.isStudentRecordOnly === true || s.isSalaryRecord === false) return false;
+        if (s.archived === true || s.paid === true) return false;
+        if (s.approved !== true) return false;
+        if (s.type === "trial" && s.trialSubscribed !== true) return false;
+
+        const gId = s.groupSessionId || s.groupBatchId;
+        const isGroup = s.type === "group" || s.sessionType === "group";
+
+        if (isGroup && gId) {
+          if (processedGroupSessions.has(gId)) return false;
+          processedGroupSessions.add(gId);
+        }
+
+        return s.status === "completed" || (s.status === "student_absent" && s.absenceType === "unexcused");
+      });
+      
+      let indHours = 0;
+      let grpHours = 0;
+
+      activeSess.forEach(s => {
+        const hrs = (parseFloat(s.duration) || 0) / 60;
+        if (s.type === "group" || s.sessionType === "group") grpHours += hrs;
+        else indHours += hrs;
+      });
+
+      const totalHours = indHours + grpHours;
+      const rateInd = parseFloat(activeTeacher.hourlyRateIndividual || activeTeacher.hourlyRate || 0);
+      const rateGrp = parseFloat(activeTeacher.hourlyRateGroup || 0);
+      const bonuses = parseFloat(activeTeacher.salaryBonuses || 0);
+      const deductions = parseFloat(activeTeacher.salaryDeductions || 0);
+
+      const grossInd = indHours * rateInd;
+      const grossGrp = grpHours * rateGrp;
+      const netSalary = grossInd + grossGrp + bonuses - deductions;
+
+      document.getElementById('kpiNetSalary').textContent = `${Math.round(netSalary).toLocaleString()} ج.م`;
+      document.getElementById('kpiTotalHours').textContent = `${totalHours.toFixed(1)} ساعة`;
+      document.getElementById('kpiSubHours').textContent = `${indHours.toFixed(1)} فردي | ${grpHours.toFixed(1)} جماعي`;
+      document.getElementById('kpiTotalSessions').textContent = `${activeSess.length} حصة`;
+      document.getElementById('kpiPreferredMethod').textContent = activeTeacher.paymentPreferred || activeTeacher.paymentVodafone || "غير محددة";
+      document.getElementById('kpiLastUpdatedFinancial').textContent = activeTeacher.paymentLastUpdated 
+        ? `آخر تعديل: ${new Date(activeTeacher.paymentLastUpdated).toLocaleDateString('ar-EG')}` 
+        : 'لم يحدد التعديل';
+
+      document.getElementById('tblRateInd').textContent = rateInd;
+      document.getElementById('tblRateGrp').textContent = rateGrp;
+      document.getElementById('tblHoursInd').textContent = indHours.toFixed(1);
+      document.getElementById('tblHoursGrp').textContent = grpHours.toFixed(1);
+      document.getElementById('tblGrossInd').textContent = grossInd.toFixed(1);
+      document.getElementById('tblGrossGrp').textContent = grossGrp.toFixed(1);
+      document.getElementById('tblBonuses').textContent = `+${bonuses}`;
+      document.getElementById('tblDeductions').textContent = `-${deductions}`;
+
+      // Populate rates form inputs
+      document.getElementById('inputRateInd').value = rateInd;
+      document.getElementById('inputRateGrp').value = rateGrp;
+      document.getElementById('inputBonuses').value = bonuses;
+      document.getElementById('inputDeductions').value = deductions;
+
+      // Payout form prefill
+      document.getElementById('payoutAmount').value = Math.round(netSalary);
+      const curMonth = new Date().toISOString().substring(0, 7);
+      document.getElementById('payoutMonth').value = curMonth;
+    }
+
+    async function loadSalaryArchive() {
+      try {
+        const qArch = query(collection(db, "salaryArchive"), where("teacherId", "==", teacherId));
+        const snap = await getDocs(qArch);
+        const list = [];
+        snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+
+        list.sort((a,b) => (b.month || '').localeCompare(a.month || ''));
+
+        document.getElementById('tblTeacherSalaryArchive').innerHTML = list.map(item => {
+          const isTransferred = item.status === 'transferred';
+          const createdDate = item.createdAt ? new Date(item.createdAt.seconds * 1000).toLocaleDateString('ar-EG') : '-';
+          return `
+            <tr>
+              <td><strong>${item.month || '-'}</strong></td>
+              <td><strong style="color: var(--success);">${(item.amount || 0).toLocaleString()} ج.م</strong></td>
+              <td>${item.sessionsCount || 0} حصة (${item.totalHours || 0} س)</td>
+              <td><span style="font-size: 0.82rem; font-weight: 700; color: var(--text-secondary);">${item.method || '-'}</span></td>
+              <td><span class="badge" style="background-color: ${isTransferred ? 'var(--success-light); color: var(--success)' : 'var(--warning-light); color: var(--warning)'}">${isTransferred ? 'تم التحويل 💰' : 'بانتظار التحويل ⏳'}</span></td>
+              <td>
+                ${item.proofUrl ? `<button class="btn btn-secondary view-proof-btn" data-url="${item.proofUrl}" style="padding: 0.3rem 0.6rem; font-size: 0.78rem; gap: 0.3rem;"><i data-lucide="image"></i> عرض الإيصال</button>` : '<span style="color:var(--text-muted); font-size: 0.78rem;">لا يوجد</span>'}
+              </td>
+              <td><span style="font-size: 0.8rem; color: var(--text-muted);">${createdDate}</span></td>
+            </tr>
+          `;
+        }).join('') || '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">لا توجد مستحقات مؤرشفة لهذا المعلم مسبقاً</td></tr>';
+
+        if (window.lucide) window.lucide.createIcons();
+
+        document.querySelectorAll('.view-proof-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const url = btn.dataset.url;
+            if (url) {
+              document.getElementById('imgPreviewTarget').src = url;
+              document.getElementById('imgPreviewModal').style.display = 'flex';
+            }
+          });
+        });
+      } catch (err) {
+        console.error("Error loading salary archive:", err);
+      }
+    }
+
+    async function loadAuditLogs() {
+      try {
+        const qAudit = query(collection(db, "auditLogs"), where("userId", "==", teacherId));
+        const snap = await getDocs(qAudit);
+        const list = [];
+        snap.forEach(d => list.push(d.data()));
+
+        list.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+        document.getElementById('tblAuditLogs').innerHTML = list.slice(0, 20).map(log => {
+          const dt = log.timestamp ? new Date(log.timestamp.seconds * 1000).toLocaleString('ar-EG') : 'الآن';
+          return `
+            <tr>
+              <td><strong style="font-size: 0.8rem; color: var(--text-muted);">${dt}</strong></td>
+              <td><span class="badge" style="background-color: var(--primary-light); color: var(--primary-color);">${log.actionType || 'عملية'}</span></td>
+              <td><span style="font-size: 0.85rem; color: var(--text-primary);">${log.details || log.description || 'تم إجراء عملية بالنظام'}</span></td>
+            </tr>
+          `;
+        }).join('') || '<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">لا يوجد سجل عمليات مسجل للمعلم</td></tr>';
+      } catch (err) {
+        console.error("Error loading audit logs:", err);
+      }
+    }
+
+    // Handlers
+    document.getElementById('editProfileForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await updateDoc(doc(db, "users", teacherId), {
+          name: document.getElementById('profName').value.trim(),
+          phone: document.getElementById('profPhone').value.trim(),
+          subject: document.getElementById('profSubject').value.trim(),
+          adminNotes: document.getElementById('profNotes').value.trim()
+        });
+        Toast.success("تم حفظ البيانات الشخصية للمعلم بنجاح! 👤✅");
+      } catch (err) {
+        console.error(err);
+        Toast.danger("حدث خطأ أثناء حفظ البيانات الشخصية.");
+      }
+    });
+
+    document.getElementById('formAdminChannels').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await updateDoc(doc(db, "users", teacherId), {
+          paymentVodafone: document.getElementById('chnVodafone').value.trim(),
+          paymentInstapay: document.getElementById('chnInstapay').value.trim(),
+          paymentBankAccount: document.getElementById('chnBankAccount').value.trim(),
+          paymentPreferred: document.getElementById('chnPreferred').value
+        });
+        Toast.success("تم تحديث قنوات التحويل المالية للمعلم بنجاح! 💳✅");
+      } catch (err) {
+        console.error(err);
+        Toast.danger("حدث خطأ أثناء تحديث قنوات التحويل.");
+      }
+    });
+
+    document.getElementById('formUpdateRates').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await updateDoc(doc(db, "users", teacherId), {
+          hourlyRateIndividual: parseFloat(document.getElementById('inputRateInd').value) || 0,
+          hourlyRateGroup: parseFloat(document.getElementById('inputRateGrp').value) || 0,
+          salaryBonuses: parseFloat(document.getElementById('inputBonuses').value) || 0,
+          salaryDeductions: parseFloat(document.getElementById('inputDeductions').value) || 0
+        });
+        Toast.success("تم تحديث التسعيرة والمكافآت والخصومات بنجاح! 💰✅");
+      } catch (err) {
+        console.error(err);
+        Toast.danger("حدث خطأ أثناء تحديث تسعيرة المعلم.");
+      }
+    });
+
+    // Payout Proof Form Submit
+    document.getElementById('formUploadPayoutProof').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const month = document.getElementById('payoutMonth').value;
+      const amount = parseFloat(document.getElementById('payoutAmount').value) || 0;
+      const notes = document.getElementById('payoutNotes').value.trim();
+      const fileInput = document.getElementById('payoutFile');
+
+      if (!month || amount <= 0) {
+        Toast.warning("يرجى اختيار الشهر وإدخال مبلغ تحويل صحيح.");
+        return;
+      }
+
+      let proofUrl = "";
+      if (fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        proofUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (re) => resolve(re.target.result);
+          reader.readAsDataURL(file);
+        });
+      }
+
+      try {
+        await addDoc(collection(db, "salaryArchive"), {
+          teacherId: teacherId,
+          teacherName: activeTeacher.name || "معلم",
+          month: month,
+          amount: amount,
+          notes: notes || "تم إرفاق إيصال التحويل بواسطة الإدارة",
+          proofUrl: proofUrl,
+          method: activeTeacher.paymentPreferred || activeTeacher.paymentVodafone || "تحويل إداري",
+          status: "transferred",
+          adminName: auth.currentUser.email || "الإدارة",
+          createdAt: serverTimestamp()
+        });
+
+        // Reset current month bonuses/deductions
+        await updateDoc(doc(db, "users", teacherId), {
+          salaryBonuses: 0,
+          salaryDeductions: 0,
+          salaryStatus: "transferred"
+        });
+
+        Toast.success(`تم أرشفة وتوثيق تحويل المرتب لشهر (${month}) بنجاح! 💰🎉`);
+        document.getElementById('formUploadPayoutProof').reset();
+      } catch (err) {
+        console.error(err);
+        Toast.danger("حدث خطأ أثناء أرشفة التحويل.");
+      }
+    });
+
+    // Account Actions
+    document.getElementById('btnToggleStatus').addEventListener('click', async () => {
+      if (!activeTeacher) return;
+      const isSuspended = activeTeacher.status === 'suspended';
+      const actionText = isSuspended ? "تنشيط الحساب" : "إيقاف الحساب";
+      
+      const confirmed = await showCustomConfirm(`هل أنت تأكد من رغبتك في ${actionText} للمعلم (${activeTeacher.name})؟`);
+      if (confirmed) {
+        try {
+          await updateDoc(doc(db, "users", teacherId), {
+            status: isSuspended ? 'approved' : 'suspended'
+          });
+          Toast.success(`تم ${actionText} بنجاح.`);
+        } catch (err) {
+          console.error(err);
+          Toast.danger("حدث خطأ أثناء تغيير حالة الحساب.");
+        }
+      }
+    });
+
+    document.getElementById('btnResetPassword').addEventListener('click', async () => {
+      if (!activeTeacher || !activeTeacher.email) {
+        Toast.warning("البريد الإلكتروني للمعلم غير متوفر لإرسال رابط كلمة المرور.");
+        return;
+      }
+      const confirmed = await showCustomConfirm(`هل أنت متأكد من إرسال رابط إعادة تعيين كلمة المرور إلى البريد الإلكتروني (${activeTeacher.email})؟`);
+      if (confirmed) {
+        try {
+          await sendPasswordResetEmail(auth, activeTeacher.email);
+          Toast.success(`تم إرسال بريد إعادة تعيين كلمة المرور إلى (${activeTeacher.email}) بنجاح 📧`);
+        } catch (err) {
+          console.error(err);
+          Toast.danger("حدث خطأ أثناء إرسال بريد كلمة المرور: " + (err.message || "فشل الاتصال"));
+        }
+      }
+    });
+
+    document.getElementById('btnDeleteTeacher').addEventListener('click', async () => {
+      if (!activeTeacher) return;
+      const confirmed = await showCustomConfirm(`تحذير: هل أنت بصدد حذف المعلم (${activeTeacher.name}) نهائياً من النظام؟ لا يمكن التراجع عن هذا الإجراء.`);
+      if (confirmed) {
+        try {
+          await deleteDoc(doc(db, "users", teacherId));
+          Toast.success("تم حذف حساب المعلم بنجاح.");
+          setTimeout(() => window.location.href = 'teachers.html', 1000);
+        } catch (err) {
+          console.error(err);
+          Toast.danger("حدث خطأ أثناء حذف المعلم.");
+        }
+      }
+    });
+
+    window.closeImgModal = function() {
+      document.getElementById('imgPreviewModal').style.display = 'none';
+    };
+  </script>
+</body>
+</html>
