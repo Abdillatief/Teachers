@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - الحصص الجارية اليوم (الإدارة)</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .session-card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    .session-item-card {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      transition: transform var(--transition-fast), border-color var(--transition-fast);
+    }
+    .session-item-card:hover {
+      border-color: var(--primary-color);
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        
+        <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="play-circle" style="color: var(--primary-color); width: 28px; height: 28px;"></i>
+              الحصص الجارية اليوم
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">متابعة فورية للحصص المجدولة والمكتملة لليوم مع أسماء المعلمين وحالة التنفيذ.</p>
+          </div>
+          <div style="font-size: 0.85rem; padding: 0.5rem 1rem; border-radius: 30px; background-color: rgba(var(--primary-rgb, 14, 165, 233), 0.1); color: var(--primary-color); font-weight: 700;" id="todayAdminDateLabel">
+            اليوم: ...
+          </div>
+        </div>
+
+        <!-- summary stats -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="card" style="border-right: 4px solid var(--primary-color);">
+            <div style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600;">إجمالي حصص اليوم</div>
+            <h3 id="statTodayTotal" style="font-size: 1.6rem; font-weight: 800; margin-top: 0.25rem;">0</h3>
+          </div>
+          <div class="card" style="border-right: 4px solid var(--success);">
+            <div style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600;">تمت بنجاح ✅</div>
+            <h3 id="statTodayCompleted" style="font-size: 1.6rem; font-weight: 800; margin-top: 0.25rem; color: var(--success);">0</h3>
+          </div>
+          <div class="card" style="border-right: 4px solid #6366f1;">
+            <div style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600;">لم تتم بعد ⏳</div>
+            <h3 id="statTodayPending" style="font-size: 1.6rem; font-weight: 800; margin-top: 0.25rem; color: #6366f1;">0</h3>
+          </div>
+          <div class="card" style="border-right: 4px solid #d97706;">
+            <div style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600;">مؤجلة 🔄</div>
+            <h3 id="statTodayDelayed" style="font-size: 1.6rem; font-weight: 800; margin-top: 0.25rem; color: #d97706;">0</h3>
+          </div>
+          <div class="card" style="border-right: 4px solid var(--danger);">
+            <div style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600;">غياب / ملغاة 🔴</div>
+            <h3 id="statTodayAbsent" style="font-size: 1.6rem; font-weight: 800; margin-top: 0.25rem; color: var(--danger);">0</h3>
+          </div>
+        </div>
+
+        <!-- filters -->
+        <div class="card" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem;">
+          <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+            <div style="flex: 1; min-width: 220px;">
+              <input type="text" id="adminSearchInput" class="form-control" placeholder="بحث باسم الطالب أو المعلم...">
+            </div>
+            <div style="width: 180px;">
+              <select id="adminStatusFilter" class="form-control">
+                <option value="all">كل الحالات</option>
+                <option value="completed">تمت بنجاح ✅</option>
+                <option value="pending">لم تتم بعد ⏳</option>
+                <option value="delayed">مؤجلة 🔄</option>
+                <option value="absent">غياب / ملغاة 🔴</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- list container -->
+        <div id="adminTodaySessionsGrid" class="session-card-grid">
+          <p style="text-align: center; color: var(--text-muted); padding: 2rem; grid-column: 1 / -1;">جاري تحميل حصص اليوم الفورية...</p>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <script type="module">
+    import { db } from '../assets/js/config/firebase.js';
+    import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderSidebar('today-sessions', 'admin');
+      renderNavbar('الحصص الجارية اليوم', { name: 'المشرف العام', roleName: 'مدير النظام' });
+
+      const arabicDays = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+      const now = new Date();
+      const todayArabic = arabicDays[now.getDay()];
+      const todayStr = now.toISOString().split('T')[0];
+
+      const dateLabel = document.getElementById('todayAdminDateLabel');
+      if (dateLabel) dateLabel.textContent = `اليوم: ${todayArabic} (${todayStr})`;
+
+      let sessionsCached = [];
+      let studentsCached = [];
+
+      onSnapshot(collection(db, "sessions"), (sessSnap) => {
+        sessionsCached = [];
+        sessSnap.forEach(d => {
+          const data = d.data();
+          if (data.date === todayStr || data.postponedFrom === todayStr) {
+            sessionsCached.push({ id: d.id, ...data });
+          }
+        });
+
+        onSnapshot(collection(db, "students"), (studSnap) => {
+          studentsCached = [];
+          studSnap.forEach(d => {
+            const student = { id: d.id, ...d.data() };
+            if (student.status !== "archived" && student.status !== "Suspended" && student.status !== "pending_approval") {
+              const scheduleDays = student.schedule?.days || student.sessionDays || [];
+              if (scheduleDays.includes(todayArabic)) {
+                studentsCached.push(student);
+              }
+            }
+          });
+
+          renderAdminTodayList();
+        });
+      });
+
+      document.getElementById('adminSearchInput')?.addEventListener('input', renderAdminTodayList);
+      document.getElementById('adminStatusFilter')?.addEventListener('change', renderAdminTodayList);
+
+      function parseTimeToMinutes(timeStr) {
+        if (!timeStr || typeof timeStr !== 'string') return 9999;
+        const str = timeStr.trim().toLowerCase();
+        if (str === 'غير محدد' || !str) return 9999;
+        
+        let isPM = false;
+        let isAM = false;
+
+        if (str.includes('م') || str.includes('مساء') || str.includes('pm')) {
+          isPM = true;
+        } else if (str.includes('ص') || str.includes('صباح') || str.includes('am')) {
+          isAM = true;
+        }
+
+        const match = str.match(/(\d{1,2})(?::(\d{2}))?/);
+        if (!match) return 9999;
+
+        let hours = parseInt(match[1], 10);
+        let minutes = match[2] ? parseInt(match[2], 10) : 0;
+
+        if (isPM && hours < 12) {
+          hours += 12;
+        } else if (isAM && hours === 12) {
+          hours = 0;
+        }
+
+        return hours * 60 + minutes;
+      }
+
+      function renderAdminTodayList() {
+        const grid = document.getElementById('adminTodaySessionsGrid');
+        if (!grid) return;
+
+        const queryVal = (document.getElementById('adminSearchInput')?.value || '').trim().toLowerCase();
+        const statusFilter = document.getElementById('adminStatusFilter')?.value || 'all';
+
+        const itemsMap = new Map();
+
+        // 1. Scheduled students
+        studentsCached.forEach(st => {
+          const recorded = sessionsCached.find(s => s.studentId === st.id);
+          let statusKey = 'pending';
+          let statusLabel = 'لم تتم بعد ⏳';
+          let badgeBg = 'background: rgba(99, 102, 241, 0.12); color: #6366f1;';
+
+          if (recorded) {
+            if (recorded.status === 'completed') {
+              statusKey = 'completed';
+              statusLabel = 'تمت بنجاح ✅';
+              badgeBg = 'background: rgba(16, 185, 129, 0.12); color: var(--success);';
+            } else if (recorded.status === 'student_absent') {
+              statusKey = 'absent';
+              statusLabel = recorded.absenceType === 'unexcused' ? 'غياب بدون عذر 🔴' : 'غياب بعذر 🟢';
+              badgeBg = 'background: rgba(239, 68, 68, 0.12); color: var(--danger);';
+            } else if (recorded.status === 'delayed') {
+              statusKey = 'delayed';
+              statusLabel = 'مؤجلة 🔄';
+              badgeBg = 'background: rgba(217, 119, 6, 0.12); color: #d97706;';
+            } else if (recorded.status === 'cancelled') {
+              statusKey = 'absent';
+              statusLabel = 'ملغاة ❌';
+              badgeBg = 'background: rgba(239, 68, 68, 0.12); color: var(--danger);';
+            }
+          }
+
+          itemsMap.set(st.id, {
+            id: st.id,
+            studentName: st.name || 'طالب',
+            teacherName: st.teacherName || recorded?.teacherName || 'غير معين',
+            time: st.schedule?.uniformTime || st.sessionTime || 'غير محدد',
+            statusKey,
+            statusLabel,
+            badgeBg,
+            recorded
+          });
+        });
+
+        // 2. Additional recorded sessions today
+        sessionsCached.forEach(s => {
+          if (!itemsMap.has(s.studentId || s.id)) {
+            let statusKey = 'completed';
+            let statusLabel = 'تمت بنجاح ✅';
+            let badgeBg = 'background: rgba(16, 185, 129, 0.12); color: var(--success);';
+
+            if (s.status === 'student_absent') {
+              statusKey = 'absent';
+              statusLabel = 'غياب 🔴';
+              badgeBg = 'background: rgba(239, 68, 68, 0.12); color: var(--danger);';
+            } else if (s.status === 'delayed') {
+              statusKey = 'delayed';
+              statusLabel = 'مؤجلة 🔄';
+              badgeBg = 'background: rgba(217, 119, 6, 0.12); color: #d97706;';
+            } else if (s.status === 'cancelled') {
+              statusKey = 'absent';
+              statusLabel = 'ملغاة ❌';
+              badgeBg = 'background: rgba(239, 68, 68, 0.12); color: var(--danger);';
+            }
+
+            itemsMap.set(s.studentId || s.id, {
+              id: s.id,
+              studentName: s.studentName || 'حصة اليوم',
+              teacherName: s.teacherName || 'غير محدد',
+              time: s.time || 'غير محدد',
+              statusKey,
+              statusLabel,
+              badgeBg,
+              recorded: s
+            });
+          }
+        });
+
+        const allItems = Array.from(itemsMap.values());
+
+        // Update stats
+        document.getElementById('statTodayTotal').textContent = allItems.length;
+        document.getElementById('statTodayCompleted').textContent = allItems.filter(i => i.statusKey === 'completed').length;
+        document.getElementById('statTodayPending').textContent = allItems.filter(i => i.statusKey === 'pending').length;
+        document.getElementById('statTodayDelayed').textContent = allItems.filter(i => i.statusKey === 'delayed').length;
+        document.getElementById('statTodayAbsent').textContent = allItems.filter(i => i.statusKey === 'absent').length;
+
+        // Filter items
+        const filtered = allItems.filter(item => {
+          const matchSearch = !queryVal || 
+            item.studentName.toLowerCase().includes(queryVal) || 
+            item.teacherName.toLowerCase().includes(queryVal);
+          const matchStatus = statusFilter === 'all' || item.statusKey === statusFilter;
+          return matchSearch && matchStatus;
+        });
+
+        // Sort chronologically by time (e.g., 3 before 4)
+        filtered.sort((a, b) => parseTimeToMinutes(a.time) - parseTimeToMinutes(b.time));
+
+        if (filtered.length === 0) {
+          grid.innerHTML = `<p style="text-align: center; color: var(--text-muted); padding: 2rem; grid-column: 1 / -1;">لا توجد حصص مطابقة لشروط البحث أو الفلترة المحددة اليوم.</p>`;
+          return;
+        }
+
+        grid.innerHTML = filtered.map(item => `
+          <div class="session-item-card">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;">
+              <div>
+                <h4 style="font-size: 1.05rem; font-weight: 800; color: var(--text-primary); margin: 0;">${item.studentName}</h4>
+                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem; display: flex; align-items: center; gap: 0.35rem;">
+                  <i data-lucide="clock" style="width: 14px; height: 14px; color: var(--text-muted);"></i>
+                  <span>موعد الحصة: <strong>${item.time}</strong></span>
+                </div>
+              </div>
+              <span class="badge" style="position: static; font-weight: 800; font-size: 0.75rem; padding: 0.3rem 0.65rem; border-radius: 6px; ${item.badgeBg}">
+                ${item.statusLabel}
+              </span>
+            </div>
+
+            <div style="padding-top: 0.5rem; border-top: 1px dashed var(--border-color); display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; color: var(--text-primary);">
+              <i data-lucide="user-check" style="width: 16px; height: 16px; color: var(--primary-color);"></i>
+              <span>المعلم التابع: <strong style="color: var(--primary-color); font-weight: 800;">${item.teacherName}</strong></span>
+            </div>
+          </div>
+        `).join('');
+
+        if (window.lucide) window.lucide.createIcons();
+      }
+    });
+  </script>
+</body>
+</html>
