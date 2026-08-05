@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إدارة المجموعات التعليمية - أكاديمية سبيل</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <!-- Main Wrapper -->
+    <div class="main-wrapper" id="mainWrapper">
+      <!-- Navbar -->
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <!-- Main Content -->
+      <main class="content-body">
+        
+        <!-- Header & Add Button -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="users-round" style="color: var(--primary-color);"></i> إدارة المجموعات التعليمية
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">
+              إنشاء المجموعات، تعيين المعلمين المسؤولين، وتوزيع الطلاب ومتابعة الطاقة الاستيعابية.
+            </p>
+          </div>
+          
+          <button class="btn btn-primary" id="btnCreateNewGroup" style="gap: 0.5rem; font-weight: 700; padding: 0.6rem 1.25rem;">
+            <i data-lucide="plus-circle" style="width: 18px; height: 18px;"></i> 👥 إضافة مجموعة جديدة
+          </button>
+        </div>
+
+        <!-- Stats Overview -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+          <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.25rem;">
+            <div style="font-size: 0.82rem; color: var(--text-muted); font-weight: 700;">إجمالي المجموعات</div>
+            <div id="statTotalGroups" style="font-size: 1.8rem; font-weight: 900; color: var(--text-primary); margin-top: 0.25rem;">0</div>
+          </div>
+          <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.25rem;">
+            <div style="font-size: 0.82rem; color: var(--text-muted); font-weight: 700;">المجموعات النشطة 🟢</div>
+            <div id="statActiveGroups" style="font-size: 1.8rem; font-weight: 900; color: var(--success); margin-top: 0.25rem;">0</div>
+          </div>
+          <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.25rem;">
+            <div style="font-size: 0.82rem; color: var(--text-muted); font-weight: 700;">طلاب المجموعات 👥</div>
+            <div id="statTotalGroupStudents" style="font-size: 1.8rem; font-weight: 900; color: var(--primary-color); margin-top: 0.25rem;">0</div>
+          </div>
+        </div>
+
+        <!-- Filters & Search -->
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 1rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="btn btn-secondary group-filter-btn active" data-filter="all" style="font-weight: 700; font-size: 0.85rem;">جميع المجموعات</button>
+            <button class="btn btn-secondary group-filter-btn" data-filter="active" style="font-weight: 700; font-size: 0.85rem;">النشطة 🟢</button>
+            <button class="btn btn-secondary group-filter-btn" data-filter="archived" style="font-weight: 700; font-size: 0.85rem;">المؤرشفة 📦</button>
+          </div>
+
+          <div style="min-width: 260px; position: relative;">
+            <input type="text" id="searchGroupInput" class="form-control" placeholder="بحث باسم المجموعة أو المعلم..." style="padding-right: 2.25rem; font-size: 0.88rem;">
+            <i data-lucide="search" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-muted);"></i>
+          </div>
+        </div>
+
+        <!-- Groups Grid Container -->
+        <div id="groupsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.25rem;">
+          <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 3rem;">
+            جاري تحميل المجموعات...
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Group Details & Students Modal -->
+  <div id="groupDetailsModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card" style="max-width: 650px; border-radius: 12px; padding: 1.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.85rem;">
+        <div>
+          <h3 id="modalGroupName" style="font-weight: 800; color: var(--text-primary); margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i data-lucide="users" style="color: var(--primary-color);"></i> تفاصيل المجموعة
+          </h3>
+          <span id="modalTeacherName" style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;"></span>
+        </div>
+        <span id="btnCloseGroupDetailsModal" style="cursor: pointer; padding: 0.25rem;">
+          <i data-lucide="x" style="color: var(--text-muted);"></i>
+        </span>
+      </div>
+
+      <!-- Group Meta Summary -->
+      <div id="modalGroupMeta" style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem; margin-bottom: 1.25rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; font-size: 0.85rem;">
+      </div>
+
+      <!-- Add Student to Group Controls -->
+      <div style="background: rgba(13, 148, 136, 0.05); border: 1px solid rgba(13, 148, 136, 0.2); border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem;">
+        <label style="font-weight: 800; font-size: 0.88rem; color: var(--primary-color); display: block; margin-bottom: 0.5rem;">
+          ➕ إضافة طالب جديد لهذه المجموعة
+        </label>
+        <div style="display: flex; gap: 0.5rem;">
+          <select id="selectAddStudentToGroup" class="form-control" style="font-weight: 600; font-size: 0.85rem;">
+            <option value="">جاري تحميل الطلاب المتاحين...</option>
+          </select>
+          <button class="btn btn-primary" id="btnAddStudentToGroupBtn" style="white-space: nowrap; font-weight: 700; font-size: 0.85rem;">إضافة</button>
+        </div>
+      </div>
+
+      <!-- Group Students List -->
+      <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+        <span>طلاب المجموعة</span>
+        <span id="modalStudentCountBadge" class="badge" style="background: var(--primary-light); color: var(--primary-color); font-weight: 800;"></span>
+      </h4>
+
+      <div id="modalStudentsList" style="display: flex; flex-direction: column; gap: 0.6rem; max-height: 280px; overflow-y: auto; padding-right: 0.25rem;">
+        <!-- Student rows rendered dynamically -->
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 1.25rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+        <button class="btn btn-secondary" id="btnCloseDetailsModalBtn">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transfer Student Modal -->
+  <div id="transferStudentModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card" style="max-width: 440px; border-radius: 12px; padding: 1.25rem;">
+      <h3 style="font-weight: 800; color: var(--text-primary); margin-top: 0; font-size: 1.1rem; margin-bottom: 1rem;">
+        ↔️ نقل الطالب إلى مجموعة أخرى
+      </h3>
+      <p id="transferStudentNameLabel" style="font-weight: 700; color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 1rem;"></p>
+      
+      <div class="form-group" style="margin-bottom: 1.25rem;">
+        <label style="font-weight: 700; font-size: 0.85rem; margin-bottom: 0.35rem; display: block;">المجموعة المستهدفة</label>
+        <select id="selectTargetGroup" class="form-control" style="font-weight: 600;">
+          <option value="">-- اختر المجموعة --</option>
+        </select>
+      </div>
+
+      <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+        <button class="btn btn-primary" id="btnConfirmTransferStudent" style="font-weight: 700;">تأكيد النقل</button>
+        <button class="btn btn-secondary" id="btnCancelTransferStudent">إلغاء</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <!-- Script Modules -->
+  <script type="module">
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { 
+      getAllGroups, 
+      getGroupWithStudentDetails, 
+      deleteGroup, 
+      toggleGroupArchive, 
+      addStudentToGroup, 
+      removeStudentFromGroup, 
+      transferStudentBetweenGroups 
+    } from '../assets/js/features/groups/groupsManager.js';
+    import { openQuickGroupModal } from '../assets/js/features/groups/quickGroupModal.js';
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+    import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { db } from '../assets/js/config/firebase.js';
+
+    protectRoute('admin');
+
+    let allGroups = [];
+    let currentFilter = 'all';
+    let activeDetailsGroupId = null;
+    let transferringStudent = null;
+
+    async function initAdminGroups() {
+      renderSidebar('groups', 'admin');
+      renderNavbar('إدارة المجموعات التعليمية', { name: 'المشرف العام', roleName: 'مدير النظام' });
+
+      // Setup event delegation on groups grid
+      const grid = document.getElementById('groupsGrid');
+      if (grid) {
+        grid.addEventListener('click', async (e) => {
+          const viewBtn = e.target.closest('.btn-view-group');
+          if (viewBtn) {
+            openGroupDetails(viewBtn.dataset.id);
+            return;
+          }
+
+          const editBtn = e.target.closest('.btn-edit-group');
+          if (editBtn) {
+            const group = allGroups.find(g => g.id === editBtn.dataset.id);
+            if (group) {
+              openQuickGroupModal({
+                groupData: group,
+                onGroupSaved: () => loadGroups()
+              });
+            }
+            return;
+          }
+
+          const archiveBtn = e.target.closest('.btn-archive-group');
+          if (archiveBtn) {
+            const isCurrentlyArchived = archiveBtn.dataset.archived === 'true';
+            try {
+              await toggleGroupArchive(archiveBtn.dataset.id, !isCurrentlyArchived);
+              Toast.success(isCurrentlyArchived ? 'تم إلغاء أرشفة المجموعة 🟢' : 'تم أرشفة المجموعة 📦');
+              await loadGroups();
+            } catch (err) {
+              Toast.error("فشل تغيير حالة الأرشفة.");
+            }
+            return;
+          }
+
+          const deleteBtn = e.target.closest('.btn-delete-group');
+          if (deleteBtn) {
+            if (confirm("هل أنت تأكد من رغبتك في حذف هذه المجموعة؟ سيتم إلغاء ربط جميع طلابها وتحويلهم إلى طلاب فرديين.")) {
+              try {
+                await deleteGroup(deleteBtn.dataset.id);
+                Toast.success("تم حذف المجموعة بنجاح.");
+                await loadGroups();
+              } catch (err) {
+                Toast.error("فشل حذف المجموعة.");
+              }
+            }
+            return;
+          }
+        });
+      }
+
+      await loadGroups();
+
+      // Open Add Group Modal
+      document.getElementById('btnCreateNewGroup')?.addEventListener('click', () => {
+        openQuickGroupModal({
+          onGroupSaved: () => loadGroups()
+        });
+      });
+
+      // Search input
+      document.getElementById('searchGroupInput')?.addEventListener('input', renderGroupsGrid);
+
+      // Filter buttons
+      document.querySelectorAll('.group-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.group-filter-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentFilter = btn.dataset.filter;
+          renderGroupsGrid();
+        });
+      });
+
+      // Modal Closers
+      document.getElementById('btnCloseGroupDetailsModal')?.addEventListener('click', closeDetailsModal);
+      document.getElementById('btnCloseDetailsModalBtn')?.addEventListener('click', closeDetailsModal);
+      document.getElementById('btnCancelTransferStudent')?.addEventListener('click', () => {
+        document.getElementById('transferStudentModal').style.display = 'none';
+      });
+
+      // Add student to group button
+      document.getElementById('btnAddStudentToGroupBtn')?.addEventListener('click', async () => {
+        const studentSelect = document.getElementById('selectAddStudentToGroup');
+        const studentId = studentSelect?.value;
+        if (!studentId || !activeDetailsGroupId) {
+          Toast.error("يرجى اختيار طالب أولاً.");
+          return;
+        }
+
+        try {
+          await addStudentToGroup(activeDetailsGroupId, studentId);
+          Toast.success("تمت إضافة الطالب للمجموعة بنجاح 🎉");
+          await openGroupDetails(activeDetailsGroupId);
+          await loadGroups();
+        } catch (err) {
+          Toast.error(err.message || "حدث خطأ أثناء إضافة الطالب.");
+        }
+      });
+
+      // Confirm Transfer
+      document.getElementById('btnConfirmTransferStudent')?.addEventListener('click', async () => {
+        const targetGroupId = document.getElementById('selectTargetGroup')?.value;
+        if (!targetGroupId || !transferringStudent) {
+          Toast.error("يرجى اختيار المجموعة المستهدفة.");
+          return;
+        }
+
+        try {
+          await transferStudentBetweenGroups(transferringStudent.fromGroupId, targetGroupId, transferringStudent.studentId);
+          Toast.success("تم نقل الطالب إلى المجموعة المستهدفة بنجاح ↔️");
+          document.getElementById('transferStudentModal').style.display = 'none';
+          await openGroupDetails(activeDetailsGroupId);
+          await loadGroups();
+        } catch (err) {
+          Toast.error(err.message || "فشل نقل الطالب.");
+        }
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initAdminGroups);
+    } else {
+      initAdminGroups();
+    }
+
+    async function loadGroups() {
+      allGroups = await getAllGroups();
+      updateStats();
+      renderGroupsGrid();
+    }
+
+    function updateStats() {
+      const total = allGroups.length;
+      const active = allGroups.filter(g => (g.status || 'active') === 'active').length;
+      let totalStudents = 0;
+      allGroups.forEach(g => {
+        totalStudents += (g.studentIds || []).length;
+      });
+
+      document.getElementById('statTotalGroups').textContent = total;
+      document.getElementById('statActiveGroups').textContent = active;
+      document.getElementById('statTotalGroupStudents').textContent = totalStudents;
+    }
+
+    function renderGroupsGrid() {
+      const grid = document.getElementById('groupsGrid');
+      const search = document.getElementById('searchGroupInput')?.value.trim().toLowerCase() || '';
+
+      let filtered = allGroups;
+
+      if (currentFilter === 'active') {
+        filtered = filtered.filter(g => (g.status || 'active') === 'active');
+      } else if (currentFilter === 'archived') {
+        filtered = filtered.filter(g => g.status === 'archived');
+      }
+
+      if (search) {
+        filtered = filtered.filter(g => 
+          (g.name || '').toLowerCase().includes(search) || 
+          (g.teacherName || '').toLowerCase().includes(search)
+        );
+      }
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 3rem; background: var(--bg-card); border-radius: 12px; border: 1px dashed var(--border-color);">
+            <i data-lucide="users-round" style="width: 48px; height: 48px; opacity: 0.4; margin-bottom: 0.5rem;"></i>
+            <p style="font-weight: 700; margin: 0;">لا توجد مجموعات تعليمية مطابقة حالياً.</p>
+          </div>
+        `;
+        if (window.lucide) window.lucide.createIcons();
+        return;
+      }
+
+      grid.innerHTML = filtered.map(g => {
+        const studentCount = (g.studentIds || []).length;
+        const maxCap = g.maxCapacity || 10;
+        const isArchived = g.status === 'archived';
+        const capPercent = Math.min(100, Math.round((studentCount / maxCap) * 100));
+
+        let progressColor = 'var(--success)';
+        if (capPercent >= 100) progressColor = 'var(--danger)';
+        else if (capPercent >= 80) progressColor = 'var(--warning)';
+
+        return `
+          <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+                <h3 style="font-size: 1.05rem; font-weight: 800; color: var(--text-primary); margin: 0;">${g.name}</h3>
+                <span class="badge" style="background: ${isArchived ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)'}; color: ${isArchived ? 'var(--danger)' : 'var(--success)'}; font-weight: 800; font-size: 0.75rem;">
+                  ${isArchived ? 'مؤرشفة 📦' : 'نشطة 🟢'}
+                </span>
+              </div>
+
+              <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.35rem; font-weight: 600;">
+                <i data-lucide="user-check" style="width: 16px; height: 16px; color: var(--primary-color);"></i>
+                المعلم: <strong style="color: var(--text-primary);">${g.teacherName || 'غير مسمى'}</strong>
+              </div>
+
+              <div style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <span>📅 ${g.sessionDay || 'السبت'}</span>
+                <span>•</span>
+                <span>⏰ ${g.sessionTime || '05:00 م'}</span>
+                <span>•</span>
+                <span>⏱️ ${g.sessionDuration || 60} دقيقة</span>
+              </div>
+
+              <!-- Capacity Progress -->
+              <div style="margin-bottom: 1rem;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 700; margin-bottom: 0.3rem;">
+                  <span style="color: var(--text-secondary);">سعة الطلاب:</span>
+                  <span style="color: ${progressColor}; font-weight: 800;">${studentCount} / ${maxCap} طلاب</span>
+                </div>
+                <div style="background: var(--bg-primary); height: 6px; border-radius: 4px; overflow: hidden;">
+                  <div style="width: ${capPercent}%; background: ${progressColor}; height: 100%; border-radius: 4px; transition: width 0.3s;"></div>
+                </div>
+              </div>
+
+              ${g.notes ? `
+                <div style="font-size: 0.78rem; color: var(--text-muted); background: var(--bg-primary); padding: 0.5rem 0.75rem; border-radius: 6px; margin-bottom: 1rem;">
+                  📝 ${g.notes}
+                </div>
+              ` : ''}
+            </div>
+
+            <!-- Action buttons -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; border-top: 1px solid var(--border-color); padding-top: 0.85rem;">
+              <button class="btn btn-secondary btn-view-group" data-id="${g.id}" style="font-weight: 700; font-size: 0.8rem; gap: 0.35rem;">
+                👁️ التفاصيل
+              </button>
+              <button class="btn btn-secondary btn-edit-group" data-id="${g.id}" style="font-weight: 700; font-size: 0.8rem; gap: 0.35rem;">
+                ✏️ تعديل
+              </button>
+              <button class="btn btn-secondary btn-archive-group" data-id="${g.id}" data-archived="${isArchived}" style="font-weight: 700; font-size: 0.8rem;">
+                ${isArchived ? '🟢 تنشيط' : '📦 أرشفة'}
+              </button>
+              <button class="btn btn-secondary btn-delete-group" data-id="${g.id}" style="font-weight: 700; font-size: 0.8rem; color: var(--danger);">
+                🗑️ حذف
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    async function openGroupDetails(groupId) {
+      activeDetailsGroupId = groupId;
+      const modal = document.getElementById('groupDetailsModal');
+      modal.style.display = 'flex';
+
+      const details = await getGroupWithStudentDetails(groupId);
+      if (!details) {
+        Toast.error("تعذر تحميل تفاصيل المجموعة.");
+        closeDetailsModal();
+        return;
+      }
+
+      document.getElementById('modalGroupName').innerHTML = `<i data-lucide="users" style="color: var(--primary-color);"></i> ${details.name}`;
+      document.getElementById('modalTeacherName').textContent = `المعلم المشرف: ${details.teacherName || 'غير مسمى'}`;
+
+      const meta = document.getElementById('modalGroupMeta');
+      meta.innerHTML = `
+        <div><strong>يوم الحصة:</strong> ${details.sessionDay || 'السبت'}</div>
+        <div><strong>موعد الحصة:</strong> ${details.sessionTime || '05:00 م'}</div>
+        <div><strong>المدة:</strong> ${details.sessionDuration || 60} دقيقة</div>
+        <div><strong>السعة:</strong> ${(details.studentIds || []).length} / ${details.maxCapacity || 10}</div>
+      `;
+
+      document.getElementById('modalStudentCountBadge').textContent = `${(details.students || []).length} طلاب`;
+
+      // Render students list
+      const listContainer = document.getElementById('modalStudentsList');
+      if (!details.students || details.students.length === 0) {
+        listContainer.innerHTML = `
+          <div style="text-align: center; color: var(--text-muted); padding: 1.5rem; font-size: 0.85rem;">
+            لا يوجد طلاب مسجلون في هذه المجموعة بعد.
+          </div>
+        `;
+      } else {
+        listContainer.innerHTML = details.students.map(s => `
+          <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.65rem 0.85rem; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-weight: 800; font-size: 0.88rem; color: var(--text-primary);">${s.name || 'طالب'}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">${s.notes || 'طالب ضمن المجموعة'}</div>
+            </div>
+            <div style="display: flex; gap: 0.35rem;">
+              <button class="btn btn-secondary btn-transfer-student" data-id="${s.id}" data-name="${s.name}" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; font-weight: 700;">
+                ↔️ نقل
+              </button>
+              <button class="btn btn-secondary btn-remove-student" data-id="${s.id}" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; font-weight: 700; color: var(--danger);">
+                ❌ إزالة
+              </button>
+            </div>
+          </div>
+        `).join('');
+
+        listContainer.querySelectorAll('.btn-remove-student').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            try {
+              await removeStudentFromGroup(groupId, btn.dataset.id);
+              Toast.success("تم إزالة الطالب من المجموعة.");
+              await openGroupDetails(groupId);
+              await loadGroups();
+            } catch (err) {
+              Toast.error("فشل إزالة الطالب.");
+            }
+          });
+        });
+
+        listContainer.querySelectorAll('.btn-transfer-student').forEach(btn => {
+          btn.addEventListener('click', () => {
+            openTransferModal(btn.dataset.id, btn.dataset.name, groupId);
+          });
+        });
+      }
+
+      // Populate candidate students dropdown (unassigned or individual students)
+      loadCandidateStudentsForAdd(details.studentIds || []);
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    async function loadCandidateStudentsForAdd(currentStudentIds = []) {
+      const select = document.getElementById('selectAddStudentToGroup');
+      select.innerHTML = '<option value="">جاري تحميل الطلاب المتاحين...</option>';
+
+      try {
+        const snap = await getDocs(collection(db, "students"));
+        const candidates = [];
+        snap.forEach(d => {
+          const s = d.data();
+          if (!currentStudentIds.includes(d.id)) {
+            candidates.push({ id: d.id, name: s.name || 'طالب', type: s.studentType || 'individual', groupName: s.groupName });
+          }
+        });
+
+        if (candidates.length === 0) {
+          select.innerHTML = '<option value="">لا يوجد طلاب متاحين للإضافة</option>';
+          return;
+        }
+
+        select.innerHTML = '<option value="">-- اختر طالباً لإضافته للمجموعة --</option>' +
+          candidates.map(c => `
+            <option value="${c.id}">${c.name} ${c.type === 'group' ? `(مجموعة: ${c.groupName || ''})` : '(فردي)'}</option>
+          `).join('');
+
+      } catch (err) {
+        console.error("Error loading candidate students:", err);
+        select.innerHTML = '<option value="">خطأ في تحميل الطلاب</option>';
+      }
+    }
+
+    function openTransferModal(studentId, studentName, currentGroupId) {
+      transferringStudent = { studentId, studentName, fromGroupId: currentGroupId };
+      document.getElementById('transferStudentNameLabel').textContent = `الطالب: ${studentName}`;
+      
+      const select = document.getElementById('selectTargetGroup');
+      const otherGroups = allGroups.filter(g => g.id !== currentGroupId && (g.status || 'active') === 'active');
+
+      if (otherGroups.length === 0) {
+        select.innerHTML = '<option value="">لا توجد مجموعات أخرى متوفرة</option>';
+      } else {
+        select.innerHTML = '<option value="">-- اختر المجموعة المستهدفة --</option>' +
+          otherGroups.map(g => `<option value="${g.id}">${g.name} (المعلم: ${g.teacherName})</option>`).join('');
+      }
+
+      document.getElementById('transferStudentModal').style.display = 'flex';
+    }
+
+    function closeDetailsModal() {
+      document.getElementById('groupDetailsModal').style.display = 'none';
+      activeDetailsGroupId = null;
+    }
+  </script>
+</body>
+</html>
