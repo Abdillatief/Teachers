@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - مركز إشعارات الأدمن والتنبيهات الإدارية</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .notif-filter-tab {
+      padding: 0.6rem 1.1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      border: 1px solid var(--border-color);
+      background: var(--bg-primary);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      white-space: nowrap;
+    }
+    .notif-filter-tab:hover {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+    .notif-filter-tab.active {
+      background: var(--primary-color);
+      color: #ffffff;
+      border-color: var(--primary-color);
+      box-shadow: 0 2px 8px rgba(14, 165, 233, 0.25);
+    }
+    .notif-badge-completed {
+      background: rgba(16, 185, 129, 0.12);
+      color: #047857;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .notif-badge-late {
+      background: rgba(245, 158, 11, 0.12);
+      color: #b45309;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .notif-badge-overdue {
+      background: rgba(239, 68, 68, 0.12);
+      color: #b91c1c;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .notif-badge-alert {
+      background: rgba(14, 165, 233, 0.12);
+      color: #0369a1;
+      border: 1px solid rgba(14, 165, 233, 0.3);
+    }
+    .admin-notif-item {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.1rem;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      position: relative;
+    }
+    .admin-notif-item:hover {
+      border-color: var(--primary-color);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .admin-notif-item.unread {
+      border-right: 5px solid var(--primary-color);
+      background: rgba(14, 165, 233, 0.02);
+    }
+    .admin-notif-item.archived {
+      opacity: 0.7;
+      background: var(--bg-secondary);
+    }
+    .stat-mini-card {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        <!-- Header -->
+        <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.6rem; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 0.6rem; margin: 0 0 0.4rem 0;">
+              <i data-lucide="bell-ring" style="color: var(--primary-color); width: 28px; height: 28px;"></i>
+              مركز إشعارات وتنبيهات الأدمن
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.92rem; margin: 0;">
+              نظام إداري شامل لمتابعة الحصص المكتملة، المتأخرة، الحصص غير المسجلة، وبث التعميمات.
+            </p>
+          </div>
+
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button id="markAllReadBtn" class="btn btn-secondary" style="gap: 0.4rem; font-weight: 700;">
+              <i data-lucide="check-check"></i> تحديد الكل كمقروء
+            </button>
+            <button id="archiveReadBtn" class="btn btn-secondary" style="gap: 0.4rem; font-weight: 700;">
+              <i data-lucide="archive"></i> أرشفة المقروء
+            </button>
+            <button id="toggleBroadcastModalBtn" class="btn btn-primary" style="gap: 0.4rem; font-weight: 700;">
+              <i data-lucide="send"></i> بث إشعار Push جديد 📲
+            </button>
+          </div>
+        </div>
+
+        <!-- Summary Stats Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="stat-mini-card">
+            <div style="background: rgba(14, 165, 233, 0.12); color: var(--primary-color); padding: 0.75rem; border-radius: 10px;">
+              <i data-lucide="bell" style="width: 22px; height: 22px;"></i>
+            </div>
+            <div>
+              <div style="font-size: 1.35rem; font-weight: 800;" id="statTotalCount">0</div>
+              <div style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">إجمالي الإشعارات</div>
+            </div>
+          </div>
+
+          <div class="stat-mini-card">
+            <div style="background: rgba(16, 185, 129, 0.12); color: #047857; padding: 0.75rem; border-radius: 10px;">
+              <i data-lucide="check-circle-2" style="width: 22px; height: 22px;"></i>
+            </div>
+            <div>
+              <div style="font-size: 1.35rem; font-weight: 800; color: #047857;" id="statCompletedCount">0</div>
+              <div style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">حصص مكتملة 🟢</div>
+            </div>
+          </div>
+
+          <div class="stat-mini-card">
+            <div style="background: rgba(245, 158, 11, 0.12); color: #b45309; padding: 0.75rem; border-radius: 10px;">
+              <i data-lucide="clock" style="width: 22px; height: 22px;"></i>
+            </div>
+            <div>
+              <div style="font-size: 1.35rem; font-weight: 800; color: #b45309;" id="statLateCount">0</div>
+              <div style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">حصص متأخرة ⏱️</div>
+            </div>
+          </div>
+
+          <div class="stat-mini-card">
+            <div style="background: rgba(239, 68, 68, 0.12); color: #b91c1c; padding: 0.75rem; border-radius: 10px;">
+              <i data-lucide="alert-triangle" style="width: 22px; height: 22px;"></i>
+            </div>
+            <div>
+              <div style="font-size: 1.35rem; font-weight: 800; color: #b91c1c;" id="statOverdueCount">0</div>
+              <div style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">غير مسجلة ⚠️</div>
+            </div>
+          </div>
+
+          <div class="stat-mini-card">
+            <div style="background: rgba(99, 102, 241, 0.12); color: #4338ca; padding: 0.75rem; border-radius: 10px;">
+              <i data-lucide="inbox" style="width: 22px; height: 22px;"></i>
+            </div>
+            <div>
+              <div style="font-size: 1.35rem; font-weight: 800; color: #4338ca;" id="statAlertsCount">0</div>
+              <div style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">طلبات وتنبيهات 📩</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div style="display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.5rem; margin-bottom: 1.25rem;">
+          <button class="notif-filter-tab active" data-tab="all">
+            <i data-lucide="layers"></i> جميع الإشعارات
+          </button>
+          <button class="notif-filter-tab" data-tab="completed_session">
+            <i data-lucide="check-circle-2" style="color: #10b981;"></i> 🟢 الحصص المكتملة
+          </button>
+          <button class="notif-filter-tab" data-tab="late_session_recorded">
+            <i data-lucide="clock" style="color: #f59e0b;"></i> ⏱️ الحصص المتأخرة
+          </button>
+          <button class="notif-filter-tab" data-tab="overdue_unrecorded_session">
+            <i data-lucide="alert-triangle" style="color: #ef4444;"></i> ⚠️ الحصص غير المسجلة
+          </button>
+          <button class="notif-filter-tab" data-tab="requests_alerts">
+            <i data-lucide="mail" style="color: #6366f1;"></i> 📩 الطلبات والتعميمات
+          </button>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="card" style="padding: 1rem; margin-bottom: 1.5rem;">
+          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 0.75rem; flex-wrap: wrap;">
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.3rem; display: block;">بحث بالكلمات أو المعلم أو الطالب</label>
+              <input type="text" id="notifSearchInput" class="form-control" placeholder="ابحث باسم المعلم، الطالب، المجموعة، أو نص الإشعار...">
+            </div>
+
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.3rem; display: block;">تصفية حسب المعلم</label>
+              <select id="teacherFilterSelect" class="form-control">
+                <option value="">جميع المعلمين</option>
+              </select>
+            </div>
+
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.3rem; display: block;">تاريخ الإشعار</label>
+              <input type="date" id="dateFilterInput" class="form-control">
+            </div>
+
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.3rem; display: block;">حالة العرض</label>
+              <select id="statusFilterSelect" class="form-control">
+                <option value="all">جميع الحالات (غير المؤرشفة)</option>
+                <option value="unread">🔴 غير مقروء فقط</option>
+                <option value="read">👁️ مقروء فقط</option>
+                <option value="archived">📁 الإشعارات المؤرشفة</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notifications Container List -->
+        <div id="adminNotifListContainer" style="display: flex; flex-direction: column; gap: 1rem;">
+          <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
+            <i data-lucide="loader-2" class="spin" style="width: 32px; height: 32px; margin-bottom: 0.5rem; color: var(--primary-color);"></i>
+            <p style="font-weight: 600;">جاري تحميل سجل إشعارات الأدمن...</p>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal: Broadcast Push Notification -->
+  <div id="broadcastModal" class="modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999; padding: 1rem;">
+    <div class="modal-content" style="background: var(--bg-primary); border-radius: 12px; padding: 1.5rem; width: 100%; max-width: 520px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <h3 style="margin: 0; font-weight: 800; font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="send" style="color: var(--primary-color);"></i> بث إشعار Push جديد 📲
+        </h3>
+        <button id="closeBroadcastModalBtn" style="background: transparent; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+      </div>
+
+      <form id="broadcastNotificationForm">
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label for="notifTitle" style="font-weight: 700; font-size: 0.85rem; margin-bottom: 0.3rem; display: block;">عنوان الإشعار</label>
+          <input type="text" id="notifTitle" class="form-control" placeholder="مثال: تنبيه هام بشأن مواعيد الحصص..." required style="font-weight: bold;">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label for="notifBody" style="font-weight: 700; font-size: 0.85rem; margin-bottom: 0.3rem; display: block;">محتوى التنبيه</label>
+          <textarea id="notifBody" class="form-control" rows="3" placeholder="اكتب نص الرسالة والإشعار هنا..." required></textarea>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label for="notifRecipient" style="font-weight: 700; font-size: 0.85rem; margin-bottom: 0.3rem; display: block;">المستهدف بالإرسال</label>
+          <select id="notifRecipient" class="form-control" style="font-weight: 600;">
+            <option value="all">جميع المعلمين 👥</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+          <label for="notifUrl" style="font-weight: 700; font-size: 0.85rem; margin-bottom: 0.3rem; display: block;">رابط توجيه التطبيق (Deep Link)</label>
+          <select id="notifUrl" class="form-control">
+            <option value="/teacher/today-sessions.html">جدول حصص اليوم 📅</option>
+            <option value="/teacher/notifications.html">مركز الإشعارات 🔔</option>
+            <option value="/teacher/sessions.html">سجل الحصص 📖</option>
+          </select>
+        </div>
+
+        <button type="submit" id="submitNotifBtn" class="btn btn-primary" style="width: 100%; gap: 0.5rem; font-weight: 700; padding: 0.75rem;">
+          <i data-lucide="send"></i> بث وتنبيه الهواتف فوراً
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Notification Details -->
+  <div id="notifDetailModal" class="modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999; padding: 1rem;">
+    <div class="modal-content" style="background: var(--bg-primary); border-radius: 12px; padding: 1.5rem; width: 100%; max-width: 600px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+        <h3 style="margin: 0; font-weight: 800; font-size: 1.15rem;" id="modalNotifTitle">تفاصيل الإشعار الإداري</h3>
+        <button id="closeDetailModalBtn" style="background: transparent; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+      </div>
+      <div id="modalNotifBodyContent" style="margin-bottom: 1.25rem; line-height: 1.6; font-size: 0.95rem; color: var(--text-primary); white-space: pre-line;"></div>
+      <div id="modalNotifMetaTable" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem; font-size: 0.85rem;"></div>
+      <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+        <button id="modalActionToggleRead" class="btn btn-secondary" style="font-weight: 600;"></button>
+        <button id="modalActionArchive" class="btn btn-secondary" style="font-weight: 600;"></button>
+        <button id="modalActionDelete" class="btn btn-secondary" style="color: var(--danger); font-weight: 600;">حذف الإشعار 🗑️</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { collection, onSnapshot, doc, getDocs, deleteDoc, updateDoc, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+    import { showCustomConfirm } from '../assets/js/shared/utils/helpers.js';
+    import { dispatchPushNotification } from '../assets/js/shared/utils/fcmManager.js';
+
+    protectRoute('admin');
+
+    let allNotifications = [];
+    let teachersMap = new Map();
+    let currentTab = 'all';
+    let selectedNotifForModal = null;
+
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        renderSidebar('notifications', 'admin');
+        renderNavbar('مركز إشعارات الأدمن والتنبيهات الإدارية', { name: 'الإدارة العامة', roleName: 'مدير الأكاديمية' });
+        initAdminNotificationCenter();
+      }
+    });
+
+    async function initAdminNotificationCenter() {
+      // 1. جلب قائمة المعلمين للفلترة
+      try {
+        const teachersQuery = query(collection(db, "users"), where("role", "==", "teacher"));
+        const tSnap = await getDocs(teachersQuery);
+        const tSelect = document.getElementById('teacherFilterSelect');
+        const recipientSelect = document.getElementById('notifRecipient');
+
+        tSnap.forEach(docSnap => {
+          const tData = docSnap.data();
+          teachersMap.set(docSnap.id, tData.name || 'معلم غير مسمى');
+
+          const opt1 = document.createElement('option');
+          opt1.value = docSnap.id;
+          opt1.textContent = tData.name || 'معلم غير مسمى';
+          tSelect.appendChild(opt1);
+
+          const opt2 = document.createElement('option');
+          opt2.value = docSnap.id;
+          opt2.textContent = `المعلم: ${tData.name || 'غير مسمى'}`;
+          recipientSelect.appendChild(opt2);
+        });
+      } catch (err) {
+        console.warn("Error fetching teachers for filter:", err);
+      }
+
+      // 2. الاستماع الفوري لإشعارات الأدمن
+      onSnapshot(collection(db, "notifications"), (snapshot) => {
+        const items = [];
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+
+          // تصفية حازمة: فقط الإشعارات الموجهة للأدمن أو الأحداث الإدارية
+          const isAdminNotif = (
+            data.recipientId === 'admin' ||
+            data.recipientId === 'sub_admin' ||
+            data.recipientRole === 'admin' ||
+            data.targetRole === 'admin' ||
+            data.type === 'completed_session' ||
+            data.type === 'late_session_recorded' ||
+            data.type === 'overdue_unrecorded_session' ||
+            data.type === 'trial_session_submitted' ||
+            data.type === 'password_reset_request' ||
+            data.type === 'new_student_request' ||
+            data.type === 'broadcast' ||
+            Boolean(data.teacherPassword)
+          );
+
+          // استبعاد إشعارات ولي الأمر الخاصة نهائياً
+          const isParentOnly = (
+            data.recipientRole === 'parent' ||
+            data.targetRole === 'parent' ||
+            data.type === 'parent_update' ||
+            data.type === 'parent_session_report'
+          );
+
+          if (isAdminNotif && !isParentOnly) {
+            items.push({ id: docSnap.id, ...data });
+          }
+        });
+
+        // الترتيب: الأحدث أولاً
+        items.sort((a, b) => {
+          const timeA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : (new Date(a.createdAt || 0).getTime());
+          const timeB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : (new Date(b.createdAt || 0).getTime());
+          return timeB - timeA;
+        });
+
+        allNotifications = items;
+        updateSummaryStats();
+        renderNotificationsList();
+      });
+
+      // ربط أحداث الفلترة والبحث
+      document.querySelectorAll('.notif-filter-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.notif-filter-tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          currentTab = tab.dataset.tab;
+          renderNotificationsList();
+        });
+      });
+
+      document.getElementById('notifSearchInput').addEventListener('input', renderNotificationsList);
+      document.getElementById('teacherFilterSelect').addEventListener('change', renderNotificationsList);
+      document.getElementById('dateFilterInput').addEventListener('change', renderNotificationsList);
+      document.getElementById('statusFilterSelect').addEventListener('change', renderNotificationsList);
+
+      // أزرار العمليات الجماعية
+      document.getElementById('markAllReadBtn').addEventListener('click', markAllNotificationsAsRead);
+      document.getElementById('archiveReadBtn').addEventListener('click', archiveReadNotifications);
+
+      // البث الفوري Modal
+      document.getElementById('toggleBroadcastModalBtn').addEventListener('click', () => {
+        document.getElementById('broadcastModal').style.display = 'flex';
+      });
+      document.getElementById('closeBroadcastModalBtn').addEventListener('click', () => {
+        document.getElementById('broadcastModal').style.display = 'none';
+      });
+      document.getElementById('closeDetailModalBtn').addEventListener('click', () => {
+        document.getElementById('notifDetailModal').style.display = 'none';
+      });
+
+      // إرسال Push Notification
+      document.getElementById('broadcastNotificationForm').addEventListener('submit', handleBroadcastPushSubmit);
+    }
+
+    function updateSummaryStats() {
+      const total = allNotifications.filter(n => !n.archived).length;
+      const completed = allNotifications.filter(n => n.type === 'completed_session' && !n.archived).length;
+      const late = allNotifications.filter(n => (n.type === 'late_session_recorded' || n.isLate) && !n.archived).length;
+      const overdue = allNotifications.filter(n => n.type === 'overdue_unrecorded_session' && !n.archived).length;
+      const alerts = allNotifications.filter(n => !['completed_session', 'late_session_recorded', 'overdue_unrecorded_session'].includes(n.type) && !n.archived).length;
+
+      document.getElementById('statTotalCount').textContent = total;
+      document.getElementById('statCompletedCount').textContent = completed;
+      document.getElementById('statLateCount').textContent = late;
+      document.getElementById('statOverdueCount').textContent = overdue;
+      document.getElementById('statAlertsCount').textContent = alerts;
+    }
+
+    function renderNotificationsList() {
+      const container = document.getElementById('adminNotifListContainer');
+      const searchQuery = document.getElementById('notifSearchInput').value.trim().toLowerCase();
+      const teacherFilter = document.getElementById('teacherFilterSelect').value;
+      const dateFilter = document.getElementById('dateFilterInput').value;
+      const statusFilter = document.getElementById('statusFilterSelect').value;
+
+      let filtered = allNotifications.filter(item => {
+        // 1. فلترة التبويب
+        if (currentTab === 'completed_session' && item.type !== 'completed_session') return false;
+        if (currentTab === 'late_session_recorded' && (item.type !== 'late_session_recorded' && !item.isLate)) return false;
+        if (currentTab === 'overdue_unrecorded_session' && item.type !== 'overdue_unrecorded_session') return false;
+        if (currentTab === 'requests_alerts' && ['completed_session', 'late_session_recorded', 'overdue_unrecorded_session'].includes(item.type)) return false;
+
+        // 2. حالة الأرشفة والقراءة
+        if (statusFilter === 'archived') {
+          if (!item.archived) return false;
+        } else {
+          if (item.archived) return false;
+          if (statusFilter === 'unread' && item.read) return false;
+          if (statusFilter === 'read' && !item.read) return false;
+        }
+
+        // 3. فلترة المعلم
+        if (teacherFilter && item.teacherId !== teacherFilter) return false;
+
+        // 4. فلترة التاريخ
+        if (dateFilter) {
+          const itemDateStr = item.createdAt ? (item.createdAt.seconds ? new Date(item.createdAt.seconds * 1000).toISOString().substring(0,10) : new Date(item.createdAt).toISOString().substring(0,10)) : '';
+          if (itemDateStr !== dateFilter) return false;
+        }
+
+        // 5. النص
+        if (searchQuery) {
+          const text = `${item.title || ''} ${item.body || ''} ${item.teacherName || ''} ${item.targetName || ''} ${item.studentName || ''} ${item.groupName || ''}`.toLowerCase();
+          if (!text.includes(searchQuery)) return false;
+        }
+
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 12px; padding: 3rem; text-align: center; color: var(--text-muted);">
+            <i data-lucide="bell-off" style="width: 40px; height: 40px; stroke-width: 1.5; margin-bottom: 0.75rem; color: var(--text-muted);"></i>
+            <h4 style="font-weight: 700; color: var(--text-primary); margin: 0 0 0.3rem 0;">لا توجد إشعارات مطابقة</h4>
+            <p style="font-size: 0.85rem; margin: 0;">لم يتم العثور على أي إشعارات إدارية وفقاً للشروط أو الفلاتر المحددة.</p>
+          </div>
+        `;
+        if (window.lucide) window.lucide.createIcons();
+        return;
+      }
+
+      container.innerHTML = filtered.map(item => {
+        const isRead = Boolean(item.read);
+        const isArchived = Boolean(item.archived);
+        const dateStr = item.createdAt 
+          ? (item.createdAt.seconds ? new Date(item.createdAt.seconds * 1000).toLocaleString('ar-EG') : new Date(item.createdAt).toLocaleString('ar-EG'))
+          : 'الآن';
+
+        let badgeHtml = '';
+        let iconName = 'bell';
+
+        if (item.type === 'completed_session') {
+          badgeHtml = `<span class="badge notif-badge-completed">🟢 حصة مكتملة</span>`;
+          iconName = 'check-circle-2';
+        } else if (item.type === 'late_session_recorded' || item.isLate) {
+          const delayText = item.delayMinutes ? ` (تأخير ${item.delayMinutes} د)` : '';
+          badgeHtml = `<span class="badge notif-badge-late">⏱️ تسجيل متأخر${delayText}</span>`;
+          iconName = 'clock';
+        } else if (item.type === 'overdue_unrecorded_session') {
+          badgeHtml = `<span class="badge notif-badge-overdue">⚠️ حصة غير مسجلة</span>`;
+          iconName = 'alert-triangle';
+        } else {
+          badgeHtml = `<span class="badge notif-badge-alert">📩 طلب / تنبيه إداري</span>`;
+          iconName = 'inbox';
+        }
+
+        const teacherName = item.teacherName || teachersMap.get(item.teacherId) || 'غير محدد';
+        const targetName = item.targetName || item.studentName || item.groupName || '';
+        const targetTypeLabel = item.sessionType === 'group' ? '👥 مجموعة:' : '👤 طالب:';
+
+        return `
+          <div class="admin-notif-item ${!isRead ? 'unread' : ''} ${isArchived ? 'archived' : ''}" data-id="${item.id}">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; margin-bottom: 0.5rem; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="${iconName}" style="width: 20px; height: 20px; color: var(--primary-color);"></i>
+                <h3 style="font-weight: 800; font-size: 1rem; color: var(--text-primary); margin: 0;">${item.title || 'إشعار إداري'}</h3>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.4rem;">
+                ${badgeHtml}
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">📅 ${dateStr}</span>
+              </div>
+            </div>
+
+            <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5; margin: 0 0 0.75rem 0; white-space: pre-line;">${item.body || item.message || ''}</p>
+
+            <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; font-size: 0.78rem; color: var(--text-muted); background: var(--bg-secondary); padding: 0.5rem 0.75rem; border-radius: 6px; margin-bottom: 0.75rem;">
+              <span><strong>👨‍🏫 المعلم:</strong> ${teacherName}</span>
+              ${targetName ? `<span><strong>${targetTypeLabel}</strong> ${targetName}</span>` : ''}
+              ${item.scheduledTime ? `<span><strong>📅 الموعد المجدول:</strong> ${item.scheduledTime}</span>` : ''}
+              ${item.recordedTime ? `<span><strong>🕒 وقت التسجيل الفعلي:</strong> ${item.recordedTime}</span>` : ''}
+              ${item.delayMinutes ? `<span style="color: #b45309;"><strong>⌛ التأخير:</strong> ${item.delayMinutes} دقيقة</span>` : ''}
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+              <button class="btn btn-secondary view-details-btn" data-id="${item.id}" style="font-size: 0.78rem; padding: 0.35rem 0.75rem; font-weight: 700; gap: 0.3rem;">
+                <i data-lucide="eye" style="width: 14px; height: 14px;"></i> عرض التفاصيل الكاملة
+              </button>
+
+              <div style="display: flex; gap: 0.4rem; align-items: center;">
+                <button class="btn btn-secondary toggle-read-btn" data-id="${item.id}" style="font-size: 0.75rem; padding: 0.3rem 0.6rem;" title="${isRead ? 'تحديد كغير مقروء' : 'تحديد كمقروء'}">
+                  ${isRead ? '🔴 غير مقروء' : '✅ مقروء'}
+                </button>
+                <button class="btn btn-secondary toggle-archive-btn" data-id="${item.id}" style="font-size: 0.75rem; padding: 0.3rem 0.6rem;" title="${isArchived ? 'إلغاء الأرشفة' : 'أرشفة الإشعار'}">
+                  ${isArchived ? '📂 إلغاء الأرشفة' : '📁 أرشفة'}
+                </button>
+                <button class="btn btn-secondary delete-btn" data-id="${item.id}" style="font-size: 0.75rem; padding: 0.3rem; color: var(--danger);" title="حذف الإشعار">
+                  <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (window.lucide) window.lucide.createIcons();
+
+      // ربط أزرار الكروت
+      document.querySelectorAll('.view-details-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openNotificationDetailsModal(btn.dataset.id);
+        });
+      });
+
+      document.querySelectorAll('.toggle-read-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.id;
+          const notif = allNotifications.find(n => n.id === id);
+          if (!notif) return;
+          await updateDoc(doc(db, "notifications", id), { read: !notif.read });
+          Toast.success(notif.read ? "تم تحديد الإشعار كغير مقروء." : "تم تحديد الإشعار كمقروء.");
+        });
+      });
+
+      document.querySelectorAll('.toggle-archive-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.id;
+          const notif = allNotifications.find(n => n.id === id);
+          if (!notif) return;
+          await updateDoc(doc(db, "notifications", id), { archived: !notif.archived });
+          Toast.info(notif.archived ? "تم إلغاء أرشفة الإشعار." : "تم نقل الإشعار إلى الأرشيف 📁");
+        });
+      });
+
+      document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.id;
+          showCustomConfirm("هل تريد حذف هذا الإشعار الإداري نهائياً؟", async () => {
+            await deleteDoc(doc(db, "notifications", id));
+            Toast.danger("تم حذف الإشعار.");
+          });
+        });
+      });
+    }
+
+    function openNotificationDetailsModal(id) {
+      const notif = allNotifications.find(n => n.id === id);
+      if (!notif) return;
+
+      selectedNotifForModal = notif;
+      document.getElementById('modalNotifTitle').textContent = notif.title || 'تفاصيل الإشعار الإداري';
+      document.getElementById('modalNotifBodyContent').textContent = notif.body || notif.message || '';
+
+      const dateStr = notif.createdAt 
+        ? (notif.createdAt.seconds ? new Date(notif.createdAt.seconds * 1000).toLocaleString('ar-EG') : new Date(notif.createdAt).toLocaleString('ar-EG'))
+        : 'الآن';
+
+      const teacherName = notif.teacherName || teachersMap.get(notif.teacherId) || 'غير محدد';
+      const targetName = notif.targetName || notif.studentName || notif.groupName || 'غير محدد';
+
+      document.getElementById('modalNotifMetaTable').innerHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div><strong>👨‍🏫 المعلم المشرف:</strong> ${teacherName}</div>
+          <div><strong>🎯 المستهدف (طالب/مجموعة):</strong> ${targetName} (${notif.sessionType === 'group' ? 'مجموعة' : 'حصة فردية'})</div>
+          <div><strong>📅 الموعد الاصلي:</strong> ${notif.scheduledTime || 'مرن / غير محدد'}</div>
+          <div><strong>🕒 وقت التسجيل الفعلي:</strong> ${notif.recordedTime || 'غير محدد'}</div>
+          <div><strong>⌛ مدة التأخير:</strong> ${notif.delayMinutes ? `${notif.delayMinutes} دقيقة` : 'لا يوجد تأخير'}</div>
+          <div><strong>⏱️ تاريخ الإرسال:</strong> ${dateStr}</div>
+          <div><strong>📌 نوع التنبيه الإداري:</strong> ${notif.type || notif.category || 'عام'}</div>
+          <div><strong>👁️ حالة القراءة:</strong> ${notif.read ? 'مقروء ✅' : 'غير مقروء 🔴'}</div>
+        </div>
+      `;
+
+      const btnRead = document.getElementById('modalActionToggleRead');
+      btnRead.textContent = notif.read ? 'تحديد كغير مقروء 🔴' : 'تحديد كمقروء ✅';
+      btnRead.onclick = async () => {
+        await updateDoc(doc(db, "notifications", notif.id), { read: !notif.read });
+        document.getElementById('notifDetailModal').style.display = 'none';
+        Toast.success("تم تحديث حالة القراءة.");
+      };
+
+      const btnArchive = document.getElementById('modalActionArchive');
+      btnArchive.textContent = notif.archived ? 'إلغاء الأرشفة 📂' : 'أرشفة الإشعار 📁';
+      btnArchive.onclick = async () => {
+        await updateDoc(doc(db, "notifications", notif.id), { archived: !notif.archived });
+        document.getElementById('notifDetailModal').style.display = 'none';
+        Toast.info("تم تحديث حالة الأرشفة.");
+      };
+
+      document.getElementById('modalActionDelete').onclick = () => {
+        showCustomConfirm("هل تريد حذف هذا الإشعار نهائياً؟", async () => {
+          await deleteDoc(doc(db, "notifications", notif.id));
+          document.getElementById('notifDetailModal').style.display = 'none';
+          Toast.danger("تم الحذف.");
+        });
+      };
+
+      // تعليم الإشعار كمقروء تلقائياً عند الفتح
+      if (!notif.read) {
+        updateDoc(doc(db, "notifications", notif.id), { read: true }).catch(e => console.warn(e));
+      }
+
+      document.getElementById('notifDetailModal').style.display = 'flex';
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    async function markAllNotificationsAsRead() {
+      const unread = allNotifications.filter(n => !n.read);
+      if (unread.length === 0) {
+        Toast.info("جميع الإشعارات مقروءة بالفعل 👍");
+        return;
+      }
+
+      showCustomConfirm(`هل تريد تحديد (${unread.length}) إشعار كمقروء؟`, async () => {
+        const promises = unread.map(n => updateDoc(doc(db, "notifications", n.id), { read: true }));
+        await Promise.all(promises);
+        Toast.success("تم تحديد جميع الإشعارات كمقروءة ✅");
+      });
+    }
+
+    async function archiveReadNotifications() {
+      const readNotifs = allNotifications.filter(n => n.read && !n.archived);
+      if (readNotifs.length === 0) {
+        Toast.info("لا توجد إشعارات مقروءة بانتظار الأرشفة.");
+        return;
+      }
+
+      showCustomConfirm(`هل تريد أرشفة (${readNotifs.length}) إشعار مقروء؟`, async () => {
+        const promises = readNotifs.map(n => updateDoc(doc(db, "notifications", n.id), { archived: true }));
+        await Promise.all(promises);
+        Toast.success("تم أرشفة الإشعارات المقروءة 📁");
+      });
+    }
+
+    async function handleBroadcastPushSubmit(e) {
+      e.preventDefault();
+      const btn = document.getElementById('submitNotifBtn');
+      const title = document.getElementById('notifTitle').value.trim();
+      const body = document.getElementById('notifBody').value.trim();
+      const recipientId = document.getElementById('notifRecipient').value;
+      const url = document.getElementById('notifUrl').value;
+
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="spin"></i> جاري تنبيه أجهزة وهواتف المعلمين...`;
+
+      try {
+        await dispatchPushNotification({
+          title,
+          body,
+          recipientId,
+          type: 'broadcast',
+          url
+        });
+
+        Toast.success("تم بث الإشعار بنجاح وتنبيه المعلمين 📲✅");
+        document.getElementById('broadcastNotificationForm').reset();
+        document.getElementById('broadcastModal').style.display = 'none';
+      } catch (err) {
+        console.error(err);
+        Toast.danger("حدث خطأ أثناء بث الإشعار.");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="send"></i> بث وتنبيه الهواتف فوراً`;
+        if (window.lucide) window.lucide.createIcons();
+      }
+    }
+  </script>
+</body>
+</html>
