@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - التقارير المتقدمة</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js للمطابقة البيانية المتقدمة -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0;">التحليلات المالية والتقارير المتقدمة</h1>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">تقييم أداء المعلمين وحساب الرواتب الدورية وتتبع غياب الطلاب بالتنسيق اللحظي.</p>
+          </div>
+
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <button class="btn btn-secondary range-btn" id="btnRangeMonth">الشهر الحالي</button>
+            <button class="btn btn-secondary range-btn" id="btnRangeWeek">الأسبوع الأخير</button>
+            <button class="btn btn-secondary range-btn" id="btnRangeDay">اليوم</button>
+          </div>
+        </div>
+
+        <!-- 4 كروت إحصائية تجميعية سريعة بالتقارير المتقدمة -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+          <div class="card">
+            <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem;">إجمالي ساعات التحريس</h3>
+            <h2 id="statTotalHours" style="font-size: 1.75rem; font-weight: 800; color: var(--primary-color);">0.0 ساعة</h2>
+          </div>
+          <div class="card">
+            <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem;">الحصص المكتملة المنجزة</h3>
+            <h2 id="statTotalSessions" style="font-size: 1.75rem; font-weight: 800; color: var(--success);">0 حصة</h2>
+          </div>
+          <div class="card">
+            <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem;">معدل حضور والتزام الطلاب</h3>
+            <h2 id="statAttendanceRate" style="font-size: 1.75rem; font-weight: 800; color: var(--warning);">100%</h2>
+          </div>
+          <div class="card">
+            <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem;">فاتورة الرواتب المعتمدة</h3>
+            <h2 id="statTotalPayroll" style="font-size: 1.75rem; font-weight: 800; color: var(--danger);">0.00 ج.م</h2>
+          </div>
+        </div>
+
+        <!-- تخطيط الشارتات والتحليلات الجغرافية -->
+        <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.5rem; margin-bottom: 2rem; flex-wrap: wrap;">
+          <div class="card">
+            <h3 style="font-weight: 700; font-size: 1.1rem; margin-bottom: 1rem;">حجم الحصص والتحصيل الأسبوعي للدروس</h3>
+            <div style="height: 250px; position: relative;">
+              <canvas id="sessionsTrendsChart"></canvas>
+            </div>
+          </div>
+
+          <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+            <h3 style="font-weight: 700; font-size: 1.1rem; margin-bottom: 1rem;">معدلات الغياب ونسب الالتزام</h3>
+            <div style="height: 180px; position: relative; margin: 0 auto;">
+              <canvas id="attendanceRateChart"></canvas>
+            </div>
+            <div style="display: flex; justify-content: space-around; font-size: 0.8rem; font-weight: 700; margin-top: 1rem; flex-wrap:wrap; gap:0.25rem;">
+              <span style="color: #10b981;">● تمت بنجاح</span>
+              <span style="color: #f59e0b;">● مؤجلة</span>
+              <span style="color: #ef4444;">● غياب طلاب</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- جدول الأداء المالي والرواتب المعتمدة للمعلمين (Payroll Engine Grid) -->
+        <div class="card">
+          <h3 style="font-weight: 700; font-size: 1.1rem; margin-bottom: 1.25rem;"><i data-lucide="wallet" style="width:20px;height:20px;"></i> كشف تصفية وجرد مستحقات المعلمين الفعالة</h3>
+          <div class="table-container" style="margin-top: 0;">
+            <table>
+              <thead>
+                <tr>
+                  <th>المعلم المشرف</th>
+                  <th>الأجر الافتراضي / الساعة</th>
+                  <th>الساعات والأنصبة المعتمدة</th>
+                  <th>الحصص المنجزة</th>
+                  <th>فترة الاحتساب المعتمدة</th>
+                  <th>المستحق النهائي ج.م</th>
+                </tr>
+              </thead>
+              <tbody id="payrollTableBody">
+                <tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">جاري حساب ومطابقة كشوف الأجور اللحظية...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { initReportsRealtime, setReportsRange } from '../assets/js/features/reports/reportsController.js';
+
+    protectRoute('admin');
+
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        renderSidebar('reports', 'admin');
+        renderNavbar('التقارير المتقدمة والرواتب', { name: 'الإدارة العامة', roleName: 'مدير الأكاديمية' });
+        
+        // ربط الإشارات والشارتات فوريًا
+        initReportsRealtime();
+      }
+    });
+
+    const btnMonth = document.getElementById('btnRangeMonth');
+    const btnWeek = document.getElementById('btnRangeWeek');
+    const btnDay = document.getElementById('btnRangeDay');
+
+    function resetRangeActive() {
+      btnMonth.classList.remove('active');
+      btnWeek.classList.remove('active');
+      btnDay.classList.remove('active');
+    }
+
+    btnMonth.addEventListener('click', () => {
+      resetRangeActive();
+      btnMonth.classList.add('active');
+      setReportsRange('month');
+    });
+
+    btnWeek.addEventListener('click', () => {
+      resetRangeActive();
+      btnWeek.classList.add('active');
+      setReportsRange('week');
+    });
+
+    btnDay.addEventListener('click', () => {
+      resetRangeActive();
+      btnDay.classList.add('active');
+      setReportsRange('day');
+    });
+
+    // تعيين الشهر كخيار افتراضي نشط فوريًا
+    btnMonth.classList.add('active');
+  </script>
+</body>
+</html>

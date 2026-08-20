@@ -1,0 +1,351 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile for admins and teachers",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 150 },
+        "role": { "type": "string", "enum": ["admin", "teacher"] },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected", "active"] },
+        "phone": { "type": "string", "maxLength": 30 },
+        "bio": { "type": "string", "maxLength": 500 },
+        "permissions": { "type": "object" },
+        "paymentChannels": { "type": "object" },
+        "hourlyRate": { "type": "number" },
+        "monthlySalary": { "type": "number" },
+        "salaryType": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["name", "email", "role"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "Student record managed by admins or teachers",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "parentPhone": { "type": "string", "maxLength": 30 },
+        "teacherId": { "type": "string", "maxLength": 128 },
+        "requestedByTeacherId": { "type": "string", "maxLength": 128 },
+        "status": { "type": "string", "maxLength": 30 },
+        "subject": { "type": "string", "maxLength": 100 },
+        "notes": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "Session": {
+      "title": "Session",
+      "description": "Educational session record",
+      "type": "object",
+      "properties": {
+        "teacherId": { "type": "string", "maxLength": 128 },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "studentName": { "type": "string", "maxLength": 100 },
+        "date": { "type": "string", "maxLength": 20 },
+        "startTime": { "type": "string", "maxLength": 20 },
+        "endTime": { "type": "string", "maxLength": 20 },
+        "duration": { "type": "number" },
+        "status": { "type": "string", "enum": ["completed", "absent", "delayed", "postponed", "cancelled"] },
+        "notes": { "type": "string", "maxLength": 500 },
+        "approved": { "type": "boolean" },
+        "cost": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["teacherId", "studentId", "date"]
+    },
+    "Subscription": {
+      "title": "Subscription",
+      "description": "Student package subscription",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string", "maxLength": 128 },
+        "packageId": { "type": "string", "maxLength": 128 },
+        "price": { "type": "number" },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      }
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "Financial payment transaction",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string", "maxLength": 128 },
+        "subscriptionId": { "type": "string", "maxLength": 128 },
+        "amount": { "type": "number" },
+        "date": { "type": "string" },
+        "method": { "type": "string" },
+        "notes": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string" }
+      }
+    },
+    "Package": {
+      "title": "Package",
+      "description": "Educational course or subscription package",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "price": { "type": "number" },
+        "sessionsCount": { "type": "number" },
+        "createdAt": { "type": "string" }
+      }
+    },
+    "SalaryArchive": {
+      "title": "SalaryArchive",
+      "description": "Archived salary statement for teachers",
+      "type": "object",
+      "properties": {
+        "teacherId": { "type": "string", "maxLength": 128 },
+        "teacherName": { "type": "string", "maxLength": 100 },
+        "month": { "type": "string", "maxLength": 20 },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "paid", "confirmed"] },
+        "details": { "type": "object" },
+        "createdAt": { "type": "string" },
+        "confirmedAt": { "type": "string" }
+      },
+      "required": ["teacherId", "month", "amount"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "System alert or notification message",
+      "type": "object",
+      "properties": {
+        "recipientId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 150 },
+        "body": { "type": "string", "maxLength": 1000 },
+        "read": { "type": "boolean" },
+        "type": { "type": "string", "maxLength": 50 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["recipientId", "title"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Audit trail log of actions taken in the academy",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "userName": { "type": "string", "maxLength": 100 },
+        "action": { "type": "string", "maxLength": 100 },
+        "details": { "type": "string", "maxLength": 1000 },
+        "timestamp": { "type": "string" }
+      }
+    },
+    "Setting": {
+      "title": "Setting",
+      "description": "Academy setting or configuration document",
+      "type": "object",
+      "properties": {
+        "academyName": { "type": "string", "maxLength": 100 },
+        "currency": { "type": "string", "maxLength": 10 },
+        "rules": { "type": "object" }
+      }
+    },
+    "TrashItem": {
+      "title": "TrashItem",
+      "description": "Soft deleted or trash item",
+      "type": "object",
+      "properties": {
+        "originalCollection": { "type": "string", "maxLength": 50 },
+        "originalId": { "type": "string", "maxLength": 128 },
+        "data": { "type": "object" },
+        "deletedAt": { "type": "string" }
+      }
+    },
+    "Group": {
+      "title": "Group",
+      "description": "Group session class record",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "teacherId": { "type": "string", "maxLength": 128 },
+        "teacherName": { "type": "string", "maxLength": 100 },
+        "students": { "type": "array" },
+        "sessionDays": { "type": "array" },
+        "sessionTime": { "type": "string" },
+        "duration": { "type": "number" },
+        "createdAt": { "type": "string" }
+      }
+    },
+    "GroupSession": {
+      "title": "GroupSession",
+      "description": "Recorded session for group attendance",
+      "type": "object",
+      "properties": {
+        "groupId": { "type": "string", "maxLength": 128 },
+        "groupName": { "type": "string", "maxLength": 100 },
+        "teacherId": { "type": "string", "maxLength": 128 },
+        "teacherName": { "type": "string", "maxLength": 100 },
+        "date": { "type": "string" },
+        "duration": { "type": "number" },
+        "studentsAttendance": { "type": "object" },
+        "createdAt": { "type": "string" }
+      }
+    },
+    "StudentPackage": {
+      "title": "StudentPackage",
+      "description": "Package-based subscription and credit allocation for a student",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string", "maxLength": 128 },
+        "studentName": { "type": "string", "maxLength": 100 },
+        "packageId": { "type": "string", "maxLength": 128 },
+        "packageName": { "type": "string", "maxLength": 100 },
+        "totalLessons": { "type": "number" },
+        "usedLessons": { "type": "number" },
+        "remainingLessons": { "type": "number" },
+        "lessonDuration": { "type": "number" },
+        "price": { "type": "number" },
+        "discount": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "totalPaid": { "type": "number" },
+        "remainingAmount": { "type": "number" },
+        "startDate": { "type": "string", "maxLength": 30 },
+        "expiryDate": { "type": "string", "maxLength": 30 },
+        "status": { "type": "string", "enum": ["active", "completed", "expired", "cancelled"] },
+        "notes": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["studentId", "totalLessons", "remainingLessons", "status"]
+    },
+    "LessonCreditsLog": {
+      "title": "LessonCreditsLog",
+      "description": "Audit log for credit deduction, addition, or adjustment",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string", "maxLength": 128 },
+        "studentName": { "type": "string", "maxLength": 100 },
+        "packageId": { "type": "string", "maxLength": 128 },
+        "sessionId": { "type": "string", "maxLength": 128 },
+        "changeAmount": { "type": "number" },
+        "previousCredits": { "type": "number" },
+        "newCredits": { "type": "number" },
+        "actionType": { "type": "string", "enum": ["session_deduction", "package_purchase", "package_renew", "admin_adjustment", "session_reversal"] },
+        "reason": { "type": "string", "maxLength": 500 },
+        "performedBy": { "type": "string", "maxLength": 128 },
+        "performedByName": { "type": "string", "maxLength": 100 },
+        "timestamp": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["studentId", "changeAmount", "actionType"]
+    },
+    "StudentBalance": {
+      "title": "StudentBalance",
+      "description": "Consolidated financial and credit balance summary per student",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string", "maxLength": 128 },
+        "studentName": { "type": "string", "maxLength": 100 },
+        "totalDebit": { "type": "number" },
+        "totalPaid": { "type": "number" },
+        "outstandingBalance": { "type": "number" },
+        "activePackageId": { "type": "string", "maxLength": 128 },
+        "activePackageName": { "type": "string", "maxLength": 100 },
+        "remainingLessons": { "type": "number" },
+        "totalLessons": { "type": "number" },
+        "usedLessons": { "type": "number" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["studentId"]
+    },
+    "StudentLedger": {
+      "title": "StudentLedger",
+      "description": "Financial ledger entry for charges and payments",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string", "maxLength": 128 },
+        "studentName": { "type": "string", "maxLength": 100 },
+        "type": { "type": "string", "enum": ["charge", "payment", "discount", "refund"] },
+        "amount": { "type": "number" },
+        "referenceId": { "type": "string", "maxLength": 128 },
+        "description": { "type": "string", "maxLength": 500 },
+        "paymentMethod": { "type": "string", "maxLength": 50 },
+        "date": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["studentId", "type", "amount"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profile data for admins and teachers"
+    },
+    "/students/{studentId}": {
+      "schema": { "$ref": "#/entities/Student" },
+      "description": "Student records and enrollment info"
+    },
+    "/studentPackages/{packageId}": {
+      "schema": { "$ref": "#/entities/StudentPackage" },
+      "description": "Package-based subscriptions and credit allocations"
+    },
+    "/lessonCreditsLogs/{logId}": {
+      "schema": { "$ref": "#/entities/LessonCreditsLog" },
+      "description": "Granular credit debit and credit logs"
+    },
+    "/studentBalances/{studentId}": {
+      "schema": { "$ref": "#/entities/StudentBalance" },
+      "description": "Consolidated financial and credits balance per student"
+    },
+    "/studentLedger/{ledgerId}": {
+      "schema": { "$ref": "#/entities/StudentLedger" },
+      "description": "Financial transactions ledger"
+    },
+    "/groups/{groupId}": {
+      "schema": { "$ref": "#/entities/Group" },
+      "description": "Group class records and rosters"
+    },
+    "/group_sessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/GroupSession" },
+      "description": "Attendance logs for group sessions"
+    },
+    "/sessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/Session" },
+      "description": "Class session attendance and records"
+    },
+    "/subscriptions/{subscriptionId}": {
+      "schema": { "$ref": "#/entities/Subscription" },
+      "description": "Legacy / compatibility student subscriptions"
+    },
+    "/payments/{paymentId}": {
+      "schema": { "$ref": "#/entities/Payment" },
+      "description": "Financial payment receipts"
+    },
+    "/packages/{packageId}": {
+      "schema": { "$ref": "#/entities/Package" },
+      "description": "Available educational packages"
+    },
+    "/salaryArchive/{archiveId}": {
+      "schema": { "$ref": "#/entities/SalaryArchive" },
+      "description": "Monthly salary payout logs and history"
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/Notification" },
+      "description": "System alerts and notifications"
+    },
+    "/auditLogs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "Audit trail for system actions"
+    },
+    "/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/Setting" },
+      "description": "Global system configurations"
+    },
+    "/trash/{trashId}": {
+      "schema": { "$ref": "#/entities/TrashItem" },
+      "description": "Archived or soft-deleted items"
+    }
+  }
+}
