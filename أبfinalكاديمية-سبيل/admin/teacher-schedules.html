@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - جداول المعلمين والشواغر</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .day-column {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      min-height: 260px;
+      transition: all var(--transition-fast);
+      box-shadow: var(--shadow-xs);
+    }
+    .day-column:hover {
+      border-color: var(--border-color-strong);
+      box-shadow: var(--shadow-sm);
+    }
+    .day-header {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .class-item {
+      background-color: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius-sm);
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      transition: all var(--transition-fast);
+      position: relative;
+    }
+    .class-item:hover {
+      border-color: var(--primary-border);
+      background-color: var(--primary-subtle);
+    }
+    .free-slot-item {
+      background-color: rgba(34, 197, 94, 0.05);
+      border: 1px dashed rgba(34, 197, 94, 0.4);
+      border-radius: var(--border-radius-sm);
+      padding: 0.55rem 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--success);
+      font-size: 0.76rem;
+      font-weight: 600;
+      transition: all var(--transition-fast);
+    }
+    .free-slot-item:hover {
+      background-color: rgba(34, 197, 94, 0.1);
+      border-color: var(--success);
+    }
+    .grid-seven-days {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.15rem;
+    }
+    .occupancy-bar-bg {
+      height: 8px;
+      width: 100%;
+      background-color: var(--border-color);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .occupancy-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+    @media (max-width: 1200px) {
+      .grid-seven-days {
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      }
+    }
+    @media (max-width: 768px) {
+      .grid-seven-days {
+        grid-template-columns: 1fr;
+      }
+    }
+    @media print {
+      body {
+        background: white !important;
+        color: black !important;
+        padding: 1cm !important;
+        font-size: 10pt !important;
+      }
+      .no-print, .sidebar, .navbar, #appSidebar, #appNavbar, .btn, .view-switch-tabs, #filtersCard {
+        display: none !important;
+      }
+      .app-container {
+        display: block !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .main-wrapper {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+      }
+      .content-body {
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: 100% !important;
+      }
+      .print-header {
+        display: block !important;
+      }
+      .grid-seven-days {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 10px !important;
+      }
+      .day-column {
+        background: white !important;
+        border: 1px solid #999 !important;
+        box-shadow: none !important;
+        padding: 8px !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        min-height: auto !important;
+      }
+      .day-header {
+        color: #000 !important;
+        border-bottom: 1.5px solid #333 !important;
+      }
+      .class-item {
+        background: white !important;
+        border: 1px solid #aaa !important;
+        padding: 6px !important;
+        page-break-inside: avoid !important;
+      }
+      .free-slot-item {
+        border: 1px dashed #777 !important;
+        background: transparent !important;
+        color: #333 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        
+        <!-- Header area -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;" class="no-print">
+          <div>
+            <h1 style="font-size: 1.45rem; font-weight: 700; color: var(--text-primary); margin: 0;">جداول المعلمين والشواغر</h1>
+            <p style="color: var(--text-secondary); font-size: 0.875rem; margin-top: 0.25rem;">استعراض جداول عمل المعلمين الأسبوعية، وتحليل الساعات المشغولة والفارغة بدقة.</p>
+          </div>
+          
+          <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <button id="btnPrintSchedule" class="btn btn-secondary" style="font-weight: 600;">
+              <i data-lucide="printer" style="width: 15px; height: 15px;"></i> طباعة وتصدير
+            </button>
+            <a href="teachers.html" class="btn btn-secondary">
+              <i data-lucide="users" style="width: 15px; height: 15px;"></i> إدارة المعلمين
+            </a>
+            <a href="students.html" class="btn btn-primary">
+              <i data-lucide="user-plus" style="width: 15px; height: 15px;"></i> تسكين وتوزيع الطلاب
+            </a>
+          </div>
+        </div>
+
+        <!-- Filter & Selection Card -->
+        <div class="card no-print" id="filtersCard" style="margin-bottom: 1.5rem;">
+          <div style="display: grid; grid-template-columns: 2fr 1.5fr 1fr; gap: 1rem; align-items: flex-end;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="teacherSelect">المعلم المستهدف:</label>
+              <select id="teacherSelect" class="form-control">
+                <option value="ALL">جميع المعلمين (نظرة مقارنة شاملة والشواغر)</option>
+                <!-- Filled dynamically -->
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="dayFilterSelect">تصفية اليوم:</label>
+              <select id="dayFilterSelect" class="form-control">
+                <option value="ALL">جميع أيام الأسبوع (الأحد - السبت)</option>
+                <option value="Sunday">الأحد</option>
+                <option value="Monday">الاثنين</option>
+                <option value="Tuesday">الثلاثاء</option>
+                <option value="Wednesday">الأربعاء</option>
+                <option value="Thursday">الخميس</option>
+                <option value="Friday">الجمعة</option>
+                <option value="Saturday">السبت</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="workWindowSelect">نافذة دوام المعلم اليومية:</label>
+              <select id="workWindowSelect" class="form-control">
+                <option value="8">8 ساعات (02:00 م - 10:00 م)</option>
+                <option value="6">6 ساعات (03:00 م - 09:00 م)</option>
+                <option value="10">10 ساعات (01:00 م - 11:00 م)</option>
+                <option value="12">12 ساعة (دوام كامل مرن)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Summary Metrics -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;" id="metricsContainer">
+          <div class="metric-card">
+            <span class="metric-label">
+              <i data-lucide="clock" style="width: 15px; height: 15px; color: var(--primary-color);"></i>
+              ساعات التدريس الأسبوعية
+            </span>
+            <span class="metric-value" id="metricScheduledHours">0.0 ساعة</span>
+            <span class="metric-footer" id="metricSessionsCount">0 حصة مجدولة</span>
+          </div>
+
+          <div class="metric-card">
+            <span class="metric-label">
+              <i data-lucide="calendar-check" style="width: 15px; height: 15px; color: var(--success);"></i>
+              الساعات الفارغة المتاحة
+            </span>
+            <span class="metric-value" id="metricFreeHours" style="color: var(--success);">0.0 ساعة</span>
+            <span class="metric-footer" id="metricFreeSlotsCount">متاح لتسكين طلاب جدد</span>
+          </div>
+
+          <div class="metric-card">
+            <span class="metric-label">
+              <i data-lucide="activity" style="width: 15px; height: 15px; color: var(--warning);"></i>
+              نسبة الإشغال الأسبوعي
+            </span>
+            <span class="metric-value" id="metricOccupancyRate">0%</span>
+            <div class="occupancy-bar-bg" style="margin-top: 0.35rem;">
+              <div class="occupancy-bar-fill" id="metricOccupancyBar" style="width: 0%; background-color: var(--primary-color);"></div>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <span class="metric-label">
+              <i data-lucide="users" style="width: 15px; height: 15px; color: var(--info);"></i>
+              الطلاب والمجموعات
+            </span>
+            <span class="metric-value" id="metricStudentsCount">0</span>
+            <span class="metric-footer" id="metricGroupsCount">0 مجموعات جماعية</span>
+          </div>
+        </div>
+
+        <!-- Print Header (Visible only when printing) -->
+        <div class="print-header" style="display: none; margin-bottom: 1.5rem; border-bottom: 2px solid var(--border-color); padding-bottom: 1rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+            <div>
+              <h2 style="font-size: 1.4rem; font-weight: 800; color: #000; margin: 0;" id="printAcademyName">أكاديمية سبيل</h2>
+              <p style="font-size: 0.85rem; color: #555; margin: 0.2rem 0 0 0;" id="printAcademyDesc">جدول عمل المعلمين وتوزيع الساعات والشواغر</p>
+            </div>
+            <div style="text-align: left; direction: ltr;">
+              <h3 style="font-size: 1.1rem; font-weight: 700; color: #000; margin: 0; direction: rtl;" id="printTargetTitle">جدول المعلم: -</h3>
+              <p style="font-size: 0.8rem; color: #555; margin: 0.2rem 0 0 0; direction: rtl;" id="printDateGenerated">تاريخ التقرير: -</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- View Container 1: Individual Teacher Weekly Schedule Grid -->
+        <div id="teacherGridView">
+          <!-- 7-day grid -->
+          <div class="grid-seven-days" id="weeklyScheduleGrid">
+            <!-- Sunday -->
+            <div class="day-column" id="col-Sunday">
+              <div class="day-header">
+                <span>الأحد</span>
+                <span class="badge badge-primary" id="count-Sunday">0 حصة</span>
+              </div>
+              <div class="day-classes-list" id="list-Sunday" style="display: flex; flex-direction: column; gap: 0.65rem;">
+                <div style="color: var(--text-muted); text-align: center; padding: 2rem 0; font-size: 0.82rem;">جاري التحميل...</div>
+              </div>
+            </div>
+
+            <!-- Monday -->
+            <div class="day-column" id="col-Monday">
+              <div class="day-header">
+                <span>الاثنين</span>
+                <span class="badge badge-primary" id="count-Monday">0 حصة</span>
+              </div>
+              <div class="day-classes-list" id="list-Monday" style="display: flex; flex-direction: column; gap: 0.65rem;">
+                <div style="color: var(--text-muted); text-align: center; padding: 2rem 0; font-size: 0.82rem;">جاري التحميل...</div>
+              </div>
+            </div>
+
+            <!-- Tuesday -->
+            <div class="day-column" id="col-Tuesday">
+              <div class="day-header">
+                <span>الثلاثاء</span>
+                <span class="badge badge-primary" id="count-Tuesday">0 حصة</span>
+              </div>
+              <div class="day-classes-list" id="list-Tuesday" style="display: flex; flex-direction: column; gap: 0.65rem;">
+                <div style="color: var(--text-muted); text-align: center; padding: 2rem 0; font-size: 0.82rem;">جاري التحميل...</div>
+              </div>
+            </div>
+
+            <!-- Wednesday -->
+            <div class="day-column" id="col-Wednesday">
+              <div class="day-header">
+                <span>الأربعاء</span>
+                <span class="badge badge-primary" id="count-Wednesday">0 حصة</span>
+              </div>
+              <div class="day-classes-list" id="list-Wednesday" style="display: flex; flex-direction: column; gap: 0.65rem;">
+                <div style="color: var(--text-muted); text-align: center; padding: 2rem 0; font-size: 0.82rem;">جاري التحميل...</div>
+              </div>
+            </div>
+
+            <!-- Thursday -->
+            <div class="day-column" id="col-Thursday">
+              <div class="day-header">
+                <span>الخميس</span>
+                <span class="badge badge-primary" id="count-Thursday">0 حصة</span>
+              </div>
+              <div class="day-classes-list" id="list-Thursday" style="display: flex; flex-direction: column; gap: 0.65rem;">
+                <div style="color: var(--text-muted); text-align: center; padding: 2rem 0; font-size: 0.82rem;">جاري التحميل...</div>
+              </div>
+            </div>
+
+            <!-- Friday -->
+            <div class="day-column" id="col-Friday">
+              <div class="day-header">
+                <span>الجمعة</span>
+                <span class="badge badge-primary" id="count-Friday">0 حصة</span>
+              </div>
+              <div class="day-classes-list" id="list-Friday" style="display: flex; flex-direction: column; gap: 0.65rem;">
+                <div style="color: var(--text-muted); text-align: center; padding: 2rem 0; font-size: 0.82rem;">جاري التحميل...</div>
+              </div>
+            </div>
+
+            <!-- Saturday -->
+            <div class="day-column" id="col-Saturday">
+              <div class="day-header">
+                <span>السبت</span>
+                <span class="badge badge-primary" id="count-Saturday">0 حصة</span>
+              </div>
+              <div class="day-classes-list" id="list-Saturday" style="display: flex; flex-direction: column; gap: 0.65rem;">
+                <div style="color: var(--text-muted); text-align: center; padding: 2rem 0; font-size: 0.82rem;">جاري التحميل...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- View Container 2: All Teachers Comparison Matrix Table -->
+        <div id="allTeachersComparisonView" style="display: none;">
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>المعلم</th>
+                  <th>الطلاب النشطون</th>
+                  <th>المجموعات</th>
+                  <th>إجمالي الحصص/أسبوع</th>
+                  <th>ساعات التدريس</th>
+                  <th>الساعات الفارغة المقدرة</th>
+                  <th>نسبة الإشغال</th>
+                  <th>أكثر الأيام ازدحاماً</th>
+                  <th>إجراء</th>
+                </tr>
+              </thead>
+              <tbody id="allTeachersTableBody">
+                <tr>
+                  <td colspan="9" style="text-align: center; padding: 2rem; color: var(--text-muted);">جاري تحميل إحصائيات المعلمين...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <!-- Firebase setup and core scripts -->
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { collection, query, where, onSnapshot, getDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+
+    // Route Protection
+    protectRoute('admin');
+
+    const daysArabic = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+    const daysEnglishMap = {
+      "الأحد": "Sunday",
+      "الاثنين": "Monday",
+      "الثلاثاء": "Tuesday",
+      "الأربعاء": "Wednesday",
+      "الخميس": "Thursday",
+      "الجمعة": "Friday",
+      "السبت": "Saturday"
+    };
+
+    let allTeachers = [];
+    let allStudents = [];
+    let allGroups = [];
+
+    let currentSelectedTeacherId = 'ALL';
+    let currentSelectedDay = 'ALL';
+    let currentDailyWorkHours = 8;
+
+    // Check URL parameters for teacherId
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramTeacherId = urlParams.get('teacherId');
+    if (paramTeacherId) {
+      currentSelectedTeacherId = paramTeacherId;
+    }
+
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        try {
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          const name = userDoc.exists() ? userDoc.data().name : 'الإدارة المركزية';
+          
+          renderSidebar('teacher-schedules', 'admin');
+          renderNavbar('جداول المعلمين والشواغر', { name, roleName: 'مدير النظام' });
+
+          // Initialize print headers
+          const cachedAcademyName = localStorage.getItem('academy_name') || 'سبيل';
+          const cachedAcademyDesc = localStorage.getItem('academy_desc') || 'أكاديمية تعليم القرآن الكريم والقراءات';
+          
+          const printAcademyName = document.getElementById('printAcademyName');
+          const printAcademyDesc = document.getElementById('printAcademyDesc');
+          if (printAcademyName) printAcademyName.textContent = cachedAcademyName;
+          if (printAcademyDesc) printAcademyDesc.textContent = cachedAcademyDesc;
+
+          const printDateGen = document.getElementById('printDateGenerated');
+          if (printDateGen) {
+            printDateGen.textContent = `تاريخ التقرير: ${new Date().toLocaleDateString('ar-EG', { dateStyle: 'long' })}`;
+          }
+
+          document.getElementById('btnPrintSchedule')?.addEventListener('click', () => {
+            window.print();
+          });
+
+          // Attach filter listeners
+          setupFilterListeners();
+
+          // Load data in real-time
+          initRealtimeData();
+        } catch (err) {
+          console.error("Error setting up teacher-schedules page:", err);
+        }
+      }
+    });
+
+    function setupFilterListeners() {
+      const teacherSelect = document.getElementById('teacherSelect');
+      const dayFilterSelect = document.getElementById('dayFilterSelect');
+      const workWindowSelect = document.getElementById('workWindowSelect');
+
+      teacherSelect?.addEventListener('change', (e) => {
+        currentSelectedTeacherId = e.target.value;
+        renderSchedules();
+      });
+
+      dayFilterSelect?.addEventListener('change', (e) => {
+        currentSelectedDay = e.target.value;
+        applyDayFilter();
+      });
+
+      workWindowSelect?.addEventListener('change', (e) => {
+        currentDailyWorkHours = parseFloat(e.target.value) || 8;
+        renderSchedules();
+      });
+    }
+
+    function normalizeArabicDay(dayStr) {
+      if (!dayStr) return '';
+      return String(dayStr).trim()
+        .replace(/[أإآ]/g, 'ا')
+        .replace(/ة/g, 'ه');
+    }
+
+    function parseTimeToMinutes(timeStr) {
+      if (!timeStr) return 0;
+      const str = String(timeStr).trim();
+      
+      let isPM = str.includes('م') || str.includes('مساء') || str.toLowerCase().includes('pm');
+      let isAM = str.includes('ص') || str.includes('صباح') || str.toLowerCase().includes('am');
+      
+      const cleanStr = str.replace(/[^0-9:]/g, '');
+      const parts = cleanStr.split(':');
+      if (parts.length < 2) return 0;
+      
+      let hours = parseInt(parts[0], 10) || 0;
+      let minutes = parseInt(parts[1], 10) || 0;
+
+      if (isPM && hours < 12) hours += 12;
+      if (isAM && hours === 12) hours = 0;
+
+      return hours * 60 + minutes;
+    }
+
+    function formatMinutesToTime(totalMinutes) {
+      let hours = Math.floor(totalMinutes / 60);
+      let mins = totalMinutes % 60;
+      let period = 'ص';
+
+      if (hours >= 12) {
+        period = 'م';
+        if (hours > 12) hours -= 12;
+      }
+      if (hours === 0) hours = 12;
+
+      const formattedMin = mins < 10 ? `0${mins}` : mins;
+      return `${hours}:${formattedMin} ${period}`;
+    }
+
+    function initRealtimeData() {
+      // 1. Teachers
+      const qTeachers = query(collection(db, "users"), where("role", "==", "teacher"));
+      onSnapshot(qTeachers, (snap) => {
+        allTeachers = [];
+        snap.forEach(docSnap => {
+          allTeachers.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        updateTeacherDropdown();
+        renderSchedules();
+      }, (err) => console.warn("Error teachers snapshot:", err));
+
+      // 2. Students
+      const qStudents = collection(db, "students");
+      onSnapshot(qStudents, (snap) => {
+        allStudents = [];
+        snap.forEach(docSnap => {
+          allStudents.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        renderSchedules();
+      }, (err) => console.warn("Error students snapshot:", err));
+
+      // 3. Groups
+      const qGroups = collection(db, "groups");
+      onSnapshot(qGroups, (snap) => {
+        allGroups = [];
+        snap.forEach(docSnap => {
+          allGroups.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        renderSchedules();
+      }, (err) => console.warn("Error groups snapshot:", err));
+    }
+
+    function updateTeacherDropdown() {
+      const select = document.getElementById('teacherSelect');
+      if (!select) return;
+
+      const currentVal = currentSelectedTeacherId;
+      select.innerHTML = `<option value="ALL">جميع المعلمين (نظرة مقارنة شاملة والشواغر)</option>`;
+
+      allTeachers.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+      allTeachers.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.id;
+        opt.textContent = `${t.name || 'معلم بدون اسم'} (${t.subject || 'القرآن والتجويد'})`;
+        select.appendChild(opt);
+      });
+
+      if (currentVal && (currentVal === 'ALL' || allTeachers.some(t => t.id === currentVal))) {
+        select.value = currentVal;
+      }
+    }
+
+    function renderSchedules() {
+      const teacherGridView = document.getElementById('teacherGridView');
+      const allTeachersComparisonView = document.getElementById('allTeachersComparisonView');
+      const printTargetTitle = document.getElementById('printTargetTitle');
+
+      if (currentSelectedTeacherId === 'ALL') {
+        if (teacherGridView) teacherGridView.style.display = 'none';
+        if (allTeachersComparisonView) allTeachersComparisonView.style.display = 'block';
+        if (printTargetTitle) printTargetTitle.textContent = 'مقارنة جداول وشواغر جميع المعلمين';
+        renderAllTeachersComparison();
+      } else {
+        if (teacherGridView) teacherGridView.style.display = 'block';
+        if (allTeachersComparisonView) allTeachersComparisonView.style.display = 'none';
+        
+        const teacher = allTeachers.find(t => t.id === currentSelectedTeacherId);
+        if (printTargetTitle) {
+          printTargetTitle.textContent = `جدول المعلم: ${teacher ? teacher.name : 'غير محدد'}`;
+        }
+        renderSingleTeacherSchedule(currentSelectedTeacherId);
+      }
+
+      applyDayFilter();
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+    }
+
+    function renderSingleTeacherSchedule(teacherId) {
+      const teacher = allTeachers.find(t => t.id === teacherId);
+      
+      // Filter active students & groups for this teacher
+      const tStudents = allStudents.filter(s => 
+        s.teacherId === teacherId && 
+        s.status !== 'archived' && 
+        s.status !== 'Suspended' && 
+        s.status !== 'pending_approval' && 
+        s.subscriptionType !== 'group' && 
+        !s.groupId
+      );
+
+      const tGroups = allGroups.filter(g => 
+        g.teacherId === teacherId && 
+        g.status !== 'archived'
+      );
+
+      const scheduleMap = {};
+      daysArabic.forEach(d => {
+        scheduleMap[d] = [];
+      });
+
+      // 1. Process groups
+      tGroups.forEach(grp => {
+        const grpDays = grp.day ? [grp.day] : (grp.days || []);
+        const grpTime = grp.time || '05:00 م';
+        const duration = parseInt(grp.duration, 10) || 60;
+        const startMinutes = parseTimeToMinutes(grpTime);
+
+        grpDays.forEach(gd => {
+          daysArabic.forEach(day => {
+            if (normalizeArabicDay(gd) === normalizeArabicDay(day)) {
+              scheduleMap[day].push({
+                id: `grp_${grp.id}`,
+                name: grp.name || 'مجموعة جماعية',
+                time: grpTime,
+                startMinutes,
+                endMinutes: startMinutes + duration,
+                duration,
+                type: 'حصة جماعية',
+                isGroup: true,
+                studentsCount: grp.studentCount || (grp.studentIds ? grp.studentIds.length : 0)
+              });
+            }
+          });
+        });
+      });
+
+      // 2. Process individual students
+      tStudents.forEach(s => {
+        const days = (s.schedule && s.schedule.days) ? s.schedule.days : (s.sessionDays || []);
+        const defaultTime = (s.schedule && s.schedule.uniformTime) ? s.schedule.uniformTime : (s.sessionTime || s.time || "05:00 م");
+        const duration = parseInt(s.sessionDuration, 10) || 30;
+
+        days.forEach(dayStr => {
+          daysArabic.forEach(day => {
+            if (normalizeArabicDay(dayStr) === normalizeArabicDay(day)) {
+              let dayTime = defaultTime;
+              if (s.schedule && s.schedule.differentTimes && s.schedule.times && s.schedule.times[day]) {
+                dayTime = s.schedule.times[day];
+              }
+              const startMinutes = parseTimeToMinutes(dayTime);
+              scheduleMap[day].push({
+                id: s.id,
+                name: s.name || 'طالب',
+                time: dayTime,
+                startMinutes,
+                endMinutes: startMinutes + duration,
+                duration,
+                type: s.type || 'حصة فردية',
+                isGroup: false,
+                phone: s.phone || ''
+              });
+            }
+          });
+        });
+      });
+
+      // Calculate totals
+      let totalWeeklyMinutes = 0;
+      let totalWeeklySessions = 0;
+      let totalFreeMinutes = 0;
+
+      // Render each day column
+      daysArabic.forEach(day => {
+        const englishDay = daysEnglishMap[day];
+        const listContainer = document.getElementById(`list-${englishDay}`);
+        const countBadge = document.getElementById(`count-${englishDay}`);
+        const classes = scheduleMap[day];
+
+        // Sort chronologically by startMinutes
+        classes.sort((a, b) => a.startMinutes - b.startMinutes);
+
+        totalWeeklySessions += classes.length;
+        let dayTeachingMinutes = 0;
+        classes.forEach(c => { dayTeachingMinutes += c.duration; });
+        totalWeeklyMinutes += dayTeachingMinutes;
+
+        // Day capacity calculations (based on daily work window)
+        const dailyCapacityMinutes = currentDailyWorkHours * 60;
+        const dayFreeMinutes = Math.max(0, dailyCapacityMinutes - dayTeachingMinutes);
+        totalFreeMinutes += dayFreeMinutes;
+
+        if (countBadge) {
+          countBadge.textContent = `${classes.length} حصة (${(dayTeachingMinutes / 60).toFixed(1)} س)`;
+        }
+
+        if (!listContainer) return;
+
+        if (classes.length === 0) {
+          listContainer.innerHTML = `
+            <div style="color: var(--text-muted); text-align: center; padding: 1.5rem 0.5rem; font-size: 0.8rem; border: 1px dashed var(--border-color); border-radius: var(--border-radius-sm);">
+              <i data-lucide="coffee" style="width: 20px; height: 20px; margin-bottom: 0.35rem; color: var(--text-muted);"></i>
+              <div>يوم شاغر بالكامل</div>
+              <span class="badge badge-success" style="margin-top: 0.35rem; font-size: 0.72rem;">${currentDailyWorkHours} ساعات متاحة</span>
+            </div>
+          `;
+        } else {
+          let html = '';
+
+          // Find gaps between classes
+          for (let i = 0; i < classes.length; i++) {
+            const currentClass = classes[i];
+
+            // Gap before first class if starting late
+            if (i === 0 && currentClass.startMinutes > 840) { // e.g. after 02:00 PM (840 mins)
+              const gapMins = currentClass.startMinutes - 840;
+              if (gapMins >= 30) {
+                html += `
+                  <div class="free-slot-item">
+                    <span><i data-lucide="clock" style="width: 13px; height: 13px; vertical-align: middle;"></i> شاغر مبكر: 02:00 م - ${currentClass.time}</span>
+                    <span class="badge badge-success" style="padding: 0.1rem 0.35rem; font-size: 0.7rem;">+${(gapMins / 60).toFixed(1)} س</span>
+                  </div>
+                `;
+              }
+            }
+
+            // Render current class
+            html += `
+              <div class="class-item" style="${currentClass.isGroup ? 'border-right: 3px solid #d97706; background-color: rgba(217, 119, 6, 0.03);' : ''}">
+                <div style="display: flex; justify-content: space-between; align-items: start; gap: 0.4rem;">
+                  <span style="font-weight: 700; color: var(--text-primary); font-size: 0.88rem;">${currentClass.name}</span>
+                  <span class="badge ${currentClass.isGroup ? 'badge-warning' : 'badge-primary'}" style="font-size: 0.68rem; padding: 0.1rem 0.4rem;">
+                    ${currentClass.type}
+                  </span>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.25rem;">
+                  <div style="display: flex; align-items: center; gap: 0.3rem; color: var(--text-secondary); font-size: 0.78rem;">
+                    <i data-lucide="clock" style="width: 12px; height: 12px; color: ${currentClass.isGroup ? '#d97706' : 'var(--primary-color)'};"></i>
+                    <span style="font-weight: 600;">${currentClass.time}</span>
+                  </div>
+                  <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">${currentClass.duration} دقيقة</span>
+                </div>
+              </div>
+            `;
+
+            // Gap between this class and the next class
+            if (i < classes.length - 1) {
+              const nextClass = classes[i + 1];
+              const gapMins = nextClass.startMinutes - currentClass.endMinutes;
+              if (gapMins >= 20) {
+                const gapStart = formatMinutesToTime(currentClass.endMinutes);
+                const gapEnd = nextClass.time;
+                html += `
+                  <div class="free-slot-item">
+                    <span><i data-lucide="check-circle-2" style="width: 13px; height: 13px; vertical-align: middle;"></i> وقت فارغ: ${gapStart} - ${gapEnd}</span>
+                    <span class="badge badge-success" style="padding: 0.1rem 0.35rem; font-size: 0.7rem;">+${(gapMins / 60).toFixed(1)} س</span>
+                  </div>
+                `;
+              }
+            }
+          }
+
+          // Day summary footer
+          html += `
+            <div style="margin-top: 0.4rem; padding-top: 0.4rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted);">
+              <span>مشغول: <strong>${(dayTeachingMinutes / 60).toFixed(1)} س</strong></span>
+              <span>شاغر: <strong style="color: var(--success);">${(dayFreeMinutes / 60).toFixed(1)} س</strong></span>
+            </div>
+          `;
+
+          listContainer.innerHTML = html;
+        }
+      });
+
+      // Update KPI Metrics
+      const totalCapacityMinutes = 7 * currentDailyWorkHours * 60;
+      const scheduledHours = (totalWeeklyMinutes / 60).toFixed(1);
+      const freeHours = (totalFreeMinutes / 60).toFixed(1);
+      const occupancyRate = Math.min(100, Math.round((totalWeeklyMinutes / totalCapacityMinutes) * 100));
+
+      document.getElementById('metricScheduledHours').textContent = `${scheduledHours} ساعة`;
+      document.getElementById('metricSessionsCount').textContent = `${totalWeeklySessions} حصة مجدولة أسبوعياً`;
+
+      document.getElementById('metricFreeHours').textContent = `${freeHours} ساعة`;
+      document.getElementById('metricFreeSlotsCount').textContent = `متاح للتسكين بناءً على نافذة ${currentDailyWorkHours} س/يوم`;
+
+      document.getElementById('metricOccupancyRate').textContent = `${occupancyRate}%`;
+      const barFill = document.getElementById('metricOccupancyBar');
+      if (barFill) {
+        barFill.style.width = `${occupancyRate}%`;
+        barFill.style.backgroundColor = occupancyRate > 80 ? 'var(--danger)' : (occupancyRate > 50 ? 'var(--primary-color)' : 'var(--success)');
+      }
+
+      document.getElementById('metricStudentsCount').textContent = `${tStudents.length} طالب`;
+      document.getElementById('metricGroupsCount').textContent = `${tGroups.length} مجموعات جماعية`;
+    }
+
+    function renderAllTeachersComparison() {
+      const tbody = document.getElementById('allTeachersTableBody');
+      if (!tbody) return;
+
+      if (allTeachers.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 2rem; color: var(--text-muted);">لا يوجد معلمون مسجلون حالياً</td></tr>`;
+        return;
+      }
+
+      let grandTotalTeachingHours = 0;
+      let grandTotalSessions = 0;
+      let grandTotalFreeHours = 0;
+
+      const rowsHtml = allTeachers.map(teacher => {
+        const tStudents = allStudents.filter(s => 
+          s.teacherId === teacher.id && 
+          s.status !== 'archived' && 
+          s.status !== 'Suspended' && 
+          s.status !== 'pending_approval' && 
+          s.subscriptionType !== 'group' && 
+          !s.groupId
+        );
+
+        const tGroups = allGroups.filter(g => 
+          g.teacherId === teacher.id && 
+          g.status !== 'archived'
+        );
+
+        const dayCounts = { "الأحد": 0, "الاثنين": 0, "الثلاثاء": 0, "الأربعاء": 0, "الخميس": 0, "الجمعة": 0, "السبت": 0 };
+        let teacherMinutes = 0;
+        let totalSessions = 0;
+
+        // Individual sessions
+        tStudents.forEach(s => {
+          const days = (s.schedule && s.schedule.days) ? s.schedule.days : (s.sessionDays || []);
+          const duration = parseInt(s.sessionDuration, 10) || 30;
+          days.forEach(d => {
+            daysArabic.forEach(da => {
+              if (normalizeArabicDay(d) === normalizeArabicDay(da)) {
+                dayCounts[da]++;
+                teacherMinutes += duration;
+                totalSessions++;
+              }
+            });
+          });
+        });
+
+        // Group sessions
+        tGroups.forEach(g => {
+          const days = g.day ? [g.day] : (g.days || []);
+          const duration = parseInt(g.duration, 10) || 60;
+          days.forEach(d => {
+            daysArabic.forEach(da => {
+              if (normalizeArabicDay(d) === normalizeArabicDay(da)) {
+                dayCounts[da]++;
+                teacherMinutes += duration;
+                totalSessions++;
+              }
+            });
+          });
+        });
+
+        const teacherHours = teacherMinutes / 60;
+        const totalCapacityHours = 7 * currentDailyWorkHours;
+        const freeHours = Math.max(0, totalCapacityHours - teacherHours);
+        const occupancyRate = Math.min(100, Math.round((teacherHours / totalCapacityHours) * 100));
+
+        grandTotalTeachingHours += teacherHours;
+        grandTotalSessions += totalSessions;
+        grandTotalFreeHours += freeHours;
+
+        // Find busiest day
+        let maxDay = 'الأحد';
+        let maxCount = -1;
+        daysArabic.forEach(d => {
+          if (dayCounts[d] > maxCount) {
+            maxCount = dayCounts[d];
+            maxDay = d;
+          }
+        });
+
+        return `
+          <tr>
+            <td>
+              <div style="display: flex; align-items: center; gap: 0.65rem;">
+                <div class="navbar-avatar" style="width: 32px; height: 32px; font-size: 0.8rem;">
+                  ${(teacher.name || 'م').charAt(0)}
+                </div>
+                <div>
+                  <div style="font-weight: 700; color: var(--text-primary); font-size: 0.88rem;">${teacher.name || 'معلم'}</div>
+                  <div style="font-size: 0.72rem; color: var(--text-muted);">${teacher.subject || 'القرآن الكريم والتجويد'}</div>
+                </div>
+              </div>
+            </td>
+            <td><strong>${tStudents.length}</strong> طالب</td>
+            <td><strong>${tGroups.length}</strong> مجموعات</td>
+            <td><span class="badge badge-primary">${totalSessions} حصة</span></td>
+            <td><strong>${teacherHours.toFixed(1)}</strong> ساعة/أسبوع</td>
+            <td><span class="badge badge-success">${freeHours.toFixed(1)} ساعة شاغرة</span></td>
+            <td>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <div class="occupancy-bar-bg" style="width: 70px;">
+                  <div class="occupancy-bar-fill" style="width: ${occupancyRate}%; background-color: ${occupancyRate > 75 ? 'var(--danger)' : (occupancyRate > 40 ? 'var(--primary-color)' : 'var(--success)')};"></div>
+                </div>
+                <span style="font-size: 0.78rem; font-weight: 700;">${occupancyRate}%</span>
+              </div>
+            </td>
+            <td><span style="font-size: 0.8rem; color: var(--text-secondary);">${maxDay} (${maxCount} حصص)</span></td>
+            <td>
+              <button class="btn btn-secondary btn-sm btn-view-teacher-schedule" data-teacher-id="${teacher.id}" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;">
+                <i data-lucide="calendar" style="width: 13px; height: 13px;"></i> عرض الجدول
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      tbody.innerHTML = rowsHtml;
+
+      // Attach click events on "عرض الجدول" buttons
+      tbody.querySelectorAll('.btn-view-teacher-schedule').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const tId = e.currentTarget.getAttribute('data-teacher-id');
+          if (tId) {
+            currentSelectedTeacherId = tId;
+            const sel = document.getElementById('teacherSelect');
+            if (sel) sel.value = tId;
+            renderSchedules();
+          }
+        });
+      });
+
+      // Update Overall Summary Metrics
+      const totalAllCapacity = allTeachers.length * 7 * currentDailyWorkHours;
+      const overallOccupancy = totalAllCapacity > 0 ? Math.min(100, Math.round((grandTotalTeachingHours / totalAllCapacity) * 100)) : 0;
+
+      document.getElementById('metricScheduledHours').textContent = `${grandTotalTeachingHours.toFixed(1)} ساعة`;
+      document.getElementById('metricSessionsCount').textContent = `${grandTotalSessions} حصة مجدولة لجميع المعلمين`;
+
+      document.getElementById('metricFreeHours').textContent = `${grandTotalFreeHours.toFixed(1)} ساعة`;
+      document.getElementById('metricFreeSlotsCount').textContent = `طاقة استيعابية شاغرة لجميع الكادر`;
+
+      document.getElementById('metricOccupancyRate').textContent = `${overallOccupancy}%`;
+      const barFill = document.getElementById('metricOccupancyBar');
+      if (barFill) {
+        barFill.style.width = `${overallOccupancy}%`;
+        barFill.style.backgroundColor = overallOccupancy > 80 ? 'var(--danger)' : (overallOccupancy > 50 ? 'var(--primary-color)' : 'var(--success)');
+      }
+
+      const activeStudentsCount = allStudents.filter(s => s.status !== 'archived' && s.status !== 'Suspended').length;
+      const activeGroupsCount = allGroups.filter(g => g.status !== 'archived').length;
+
+      document.getElementById('metricStudentsCount').textContent = `${activeStudentsCount} طالب`;
+      document.getElementById('metricGroupsCount').textContent = `${activeGroupsCount} مجموعات جماعية`;
+    }
+
+    function applyDayFilter() {
+      const selectedDay = currentSelectedDay;
+      const allColumns = document.querySelectorAll('.day-column');
+
+      allColumns.forEach(col => {
+        if (selectedDay === 'ALL') {
+          col.style.display = 'flex';
+        } else {
+          const colId = col.id.replace('col-', '');
+          if (colId === selectedDay) {
+            col.style.display = 'flex';
+          } else {
+            col.style.display = 'none';
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
