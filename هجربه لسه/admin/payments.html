@@ -1,0 +1,1690 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - إدارة المدفوعات والمالية</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .modal-card {
+      background-color: var(--bg-secondary); border-radius: var(--border-radius);
+      border: 1px solid var(--border-color); width: 100%; max-width: 550px; padding: 2rem;
+      max-height: 90vh; overflow-y: auto;
+    }
+    .form-group label {
+      font-weight: 700;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.4rem;
+      display: block;
+    }
+    .form-control {
+      font-size: 0.9rem;
+    }
+    .metric-card {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .metric-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* أنماط طباعة سند القبض المالي */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #receiptPrintContainer, #receiptPrintContainer * {
+        visibility: visible;
+      }
+      #receiptPrintContainer {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 20px;
+        background: #fff !important;
+        color: #000 !important;
+        display: block !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0;">المدفوعات والمقبوضات المالية</h1>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">تسجيل وإدارة تحصيل اشتراكات الطلاب وتتبع التدفقات النقدية الواردة للأكاديمية.</p>
+          </div>
+          <button class="btn btn-primary" id="addNewPaymentBtn" style="gap: 0.35rem;"><i data-lucide="plus" style="width: 16px; height: 16px;"></i> تسجيل عملية تحصيل جديدة</button>
+        </div>
+
+        <!-- شبكة الإحصائيات المالية المباشرة -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="metric-card">
+            <div class="metric-icon" style="background-color: rgba(16, 185, 129, 0.12); color: var(--success);">
+              <i data-lucide="trending-up" style="width: 24px; height: 24px;"></i>
+            </div>
+            <div>
+              <p style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin: 0;">إجمالي التحصيل والمقبوضات</p>
+              <h3 style="font-size: 1.4rem; font-weight: 800; color: var(--text-primary); margin: 0.25rem 0 0 0;" id="totalRevenueVal">0 ج.م</h3>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon" style="background-color: rgba(99, 102, 241, 0.12); color: var(--primary-color);">
+              <i data-lucide="file-text" style="width: 24px; height: 24px;"></i>
+            </div>
+            <div>
+              <p style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin: 0;">عدد الإيصالات والعمليات</p>
+              <h3 style="font-size: 1.4rem; font-weight: 800; color: var(--text-primary); margin: 0.25rem 0 0 0;" id="totalReceiptsVal">0</h3>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon" style="background-color: rgba(245, 158, 11, 0.12); color: var(--warning);">
+              <i data-lucide="pie-chart" style="width: 24px; height: 24px;"></i>
+            </div>
+            <div>
+              <p style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin: 0;">متوسط قيمة التحصيل</p>
+              <h3 style="font-size: 1.4rem; font-weight: 800; color: var(--text-primary); margin: 0.25rem 0 0 0;" id="avgReceiptVal">0 ج.م</h3>
+            </div>
+          </div>
+
+          <div class="metric-card" style="border-right: 4px solid var(--primary-color);">
+            <div class="metric-icon" style="background-color: rgba(13, 148, 136, 0.12); color: var(--primary-color);">
+              <i data-lucide="badge-dollar-sign" style="width: 24px; height: 24px;"></i>
+            </div>
+            <div>
+              <p style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin: 0;">الإيرادات المتوقعة هذا الشهر</p>
+              <h3 style="font-size: 1.4rem; font-weight: 800; color: var(--primary-color); margin: 0.25rem 0 0 0;" id="expectedRevenueVal">0 ج.م</h3>
+            </div>
+          </div>
+        </div>
+
+        <!-- المخطط البياني التفاعلي لإيرادات الأكاديمية وتطور الاشتراكات (Recharts Analytics) -->
+        <div id="financialChartsContainer" style="margin-bottom: 1.5rem;"></div>
+
+        <!-- أزرار التبديل التفاعلية بين سجل المقبوضات والموقف المالي للطلاب -->
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; flex-wrap: wrap;">
+          <button class="btn" id="tabPaymentsLogBtn" style="padding: 0.5rem 1rem; font-size: 0.85rem; background: var(--primary-color); border-color: var(--primary-color); color: #fff; display: flex; align-items: center; gap: 0.35rem;">
+            <i data-lucide="receipt" style="width: 16px; height: 16px;"></i> سجل إيصالات المقبوضات المالية
+          </button>
+          <button class="btn" id="tabStudentsStatusBtn" style="padding: 0.5rem 1rem; font-size: 0.85rem; background: transparent; border-color: transparent; color: var(--text-secondary); display: flex; align-items: center; gap: 0.35rem;">
+            <i data-lucide="users" style="width: 16px; height: 16px;"></i> الموقف المالي العام للدارسين
+          </button>
+        </div>
+
+        <!-- القسم الأول: سجل إيصالات المقبوضات والعمليات -->
+        <div id="sectionPaymentsLog">
+          <!-- فلاتر البحث والفرز المالي وأزرار التصدير -->
+          <div class="card" style="margin-bottom: 1.5rem; padding: 1.25rem;">
+            <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between;">
+              <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; flex: 1; min-width: 300px;">
+                <div style="display: flex; gap: 0.75rem; align-items: center; border: 1px solid var(--border-color); padding: 0.5rem 0.75rem; border-radius: var(--border-radius); background: var(--bg-primary); flex: 1; min-width: 200px;">
+                  <i data-lucide="search" style="color: var(--text-muted); width: 18px; height: 18px;"></i>
+                  <input type="text" id="financialSearchInput" placeholder="البحث برقم الإيصال أو باسم الدارس أو الملاحظات..." style="border: none; outline: none; background: transparent; width: 100%; font-size: 0.85rem; color: var(--text-primary);">
+                </div>
+                <select id="financialMethodFilter" class="form-control" style="border: 1px solid var(--border-color); margin: 0; width: auto; min-width: 180px;">
+                  <option value="">-- جميع طرق الدفع --</option>
+                  <option value="Vodafone Cash">فودافون كاش (Vodafone Cash)</option>
+                  <option value="WE Pay">وي باي (WE Pay)</option>
+                  <option value="InstaPay">إنستا باي (InstaPay)</option>
+                  <option value="تحويل بنكي">تحويل بنكي مباشر</option>
+                  <option value="نقدي">دفع نقدي (كاش)</option>
+                </select>
+              </div>
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <button type="button" class="btn btn-secondary" id="btnExportPaymentsCsv" style="gap: 0.35rem; font-size: 0.85rem; font-weight: 700; color: #10b981; border-color: #10b981;" title="تصدير السجل المالي إلى Excel / CSV">
+                  <i data-lucide="file-spreadsheet" style="width: 16px; height: 16px;"></i> تصدير إكسيل (Excel / CSV)
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="table-container" style="margin-top: 0;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>التاريخ والوقت</th>
+                    <th>اسم الطالب المستفيد</th>
+                    <th>القيمة المحصلة</th>
+                    <th>طريقة الدفع وملاحظات العملية</th>
+                    <th>اسم المسؤول المستلم</th>
+                    <th>خيارات السجل</th>
+                  </tr>
+                </thead>
+                <tbody id="paymentsTableBody">
+                  <tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">جاري مزامنة سجلات العمليات المقبوضة...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- القسم الثاني: الموقف المالي العام للدارسين -->
+        <div id="sectionStudentsStatus" style="display: none;">
+          <!-- شريط بحث وفلترة فوري للموقف المالي للطلاب -->
+          <div class="card" style="margin-bottom: 1.5rem; padding: 1rem;">
+            <div style="display: grid; grid-template-columns: 1fr 250px; gap: 1rem; align-items: center;">
+              <div style="display: flex; gap: 0.75rem; align-items: center; border: 1px solid var(--border-color); padding: 0.5rem 0.75rem; border-radius: var(--border-radius); background: var(--bg-primary);">
+                <i data-lucide="search" style="color: var(--text-muted); width: 18px; height: 18px;"></i>
+                <input type="text" id="studentsStatusSearchInput" placeholder="ابحث فوريًا باسم الطالب لتفقد موقفه المالي..." style="border: none; outline: none; background: transparent; width: 100%; font-size: 0.85rem; color: var(--text-primary);">
+              </div>
+              <div>
+                <select id="studentsStatusPaymentFilter" class="form-control" style="border: 1px solid var(--border-color); margin: 0; font-size: 0.85rem;">
+                  <option value="all">-- جميع حالات الدفع ورصيد الحصص --</option>
+                  <option value="overdraft">دين حصص / رصيد سالب (&lt; 0) 🔴</option>
+                  <option value="empty">نفد الرصيد تماماً (0 حصة) ⚠️</option>
+                  <option value="unpaid">غير مدفوع (شامل نفاد الحصص والديون) ❌</option>
+                  <option value="partially">مسدد جزئياً ⏳</option>
+                  <option value="paid">المدفوع (رصيد ساري ومسدد بالكامل) ✅</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="table-container" style="margin-top: 0;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>اسم الدارس الكرم</th>
+                    <th>باقة الاشتراك النشطة</th>
+                    <th>القيمة المالية</th>
+                    <th>فترة الصلاحية</th>
+                    <th>حالة الاشتراك</th>
+                    <th>خيارات وتسجيل التحصيل</th>
+                  </tr>
+                </thead>
+                <tbody id="studentsStatusTableBody">
+                  <tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">جاري جلب وفهرسة كشوف الموقف المالي للطلاب...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- مودال تسجيل عملية تحصيل جديدة -->
+  <div id="addPaymentModal" class="modal-overlay">
+    <div class="modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+        <h3 style="font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="plus-circle" style="color: var(--success);"></i> تسجيل إيصال قبض وتحصيل جديد
+        </h3>
+        <span id="btnCloseAddPayModal" style="cursor: pointer; padding: 0.25rem; display: flex; align-items: center; justify-content: center;">
+          <i data-lucide="x" style="color: var(--text-muted);"></i>
+        </span>
+      </div>
+      <form id="addPaymentForm">
+        <div class="form-group">
+          <label for="payStudentSelect">اختر الطالب المستفيد</label>
+          <select id="payStudentSelect" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
+            <option value="">-- اختر طالباً --</option>
+          </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+          <div class="form-group">
+            <label for="payParentName">اسم ولي الأمر</label>
+            <input type="text" id="payParentName" class="form-control" placeholder="اسم ولي أمر الطالب" style="border: 1px solid var(--border-color); width: 100%;">
+          </div>
+          <div class="form-group">
+            <label for="payReceivedBy">تم الاستلام بواسطة *</label>
+            <select id="payReceivedBy" class="form-control" required style="border: 1px solid var(--border-color); width: 100%; font-weight: 700;">
+              <option value="محمد عادل">محمد عادل</option>
+              <option value="عبداللطيف فتحي">عبداللطيف فتحي</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- بطاقة فحص موقف رصيد الحصص والتجديد التلقائي -->
+        <div id="studentCreditInfoBox" style="display: none; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem; margin-top: 1rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary);" id="modalStudentCreditTitle">رصيد الحصص للدارس:</span>
+            <span id="modalStudentCreditBadge" class="badge" style="font-weight: 800; font-size: 0.8rem; position: static;">0 حصة</span>
+          </div>
+          <div id="modalStudentCreditNotice" style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.35rem; line-height: 1.4;"></div>
+
+          <!-- خيار التجديد والشحن التلقائي فور السداد -->
+          <div style="border-top: 1px dashed var(--border-color); margin-top: 0.75rem; padding-top: 0.75rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 700; font-size: 0.85rem; color: var(--primary-color);">
+              <input type="checkbox" id="chkAutoRenewPackage" style="accent-color: var(--primary-color); width: 16px; height: 16px;">
+              <span>شحن وتجديد باقة الحصص تلقائياً للطالب فور السداد ⚡</span>
+            </label>
+
+            <div id="autoRenewOptions" style="display: none; margin-top: 0.75rem; background: rgba(13,148,136,0.05); padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(13,148,136,0.2);">
+              <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary-color); margin-bottom: 0.5rem;">
+                بيانات الباقة المراد شحنها وتسوية الحصص المستهلكة منها:
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
+                <div>
+                  <label style="font-size: 0.72rem; font-weight: 700;">اسم الباقة *</label>
+                  <input type="text" id="renewPkgName" class="form-control" style="font-size: 0.82rem; padding: 0.35rem 0.5rem;" placeholder="مثال: باقة 8 حصص تجويد">
+                </div>
+                <div>
+                  <label style="font-size: 0.72rem; font-weight: 700;">عدد الحصص *</label>
+                  <input type="number" id="renewPkgTotalLessons" class="form-control" style="font-weight: 800; font-size: 0.82rem; padding: 0.35rem 0.5rem;" value="8" min="1">
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; margin-top: 0.5rem;">
+                <div>
+                  <label style="font-size: 0.72rem; font-weight: 700;">مدة الحصة (دقيقة) *</label>
+                  <select id="renewPkgDuration" class="form-control" style="font-size: 0.82rem; padding: 0.35rem 0.5rem;">
+                    <option value="30">30 دقيقة</option>
+                    <option value="45">45 دقيقة</option>
+                    <option value="60">60 دقيقة (ساعة)</option>
+                    <option value="90">90 دقيقة</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-size: 0.72rem; font-weight: 700;">قالب باقة جاهز (اختياري)</label>
+                  <select id="renewPkgTemplateSelect" class="form-control" style="font-size: 0.82rem; padding: 0.35rem 0.5rem;">
+                    <option value="">-- باقة مخصصة --</option>
+                  </select>
+                </div>
+              </div>
+              <div style="margin-top: 0.65rem; padding-top: 0.5rem; border-top: 1px dashed rgba(13,148,136,0.3); display: flex; align-items: center; gap: 0.4rem;">
+                <input type="checkbox" id="chkAllowPartialActivation" checked style="accent-color: var(--primary-color); width: 16px; height: 16px; cursor: pointer;">
+                <label for="chkAllowPartialActivation" style="font-size: 0.76rem; font-weight: 700; color: var(--text-primary); cursor: pointer; margin-bottom: 0;">
+                  السماح بتفعيل الباقة وشحن الحصص فورًا عند السداد الجزئي (تنشيط الباقة)
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+          <div class="form-group">
+            <label for="payMonth">تحصيل عن شهر</label>
+            <input type="month" id="payMonth" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
+          </div>
+          <div class="form-group">
+            <label for="payAmount">المبلغ المالي المحصل (ج.م)</label>
+            <input type="number" id="payAmount" class="form-control" required placeholder="سعر الباقة تلقائيًا" min="1">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 1rem;">
+          <label for="payMethod">وسيلة الدفع ومزود الخدمة</label>
+          <select id="payMethod" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
+            <option value="فودافون كاش (Vodafone Cash)">فودافون كاش (Vodafone Cash)</option>
+            <option value="إنستا باي (InstaPay)">إنستا باي (InstaPay)</option>
+            <option value="وي باي (WE Pay)">وي باي (WE Pay)</option>
+            <option value="تحويل بنكي مباشر">تحويل بنكي مباشر</option>
+            <option value="نقدي (كاش) ليد المشرف">نقدي (كاش) ليد المشرف</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-top: 1rem;">
+          <label for="payNotes">ملاحظات توثيقية إضافية (اختياري)</label>
+          <textarea id="payNotes" class="form-control" rows="3" placeholder="ملاحظات الحسابات، رقم التحويل لVodafone Cash، إلخ..." style="resize: vertical; font-family: inherit; font-size: 0.9rem;"></textarea>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+          <button type="submit" class="btn btn-primary" style="background: var(--success); border-color: var(--success);">توثيق وتسجيل العملية</button>
+          <button type="button" class="btn btn-secondary" id="btnCancelAddPayModal">إلغاء</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- مودال تعديل عملية تحصيل مالي -->
+  <div id="editPaymentModal" class="modal-overlay">
+    <div class="modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+        <h3 style="font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="edit-3" style="color: var(--primary-color);"></i> تعديل بيانات إيصال التحصيل المالي
+        </h3>
+        <span id="btnCloseEditPayModal" style="cursor: pointer; padding: 0.25rem; display: flex; align-items: center; justify-content: center;">
+          <i data-lucide="x" style="color: var(--text-muted);"></i>
+        </span>
+      </div>
+      <form id="editPaymentForm">
+        <div class="form-group">
+          <label>اسم الطالب المستفيد (غير قابل للتعديل)</label>
+          <input type="text" id="editPayStudentName" class="form-control" readonly disabled style="background-color: var(--bg-primary);">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+          <div class="form-group">
+            <label for="editPayParentName">اسم ولي الأمر</label>
+            <input type="text" id="editPayParentName" class="form-control" placeholder="اسم ولي الأمر" style="border: 1px solid var(--border-color); width: 100%;">
+          </div>
+          <div class="form-group">
+            <label for="editPayReceivedBy">تم الاستلام بواسطة *</label>
+            <select id="editPayReceivedBy" class="form-control" required style="border: 1px solid var(--border-color); width: 100%; font-weight: 700;">
+              <option value="محمد عادل">محمد عادل</option>
+              <option value="عبداللطيف فتحي">عبداللطيف فتحي</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+          <div class="form-group">
+            <label for="editPayMonth">تحصيل عن شهر</label>
+            <input type="month" id="editPayMonth" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
+          </div>
+          <div class="form-group">
+            <label for="editPayAmount">المبلغ المالي المحصل (ج.م)</label>
+            <input type="number" id="editPayAmount" class="form-control" required placeholder="السعر" min="1">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 1rem;">
+          <label for="editPayMethod">وسيلة الدفع ومزود الخدمة</label>
+          <select id="editPayMethod" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
+            <option value="فودافون كاش (Vodafone Cash)">فودافون كاش (Vodafone Cash)</option>
+            <option value="إنستا باي (InstaPay)">إنستا باي (InstaPay)</option>
+            <option value="وي باي (WE Pay)">وي باي (WE Pay)</option>
+            <option value="تحويل بنكي مباشر">تحويل بنكي مباشر</option>
+            <option value="نقدي (كاش) ليد المشرف">نقدي (كاش) ليد المشرف</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-top: 1rem;">
+          <label for="editPayNotes">ملاحظات توثيقية إضافية (اختياري)</label>
+          <textarea id="editPayNotes" class="form-control" rows="3" placeholder="ملاحظات الحسابات" style="resize: vertical; font-family: inherit; font-size: 0.9rem;"></textarea>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+          <button type="submit" class="btn btn-primary">حفظ وتعديل الإيصال</button>
+          <button type="button" class="btn btn-secondary" id="btnCancelEditPayModal">إلغاء</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- مودال استعراض وطباعة سند القبض المالي (Feature 1: Receipt / Invoice) -->
+  <div id="receiptModal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 600px; padding: 0; overflow: hidden;">
+      <!-- شريط تحكم رأس المودال -->
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; background: var(--bg-primary); border-bottom: 1px solid var(--border-color);">
+        <h3 style="font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem; font-size: 1.05rem;">
+          <i data-lucide="printer" style="color: var(--primary-color);"></i> سند قبض مالي رسمي
+        </h3>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <button type="button" class="btn btn-primary" id="btnPrintReceiptBtn" style="padding: 0.4rem 0.85rem; font-size: 0.85rem; font-weight: 700; gap: 0.35rem;">
+            <i data-lucide="printer" style="width: 15px; height: 15px;"></i> طباعة السند (Print / PDF)
+          </button>
+          <span id="btnCloseReceiptModal" style="cursor: pointer; padding: 0.25rem; display: flex; align-items: center; justify-content: center;">
+            <i data-lucide="x" style="color: var(--text-muted);"></i>
+          </span>
+        </div>
+      </div>
+
+      <!-- محتوى السند الرسمي القابل للعرض والطباعة -->
+      <div style="padding: 1.75rem; background: #ffffff; color: #1e293b;" id="receiptModalContent">
+        <!-- ترويسة السند -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0d9488; padding-bottom: 1rem; margin-bottom: 1.25rem;">
+          <div>
+            <div style="font-size: 1.35rem; font-weight: 900; color: #0f766e; display: flex; align-items: center; gap: 0.4rem;">
+              <span>📖</span>
+              <span>أكاديمية سبيل لعلوم القرآن الكريم</span>
+            </div>
+            <p style="font-size: 0.8rem; color: #64748b; margin: 0.2rem 0 0 0;">منصة التعليم والتحفيظ القرآني الشامل</p>
+          </div>
+          <div style="text-align: left;">
+            <div style="display: inline-block; background: #f0fdf4; border: 1px solid #86efac; color: #166534; font-weight: 800; font-size: 0.82rem; padding: 0.25rem 0.75rem; border-radius: 6px;">
+              سند قبض مالي معتمد ✅
+            </div>
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.3rem;" id="receiptNumberDisplay">رقم السند: #REC-0000</div>
+          </div>
+        </div>
+
+        <!-- ملخص القيمة والبيانات الأساسية -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem;">
+          <div>
+            <span style="font-size: 0.75rem; color: #64748b; display: block; margin-bottom: 0.2rem;">استلمنا من الطالب الكرم:</span>
+            <strong style="font-size: 1rem; color: #0f172a;" id="receiptStudentNameDisplay">-</strong>
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;" id="receiptTeacherDisplay">المعلم المشرف: -</div>
+          </div>
+          <div style="text-align: left;">
+            <span style="font-size: 0.75rem; color: #64748b; display: block; margin-bottom: 0.2rem;">المبلغ الإجمالي المحصل:</span>
+            <strong style="font-size: 1.4rem; color: #059669; font-weight: 900;" id="receiptAmountDisplay">0 ج.م</strong>
+          </div>
+        </div>
+
+        <!-- جدول تفاصيل المعاملة -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 1.25rem; font-size: 0.85rem;">
+          <tbody>
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 0.6rem 0.5rem; color: #64748b; font-weight: 700; width: 35%;">تاريخ وتوقيت التحصيل:</td>
+              <td style="padding: 0.6rem 0.5rem; color: #0f172a; font-weight: 800;" id="receiptDateDisplay">-</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 0.6rem 0.5rem; color: #64748b; font-weight: 700;">الشهر المحاسبي:</td>
+              <td style="padding: 0.6rem 0.5rem; color: #0d9488; font-weight: 800;" id="receiptMonthDisplay">-</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 0.6rem 0.5rem; color: #64748b; font-weight: 700;">طريقة ومزود الدفع:</td>
+              <td style="padding: 0.6rem 0.5rem; color: #0f172a; font-weight: 800;" id="receiptMethodDisplay">-</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 0.6rem 0.5rem; color: #64748b; font-weight: 700;">باقة الحصص والرصيد:</td>
+              <td style="padding: 0.6rem 0.5rem; color: #0f172a; font-weight: 700;" id="receiptPackageDisplay">-</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 0.6rem 0.5rem; color: #64748b; font-weight: 700;">الموقف المالي الحالي:</td>
+              <td style="padding: 0.6rem 0.5rem; font-weight: 800;" id="receiptBalanceDisplay">-</td>
+            </tr>
+            <tr>
+              <td style="padding: 0.6rem 0.5rem; color: #64748b; font-weight: 700;">ملاحظات التحصيل:</td>
+              <td style="padding: 0.6rem 0.5rem; color: #475569;" id="receiptNotesDisplay">-</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- تذييل وتوقيع السند -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px dashed #cbd5e1; padding-top: 1rem; margin-top: 1rem; flex-wrap: wrap; gap: 0.75rem;">
+          <div>
+            <div style="font-size: 0.75rem; color: #64748b;">المسؤول المحصل:</div>
+            <strong style="font-size: 0.88rem; color: #0f172a;" id="receiptAdminDisplay">-</strong>
+            <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.25rem;">إيصال إلكتروني صادر وموثق نظامياً</div>
+          </div>
+          
+          <!-- ختم وتوقيع مدير الأكاديمية (Abdullatief fathy) -->
+          <div style="text-align: center;">
+            <div style="border: 2px dashed #1e3a8a; background: rgba(30, 58, 138, 0.03); border-radius: 12px; padding: 0.5rem 1rem; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(30, 58, 138, 0.08); transform: rotate(-2deg); min-width: 190px;">
+              <div style="font-size: 0.6rem; font-weight: 800; color: #1e3a8a; letter-spacing: 1.5px; border-bottom: 1px solid rgba(30, 58, 138, 0.2); padding-bottom: 0.15rem; width: 100%; text-transform: uppercase;">
+                ★ SABEEL ACADEMY ★
+              </div>
+              
+              <!-- توقيع انسيابي احترافي بسحبة قلم حبرية (Executive Director Signature Stroke) -->
+              <div style="margin: 0.2rem 0; display: flex; align-items: center; justify-content: center; height: 46px;">
+                <svg width="170" height="46" viewBox="0 0 170 46" fill="none" xmlns="http://www.w3.org/2000/svg" style="overflow: visible;">
+                  <!-- سحبة التوقيع الانسيابية بحرف A والحركات السريعة المميزة للمدير -->
+                  <path d="M12 36 C8 24 16 12 24 9 C31 6 34 18 28 28 C23 37 18 34 26 27 C36 18 48 30 58 22 C67 15 76 28 88 19 C98 12 110 24 122 17 C133 11 142 22 156 14" stroke="#1e3a8a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+                  <!-- العقدة العلوية والحركات الانسيابية -->
+                  <path d="M22 10 C26 4 32 3 35 8 C38 14 30 22 20 25" stroke="#1e3a8a" stroke-width="1.8" stroke-linecap="round" />
+                  <path d="M60 21 C65 14 70 14 73 19" stroke="#1e3a8a" stroke-width="1.6" stroke-linecap="round" />
+                  <path d="M92 18 C96 11 102 12 105 17" stroke="#1e3a8a" stroke-width="1.6" stroke-linecap="round" />
+                  <!-- سحبة الذيل السفلية الطويلة الممتدة تحت التوقيع -->
+                  <path d="M15 37 C45 42 85 41 148 31 C158 29 146 39 118 41 C82 43 40 40 18 36" stroke="#1e3a8a" stroke-width="2" stroke-linecap="round" />
+                  <!-- نقطة توكيد الاعتماد النهائي -->
+                  <circle cx="160" cy="16" r="2" fill="#1e3a8a" />
+                </svg>
+              </div>
+
+              <div style="font-size: 0.64rem; font-weight: 700; color: #1e3a8a; display: flex; align-items: center; justify-content: space-between; width: 100%; border-top: 1px solid rgba(30, 58, 138, 0.15); padding-top: 0.2rem;">
+                <span style="letter-spacing: 0.3px; font-family: sans-serif;">Abdullatief fathy</span>
+                <span style="background: #1e3a8a; color: #fff; font-size: 0.55rem; padding: 0.05rem 0.35rem; border-radius: 3px; font-weight: 800;">معتمد ✅</span>
+              </div>
+            </div>
+            <div style="font-size: 0.65rem; color: #64748b; margin-top: 0.25rem; font-weight: 600;">ختم وتوقيع مدير عام الأكاديمية</div>
+          </div>
+
+          <div style="text-align: left;">
+            <div style="font-size: 0.72rem; color: #64748b; font-weight: 600;">أكاديمية سبيل لعلوم القرآن</div>
+            <div style="font-size: 0.7rem; color: #059669; font-weight: 700; margin-top: 0.2rem;">✔ معتمد ورسمي</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- حاوية خاصة بالطباعة المباشرة لسند القبض المالي -->
+  <div id="receiptPrintContainer" style="display: none;"></div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { collection, onSnapshot, addDoc, doc, deleteDoc, getDocs, serverTimestamp, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+    import { animateTextCounter, showCustomConfirm } from '../assets/js/shared/utils/helpers.js';
+    import { getCurrentMonthKey, formatMonthKeyArabic, syncSubscriptionPayments } from '../assets/js/shared/utils/subscriptionHelpers.js';
+    import { softDeleteToTrash } from '../assets/js/features/trash/trashService.js';
+    import { assignPackageToStudent, syncStudentBalance } from '../assets/js/shared/utils/creditManager.js';
+    import { openWhatsAppReminderWidget, renderWarningCountBadge } from '../assets/js/shared/utils/whatsappWidget.js';
+    import { initFinancialCharts } from '../src/components/FinancialCharts.tsx';
+    import { openReceiptViewer, getReceiptSettings } from '../assets/js/shared/utils/receiptService.js';
+
+    protectRoute('admin');
+
+    let currentAdminName = "مشرف النظام";
+    let allPayments = [];
+    let allStudents = [];
+    let allSubscriptions = [];
+    let allStudentPackages = [];
+    let allStudentBalances = [];
+    let allTeachers = [];
+    let allPackages = [];
+    let currentEditingPayId = null;
+    let receiptSettingsCache = null;
+
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        currentAdminName = user.displayName || "مدير الأكاديمية";
+        renderSidebar('payments', 'admin');
+        renderNavbar('إدارة المدفوعات والمالية', { name: 'الإدارة العامة', roleName: 'مدير الأكاديمية' });
+        
+        // تشغيل الخدمات المالية والمتابعة اللحظية
+        initPaymentsRealtime();
+        initStudentsAndSubscriptionsRealtime();
+        preloadReceiptRecipients();
+        setupFilters();
+        setupTabs();
+        setupAutoFillListeners();
+      }
+    });
+
+    async function preloadReceiptRecipients() {
+      try {
+        receiptSettingsCache = await getReceiptSettings();
+        const recipients = receiptSettingsCache.recipients || [];
+        
+        const payRecSelect = document.getElementById('payReceivedBy');
+        const editRecSelect = document.getElementById('editPayReceivedBy');
+
+        if (recipients.length > 0) {
+          const optionsHtml = recipients.map(r => `<option value="${r.name}">${r.name}${r.title ? ` (${r.title})` : ''}</option>`).join('');
+          if (payRecSelect) payRecSelect.innerHTML = optionsHtml;
+          if (editRecSelect) editRecSelect.innerHTML = optionsHtml;
+        }
+      } catch (err) {
+        console.warn("Could not preload recipients:", err);
+      }
+    }
+
+    // تبويب الشاشات التفاعلية
+    function setupTabs() {
+      const tabPaymentsLogBtn = document.getElementById('tabPaymentsLogBtn');
+      const tabStudentsStatusBtn = document.getElementById('tabStudentsStatusBtn');
+      const sectionPaymentsLog = document.getElementById('sectionPaymentsLog');
+      const sectionStudentsStatus = document.getElementById('sectionStudentsStatus');
+
+      tabPaymentsLogBtn?.addEventListener('click', () => {
+        sectionPaymentsLog.style.display = 'block';
+        sectionStudentsStatus.style.display = 'none';
+        
+        tabPaymentsLogBtn.style.background = 'var(--primary-color)';
+        tabPaymentsLogBtn.style.borderColor = 'var(--primary-color)';
+        tabPaymentsLogBtn.style.color = '#fff';
+
+        tabStudentsStatusBtn.style.background = 'transparent';
+        tabStudentsStatusBtn.style.borderColor = 'transparent';
+        tabStudentsStatusBtn.style.color = 'var(--text-secondary)';
+      });
+
+      tabStudentsStatusBtn?.addEventListener('click', () => {
+        sectionPaymentsLog.style.display = 'none';
+        sectionStudentsStatus.style.display = 'block';
+        
+        tabStudentsStatusBtn.style.background = 'var(--primary-color)';
+        tabStudentsStatusBtn.style.borderColor = 'var(--primary-color)';
+        tabStudentsStatusBtn.style.color = '#fff';
+
+        tabPaymentsLogBtn.style.background = 'transparent';
+        tabPaymentsLogBtn.style.borderColor = 'transparent';
+        tabPaymentsLogBtn.style.color = 'var(--text-secondary)';
+      });
+    }
+
+    // جلب الطلاب والمعلمين والباقات والاشتراكات في الوقت الحقيقي للمزامنة التامة
+    function initStudentsAndSubscriptionsRealtime() {
+      // 1. تتبع الطلاب لحظياً
+      onSnapshot(collection(db, "students"), (studentsSnap) => {
+        allStudents = [];
+        studentsSnap.forEach(d => {
+          allStudents.push({ id: d.id, ...d.data() });
+        });
+
+        // تحديث القائمة المنسدلة في المودال
+        preloadStudentsSelect();
+        
+        // عرض كشف الطلاب والموقف المالي
+        renderStudentsStatusTable();
+      });
+
+      // 2. تتبع باقات واشتراكات الطلاب الجديدة
+      onSnapshot(collection(db, "studentPackages"), (pkgsSnap) => {
+        allStudentPackages = [];
+        pkgsSnap.forEach(d => {
+          allStudentPackages.push({ id: d.id, ...d.data() });
+        });
+        renderStudentsStatusTable();
+        updateExpectedRevenue();
+        initFinancialCharts('financialChartsContainer', allPayments, allStudentPackages);
+      });
+
+      // 3. تتبع أرصدة ومديونيات الطلاب الموحدة
+      onSnapshot(collection(db, "studentBalances"), (balSnap) => {
+        allStudentBalances = [];
+        balSnap.forEach(d => {
+          allStudentBalances.push({ id: d.id, ...d.data() });
+        });
+        renderStudentsStatusTable();
+      });
+
+      // 4. تتبع المعلمين لحظياً
+      onSnapshot(collection(db, "teachers"), (teachersSnap) => {
+        allTeachers = [];
+        teachersSnap.forEach(d => {
+          allTeachers.push({ id: d.id, ...d.data() });
+        });
+        renderStudentsStatusTable();
+        renderPaymentsTable(allPayments);
+      });
+
+      // 5. تتبع الباقات التعليمية لحظياً
+      onSnapshot(collection(db, "packages"), (pkgSnap) => {
+        allPackages = [];
+        pkgSnap.forEach(d => {
+          allPackages.push({ id: d.id, ...d.data() });
+        });
+      });
+
+      // 6. تتبع خطط الاشتراكات لحظياً (للتوافق)
+      onSnapshot(collection(db, "subscriptions"), (subsSnap) => {
+        allSubscriptions = [];
+        subsSnap.forEach(d => {
+          allSubscriptions.push({ id: d.id, ...d.data() });
+        });
+
+        // إعادة عرض جدول الموقف المالي للطلاب بالتفاصيل الجديدة
+        renderStudentsStatusTable();
+        
+        // تحديث عداد الإيرادات المتوقعة تلقائياً في الوقت الحقيقي
+        updateExpectedRevenue();
+      });
+    }
+
+    // استخراج اسم المعلم التابع للطالب
+    function getTeacherNameForStudent(s) {
+      if (!s) return 'غير محدد';
+      if (s.teacherName) return s.teacherName;
+      if (s.teacherId) {
+        const t = allTeachers.find(item => item.id === s.teacherId);
+        if (t && t.name) return t.name;
+      }
+      return 'غير محدد';
+    }
+
+    // تعبئة المبلغ المالي وتحديث بطاقة رصيد الحصص وخيارات التجديد التلقائي
+    function autoFillPackageAmount() {
+      const studentId = document.getElementById('payStudentSelect')?.value;
+      const monthKey = document.getElementById('payMonth')?.value || getCurrentMonthKey();
+      
+      const creditInfoBox = document.getElementById('studentCreditInfoBox');
+      const creditBadge = document.getElementById('modalStudentCreditBadge');
+      const creditNotice = document.getElementById('modalStudentCreditNotice');
+      const chkAutoRenew = document.getElementById('chkAutoRenewPackage');
+      const autoRenewOptions = document.getElementById('autoRenewOptions');
+      const renewPkgName = document.getElementById('renewPkgName');
+      const renewPkgTotalLessons = document.getElementById('renewPkgTotalLessons');
+      const renewPkgDuration = document.getElementById('renewPkgDuration');
+      const payAmountInput = document.getElementById('payAmount');
+
+      if (!studentId) {
+        if (creditInfoBox) creditInfoBox.style.display = 'none';
+        return;
+      }
+
+      const student = allStudents.find(s => s.id === studentId);
+      if (!student) return;
+
+      // 1. فحص باقة ورصيد الطالب
+      const studentPkgs = allStudentPackages.filter(x => x.studentId === studentId);
+      const activePkg = studentPkgs.find(x => x.status === 'active') || studentPkgs.find(x => x.status !== 'archived');
+      
+      let remainingCredits = student.remainingLessons !== undefined ? parseInt(student.remainingLessons) : 0;
+      if (activePkg && activePkg.remainingLessons !== undefined) {
+        remainingCredits = parseInt(activePkg.remainingLessons);
+      }
+
+      const isOverdraft = remainingCredits < 0;
+      const isExhausted = remainingCredits === 0;
+
+      // عرض البطاقة التفاعلية للرصيد
+      if (creditInfoBox) {
+        creditInfoBox.style.display = 'block';
+
+        if (isOverdraft) {
+          const debtCount = Math.abs(remainingCredits);
+          creditBadge.textContent = `عجز رصيد دين (${remainingCredits} حصة) 🔴`;
+          creditBadge.style.backgroundColor = 'rgba(239, 68, 68, 0.15)';
+          creditBadge.style.color = 'var(--danger)';
+          creditNotice.innerHTML = `⚠️ <strong>تنبيه عجز حصص:</strong> لدى الطالب (<strong>${debtCount}</strong>) حصة مستهلكة بدون تجديد مسبق. تفعيل التجديد سيشحن الباقة الجديدة ويخصم العجز (${debtCount} حصص) تلقائياً لتسوية حسابه بالكامل.`;
+          
+          if (chkAutoRenew) chkAutoRenew.checked = true;
+          if (autoRenewOptions) autoRenewOptions.style.display = 'block';
+        } else if (isExhausted) {
+          creditBadge.textContent = `رصيد منتهٍ بالكامل (0 حصة) ⚠️`;
+          creditBadge.style.backgroundColor = 'rgba(239, 68, 68, 0.12)';
+          creditBadge.style.color = 'var(--danger)';
+          creditNotice.innerHTML = `⌛ <strong>نفاد الرصيد:</strong> استهلك الطالب جميع حصصه. شحن وتجديد الباقة سيضيف الرصيد فور تسجيل هذا الإيصال.`;
+          
+          if (chkAutoRenew) chkAutoRenew.checked = true;
+          if (autoRenewOptions) autoRenewOptions.style.display = 'block';
+        } else {
+          creditBadge.textContent = `رصيد سارٍ (${remainingCredits} حصة متبقية) ✅`;
+          creditBadge.style.backgroundColor = 'var(--success-light)';
+          creditBadge.style.color = 'var(--success)';
+          creditNotice.innerHTML = `الباقة الحالية: <strong>${activePkg ? activePkg.packageName : (student.packageName || 'باقة نشطة')}</strong>. يمكنك تفعيل التجديد إذا كان هذا السداد لباقة جديدة قادمة.`;
+          
+          if (chkAutoRenew) chkAutoRenew.checked = false;
+          if (autoRenewOptions) autoRenewOptions.style.display = 'none';
+        }
+
+        // ملء بيانات التجديد التلقائي الافتراضية
+        if (renewPkgName) {
+          renewPkgName.value = activePkg ? activePkg.packageName : (student.packageName || 'باقة 8 حصص تجويد');
+        }
+        if (renewPkgTotalLessons) {
+          renewPkgTotalLessons.value = activePkg ? (activePkg.totalLessons || 8) : (student.totalLessons || 8);
+        }
+        if (renewPkgDuration) {
+          renewPkgDuration.value = String(activePkg ? (activePkg.lessonDuration || 30) : (student.sessionDuration || 30));
+        }
+      }
+
+      // تعبئة اسم ولي الأمر تلقائياً
+      const payParentNameInput = document.getElementById('payParentName');
+      if (payParentNameInput && student) {
+        payParentNameInput.value = student.parentName || student.guardianName || student.parent || '';
+      }
+
+      if (!payAmountInput) return;
+
+      // حساب القيمة المالية المقترحة للدفع
+      if (isOverdraft || isExhausted || (chkAutoRenew && chkAutoRenew.checked)) {
+        let suggestedPrice = parseFloat(activePkg?.totalAmount || activePkg?.price || student.packagePrice || student.price || student.monthlyFee || 0);
+        if (!suggestedPrice && (student.packageName || student.packageId)) {
+          const pkgTpl = allPackages.find(p => p.id === student.packageId || p.name === student.packageName);
+          if (pkgTpl) suggestedPrice = parseFloat(pkgTpl.price) || 0;
+        }
+        if (suggestedPrice > 0) {
+          payAmountInput.value = suggestedPrice;
+        }
+      } else if (activePkg) {
+        const totalAmount = parseFloat(activePkg.totalAmount) || parseFloat(activePkg.price) || 0;
+        const totalPaid = parseFloat(activePkg.totalPaid) || 0;
+        const remaining = Math.max(0, totalAmount - totalPaid);
+        payAmountInput.value = remaining > 0 ? remaining : totalAmount;
+      } else {
+        // Fallback to legacy subscriptions
+        const targetSub = allSubscriptions.find(x => x.studentId === studentId && (x.month === monthKey || x.startDate?.substring(0, 7) === monthKey));
+        if (targetSub) {
+          const totalAmount = parseFloat(targetSub.totalAmount) || parseFloat(targetSub.price) || 0;
+          const subPayments = allPayments.filter(p => p.subscriptionId === targetSub.id || (p.studentId === studentId && p.month === monthKey));
+          const totalPaid = subPayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+          const remaining = Math.max(0, totalAmount - totalPaid);
+          payAmountInput.value = remaining > 0 ? remaining : totalAmount;
+        }
+      }
+    }
+
+    function setupAutoFillListeners() {
+      document.getElementById('payStudentSelect')?.addEventListener('change', autoFillPackageAmount);
+      document.getElementById('payMonth')?.addEventListener('change', autoFillPackageAmount);
+
+      const chkAutoRenew = document.getElementById('chkAutoRenewPackage');
+      const autoRenewOptions = document.getElementById('autoRenewOptions');
+      chkAutoRenew?.addEventListener('change', (e) => {
+        if (autoRenewOptions) {
+          autoRenewOptions.style.display = e.target.checked ? 'block' : 'none';
+        }
+      });
+
+      // ربط القالب الجاهز داخل مودال الدفع
+      document.getElementById('renewPkgTemplateSelect')?.addEventListener('change', (e) => {
+        const tplId = e.target.value;
+        if (!tplId) return;
+        const tpl = allPackages.find(p => p.id === tplId);
+        if (tpl) {
+          if (document.getElementById('renewPkgName')) document.getElementById('renewPkgName').value = tpl.name;
+          if (document.getElementById('renewPkgTotalLessons')) document.getElementById('renewPkgTotalLessons').value = tpl.sessionsCount || tpl.totalLessons || 8;
+          if (document.getElementById('renewPkgDuration')) document.getElementById('renewPkgDuration').value = String(tpl.duration || 30);
+          if (document.getElementById('payAmount') && tpl.price) document.getElementById('payAmount').value = tpl.price;
+        }
+      });
+    }
+
+    // حساب وتحديث الإيرادات المتوقعة من الاشتراكات النشطة للشهر الحالي
+    function updateExpectedRevenue() {
+      const curMonth = getCurrentMonthKey();
+      const currentMonthSubs = allSubscriptions.filter(s => {
+        const subMonth = s.month || (s.startDate ? s.startDate.substring(0, 7) : curMonth);
+        return subMonth === curMonth && s.status !== 'cancelled';
+      });
+      const expectedRevenue = currentMonthSubs.reduce((sum, s) => {
+        const price = parseFloat(s.price) || 0;
+        const discount = parseFloat(s.discount) || 0;
+        const total = (parseFloat(s.totalAmount) >= 0 && s.totalAmount !== undefined) ? parseFloat(s.totalAmount) : Math.max(0, price - discount);
+        return sum + total;
+      }, 0);
+      const el = document.getElementById('expectedRevenueVal');
+      if (el) {
+        animateTextCounter(el, `${expectedRevenue.toLocaleString('ar-EG')} ج.م`);
+      }
+    }
+
+    // جلب وتحديث خيارات اختيار الطالب وقوالب الباقات بمودال التسجيل المالي
+    function preloadStudentsSelect() {
+      const select = document.getElementById('payStudentSelect');
+      if (select) {
+        select.innerHTML = '<option value="">-- اختر طالباً من الأكاديمية --</option>' +
+          allStudents.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+      }
+
+      const tplSelect = document.getElementById('renewPkgTemplateSelect');
+      if (tplSelect && allPackages.length > 0) {
+        tplSelect.innerHTML = '<option value="">-- اختيار قالب باقة جاهز --</option>' +
+          allPackages.map(p => `<option value="${p.id}">${p.name} (${p.sessionsCount || p.totalLessons || 8} حصص - ${p.price || 0} ج.م)</option>`).join('');
+      }
+    }
+
+    // جلب الطلاب لملء الاختيارات في المودال (للعمل بالتوافق مع الأنظمة الأخرى)
+    async function preloadStudentsList() {
+      preloadStudentsSelect();
+    }
+
+    // عرض جدول الموقف المالي العام للدارسين بناءً على الباقات والرصيد الفعلي
+    function renderStudentsStatusTable(filterText, statusFilter) {
+      const tbody = document.getElementById('studentsStatusTableBody');
+      if (!tbody) return;
+
+      if (filterText === undefined) {
+        filterText = document.getElementById('studentsStatusSearchInput')?.value.trim() || '';
+      }
+      if (statusFilter === undefined) {
+        statusFilter = document.getElementById('studentsStatusPaymentFilter')?.value || 'all';
+      }
+
+      const curMonthKey = getCurrentMonthKey();
+
+      const filtered = allStudents.filter(s => {
+        const matchSearch = !filterText || (s.name && s.name.toLowerCase().includes(filterText.toLowerCase()));
+        if (!matchSearch) return false;
+
+        if (statusFilter === 'all') return true;
+
+        // Fetch student active package or non-archived package
+        const studentPkgs = allStudentPackages.filter(x => x.studentId === s.id);
+        const pkg = studentPkgs.find(x => x.status === 'active') || studentPkgs.find(x => x.status !== 'archived');
+
+        let remainingCredits = s.remainingLessons !== undefined ? parseInt(s.remainingLessons) : 0;
+        if (pkg && pkg.remainingLessons !== undefined) {
+          remainingCredits = parseInt(pkg.remainingLessons);
+        }
+
+        const isOverdraft = remainingCredits < 0;
+        const isExhausted = remainingCredits === 0;
+
+        if (statusFilter === 'overdraft') return isOverdraft;
+        if (statusFilter === 'empty') return isExhausted;
+
+        // Legacy / package balance check
+        const studentBal = allStudentBalances.find(b => b.studentId === s.id);
+        const outstandingBal = studentBal ? studentBal.outstandingBalance : (s.totalDebt || 0);
+
+        if (statusFilter === 'unpaid') {
+          return isOverdraft || isExhausted || outstandingBal > 0;
+        } else if (statusFilter === 'partially') {
+          return outstandingBal > 0 && (s.totalPaid || 0) > 0;
+        } else if (statusFilter === 'paid') {
+          return !isOverdraft && !isExhausted && outstandingBal === 0 && (pkg || studentBal);
+        }
+
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">سجل الطلاب فارغ أو لا توجد نتائج مطابقة لتحديد التصفية الحالي.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(s => {
+        // البحث عن باقة الطالب النشطة أو الأحدث غير المؤرشفة
+        const studentPkgs = allStudentPackages.filter(x => x.studentId === s.id);
+        const activePkg = studentPkgs.find(x => x.status === 'active') || studentPkgs.find(x => x.status !== 'archived');
+        const studentBal = allStudentBalances.find(b => b.studentId === s.id);
+
+        let planName = 'لا توجد باقة مسندة ⚠️';
+        let priceLabel = '0 ج.م';
+        let validityLabel = 'غير محدد';
+        let statusBadge = '<span class="badge" style="position:static; background-color: var(--danger-light); color: var(--danger); font-weight:700;">غير مشترك ❌</span>';
+
+        let remainingCredits = s.remainingLessons !== undefined ? parseInt(s.remainingLessons) : 0;
+        if (activePkg && activePkg.remainingLessons !== undefined) {
+          remainingCredits = parseInt(activePkg.remainingLessons);
+        }
+
+        const isOverdraft = remainingCredits < 0;
+        const isExhausted = remainingCredits === 0;
+
+        if (activePkg) {
+          const totalLessons = parseInt(activePkg.totalLessons) || 0;
+          const usedLessons = parseInt(activePkg.usedLessons) || 0;
+          const price = parseFloat(activePkg.price) || 0;
+          const discount = parseFloat(activePkg.discount) || 0;
+          const totalAmount = parseFloat(activePkg.totalAmount) || Math.max(0, price - discount);
+          const totalPaid = parseFloat(activePkg.totalPaid) || 0;
+          const remainingAmount = Math.max(0, totalAmount - totalPaid);
+
+          planName = `${activePkg.packageName || 'باقة تعليمية'} (${totalLessons} حصة)`;
+          priceLabel = `${totalAmount.toLocaleString('ar-EG')} ج.م`;
+          validityLabel = `الرصيد: <strong>${remainingCredits}</strong> حصة <br> مسدد: ${totalPaid} ج.م | متبقي: ${remainingAmount} ج.م`;
+
+          if (isOverdraft) {
+            statusBadge = `<span class="badge" style="position:static; background-color: rgba(239,68,68,0.16); color: var(--danger); font-weight:800; border: 1px solid rgba(239,68,68,0.35);">دين حصص (${remainingCredits}) 🔴</span>`;
+          } else if (isExhausted) {
+            statusBadge = `<span class="badge" style="position:static; background-color: rgba(239,68,68,0.12); color: var(--danger); font-weight:800;">غير مدفوع (نفاد الحصص) ⚠️</span>`;
+          } else if (remainingAmount > 0) {
+            statusBadge = `<span class="badge" style="position:static; background-color: var(--warning-light); color: var(--warning); font-weight:700;">مسدد جزئياً ⏳</span>`;
+          } else {
+            statusBadge = `<span class="badge" style="position:static; background-color: var(--success-light); color: var(--success); font-weight:700;">مسدد وساري (${remainingCredits} متبقي) ✅</span>`;
+          }
+        } else {
+          // Fallback legacy subscription
+          const studentSubs = allSubscriptions.filter(x => x.studentId === s.id);
+          const sub = studentSubs.find(x => x.month === curMonthKey) || studentSubs[0];
+          if (sub) {
+            const monthKey = sub.month || (sub.startDate ? sub.startDate.substring(0, 7) : curMonthKey);
+            planName = `${sub.packageName || sub.planName || 'خطة شهريّة'} (${formatMonthKeyArabic(monthKey)})`;
+            const totalAmount = parseFloat(sub.totalAmount) || parseFloat(sub.price) || 0;
+            const totalPaid = parseFloat(sub.totalPaid) || 0;
+            const remaining = Math.max(0, totalAmount - totalPaid);
+
+            priceLabel = `${totalAmount.toLocaleString('ar-EG')} ج.م`;
+            validityLabel = `المدفوع: ${totalPaid} ج.م | المتبقي: ${remaining} ج.م`;
+
+            if (totalPaid >= totalAmount && totalAmount > 0) {
+              statusBadge = '<span class="badge" style="position:static; background-color: var(--success-light); color: var(--success); font-weight:700;">مسدد بالكامل ✅</span>';
+            } else {
+              statusBadge = '<span class="badge" style="position:static; background-color: var(--danger-light); color: var(--danger); font-weight:700;">غير مدفوع ❌</span>';
+            }
+          }
+        }
+
+        const teacherName = getTeacherNameForStudent(s);
+        const studentPhone = s.phone || s.parentPhone || s.whatsapp || '';
+
+        return `
+          <tr style="${isOverdraft ? 'background-color: rgba(239, 68, 68, 0.03);' : ''}">
+            <td>
+              <strong>${s.name}</strong>
+              <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.2rem; display: flex; align-items: center; gap: 0.25rem;">
+                <i data-lucide="user-check" style="width: 13px; height: 13px; color: var(--primary-color);"></i>
+                <span>المعلم: ${teacherName}</span>
+              </div>
+            </td>
+            <td><span class="badge" style="position:static; background-color: var(--primary-light); color: var(--primary-color); font-weight:700;">${planName}</span></td>
+            <td><strong style="color: var(--success); font-size:1rem;">${priceLabel}</strong></td>
+            <td style="font-size: 0.8rem; color: var(--text-secondary); line-height:1.4;">${validityLabel}</td>
+            <td>${statusBadge}</td>
+            <td>
+              <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;">
+                <button class="btn btn-primary quick-pay-btn" data-id="${s.id}" style="padding:0.4rem 0.65rem; font-size:0.78rem; background: var(--success); border-color: var(--success); display:flex; align-items:center; gap:0.25rem;">
+                  <i data-lucide="plus-circle" style="width:14px;height:14px;color:#fff;"></i> تحصيل
+                </button>
+                <button class="btn btn-secondary wa-student-btn" data-studentid="${s.id}" style="padding:0.4rem 0.65rem; font-size:0.78rem; color: #16a34a; border-color: #86efac;" title="إرسال تذكير أو كشف حساب واتساب لولي الأمر">
+                  <i data-lucide="message-square" style="width:14px;height:14px;"></i> واتساب
+                </button>
+                ${renderWarningCountBadge(s.waWarningCount)}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+
+      // ربط أزرار واتساب من جدول حالة الطلاب
+      tbody.querySelectorAll('.wa-student-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const studentId = btn.dataset.studentid;
+          const student = allStudents.find(s => s.id === studentId);
+          const studentPkg = allStudentPackages.find(x => x.studentId === studentId && x.status === 'active') || allStudentPackages.find(x => x.studentId === studentId);
+          const studentBal = allStudentBalances.find(b => b.id === studentId || b.studentId === studentId);
+          openWhatsAppReminderWidget({
+            student: student || { id: studentId, name: 'طالب' },
+            pkg: studentPkg,
+            bal: studentBal,
+            templateType: (studentPkg && studentPkg.remainingLessons <= 0) ? 'overdraft' : 'reminder'
+          });
+        });
+      });
+
+      // ربط أزرار الدفع السريع المباشر من جدول الطلاب
+      tbody.querySelectorAll('.quick-pay-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const studentId = e.currentTarget.dataset.id;
+          document.getElementById('addPaymentForm').reset();
+          
+          const payMonthInput = document.getElementById('payMonth');
+          if (payMonthInput) {
+            payMonthInput.value = getCurrentMonthKey();
+          }
+
+          const select = document.getElementById('payStudentSelect');
+          if (select) {
+            select.value = studentId;
+          }
+
+          autoFillPackageAmount();
+
+          // فتح المودال مباشرة
+          document.getElementById('addPaymentModal').style.display = 'flex';
+        });
+      });
+    }
+
+    // جلب ومعالجة المدفوعات في الوقت الحقيقي وتحديث الإحصائيات
+    function initPaymentsRealtime() {
+      const tbody = document.getElementById('paymentsTableBody');
+      if (!tbody) return;
+
+      onSnapshot(collection(db, "payments"), (snapshot) => {
+        allPayments = [];
+        snapshot.forEach(docSnap => {
+          allPayments.push({ id: docSnap.id, ...docSnap.data() });
+        });
+
+        // ترتيب من الأحدث للأقدم
+        allPayments.sort((a,b) => {
+          const timeA = a.createdAt?.seconds || 0;
+          const timeB = b.createdAt?.seconds || 0;
+          return timeB - timeA;
+        });
+
+        // تحديث إحصائيات KPI المالية
+        updateFinancialKPIs(allPayments);
+
+        // تحديث وعرض المخطط البياني Recharts
+        initFinancialCharts('financialChartsContainer', allPayments, allStudentPackages);
+
+        // عرض الجدول الأصلي
+        renderPaymentsTable(allPayments);
+      });
+    }
+
+    // حساب وعرض مؤشرات KPI
+    function updateFinancialKPIs(list) {
+      const totalRevenue = list.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+      const totalReceipts = list.length;
+      const avgReceipt = totalReceipts > 0 ? (totalRevenue / totalReceipts) : 0;
+
+      document.getElementById('totalRevenueVal').textContent = `${totalRevenue.toLocaleString('ar-EG')} ج.م`;
+      document.getElementById('totalReceiptsVal').textContent = totalReceipts.toLocaleString('ar-EG');
+      document.getElementById('avgReceiptVal').textContent = `${Math.round(avgReceipt).toLocaleString('ar-EG')} ج.م`;
+    }
+
+    // عرض جدول المدفوعات
+    function renderPaymentsTable(list) {
+      const tbody = document.getElementById('paymentsTableBody');
+      if (!tbody) return;
+
+      if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">سجل المقبوضات المالية فارغ أو لا توجد نتائج مطابقة للتصفية.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = list.map(p => {
+        const dateStr = p.createdAt ? new Date(p.createdAt.seconds * 1000).toLocaleString('ar-EG') : 'غير مسجل';
+        const studentObj = allStudents.find(s => s.id === p.studentId);
+        const teacherName = p.teacherName || getTeacherNameForStudent(studentObj);
+        const monthStr = p.month ? formatMonthKeyArabic(p.month) : formatMonthKeyArabic(getCurrentMonthKey());
+
+        return `
+          <tr>
+            <td><strong>${dateStr}</strong></td>
+            <td>
+              <strong>${p.studentName || 'طالب غير مسمى'}</strong>
+              <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.2rem; display: flex; align-items: center; gap: 0.25rem;">
+                <i data-lucide="user-check" style="width: 13px; height: 13px; color: var(--primary-color);"></i>
+                <span>المعلم: ${teacherName}</span>
+              </div>
+            </td>
+            <td>
+              <strong style="color: var(--success); font-weight: 700; font-size:1rem;">${p.amount} ج.م</strong>
+              <div style="font-size: 0.75rem; color: var(--primary-color); font-weight: 700; margin-top: 0.15rem;">
+                🗓️ شهر: ${monthStr}
+              </div>
+            </td>
+            <td>
+              <span class="badge" style="position:static; background-color: var(--primary-light); color: var(--primary-color); font-weight:700;">${p.method}</span>
+              <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">${p.notes || ''}</div>
+            </td>
+            <td>${p.adminName || 'مشرف النظام'}</td>
+            <td>
+              <div style="display: flex; gap: 0.35rem; align-items: center;">
+                <button class="btn btn-secondary view-receipt-btn" data-id="${p.id}" style="padding:0.4rem; color: var(--primary-color); border-color: var(--primary-color);" title="عرض وطباعة سند القبض المالي الرسمي">
+                  <i data-lucide="printer" style="width:14px;height:14px;"></i>
+                </button>
+                <button class="btn btn-secondary wa-receipt-btn" data-id="${p.id}" style="padding:0.4rem; color: #16a34a; border-color: #86efac;" title="إرسال إشعار وسند القبض لولي الأمر عبر واتساب">
+                  <i data-lucide="message-square" style="width:14px;height:14px;"></i>
+                </button>
+                <button class="btn btn-primary edit-pay-btn" data-id="${p.id}" style="padding:0.4rem; background: var(--primary-color); border-color: var(--primary-color);" title="تعديل هذا الإيصال">
+                  <i data-lucide="edit-3" style="width:14px;height:14px;color:#fff;"></i>
+                </button>
+                <button class="btn btn-secondary delete-payment-btn" data-id="${p.id}" style="padding: 0.4rem; color: var(--danger);" title="حذف هذا الإيصال">
+                  <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+      setupPaymentListeners();
+    }
+
+    // تفعيل فلاتر البحث والفرز الفوري
+    function setupFilters() {
+      const searchInput = document.getElementById('financialSearchInput');
+      const methodFilter = document.getElementById('financialMethodFilter');
+      const studentsStatusSearchInput = document.getElementById('studentsStatusSearchInput');
+
+      // تصفية إيصالات المقبوضات
+      const applyFilters = () => {
+        const queryText = searchInput.value.trim().toLowerCase();
+        const selectedMethod = methodFilter.value;
+
+        const filtered = allPayments.filter(p => {
+          const matchQuery = !queryText || 
+            (p.studentName && p.studentName.toLowerCase().includes(queryText)) ||
+            (p.notes && p.notes.toLowerCase().includes(queryText));
+
+          const matchMethod = !selectedMethod || 
+            (p.method && p.method.includes(selectedMethod));
+
+          return matchQuery && matchMethod;
+        });
+
+        renderPaymentsTable(filtered);
+      };
+
+      searchInput?.addEventListener('input', applyFilters);
+      methodFilter?.addEventListener('change', applyFilters);
+
+      // تصفية جدول الموقف المالي للطلاب
+      const studentsStatusPaymentFilter = document.getElementById('studentsStatusPaymentFilter');
+
+      const triggerStudentsStatusFilter = () => {
+        const queryText = studentsStatusSearchInput ? studentsStatusSearchInput.value.trim() : '';
+        const statusVal = studentsStatusPaymentFilter ? studentsStatusPaymentFilter.value : 'all';
+        renderStudentsStatusTable(queryText, statusVal);
+      };
+
+      studentsStatusSearchInput?.addEventListener('input', triggerStudentsStatusFilter);
+      studentsStatusPaymentFilter?.addEventListener('change', triggerStudentsStatusFilter);
+    }
+
+    // ربط عمليات التعديل والحذف لقيد مالي
+    function setupPaymentListeners() {
+      // حذف قيد مالي
+      document.querySelectorAll('.delete-payment-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const btnEl = e.target.closest('.delete-payment-btn');
+          const id = btnEl?.dataset.id;
+          const p = allPayments.find(item => item.id === id);
+          showCustomConfirm(`هل أنت متأكد من رغبتك بحذف قيد المقبوضات بقيمة (${p?.amount} ج.م) للطالب (${p?.studentName || ''})؟`, async () => {
+            try {
+              await softDeleteToTrash("payments", id, p, `حذف قيد المقبوضات بقيمة ${p?.amount} ج.م للطالب ${p?.studentName}`);
+              if (p?.subscriptionId) {
+                await syncSubscriptionPayments(p.subscriptionId);
+              }
+            } catch (err) {
+              console.error(err);
+              Toast.danger("فشل حذف القيد المالي.");
+            }
+          });
+        });
+      });
+
+      // فتح مودال تعديل إيصال مالي
+      document.querySelectorAll('.edit-pay-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.target.closest('.edit-pay-btn').dataset.id;
+          const p = allPayments.find(item => item.id === id);
+          if (!p) return;
+
+          currentEditingPayId = id;
+          document.getElementById('editPayStudentName').value = p.studentName || '';
+          if (document.getElementById('editPayParentName')) {
+            document.getElementById('editPayParentName').value = p.parentName || '';
+          }
+          if (document.getElementById('editPayReceivedBy')) {
+            document.getElementById('editPayReceivedBy').value = p.receivedBy || p.adminName || 'محمد عادل';
+          }
+          if (document.getElementById('editPayMonth')) {
+            document.getElementById('editPayMonth').value = p.month || getCurrentMonthKey();
+          }
+          document.getElementById('editPayAmount').value = p.amount || '';
+          document.getElementById('editPayMethod').value = p.method || 'فودافون كاش (Vodafone Cash)';
+          document.getElementById('editPayNotes').value = p.notes || '';
+
+          document.getElementById('editPaymentModal').style.display = 'flex';
+        });
+      });
+
+      // طباعة وعرض سند القبض المالي الرسمي
+      document.querySelectorAll('.view-receipt-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.target.closest('.view-receipt-btn')?.dataset.id;
+          const p = allPayments.find(item => item.id === id);
+          if (p) openReceiptModal(p);
+        });
+      });
+
+      // إرسال سند القبض وإشعار الدفع عبر واتساب
+      document.querySelectorAll('.wa-receipt-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.target.closest('.wa-receipt-btn')?.dataset.id;
+          const p = allPayments.find(item => item.id === id);
+          if (!p) return;
+          const student = allStudents.find(s => s.id === p.studentId);
+          const studentPkg = allStudentPackages.find(x => x.studentId === p.studentId && x.status === 'active') || allStudentPackages.find(x => x.studentId === p.studentId);
+          const studentBal = allStudentBalances.find(b => b.id === p.studentId || b.studentId === p.studentId);
+          openWhatsAppReminderWidget({
+            student: student || { id: p.studentId, name: p.studentName, teacherName: p.teacherName },
+            pkg: studentPkg,
+            bal: studentBal,
+            templateType: 'receipt',
+            customData: {
+              receiptNumber: p.id,
+              paidAmount: p.amount,
+              method: p.method
+            }
+          });
+        });
+      });
+    }
+
+    // --- مودال تسجيل عملية تحصيل جديدة ---
+    const addPayModal = document.getElementById('addPaymentModal');
+    document.getElementById('addNewPaymentBtn')?.addEventListener('click', async () => {
+      await preloadStudentsSelect();
+      document.getElementById('addPaymentForm').reset();
+      const payMonthInput = document.getElementById('payMonth');
+      if (payMonthInput) {
+        payMonthInput.value = getCurrentMonthKey();
+      }
+      addPayModal.style.display = 'flex';
+    });
+
+    document.getElementById('btnCloseAddPayModal')?.addEventListener('click', () => { addPayModal.style.display = 'none'; });
+    document.getElementById('btnCancelAddPayModal')?.addEventListener('click', () => { addPayModal.style.display = 'none'; });
+
+    document.getElementById('addPaymentForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+
+      const studentId = document.getElementById('payStudentSelect').value;
+      const student = allStudents.find(s => s.id === studentId);
+      if (!student) {
+        Toast.warning("يرجى اختيار طالب أولاً.");
+        return;
+      }
+
+      const selectedMonth = document.getElementById('payMonth').value || getCurrentMonthKey();
+      const amount = parseFloat(document.getElementById('payAmount').value) || 0;
+      const method = document.getElementById('payMethod').value;
+      const notes = document.getElementById('payNotes').value.trim();
+      const parentName = document.getElementById('payParentName')?.value.trim() || student.parentName || student.guardianName || student.parent || '';
+      const receivedBy = document.getElementById('payReceivedBy')?.value || 'محمد عادل';
+
+      const isAutoRenew = document.getElementById('chkAutoRenewPackage')?.checked || false;
+      const chkAllowPartial = document.getElementById('chkAllowPartialActivation')?.checked !== false;
+      const renewPkgName = document.getElementById('renewPkgName')?.value.trim() || 'باقة حصص تجويد';
+      const renewTotalLessons = parseInt(document.getElementById('renewPkgTotalLessons')?.value, 10) || 8;
+      const renewDuration = parseInt(document.getElementById('renewPkgDuration')?.value, 10) || 30;
+      const renewTemplateId = document.getElementById('renewPkgTemplateSelect')?.value || '';
+
+      const studentPkgs = allStudentPackages.filter(x => x.studentId === student.id);
+      const activePkg = studentPkgs.find(x => x.status === 'active') || studentPkgs[0];
+      const studentSubs = allSubscriptions.filter(x => x.studentId === student.id);
+      const targetSub = studentSubs.find(x => x.month === selectedMonth) || studentSubs[0];
+      const teacherName = getTeacherNameForStudent(student);
+
+      await window.GTP.executeProtected({
+        opName: 'RECORD_PAYMENT',
+        button: submitBtn,
+        lockKey: `pay_${student.id}_${amount}_${selectedMonth}`,
+        idempotencyKey: `idem_pay_${student.id}_${amount}_${selectedMonth}`,
+        actionFn: async () => {
+          let paymentIdResult = null;
+
+          // 1. إذا تم تحديد خيار شحن/تجديد الباقة تلقائياً فور السداد
+          if (isAutoRenew) {
+            const renewalResult = await assignPackageToStudent({
+              studentId: student.id,
+              studentName: student.name,
+              packageId: renewTemplateId,
+              packageName: renewPkgName,
+              totalLessons: renewTotalLessons,
+              lessonDuration: renewDuration,
+              price: amount,
+              discount: 0,
+              startDate: selectedMonth + '-01',
+              notes: notes || `تجديد باقة وشحن رصيد عند التحصيل المالي (${method})`,
+              payment: {
+                amount,
+                method,
+                notes: notes || `سداد وتجديد ${renewPkgName}`,
+                date: selectedMonth + '-01',
+                teacherName,
+                parentName,
+                receivedBy,
+                allowPartialActivation: chkAllowPartial
+              },
+              actor: { uid: auth.currentUser?.uid || 'admin', name: receivedBy }
+            });
+
+            paymentIdResult = renewalResult.receiptId || renewalResult.id;
+          } else {
+            // 2. سداد عادي لباقة حالية أو اشتراك
+            const payRef = doc(collection(db, "payments"));
+            const payData = {
+              id: payRef.id,
+              studentId: student.id,
+              studentName: student.name,
+              parentName: parentName,
+              teacherName: teacherName,
+              month: selectedMonth,
+              amount,
+              method,
+              paymentMethod: method,
+              notes: notes || `سداد تحصيل مالي (${method})`,
+              adminName: receivedBy,
+              receivedBy: receivedBy,
+              createdBy: currentAdminName,
+              packageId: activePkg?.id || '',
+              packageName: activePkg?.packageName || '',
+              date: selectedMonth + '-01',
+              paymentDate: selectedMonth + '-01',
+              createdAt: serverTimestamp()
+            };
+
+            if (targetSub) {
+              payData.subscriptionId = targetSub.id;
+            }
+
+            await setDoc(payRef, payData);
+            paymentIdResult = payRef.id;
+
+            // قيد السداد في دفتر أستاذ الطالب (studentLedger)
+            const ledgerPayRef = doc(collection(db, "studentLedger"));
+            await setDoc(ledgerPayRef, {
+              id: ledgerPayRef.id,
+              studentId: student.id,
+              studentName: student.name,
+              parentName: parentName,
+              type: 'payment',
+              amount: amount,
+              referenceId: activePkg?.id || '',
+              packageId: activePkg?.id || '',
+              paymentId: payRef.id,
+              description: `سداد تحصيل مالي (${method})` + (activePkg ? ` - ${activePkg.packageName}` : ''),
+              paymentMethod: method,
+              receivedBy: receivedBy,
+              date: selectedMonth + '-01',
+              createdAt: serverTimestamp()
+            });
+
+            // تحديث بيانات الباقة النشطة إن وجدت
+            if (activePkg) {
+              const currentTotalPaid = parseFloat(activePkg.totalPaid) || 0;
+              const newTotalPaid = currentTotalPaid + amount;
+              const totalAmount = parseFloat(activePkg.totalAmount) || parseFloat(activePkg.price) || 0;
+              const newRemainingAmount = Math.max(0, totalAmount - newTotalPaid);
+              const newPaymentStatus = newTotalPaid >= totalAmount ? 'paid' : (newTotalPaid > 0 ? 'partially_paid' : 'unpaid');
+
+              await updateDoc(doc(db, "studentPackages", activePkg.id), {
+                totalPaid: newTotalPaid,
+                remainingAmount: newRemainingAmount,
+                paymentStatus: newPaymentStatus,
+                lastPaymentDate: selectedMonth + '-01',
+                lastPaymentAmount: amount,
+                lastPaymentMethod: method,
+                lastReceiptId: payRef.id,
+                updatedAt: serverTimestamp()
+              });
+            }
+
+            // تحديث بطاقة الطالب
+            try {
+              await updateDoc(doc(db, "students", student.id), {
+                lastPaymentDate: selectedMonth + '-01',
+                lastPaymentAmount: amount,
+                lastReceiptId: payRef.id,
+                updatedAt: serverTimestamp()
+              });
+            } catch (err) {
+              console.warn("Could not update student doc with last payment:", err);
+            }
+
+            // مزامنة الأرصدة والمديونيات في الوقت الحقيقي
+            await syncStudentBalance(student.id);
+
+            if (targetSub) {
+              await syncSubscriptionPayments(targetSub.id);
+            }
+          }
+
+          addPayModal.style.display = 'none';
+          return { id: paymentIdResult };
+        },
+        successMsg: isAutoRenew 
+          ? "تم توثيق إيصال التحصيل وتجديد باقة الحصص وتسوية العجز بنجاح ✅" 
+          : "تم تسجيل عملية التحصيل وتوثيقها بالحسابات بنجاح ✅"
+      });
+    });
+
+    // --- مودال تعديل عملية تحصيل ---
+    const editPayModal = document.getElementById('editPaymentModal');
+    document.getElementById('btnCloseEditPayModal')?.addEventListener('click', () => { editPayModal.style.display = 'none'; });
+    document.getElementById('btnCancelEditPayModal')?.addEventListener('click', () => { editPayModal.style.display = 'none'; });
+
+    document.getElementById('editPaymentForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!currentEditingPayId) return;
+
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      const p = allPayments.find(item => item.id === currentEditingPayId);
+      const amount = parseFloat(document.getElementById('editPayAmount').value) || 0;
+      const editMonth = document.getElementById('editPayMonth').value || getCurrentMonthKey();
+      const method = document.getElementById('editPayMethod').value;
+      const notes = document.getElementById('editPayNotes').value.trim();
+      const parentName = document.getElementById('editPayParentName')?.value.trim() || '';
+      const receivedBy = document.getElementById('editPayReceivedBy')?.value || 'محمد عادل';
+
+      await window.GTP.executeProtected({
+        opName: 'EDIT_PAYMENT',
+        button: submitBtn,
+        lockKey: `edit_pay_${currentEditingPayId}`,
+        actionFn: async () => {
+          const docRef = doc(db, "payments", currentEditingPayId);
+          await updateDoc(docRef, {
+            amount,
+            month: editMonth,
+            method,
+            notes,
+            parentName,
+            receivedBy,
+            adminName: receivedBy
+          });
+
+          if (p?.subscriptionId) {
+            await syncSubscriptionPayments(p.subscriptionId);
+          }
+
+          editPayModal.style.display = 'none';
+        },
+        successMsg: "تم تعديل وحفظ إيصال القبض بنجاح ✅"
+      });
+    });
+
+    // ==========================================
+    // Feature 1: استعراض وطباعة سند القبض المالي الرسمي
+    // ==========================================
+    async function openReceiptModal(paymentOrId) {
+      let p = typeof paymentOrId === 'string' 
+        ? allPayments.find(item => item.id === paymentOrId) 
+        : paymentOrId;
+      if (!p) return;
+
+      const student = allStudents.find(s => s.id === p.studentId) || {};
+      const studentPkg = allStudentPackages.find(x => x.id === p.packageId || (x.studentId === p.studentId && x.status === 'active')) || {};
+      const teacherName = p.teacherName || getTeacherNameForStudent(student);
+
+      const parentName = p.parentName || student.parentName || student.guardianName || student.parent || '';
+      const totalLessons = studentPkg.totalLessons || student.totalLessons || 8;
+      const remainingLessons = studentPkg.remainingLessons !== undefined ? studentPkg.remainingLessons : (student.remainingLessons || 0);
+      const subscriptionPrice = studentPkg.totalAmount || studentPkg.price || student.packagePrice || p.amount;
+
+      const receiptData = {
+        id: p.id,
+        receiptNo: p.receiptNo || p.id.substring(0, 8).toUpperCase(),
+        studentName: p.studentName || student.name || 'طالب الأكاديمية',
+        parentName: parentName,
+        packageName: p.packageName || studentPkg.packageName || student.packageName || 'باقة حفظ وتجويد القرآن الكريم',
+        totalLessons: totalLessons,
+        remainingLessons: remainingLessons,
+        subscriptionPrice: subscriptionPrice,
+        amount: p.amount,
+        method: p.method || p.paymentMethod || 'نقدي',
+        month: p.month ? formatMonthKeyArabic(p.month) : formatMonthKeyArabic(getCurrentMonthKey()),
+        notes: p.notes || '',
+        receivedBy: p.receivedBy || p.adminName || 'محمد عادل',
+        teacherName: teacherName,
+        createdAt: p.createdAt ? new Date(p.createdAt.seconds * 1000) : new Date()
+      };
+
+      openReceiptViewer(receiptData);
+    }
+
+    // ==========================================
+    // Feature 7: تصدير سجل المدفوعات إلى Excel / CSV
+    // ==========================================
+    document.getElementById('btnExportPaymentsCsv')?.addEventListener('click', () => {
+      if (!allPayments || allPayments.length === 0) {
+        Toast.warning("لا توجد سجلات مدفوعات لتصديرها.");
+        return;
+      }
+
+      try {
+        // إنشاء رؤوس الأعمدة مع دعم اللغة العربية UTF-8 BOM
+        const headers = ["رقم الإيصال", "تاريخ ووقت التحصيل", "اسم الطالب", "اسم المعلم", "الشهر المحاسبي", "المبلغ المحصل (ج.م)", "طريقة الدفع", "المسؤول المستلم", "ملاحظات"];
+        
+        const rows = allPayments.map(p => {
+          const dateStr = p.createdAt ? new Date(p.createdAt.seconds * 1000).toLocaleString('ar-EG') : 'غير مسجل';
+          const studentObj = allStudents.find(s => s.id === p.studentId);
+          const teacherName = p.teacherName || getTeacherNameForStudent(studentObj);
+          const monthStr = p.month ? formatMonthKeyArabic(p.month) : formatMonthKeyArabic(getCurrentMonthKey());
+          const receiptId = p.id ? `#REC-${p.id.substring(0, 8).toUpperCase()}` : '-';
+
+          const escapeCsv = (val) => `"${String(val || '').replace(/"/g, '""')}"`;
+
+          return [
+            escapeCsv(receiptId),
+            escapeCsv(dateStr),
+            escapeCsv(p.studentName || 'غير مسجل'),
+            escapeCsv(teacherName || 'غير محدد'),
+            escapeCsv(monthStr),
+            p.amount || 0,
+            escapeCsv(p.method || 'نقدي'),
+            escapeCsv(p.adminName || 'مشرف النظام'),
+            escapeCsv(p.notes || '')
+          ].join(',');
+        });
+
+        const csvContent = "\uFEFF" + [headers.join(','), ...rows].join('\r\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const fileName = `تقرير_المقبوضات_والمدفوعات_${getCurrentMonthKey()}.csv`;
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        Toast.success("تم تصدير سجل المدفوعات بنجاح بصيغة CSV المتوافقة مع إكسيل! 📊");
+      } catch (err) {
+        console.error(err);
+        Toast.danger("حدث خطأ أثناء تصدير ملف الإكسيل.");
+      }
+    });
+
+    // توسيع setupPaymentListeners لربط أزرار السند والواتساب
+    const originalSetupPaymentListeners = setupPaymentListeners;
+    setupPaymentListeners = function() {
+      originalSetupPaymentListeners();
+
+      // ربط أزرار عرض السند المالي
+      document.querySelectorAll('.view-receipt-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.currentTarget.dataset.id;
+          openReceiptModal(id);
+        });
+      });
+
+      // ربط أزرار واتساب من جدول الإيصالات
+      document.querySelectorAll('.wa-receipt-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.currentTarget.dataset.id;
+          const p = allPayments.find(item => item.id === id);
+          if (!p) return;
+          const student = allStudents.find(s => s.id === p.studentId);
+          const phone = student?.phone || student?.parentPhone || student?.whatsapp || '';
+          openWhatsAppModal({
+            studentId: p.studentId,
+            studentName: p.studentName,
+            phone: phone,
+            paymentId: p.id,
+            type: 'receipt'
+          });
+        });
+      });
+    };
+  </script>
+</body>
+</html>
