@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>أكاديمية سبيل - أعمال صيانة وتحديثات</title>
+  
+  <script>
+    if (localStorage.getItem('academy_dark_mode') === 'true') {
+      document.documentElement.classList.add('dark-theme');
+    }
+  </script>
+
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    .maintenance-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius-lg, 16px);
+      box-shadow: var(--shadow-xl, 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04));
+      width: 100%;
+      max-width: 540px;
+      padding: 2.5rem 2rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .pulse-ring {
+      position: absolute;
+      top: -20px;
+      right: -20px;
+      width: 100px;
+      height: 100px;
+      background: rgba(245, 158, 11, 0.1);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .gear-container {
+      width: 84px;
+      height: 84px;
+      margin: 0 auto 1.5rem auto;
+      border-radius: 50%;
+      background: rgba(245, 158, 11, 0.12);
+      color: #d97706;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .gear-spin {
+      animation: spin 8s linear infinite;
+    }
+
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      background: rgba(245, 158, 11, 0.15);
+      color: #d97706;
+      font-size: 0.82rem;
+      font-weight: 800;
+      margin-bottom: 1.25rem;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .dot-pulse {
+      width: 8px;
+      height: 8px;
+      background-color: #d97706;
+      border-radius: 50%;
+      animation: dotPulse 1.5s infinite ease-in-out;
+    }
+
+    @keyframes dotPulse {
+      0%, 100% { transform: scale(0.8); opacity: 0.5; }
+      50% { transform: scale(1.3); opacity: 1; }
+    }
+  </style>
+</head>
+<body style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background-color: var(--bg-primary); padding: 1.5rem; position: relative;">
+
+  <div class="maintenance-card">
+    <div class="pulse-ring"></div>
+    
+    <!-- الشعار الرسمي للأكاديمية -->
+    <div style="margin-bottom: 1.25rem;" id="academyBrandingContainer">
+      <div class="logo" style="justify-content: center; font-size: 1.8rem; font-weight: 800; color: var(--primary-color);">
+        <i data-lucide="graduation-cap" style="width: 38px; height: 38px;"></i>
+        <span id="academyNameDisplay">أكاديمية سَبِيل</span>
+      </div>
+    </div>
+
+    <!-- مؤشر حالة الصيانة -->
+    <div class="status-pill">
+      <span class="dot-pulse"></span>
+      <span>وضع الصيانة والتحديثات الدورية مفعل</span>
+    </div>
+
+    <!-- الأيقونة المتحركة -->
+    <div class="gear-container">
+      <i data-lucide="wrench" style="width: 42px; height: 42px;" class="gear-spin"></i>
+    </div>
+
+    <!-- العنوان الرئيسي -->
+    <h1 style="font-size: 1.4rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.75rem;">
+      عذراً يا معلمنا الفاضل.. النظام قيد الصيانة
+    </h1>
+
+    <!-- نص التوضيح والرسالة المخصصة من الإدارة -->
+    <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.75rem;">
+      <p id="maintenanceCustomMsg" style="color: var(--text-secondary); font-size: 0.92rem; line-height: 1.6; margin: 0;">
+        يقوم الفريق التقني للأكاديمية حالياً ببعض أعمال الصيانة والتحسينات المجدولة لضمان تقديم أعلى جودة واستقرار للنظام. سنعود للعمل بكامل طاقتنا بعد قليل بإذن الله.
+      </p>
+    </div>
+
+    <!-- شريط معلومات إضافي -->
+    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+      💡 لا داعي للقلق، جميع سجلاتك وبيانات طلابك وحصصك محفوظة بالكامل بأمان تام، وسيتم تحويلك إلى لوحة التحكم تلقائياً بمجرد انتهاء أعمال الصيانة.
+    </p>
+
+    <!-- أزرار الإجراءات -->
+    <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+      <button type="button" id="btnCheckStatus" class="btn btn-primary" style="padding: 0.6rem 1.25rem; font-weight: 700; gap: 0.5rem;">
+        <i data-lucide="refresh-cw" id="refreshIcon"></i>
+        <span>إعادة فحص الحالة الآن</span>
+      </button>
+
+      <button type="button" id="btnLogoutTeacher" class="btn btn-secondary" style="padding: 0.6rem 1.25rem; font-weight: 700; gap: 0.5rem; color: var(--danger); border-color: var(--border-color);">
+        <i data-lucide="log-out"></i>
+        <span>تسجيل الخروج</span>
+      </button>
+    </div>
+  </div>
+
+  <footer style="margin-top: 2rem; font-size: 0.82rem; color: var(--text-muted); text-align: center;">
+    <span>منصة سَبِيل لإدارة الأكاديميات القرآنية والتعليمية</span>
+  </footer>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+
+    // تحميل الهوية البصرية من الكاش
+    const cachedLogo = localStorage.getItem('academy_logo_url');
+    const cachedName = localStorage.getItem('academy_name') || 'أكاديمية سَبِيل';
+    
+    const brandingContainer = document.getElementById('academyBrandingContainer');
+    if (cachedLogo && brandingContainer) {
+      brandingContainer.innerHTML = `
+        <img src="${cachedLogo}" style="max-height: 60px; max-width: 220px; object-fit: contain; margin-bottom: 0.5rem;" alt="Academy Logo">
+        <div style="font-size: 1.3rem; font-weight: 800; color: var(--text-primary);">${cachedName}</div>
+      `;
+    }
+
+    // التحقق من حالة المعلم وتسجيل الدخول
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        window.location.href = '/index.html';
+        return;
+      }
+
+      try {
+        const userSnap = await getDoc(doc(db, "users", user.uid));
+        if (userSnap.exists()) {
+          const uData = userSnap.data();
+          if (uData.role === 'admin') {
+            // المدير يدخل للوحة الإدارة مباشرة بدون حظر
+            window.location.href = '../admin/dashboard.html';
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn("User role check:", e);
+      }
+    });
+
+    // استماع لحظي ومباشر لحالة وضع الصيانة (Real-time listener)
+    // عند قيام المدير بإلغاء وضع الصيانة، يتم تحويل المعلم تلقائياً فوراً للوحة التحكم!
+    const unsubMaintenance = onSnapshot(doc(db, "settings", "maintenance"), (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.maintenanceMode === false) {
+          Toast.success("تم إنهاء أعمال الصيانة وعودة النظام للعمل بنجاح! جاري تحويلك...");
+          setTimeout(() => {
+            window.location.href = 'dashboard.html';
+          }, 1200);
+          return;
+        }
+
+        if (data.maintenanceMessage) {
+          const msgEl = document.getElementById('maintenanceCustomMsg');
+          if (msgEl) msgEl.textContent = data.maintenanceMessage;
+        }
+      } else {
+        // فحص البديل في إعدادات academy
+        getDoc(doc(db, "settings", "academy")).then(acadSnap => {
+          if (acadSnap.exists()) {
+            const acadData = acadSnap.data();
+            if (acadData.maintenanceMode === false) {
+              window.location.href = 'dashboard.html';
+            }
+          }
+        });
+      }
+    }, (err) => {
+      console.warn("Maintenance snapshot listener error:", err);
+    });
+
+    // زر فحص الحالة يدوياً
+    const btnCheckStatus = document.getElementById('btnCheckStatus');
+    const refreshIcon = document.getElementById('refreshIcon');
+    if (btnCheckStatus) {
+      btnCheckStatus.addEventListener('click', async () => {
+        if (refreshIcon) refreshIcon.classList.add('animate-spin');
+        btnCheckStatus.disabled = true;
+
+        try {
+          let isMaintenance = true;
+          const snap = await getDoc(doc(db, "settings", "maintenance"));
+          if (snap.exists()) {
+            isMaintenance = snap.data().maintenanceMode === true;
+          } else {
+            const acadSnap = await getDoc(doc(db, "settings", "academy"));
+            if (acadSnap.exists()) {
+              isMaintenance = acadSnap.data().maintenanceMode === true;
+            } else {
+              isMaintenance = false;
+            }
+          }
+
+          if (!isMaintenance) {
+            Toast.success("انتهت أعمال الصيانة! جاري توجيهك إلى لوحة التحكم...");
+            setTimeout(() => {
+              window.location.href = 'dashboard.html';
+            }, 800);
+          } else {
+            Toast.info("ما زالت أعمال الصيانة والتحديث جارية حالياً، شكراً لحسن صبركم.");
+          }
+        } catch (err) {
+          Toast.danger("تعذر فحص حالة الصيانة، يرجى التأكد من الاتصال بالإنترنت.");
+        } finally {
+          setTimeout(() => {
+            if (refreshIcon) refreshIcon.classList.remove('animate-spin');
+            btnCheckStatus.disabled = false;
+          }, 600);
+        }
+      });
+    }
+
+    // زر تسجيل الخروج
+    const btnLogoutTeacher = document.getElementById('btnLogoutTeacher');
+    if (btnLogoutTeacher) {
+      btnLogoutTeacher.addEventListener('click', async () => {
+        try {
+          await auth.signOut();
+          window.location.href = '/index.html';
+        } catch (err) {
+          console.error("Signout error:", err);
+          window.location.href = '/index.html';
+        }
+      });
+    }
+
+    if (window.lucide) window.lucide.createIcons();
+  </script>
+</body>
+</html>
