@@ -1,0 +1,1959 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - مركز التحكم والإدارة العامة</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* أنماط لوحة التحكم المؤسسية ERP */
+    .erp-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .erp-header-panel {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    /* شريط البحث السريع الشامل */
+    .search-bar-wrapper {
+      position: relative;
+      flex: 1;
+      min-width: 280px;
+      max-width: 520px;
+    }
+
+    .search-input-group {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-input-group i {
+      position: absolute;
+      right: 12px;
+      color: var(--text-muted);
+      width: 18px;
+      height: 18px;
+      pointer-events: none;
+    }
+
+    .search-input-field {
+      width: 100%;
+      padding: 0.65rem 2.5rem 0.65rem 4rem;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 0.88rem;
+      font-weight: 500;
+      transition: all var(--transition-fast);
+      outline: none;
+    }
+
+    .search-input-field:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    .search-kbd-shortcut {
+      position: absolute;
+      left: 10px;
+      font-size: 0.7rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 0.15rem 0.35rem;
+      color: var(--text-muted);
+      font-family: monospace;
+    }
+
+    .search-results-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      left: 0;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-lg);
+      z-index: 1050;
+      max-height: 400px;
+      overflow-y: auto;
+      padding: 0.5rem;
+    }
+
+    .search-result-category {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      padding: 0.4rem 0.6rem 0.2rem;
+      text-transform: uppercase;
+    }
+
+    .search-result-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.6rem 0.8rem;
+      border-radius: 6px;
+      cursor: pointer;
+      text-decoration: none;
+      color: var(--text-primary);
+      transition: background var(--transition-fast);
+      margin-bottom: 2px;
+    }
+
+    .search-result-item:hover {
+      background: var(--bg-primary);
+    }
+
+    /* شبكة الكروت الرئيسية المصنفة */
+    .metrics-section {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 1200px) {
+      .metrics-section {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .metric-group-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .metric-group-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.65rem;
+    }
+
+    .metric-group-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .metric-items-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .metric-sub-item {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      transition: transform var(--transition-fast);
+    }
+
+    .metric-sub-item.clickable {
+      cursor: pointer;
+    }
+
+    .metric-sub-item.clickable:hover {
+      border-color: var(--primary-color);
+      transform: translateY(-2px);
+    }
+
+    .metric-sub-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .metric-sub-value {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      font-family: inherit;
+    }
+
+    .metric-sub-footer {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+    }
+
+    /* بطاقات التنبيهات الذكية */
+    .alerts-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .alert-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      border-radius: var(--border-radius-sm);
+      border: 1px solid var(--border-color);
+      background: var(--bg-secondary);
+      font-size: 0.85rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .alert-banner.warning {
+      border-right: 4px solid var(--warning);
+      background: rgba(245, 158, 11, 0.04);
+    }
+
+    .alert-banner.danger {
+      border-right: 4px solid var(--danger);
+      background: rgba(239, 68, 68, 0.04);
+    }
+
+    .alert-banner.info {
+      border-right: 4px solid var(--primary-color);
+      background: rgba(15, 118, 110, 0.04);
+    }
+
+    .alert-banner-content {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-weight: 600;
+    }
+
+    /* جداول وحاويات الـ ERP */
+    .erp-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.25rem;
+    }
+
+    .erp-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .erp-card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .status-badge.active {
+      background: rgba(16, 185, 129, 0.12);
+      color: #059669;
+    }
+
+    .status-badge.low_balance {
+      background: rgba(245, 158, 11, 0.12);
+      color: #d97706;
+    }
+
+    .status-badge.needs_renewal {
+      background: rgba(239, 68, 68, 0.12);
+      color: #dc2626;
+    }
+
+    .status-badge.negative_balance {
+      background: rgba(185, 28, 28, 0.18);
+      color: #991b1b;
+      font-weight: 800;
+    }
+
+    .filter-tabs {
+      display: flex;
+      gap: 0.35rem;
+      background: var(--bg-primary);
+      padding: 0.25rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      overflow-x: auto;
+    }
+
+    .filter-tab-btn {
+      border: none;
+      background: transparent;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      white-space: nowrap;
+    }
+
+    .filter-tab-btn.active {
+      background: var(--bg-secondary);
+      color: var(--primary-color);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 900px) {
+      .charts-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .chart-container-box {
+      position: relative;
+      height: 250px;
+      width: 100%;
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 10000;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .modal-card {
+      background-color: var(--bg-secondary);
+      border-radius: var(--border-radius);
+      border: 1px solid var(--border-color);
+      width: 100%;
+      max-width: 520px;
+      padding: 1.75rem;
+    }
+  </style>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        
+        <div class="erp-container">
+
+          <!-- 1. شريط التحكم والترويسة والبحث السريع الشامل (ERP Header & Universal Search) -->
+          <div class="erp-header-panel">
+            <div>
+              <h1 style="font-size: 1.35rem; font-weight: 800; color: var(--text-primary); margin: 0;" id="welcomeAdminMessage">لوحة التحكم الإدارية</h1>
+              <p style="color: var(--text-secondary); font-size: 0.82rem; margin-top: 0.2rem;">مركز الإشراف والمتابعة اللحظية للعمليات التعليمية والمالية والاشتراكات.</p>
+            </div>
+
+            <!-- البحث السريع الشامل -->
+            <div class="search-bar-wrapper">
+              <div class="search-input-group">
+                <i data-lucide="search"></i>
+                <input 
+                  type="text" 
+                  id="universalSearchInput" 
+                  class="search-input-field" 
+                  placeholder="بحث سريع: طالب، معلم، هاتف، إيصال..."
+                  autocomplete="off"
+                >
+                <span class="search-kbd-shortcut">Ctrl+K</span>
+              </div>
+              <!-- قائمة نتائج البحث اللحظي -->
+              <div class="search-results-dropdown" id="searchResultsDropdown">
+                <!-- النتائج ديناميكية -->
+              </div>
+            </div>
+
+            <!-- أدوات الفلترة الزمنية والنسخ الاحتياطي -->
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.15rem 0.4rem;">
+                <button id="btnPrevMonth" class="btn btn-secondary" style="padding: 0.3rem 0.5rem; border: none; background: transparent;" title="الشهر السابق">
+                  <i data-lucide="chevron-right" style="width: 15px; height: 15px;"></i>
+                </button>
+                <div style="display: flex; align-items: center; gap: 0.25rem;">
+                  <i data-lucide="calendar" style="width: 14px; height: 14px; color: var(--primary-color);"></i>
+                  <select id="monthSelectDropdown" class="form-control" style="border: none; background: transparent; font-weight: 700; font-size: 0.82rem; padding: 0.3rem 0.4rem; outline: none; cursor: pointer; color: var(--text-primary);">
+                    <!-- تعبئة الشهور ديناميكياً -->
+                  </select>
+                </div>
+                <button id="btnNextMonth" class="btn btn-secondary" style="padding: 0.3rem 0.5rem; border: none; background: transparent;" title="الشهر التالي">
+                  <i data-lucide="chevron-left" style="width: 15px; height: 15px;"></i>
+                </button>
+              </div>
+
+              <button class="btn btn-secondary" id="exportBackupQuickBtn" style="font-size: 0.8rem; padding: 0.45rem 0.8rem;">
+                <i data-lucide="download" style="width: 14px; height: 14px;"></i> تصدير البيانات
+              </button>
+            </div>
+          </div>
+
+          <!-- 2. التنبيهات الذكية للإدارة (Smart ERP Alerts) -->
+          <div class="alerts-container" id="smartAlertsContainer">
+            <!-- سيتم توليد التنبيهات الذكية ديناميكياً -->
+          </div>
+
+          <!-- 3. الكروت الرئيسية المصنفة (Core ERP KPI Metric Groups) -->
+          <div class="metrics-section">
+            
+            <!-- مجموعة 1: الطلاب -->
+            <div class="metric-group-card">
+              <div class="metric-group-header">
+                <span class="metric-group-title">
+                  <i data-lucide="graduation-cap" style="width: 18px; height: 18px; color: var(--primary-color);"></i>
+                  شؤون الطلاب والاشتراكات
+                </span>
+                <span class="badge badge-primary" id="badgeTotalStudents">0 طالب</span>
+              </div>
+              <div class="metric-items-grid">
+                <div class="metric-sub-item">
+                  <span class="metric-sub-label">إجمالي الطلاب</span>
+                  <span class="metric-sub-value" id="statTotalStudentsCount">0</span>
+                  <span class="metric-sub-footer">مسجلون في النظام</span>
+                </div>
+                <div class="metric-sub-item">
+                  <span class="metric-sub-label">الطلاب النشطون</span>
+                  <span class="metric-sub-value" id="statActiveStudentsCount" style="color: var(--success);">0</span>
+                  <span class="metric-sub-footer">لديهم رصيد سارٍ</span>
+                </div>
+                <div class="metric-sub-item">
+                  <span class="metric-sub-label">الطلاب المتوقفون</span>
+                  <span class="metric-sub-value" id="statInactiveStudentsCount" style="color: var(--text-muted);">0</span>
+                  <span class="metric-sub-footer">حسابات متوقفة / معلقة</span>
+                </div>
+                <div class="metric-sub-item clickable" id="cardStudentsNeedRenewal">
+                  <span class="metric-sub-label">يحتاجون تجديد</span>
+                  <span class="metric-sub-value" id="statRenewalNeededCount" style="color: var(--danger);">0</span>
+                  <span class="metric-sub-footer" style="color: var(--primary-color); font-weight: 600;">رصيد منخفض أو منتهٍ</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- مجموعة 2: المعلمين والتشغيل -->
+            <div class="metric-group-card">
+              <div class="metric-group-header">
+                <span class="metric-group-title">
+                  <i data-lucide="users" style="width: 18px; height: 18px; color: var(--primary-color);"></i>
+                  المعلمون والتشغيل
+                </span>
+                <span class="badge badge-success" id="badgeOnlineTeachers">0 نشط</span>
+              </div>
+              <div class="metric-items-grid">
+                <div class="metric-sub-item">
+                  <span class="metric-sub-label">عدد المعلمين</span>
+                  <span class="metric-sub-value" id="statTeachersTotalCount">0</span>
+                  <span class="metric-sub-footer" id="statTeachersPendingFooter">0 بانتظار الاعتماد</span>
+                </div>
+                <div class="metric-sub-item">
+                  <span class="metric-sub-label">المعلمون النشطون</span>
+                  <span class="metric-sub-value" id="statTeachersActiveCount" style="color: var(--primary-color);">0</span>
+                  <span class="metric-sub-footer">معتمدون ومجدولون</span>
+                </div>
+                <div class="metric-sub-item">
+                  <span class="metric-sub-label">حصص اليوم</span>
+                  <span class="metric-sub-value" id="statTodaySessionsCount" style="color: var(--warning);">0</span>
+                  <span class="metric-sub-footer">مجدولة لليوم الجاري</span>
+                </div>
+                <div class="metric-sub-item clickable" id="cardZeroSessionsTeachers">
+                  <span class="metric-sub-label">معلمون خاملون اليوم</span>
+                  <span class="metric-sub-value" id="statZeroSessionsCount" style="color: var(--text-muted);">0</span>
+                  <span class="metric-sub-footer" style="color: var(--primary-color); font-weight: 600;">لم يسجلوا حصص اليوم</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- مجموعة 3: المالية والرواتب -->
+            <div class="metric-group-card">
+              <div class="metric-group-header">
+                <span class="metric-group-title">
+                  <i data-lucide="wallet" style="width: 18px; height: 18px; color: var(--primary-color);"></i>
+                  الحساب المالي والرواتب
+                </span>
+                <span class="badge badge-primary" id="badgeFinancialMonth">الشهر الحالي</span>
+              </div>
+              <div class="metric-items-grid">
+                <div class="metric-sub-item">
+                  <span class="metric-sub-label">إجمالي المدفوعات</span>
+                  <span class="metric-sub-value" id="statFinancialRevenue" style="color: var(--primary-color);">0 ج.م</span>
+                  <span class="metric-sub-footer">محصلة بالفترة المحددة</span>
+                </div>
+                <div class="metric-sub-item" title="الراتب المتوقع لو تم تنفيذ كامل جدول المعلم">
+                  <span class="metric-sub-label">الراتب المتوقع (الجدول)</span>
+                  <span class="metric-sub-value" id="statFinancialSalaries" style="color: var(--primary-color);">0 ج.م</span>
+                  <span class="metric-sub-footer" id="statFinancialScheduledHours">إجمالي الجداول: 0 س</span>
+                </div>
+                <div class="metric-sub-item" title="المستحق للحصص التي تمت فعلياً ولم تدفع">
+                  <span class="metric-sub-label">المستحق الحالي (المنفذ)</span>
+                  <span class="metric-sub-value" id="statFinancialCurrentDue" style="color: var(--warning);">0 ج.م</span>
+                  <span class="metric-sub-footer" id="statFinancialExecutedHours">منفذ حتى الآن: 0 س</span>
+                </div>
+                <div class="metric-sub-item" title="نسبة الحصص المنفذة ÷ الحصص المجدولة">
+                  <span class="metric-sub-label">نسبة الإنجاز وصافي الربح</span>
+                  <span class="metric-sub-value" id="statFinancialCompletionRate" style="color: var(--success);">0%</span>
+                  <span class="metric-sub-footer" id="statFinancialNetProfitFooter">صافي الربح المتوقع: 0 ج.م</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- 4. قسم المتابعة اليومية وحالة التشغيل (Daily Operations Section) -->
+          <div class="erp-card">
+            <div class="erp-card-header">
+              <h2 class="erp-card-title">
+                <i data-lucide="activity" style="width: 18px; height: 18px; color: var(--primary-color);"></i>
+                المتابعة اليومية للتشغيل وحالة الحصص
+              </h2>
+              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <span class="status-badge" style="background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary);">
+                  إجمالي اليوم: <strong id="dailyStatTotal" style="margin-right: 0.25rem;">0</strong>
+                </span>
+                <span class="status-badge active">
+                  المكتملة: <strong id="dailyStatCompleted" style="margin-right: 0.25rem;">0</strong>
+                </span>
+                <span class="status-badge low_balance">
+                  غياب بعذر: <strong id="dailyStatExcused" style="margin-right: 0.25rem;">0</strong>
+                </span>
+                <span class="status-badge needs_renewal">
+                  غياب بدون عذر: <strong id="dailyStatUnexcused" style="margin-right: 0.25rem;">0</strong>
+                </span>
+                <span class="status-badge" style="background: rgba(148, 163, 184, 0.15); color: #475569;">
+                  مؤجلة / ملغاة: <strong id="dailyStatDelayed" style="margin-right: 0.25rem;">0</strong>
+                </span>
+              </div>
+            </div>
+
+            <div class="table-container">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>المعلم</th>
+                    <th>الطالب</th>
+                    <th>التاريخ والتوقيت</th>
+                    <th>المدة والنوع</th>
+                    <th>حالة الحصة</th>
+                    <th>الاعتماد</th>
+                  </tr>
+                </thead>
+                <tbody id="todaySessionsTableBody">
+                  <!-- سيتم تعبئتها ديناميكياً -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 5. قسم حالة الطلاب والاشتراكات (Student & Subscription Status Section) -->
+          <div class="erp-card">
+            <div class="erp-card-header">
+              <div>
+                <h2 class="erp-card-title">
+                  <i data-lucide="user-check" style="width: 18px; height: 18px; color: var(--primary-color);"></i>
+                  الطلاب الذين يحتاجون متابعة وتجديد
+                </h2>
+                <p style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                  تتبع الأرصدة المستهلكة، حالات العجز، واشتراكات الطلاب التي شارفت على الانتهاء.
+                </p>
+              </div>
+
+              <!-- فلتر تصنيف حالة الرصيد -->
+              <div class="filter-tabs" id="studentStatusFilterTabs">
+                <button class="filter-tab-btn active" data-filter="all">الكل (<span id="countTabAll">0</span>)</button>
+                <button class="filter-tab-btn" data-filter="negative">رصيد سالب (<span id="countTabNegative">0</span>)</button>
+                <button class="filter-tab-btn" data-filter="zero">نفد الرصيد (<span id="countTabZero">0</span>)</button>
+                <button class="filter-tab-btn" data-filter="low">رصيد منخفض (<span id="countTabLow">0</span>)</button>
+                <button class="filter-tab-btn" data-filter="active">نشط (<span id="countTabActive">0</span>)</button>
+              </div>
+            </div>
+
+            <div class="table-container">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>اسم الطالب</th>
+                    <th>المعلم المشرف</th>
+                    <th>الباقة الحالية</th>
+                    <th>رصيد الحصص المتبقية</th>
+                    <th>حالة الاشتراك</th>
+                    <th>الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="studentFollowUpTableBody">
+                  <!-- سيتم تعبئتها ديناميكياً -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 6. قسم المرتبات المتوقعة للمعلمين وتتبع الإنجاز (Teachers' Expected Payroll & Progress Section) -->
+          <div class="erp-card">
+            <div class="erp-card-header">
+              <div>
+                <h2 class="erp-card-title">
+                  <i data-lucide="banknote" style="width: 18px; height: 18px; color: var(--primary-color);"></i>
+                  متابعة رواتب المعلمين ونسبة الإنجاز (الجدول vs المنفذ)
+                </h2>
+                <p style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                  الراتب المتوقع (لو كل الجدول تم تنفيذه) مقارنة بالمستحق الحالي للحصص المنفذة فعلياً ونسبة الإنجاز.
+                </p>
+              </div>
+              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <a href="teacher-schedules.html" class="btn btn-secondary" style="font-size: 0.8rem;">
+                  <i data-lucide="calendar" style="width: 14px; height: 14px;"></i> جداول المعلمين
+                </a>
+                <button class="btn btn-primary" onclick="window.location.href='earnings.html'" style="font-size: 0.8rem;">
+                  <i data-lucide="external-link" style="width: 14px; height: 14px;"></i> كشف الرواتب الكامل
+                </button>
+              </div>
+            </div>
+
+            <div class="table-container">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>المعلم</th>
+                    <th>ساعات جدول الشهر</th>
+                    <th>المنفذ فعلياً</th>
+                    <th>نسبة الإنجاز</th>
+                    <th>أجر الساعة</th>
+                    <th>المستحق الحالي (المنفذ)</th>
+                    <th>الراتب المتوقع (الجدول)</th>
+                    <th>الحالة والإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="teachersPayrollTableBody">
+                  <!-- سيتم تعبئتها ديناميكياً -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 7. التقارير والرسوم البيانية التفاعلية (Interactive Analytics & Charts) -->
+          <div class="charts-grid">
+            
+            <!-- رسم بياني 1: الدخل خلال آخر 6 شهور -->
+            <div class="erp-card">
+              <div class="erp-card-header">
+                <h3 class="erp-card-title" style="font-size: 0.95rem;">
+                  <i data-lucide="trending-up" style="width: 16px; height: 16px; color: var(--primary-color);"></i>
+                  الدخل خلال آخر 6 شهور (ج.م)
+                </h3>
+              </div>
+              <div class="chart-container-box">
+                <canvas id="chartRevenue6Months"></canvas>
+              </div>
+            </div>
+
+            <!-- رسم بياني 2: مقارنة الدخل بالمرتبات وصافي الربح -->
+            <div class="erp-card">
+              <div class="erp-card-header">
+                <h3 class="erp-card-title" style="font-size: 0.95rem;">
+                  <i data-lucide="bar-chart-2" style="width: 16px; height: 16px; color: var(--success);"></i>
+                  مقارنة الدخل بالمرتبات وصافي الربح
+                </h3>
+              </div>
+              <div class="chart-container-box">
+                <canvas id="chartFinancialBalance"></canvas>
+              </div>
+            </div>
+
+            <!-- رسم بياني 3: عدد الحصص شهرياً -->
+            <div class="erp-card">
+              <div class="erp-card-header">
+                <h3 class="erp-card-title" style="font-size: 0.95rem;">
+                  <i data-lucide="calendar" style="width: 16px; height: 16px; color: var(--warning);"></i>
+                  عدد الحصص شهرياً وتوزيعها
+                </h3>
+              </div>
+              <div class="chart-container-box">
+                <canvas id="chartSessionsMonthly"></canvas>
+              </div>
+            </div>
+
+            <!-- رسم بياني 4: نمو عدد الطلاب -->
+            <div class="erp-card">
+              <div class="erp-card-header">
+                <h3 class="erp-card-title" style="font-size: 0.95rem;">
+                  <i data-lucide="users-round" style="width: 16px; height: 16px; color: #8b5cf6;"></i>
+                  نمو عدد الطلاب المسجلين
+                </h3>
+              </div>
+              <div class="chart-container-box">
+                <canvas id="chartStudentsGrowth"></canvas>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- مودال المعلمين الخاملين اليوم -->
+  <div id="zeroSessionsModal" class="modal-overlay">
+    <div class="modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1rem;">
+        <h3 style="font-weight: 800; font-size: 1.05rem; margin: 0; display: flex; align-items: center; gap: 0.5rem; color: var(--text-primary);">
+          <i data-lucide="alert-circle" style="color: var(--warning); width: 18px; height: 18px;"></i> المعلمون الذين لم يسجلوا حصصاً اليوم
+        </h3>
+        <button id="closeZeroSessionsModalBtn" style="background: none; border: none; cursor: pointer; color: var(--text-muted);">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div id="zeroSessionsTeachersContainer" style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 300px; overflow-y: auto;">
+        <!-- سيتم تعبئتها ديناميكياً -->
+      </div>
+      <div style="text-align: left; margin-top: 1.25rem;">
+        <button class="btn btn-secondary" id="closeZeroSessionsModalBtn2">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { db, auth } from '../assets/js/config/firebase.js';
+    import { 
+      collection, 
+      onSnapshot, 
+      query, 
+      where, 
+      doc, 
+      updateDoc, 
+      getDoc 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+    import { exportDatabaseBackup } from '../assets/js/shared/utils/backup.js';
+    import { animateTextCounter, calculateAcademyEarningsOverview, calculateExpectedTeacherSalary, formatDate } from '../assets/js/shared/utils/helpers.js';
+    import { checkAndAutoArchivePreviousMonth } from '../assets/js/features/teachers/teachersController.js';
+
+    protectRoute('admin');
+
+    // البيانات المخزنة لحظياً من Firestore
+    let teachersCached = [];
+    let studentsCached = [];
+    let groupsCached = [];
+    let sessionsCached = [];
+    let paymentsCached = [];
+    let studentPackagesCached = [];
+    let studentBalancesCached = [];
+    let expensesCached = [];
+    let subscriptionsCached = [];
+    let zeroSessionsTeachersList = [];
+    let loggedInAdminData = null;
+
+    // حالة الفلترة والتاريخ
+    let selectedYearMonth = getCurrentYearMonth();
+    let currentStudentFilter = 'all';
+
+    // مراجع الرسوم البيانية Chart.js لمنع التداخل
+    let chartRevInstance = null;
+    let chartFinBalanceInstance = null;
+    let chartSessMonthlyInstance = null;
+    let chartStudentsGrowthInstance = null;
+
+    function getCurrentYearMonth() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      return `${year}-${month}`;
+    }
+
+    // تهيئة حالة التطبيق عند تسجيل الدخول
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        try {
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          if (userDoc.exists()) {
+            loggedInAdminData = userDoc.data();
+            
+            const isSubAdmin = loggedInAdminData.role === "admin" && loggedInAdminData.isSubAdmin;
+            const roleName = isSubAdmin ? "مشرف مساعد" : "مدير الأكاديمية";
+
+            renderSidebar('dashboard', 'admin');
+            renderNavbar('لوحة التحكم والإدارة', { 
+              name: loggedInAdminData.name || 'الإدارة العامة', 
+              roleName: roleName 
+            });
+            
+            // تهيئة واختيار الشهور
+            setupMonthSelector();
+            
+            // فحص وتصفير مستحقات الشهور السابقة وأرشفتها
+            checkAndAutoArchivePreviousMonth().catch(err => console.warn("Monthly reset check error:", err));
+
+            // تطبيق فحص الصلاحيات
+            enforceSubAdminPermissions();
+
+            // الاستماع المباشر لكافة مجموعات البيانات
+            initDashboardRealtime();
+
+            // تهيئة البحث السريع الشامل
+            setupUniversalSearch();
+
+            // تهيئة الفلاتر التبويبية
+            setupFilterTabs();
+          }
+        } catch (err) {
+          console.error("خطأ جلب بيانات حساب الأدمن:", err);
+        }
+      }
+    });
+
+    // إعداد قائمة اختيار الشهور المتاحة
+    function setupMonthSelector() {
+      const dropdown = document.getElementById('monthSelectDropdown');
+      if (!dropdown) return;
+
+      dropdown.innerHTML = '';
+      const now = new Date();
+      
+      // إنشاء 12 شهر سابق ولاحق
+      for (let i = -6; i <= 3; i++) {
+        const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const ymKey = `${y}-${m}`;
+
+        const monthName = d.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+        const opt = document.createElement('option');
+        opt.value = ymKey;
+        opt.textContent = monthName;
+        if (ymKey === selectedYearMonth) opt.selected = true;
+        dropdown.appendChild(opt);
+      }
+
+      dropdown.addEventListener('change', (e) => {
+        selectedYearMonth = e.target.value;
+        calculateAndRenderDashboard();
+      });
+
+      document.getElementById('btnPrevMonth')?.addEventListener('click', () => {
+        const [y, m] = selectedYearMonth.split('-').map(Number);
+        const prev = new Date(y, m - 2, 1);
+        selectedYearMonth = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`;
+        dropdown.value = selectedYearMonth;
+        calculateAndRenderDashboard();
+      });
+
+      document.getElementById('btnNextMonth')?.addEventListener('click', () => {
+        const [y, m] = selectedYearMonth.split('-').map(Number);
+        const next = new Date(y, m, 1);
+        selectedYearMonth = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`;
+        dropdown.value = selectedYearMonth;
+        calculateAndRenderDashboard();
+      });
+    }
+
+    // تطبيق مصفوفة صلاحيات المشرفين المساعدين
+    function enforceSubAdminPermissions() {
+      if (!loggedInAdminData) return;
+
+      const isSubAdmin = loggedInAdminData.role === "admin" && loggedInAdminData.isSubAdmin;
+      if (isSubAdmin) {
+        const perms = loggedInAdminData.permissions || {};
+        
+        document.getElementById('welcomeAdminMessage').textContent = `مرحباً المشرف: ${loggedInAdminData.name || 'المساعد'}`;
+
+        if (!perms.exportData) {
+          const backupBtn = document.getElementById('exportBackupQuickBtn');
+          if (backupBtn) backupBtn.style.display = "none";
+        }
+      }
+    }
+
+    // الربط اللحظي بمجموعات بيانات Firestore الأساسية
+    function initDashboardRealtime() {
+      // 1. المعلمون والمستخدمون
+      onSnapshot(collection(db, "users"), (snap) => {
+        teachersCached = [];
+        snap.forEach(docSnap => {
+          if (docSnap.data().role === "teacher") {
+            teachersCached.push({ uid: docSnap.id, id: docSnap.id, ...docSnap.data() });
+          }
+        });
+        calculateAndRenderDashboard();
+      });
+
+      // 2. الطلاب
+      onSnapshot(collection(db, "students"), (studentSnap) => {
+        studentsCached = [];
+        studentSnap.forEach(docSnap => {
+          studentsCached.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        calculateAndRenderDashboard();
+      });
+
+      // 3. باقات الطلاب
+      onSnapshot(collection(db, "studentPackages"), (pkgSnap) => {
+        studentPackagesCached = [];
+        pkgSnap.forEach(docSnap => {
+          studentPackagesCached.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        calculateAndRenderDashboard();
+      });
+
+      // 4. أرصدة الطلاب المجمعة
+      onSnapshot(collection(db, "studentBalances"), (balSnap) => {
+        studentBalancesCached = [];
+        balSnap.forEach(docSnap => {
+          studentBalancesCached.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        calculateAndRenderDashboard();
+      });
+
+      // 5. المجموعات
+      onSnapshot(collection(db, "groups"), (grpSnap) => {
+        groupsCached = [];
+        grpSnap.forEach(docSnap => {
+          groupsCached.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        calculateAndRenderDashboard();
+      });
+
+      // 6. الحصص التعليمية
+      onSnapshot(collection(db, "sessions"), (sessSnap) => {
+        sessionsCached = [];
+        sessSnap.forEach(docSnap => {
+          sessionsCached.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        calculateAndRenderDashboard();
+      });
+
+      // 7. المدفوعات والتحصيلات
+      onSnapshot(collection(db, "payments"), (paySnap) => {
+        paymentsCached = [];
+        paySnap.forEach(docSnap => {
+          paymentsCached.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        calculateAndRenderDashboard();
+      });
+
+      // 8. المصروفات التشغيلية (إن وجدت)
+      onSnapshot(collection(db, "expenses"), (expSnap) => {
+        expensesCached = [];
+        expSnap.forEach(docSnap => {
+          expensesCached.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        calculateAndRenderDashboard();
+      }, (err) => {
+        // إذا لم يكن collection موجوداً بعد
+        expensesCached = [];
+      });
+
+      // 9. الاشتراكات
+      onSnapshot(collection(db, "subscriptions"), (subSnap) => {
+        subscriptionsCached = [];
+        subSnap.forEach(docSnap => {
+          subscriptionsCached.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        calculateAndRenderDashboard();
+      });
+    }
+
+    // المعالجة الحسابية والتحليلية وعرض لوحة التحكم
+    function calculateAndRenderDashboard() {
+      const approvedTeachers = teachersCached.filter(t => t.status === "approved" || t.status === "active");
+      const pendingTeachers = teachersCached.filter(t => t.status === "pending");
+
+      const todayStr = new Date().toISOString().split('T')[0];
+      const todaySessions = sessionsCached.filter(s => s.date === todayStr);
+
+      // احتساب نشاط المعلمين الحقيقي
+      const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+      const onlineTeachers = approvedTeachers.filter(t => {
+        if (!t.lastLogin) return false;
+        const lastLoginMs = t.lastLogin.seconds ? t.lastLogin.seconds * 1000 : new Date(t.lastLogin).getTime();
+        return lastLoginMs >= fiveMinutesAgo;
+      });
+
+      zeroSessionsTeachersList = approvedTeachers.filter(t => {
+        const teacherTodaySessions = todaySessions.filter(s => s.teacherId === t.uid || s.teacherUid === t.uid);
+        return teacherTodaySessions.length === 0;
+      });
+
+      // تصنيف الطلاب وأرصدتهم
+      const studentAnalysis = analyzeStudentsBalances();
+
+      // الحساب المالي الذكي للفترة المحددة
+      const financialOverview = calculateFinancialOverview(selectedYearMonth, approvedTeachers);
+
+      // 1. تحديث كروت الطلاب
+      animateTextCounter('statTotalStudentsCount', String(studentsCached.length));
+      animateTextCounter('statActiveStudentsCount', String(studentAnalysis.activeCount));
+      animateTextCounter('statInactiveStudentsCount', String(studentAnalysis.inactiveCount));
+      animateTextCounter('statRenewalNeededCount', String(studentAnalysis.renewalNeededCount));
+      document.getElementById('badgeTotalStudents').textContent = `${studentsCached.length} طالب`;
+
+      // 2. تحديث كروت المعلمين
+      animateTextCounter('statTeachersTotalCount', String(teachersCached.length));
+      animateTextCounter('statTeachersActiveCount', String(approvedTeachers.length));
+      animateTextCounter('statTodaySessionsCount', String(todaySessions.length));
+      animateTextCounter('statZeroSessionsCount', String(zeroSessionsTeachersList.length));
+      document.getElementById('statTeachersPendingFooter').textContent = `${pendingTeachers.length} بانتظار الاعتماد`;
+      document.getElementById('badgeOnlineTeachers').textContent = `${onlineTeachers.length} متصل الآن`;
+
+      // 3. تحديث الكروت المالية
+      animateTextCounter('statFinancialRevenue', `${financialOverview.revenue.toLocaleString('ar-EG')} ج.م`);
+      animateTextCounter('statFinancialSalaries', `${financialOverview.expectedSalaries.toLocaleString('ar-EG')} ج.م`);
+      animateTextCounter('statFinancialCurrentDue', `${financialOverview.currentDueSalaries.toLocaleString('ar-EG')} ج.م`);
+      animateTextCounter('statFinancialCompletionRate', `${financialOverview.overallCompletionRate}%`);
+      
+      const elSchedHours = document.getElementById('statFinancialScheduledHours');
+      if (elSchedHours) {
+        elSchedHours.textContent = `إجمالي الجداول: ${financialOverview.totalScheduledHours.toFixed(1)} س (${financialOverview.totalScheduledSessions} حصة)`;
+      }
+
+      const elExecHours = document.getElementById('statFinancialExecutedHours');
+      if (elExecHours) {
+        elExecHours.textContent = `منفذ حتى الآن: ${financialOverview.totalExecutedHours.toFixed(1)} س (${financialOverview.totalExecutedSessions} حصة)`;
+      }
+
+      const elNetProfitFooter = document.getElementById('statFinancialNetProfitFooter');
+      if (elNetProfitFooter) {
+        elNetProfitFooter.textContent = `صافي الربح المتوقع: ${financialOverview.netProfit.toLocaleString('ar-EG')} ج.م`;
+      }
+      
+      const badgeMonth = document.getElementById('badgeFinancialMonth');
+      if (badgeMonth) {
+        const [y, m] = selectedYearMonth.split('-');
+        const dateObj = new Date(parseInt(y), parseInt(m) - 1, 1);
+        badgeMonth.textContent = dateObj.toLocaleDateString('ar-EG', { month: 'short', year: 'numeric' });
+      }
+
+      // 4. توليد التنبيهات الذكية
+      renderSmartAlerts({
+        studentAnalysis,
+        pendingTeachers,
+        financialOverview,
+        todaySessions
+      });
+
+      // 5. المتابعة اليومية
+      renderDailyOperations(todaySessions);
+
+      // 6. جدول متابعة وتجديد الطلاب
+      renderStudentFollowUpTable(studentAnalysis.classifiedList);
+
+      // 7. جدول رواتب المعلمين المتوقعة ونسبة الإنجاز
+      renderTeachersPayrollTable(financialOverview.teachersBreakdown);
+
+      // 8. الرسوم البيانية التفاعلية
+      renderDashboardCharts();
+
+      // إنشاء الأيقونات
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+    }
+
+    // تحليل وتصنيف أرصدة واشتراكات الطلاب
+    function analyzeStudentsBalances() {
+      let activeCount = 0;
+      let inactiveCount = 0;
+      let renewalNeededCount = 0;
+      let countNegative = 0;
+      let countZero = 0;
+      let countLow = 0;
+      let countActive = 0;
+
+      const classifiedList = studentsCached.map(student => {
+        const studentPkg = studentPackagesCached.find(p => p.id === student.activePackageId || (p.studentId === student.id && p.status === 'active'))
+          || studentPackagesCached.filter(p => p.studentId === student.id).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))[0];
+        
+        const balanceDoc = studentBalancesCached.find(b => b.id === student.id || b.studentId === student.id);
+        
+        let remaining = 0;
+        if (balanceDoc && balanceDoc.balance !== undefined) {
+          remaining = parseInt(balanceDoc.balance) || 0;
+        } else if (studentPkg && studentPkg.remainingLessons !== undefined) {
+          remaining = parseInt(studentPkg.remainingLessons) || 0;
+        } else if (student.remainingLessons !== undefined) {
+          remaining = parseInt(student.remainingLessons) || 0;
+        }
+
+        let statusCategory = 'active';
+        if (remaining < 0) {
+          statusCategory = 'negative_balance';
+          countNegative++;
+          renewalNeededCount++;
+        } else if (remaining === 0) {
+          statusCategory = 'needs_renewal';
+          countZero++;
+          renewalNeededCount++;
+        } else if (remaining <= 2) {
+          statusCategory = 'low_balance';
+          countLow++;
+          renewalNeededCount++;
+          activeCount++;
+        } else {
+          statusCategory = 'active';
+          countActive++;
+          activeCount++;
+        }
+
+        if (student.status === 'inactive' || student.status === 'paused' || student.status === 'stopped') {
+          inactiveCount++;
+        }
+
+        const teacher = teachersCached.find(t => t.uid === student.teacherId || t.id === student.teacherId);
+
+        return {
+          id: student.id,
+          name: student.name || 'طالب',
+          phone: student.phone || student.parentPhone || '',
+          teacherName: teacher ? teacher.name : (student.teacherName || 'غير مسند'),
+          packageName: studentPkg ? (studentPkg.packageName || 'باقة حفظ وتجويد') : (student.packageName || 'باقة قياسية'),
+          remainingLessons: remaining,
+          statusCategory: statusCategory,
+          rawStudent: student
+        };
+      });
+
+      // تحديث أرقام التبويبات
+      document.getElementById('countTabAll').textContent = String(classifiedList.length);
+      document.getElementById('countTabNegative').textContent = String(countNegative);
+      document.getElementById('countTabZero').textContent = String(countZero);
+      document.getElementById('countTabLow').textContent = String(countLow);
+      document.getElementById('countTabActive').textContent = String(countActive);
+
+      return {
+        activeCount,
+        inactiveCount,
+        renewalNeededCount,
+        classifiedList
+      };
+    }
+
+    // الحساب المالي الذكي للفترة المحددة (توقع الرواتب بناءً على الجداول + المستحق الفعلي المنفذ)
+    function calculateFinancialOverview(targetMonth, approvedTeachers) {
+      // 1. الدخل من payments
+      let revenue = 0;
+      paymentsCached.forEach(p => {
+        const pMonth = p.month || (p.paymentDate ? String(p.paymentDate).substring(0, 7) : '');
+        if (pMonth === targetMonth || (!pMonth && p.createdAt && new Date(p.createdAt.seconds * 1000).toISOString().substring(0, 7) === targetMonth)) {
+          revenue += (parseFloat(p.amount) || 0);
+        }
+      });
+
+      // 2. المصروفات من expenses
+      let expenses = 0;
+      expensesCached.forEach(exp => {
+        const expMonth = exp.month || (exp.date ? String(exp.date).substring(0, 7) : '');
+        if (expMonth === targetMonth) {
+          expenses += (parseFloat(exp.amount) || 0);
+        }
+      });
+
+      // 3. حساب جداول المعلمين وتوقعات الرواتب والمستحق الحالي ونسبة الإنجاز
+      let totalExpectedSalaries = 0; // الراتب المتوقع (لو كل الجدول تم تنفيذه)
+      let totalCurrentDue = 0;        // المستحق الحالي (الحصص التي تمت فعلياً ولم تدفع)
+      let totalScheduledHours = 0;
+      let totalExecutedHours = 0;
+      let totalScheduledSessions = 0;
+      let totalExecutedSessions = 0;
+
+      const teachersBreakdown = approvedTeachers.map(teacher => {
+        const tId = teacher.uid || teacher.id;
+        const tStudents = studentsCached.filter(s => s.teacherId === tId || s.teacherUid === tId || s.teacherId === teacher.id);
+        const tGroups = groupsCached.filter(g => g.teacherId === tId || g.teacherUid === tId || g.teacherId === teacher.id);
+
+        // 1- حساب توقع الراتب الشهري بالكامل وفق جدول المعلم
+        const forecast = calculateExpectedTeacherSalary(teacher, tStudents, tGroups, targetMonth, sessionsCached);
+
+        const scheduledHours = forecast.expectedTotalHours || 0;
+        const scheduledSessionsCount = forecast.expectedSessionsCount || 0;
+        const expectedSalary = forecast.expectedSalary || 0;
+        const rateInd = forecast.rateInd;
+        const rateGrp = forecast.rateGrp;
+
+        // 2- حساب المستحق الحالي والحصص المنفذة فعلياً لهذا الشهر
+        let executedSessionsCount = 0;
+        let executedHours = 0;
+        let currentDueSalary = 0;
+        const processedGroupSessions = new Set();
+
+        sessionsCached.forEach(session => {
+          if (!session.date || !session.date.startsWith(targetMonth)) return;
+          const matchesTeacher = session.teacherId === tId || session.teacherUid === tId || (session.teacherName && teacher.name && session.teacherName.trim().toLowerCase() === teacher.name.trim().toLowerCase());
+          if (!matchesTeacher) return;
+          if (session.isStudentRecordOnly === true || session.isSalaryRecord === false) return;
+
+          const gId = session.groupSessionId || session.groupBatchId;
+          const isGroup = session.type === "group" || session.sessionType === "group";
+          if (isGroup && gId) {
+            if (processedGroupSessions.has(gId)) return;
+            processedGroupSessions.add(gId);
+          }
+
+          if (session.archived === true || session.paid === true) return;
+          if (session.type === "trial" && (session.approved !== true || session.trialSubscribed !== true)) return;
+
+          const isCompleted = session.status === "completed";
+          const isUnexcused = session.status === "student_absent" && session.absenceType === "unexcused";
+          const isApproved = session.approved === true;
+
+          if (isApproved && (isCompleted || isUnexcused)) {
+            executedSessionsCount++;
+            const duration = parseInt(session.duration) || 0;
+            const hours = duration / 60;
+            executedHours += hours;
+
+            const rate = isGroup ? rateGrp : rateInd;
+            currentDueSalary += hours * rate;
+          }
+        });
+
+        // 3- نسبة الإنجاز: الحصص/الساعات المنفذة ÷ الحصص/الساعات المجدولة
+        let completionRate = 0;
+        if (scheduledHours > 0) {
+          completionRate = Math.min(100, Math.round((executedHours / scheduledHours) * 100));
+        } else if (executedHours > 0) {
+          completionRate = 100;
+        }
+
+        totalExpectedSalaries += expectedSalary;
+        totalCurrentDue += currentDueSalary;
+        totalScheduledHours += scheduledHours;
+        totalExecutedHours += executedHours;
+        totalScheduledSessions += scheduledSessionsCount;
+        totalExecutedSessions += executedSessionsCount;
+
+        return {
+          teacher,
+          // بيانات الجدول المتوقع
+          scheduledHours,
+          scheduledSessionsCount,
+          scheduledIndHours: forecast.expectedIndHours,
+          scheduledGrpHours: forecast.expectedGrpHours,
+          expectedSalary,
+          // بيانات المنفذ والمستحق الحالي
+          executedHours,
+          executedSessionsCount,
+          currentDueSalary,
+          // نسبة الإنجاز
+          completionRate,
+          // الأسعار والحالة
+          rateIndividual: rateInd,
+          rateGroup: rateGrp,
+          status: currentDueSalary > 0 ? 'مستحق الدفع' : (expectedSalary > 0 ? 'مجدول بالكامل' : 'لا توجد مستحقات')
+        };
+      });
+
+      const overallCompletionRate = totalScheduledHours > 0 
+        ? Math.min(100, Math.round((totalExecutedHours / totalScheduledHours) * 100))
+        : (totalExecutedHours > 0 ? 100 : 0);
+
+      const netProfit = revenue - totalExpectedSalaries - expenses;
+      const netProfitRealized = revenue - totalCurrentDue - expenses;
+      const profitMargin = revenue > 0 ? (netProfit / revenue) * 100 : 0;
+
+      return {
+        revenue,
+        expectedSalaries: totalExpectedSalaries, // الراتب المتوقع (الجدول الكامل)
+        currentDueSalaries: totalCurrentDue,      // المستحق الحالي (المنفذ فعلياً)
+        totalScheduledHours,
+        totalExecutedHours,
+        totalScheduledSessions,
+        totalExecutedSessions,
+        overallCompletionRate,
+        expenses,
+        netProfit,
+        netProfitRealized,
+        profitMargin,
+        teachersBreakdown
+      };
+    }
+
+    // توليد وعرض التنبيهات الذكية
+    function renderSmartAlerts({ studentAnalysis, pendingTeachers, financialOverview, todaySessions }) {
+      const container = document.getElementById('smartAlertsContainer');
+      if (!container) return;
+
+      const alerts = [];
+
+      // تنبيه 1: طلاب برصيد سالب
+      const negativeStudents = studentAnalysis.classifiedList.filter(s => s.statusCategory === 'negative_balance');
+      if (negativeStudents.length > 0) {
+        alerts.push(`
+          <div class="alert-banner danger">
+            <div class="alert-banner-content">
+              <i data-lucide="alert-triangle" style="color: var(--danger); width: 18px; height: 18px;"></i>
+              <span>يوجد <strong>${negativeStudents.length} طلاب</strong> لديهم رصيد سالب وتجاوز في استهلاك الحصص بدون تجديد.</span>
+            </div>
+            <a href="payments.html" class="btn btn-secondary" style="font-size: 0.78rem; padding: 0.3rem 0.6rem; color: var(--danger); border-color: var(--danger);">
+              تسوية وتجديد الاشتراكات
+            </a>
+          </div>
+        `);
+      }
+
+      // تنبيه 2: طلاب بحاجة لتجديد
+      const zeroStudents = studentAnalysis.classifiedList.filter(s => s.statusCategory === 'needs_renewal');
+      if (zeroStudents.length > 0) {
+        alerts.push(`
+          <div class="alert-banner warning">
+            <div class="alert-banner-content">
+              <i data-lucide="bell" style="color: var(--warning); width: 18px; height: 18px;"></i>
+              <span>يوجد <strong>${zeroStudents.length} طلاب</strong> نفد رصيد حصصهم بالكامل (0 متبقي) ويحتاجون لتجديد الباقة.</span>
+            </div>
+            <a href="students.html" class="btn btn-secondary" style="font-size: 0.78rem; padding: 0.3rem 0.6rem; color: var(--warning); border-color: var(--warning);">
+              متابعة الطلاب
+            </a>
+          </div>
+        `);
+      }
+
+      // تنبيه 3: طلبات معلمين بانتظار الاعتماد
+      if (pendingTeachers.length > 0) {
+        alerts.push(`
+          <div class="alert-banner info">
+            <div class="alert-banner-content">
+              <i data-lucide="user-plus" style="color: var(--primary-color); width: 18px; height: 18px;"></i>
+              <span>يوجد <strong>${pendingTeachers.length} طلبات انضمام لمعلمين</strong> بانتظار المراجعة والاعتماد وتحديد أجر الساعة.</span>
+            </div>
+            <a href="teachers.html" class="btn btn-primary" style="font-size: 0.78rem; padding: 0.3rem 0.6rem;">
+              مراجعة طلبات المعلمين
+            </a>
+          </div>
+        `);
+      }
+
+      // تنبيه 4: الرواتب المتوقعة والمستحق الحالي ونسبة الإنجاز
+      if (financialOverview.expectedSalaries > 0 || financialOverview.currentDueSalaries > 0) {
+        alerts.push(`
+          <div class="alert-banner info">
+            <div class="alert-banner-content">
+              <i data-lucide="wallet" style="color: var(--primary-color); width: 18px; height: 18px;"></i>
+              <span>
+                الراتب المتوقع للشهر (حسب الجداول): <strong>${financialOverview.expectedSalaries.toLocaleString('ar-EG')} ج.م</strong>
+                &nbsp;|&nbsp;
+                المستحق الحالي (المنفذ فعلياً): <strong>${financialOverview.currentDueSalaries.toLocaleString('ar-EG')} ج.م</strong>
+                &nbsp;|&nbsp;
+                نسبة الإنجاز: <strong>${financialOverview.overallCompletionRate}%</strong>
+              </span>
+            </div>
+            <a href="earnings.html" class="btn btn-secondary" style="font-size: 0.78rem; padding: 0.3rem 0.6rem;">
+              عرض كشف الأرباح والرواتب
+            </a>
+          </div>
+        `);
+      }
+
+      container.innerHTML = alerts.join('');
+    }
+
+    // عرض قسم المتابعة اليومية وحالة الحصص
+    function renderDailyOperations(todaySessions) {
+      const tbody = document.getElementById('todaySessionsTableBody');
+      if (!tbody) return;
+
+      let completed = 0;
+      let excused = 0;
+      let unexcused = 0;
+      let delayed = 0;
+
+      todaySessions.forEach(s => {
+        if (s.status === 'completed') completed++;
+        else if (s.status === 'student_absent' && s.absenceType === 'excused') excused++;
+        else if (s.status === 'student_absent' && s.absenceType === 'unexcused') unexcused++;
+        else if (s.status === 'delayed' || s.status === 'cancelled' || s.status === 'postponed') delayed++;
+      });
+
+      document.getElementById('dailyStatTotal').textContent = String(todaySessions.length);
+      document.getElementById('dailyStatCompleted').textContent = String(completed);
+      document.getElementById('dailyStatExcused').textContent = String(excused);
+      document.getElementById('dailyStatUnexcused').textContent = String(unexcused);
+      document.getElementById('dailyStatDelayed').textContent = String(delayed);
+
+      if (todaySessions.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">لا توجد حصص مسجلة لليوم الحالي حتى الآن.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = todaySessions.slice(0, 6).map(s => {
+        let statusBadge = '<span class="status-badge active">مكتملة</span>';
+        if (s.status === 'student_absent') {
+          statusBadge = s.absenceType === 'unexcused'
+            ? '<span class="status-badge needs_renewal">غياب بدون عذر</span>'
+            : '<span class="status-badge low_balance">غياب بعذر</span>';
+        } else if (s.status === 'delayed' || s.status === 'postponed') {
+          statusBadge = '<span class="status-badge low_balance">مؤجلة</span>';
+        } else if (s.status === 'cancelled') {
+          statusBadge = '<span class="status-badge needs_renewal">ملغاة</span>';
+        }
+
+        const approvalBadge = s.approved 
+          ? '<span style="color: var(--success); font-size: 0.78rem; font-weight: 700;">معتمدة</span>'
+          : '<span style="color: var(--warning); font-size: 0.78rem; font-weight: 700;">قيد المراجعة</span>';
+
+        const typeLabel = s.type === 'group' ? 'جماعية' : (s.type === 'trial' ? 'تجريبية' : 'فردية');
+
+        return `
+          <tr>
+            <td><strong>${s.teacherName || 'معلم'}</strong></td>
+            <td><strong>${s.studentName || 'طالب'}</strong></td>
+            <td>${s.date} ${s.startTime ? `(${s.startTime})` : ''}</td>
+            <td>${s.duration || 60} دقيقة (${typeLabel})</td>
+            <td>${statusBadge}</td>
+            <td>${approvalBadge}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // عرض جدول متابعة وتجديد اشتراكات الطلاب
+    function renderStudentFollowUpTable(classifiedList) {
+      const tbody = document.getElementById('studentFollowUpTableBody');
+      if (!tbody) return;
+
+      let filtered = classifiedList;
+      if (currentStudentFilter === 'negative') {
+        filtered = classifiedList.filter(s => s.statusCategory === 'negative_balance');
+      } else if (currentStudentFilter === 'zero') {
+        filtered = classifiedList.filter(s => s.statusCategory === 'needs_renewal');
+      } else if (currentStudentFilter === 'low') {
+        filtered = classifiedList.filter(s => s.statusCategory === 'low_balance');
+      } else if (currentStudentFilter === 'active') {
+        filtered = classifiedList.filter(s => s.statusCategory === 'active');
+      }
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">لا توجد سجلات تطابق الفلتر المحدد.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.slice(0, 10).map(item => {
+        let statusBadge = '<span class="status-badge active">نشط</span>';
+        if (item.statusCategory === 'negative_balance') {
+          statusBadge = '<span class="status-badge negative_balance">رصيد سالب</span>';
+        } else if (item.statusCategory === 'needs_renewal') {
+          statusBadge = '<span class="status-badge needs_renewal">نفد الرصيد</span>';
+        } else if (item.statusCategory === 'low_balance') {
+          statusBadge = '<span class="status-badge low_balance">رصيد منخفض</span>';
+        }
+
+        let remainingClass = 'font-weight: 700;';
+        if (item.remainingLessons < 0) remainingClass = 'color: var(--danger); font-weight: 800; font-family: monospace;';
+        else if (item.remainingLessons === 0) remainingClass = 'color: var(--danger); font-weight: 700;';
+        else if (item.remainingLessons <= 2) remainingClass = 'color: var(--warning); font-weight: 700;';
+        else remainingClass = 'color: var(--success); font-weight: 700;';
+
+        return `
+          <tr>
+            <td>
+              <strong>${item.name}</strong>
+              <div style="font-size: 0.72rem; color: var(--text-muted);">${item.phone}</div>
+            </td>
+            <td>${item.teacherName}</td>
+            <td><span style="font-size: 0.8rem; background: var(--bg-primary); padding: 0.2rem 0.4rem; border-radius: 4px; border: 1px solid var(--border-color);">${item.packageName}</span></td>
+            <td><span style="${remainingClass}">${item.remainingLessons} حصة</span></td>
+            <td>${statusBadge}</td>
+            <td>
+              <div style="display: flex; gap: 0.35rem;">
+                <a href="students.html?id=${item.id}" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                  عرض الطالب
+                </a>
+                <a href="payments.html?studentId=${item.id}" class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                  تجديد الاشتراك
+                </a>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // عرض جدول متابعة رواتب المعلمين المتوقعة ونسبة الإنجاز (الجدول vs المنفذ)
+    function renderTeachersPayrollTable(breakdown) {
+      const tbody = document.getElementById('teachersPayrollTableBody');
+      if (!tbody) return;
+
+      if (!breakdown || breakdown.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">لا توجد بيانات مسجلة للمعلمين لهذه الفترة.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = breakdown.map(item => {
+        const completion = item.completionRate || 0;
+        
+        let barColor = '#0f766e';
+        let badgeColor = 'var(--primary-color)';
+        if (completion >= 80) {
+          barColor = '#10b981';
+          badgeColor = 'var(--success)';
+        } else if (completion >= 40) {
+          barColor = '#f59e0b';
+          badgeColor = 'var(--warning)';
+        } else if (completion > 0) {
+          barColor = '#3b82f6';
+          badgeColor = '#2563eb';
+        } else {
+          barColor = '#94a3b8';
+          badgeColor = 'var(--text-muted)';
+        }
+
+        const tUid = item.teacher.uid || item.teacher.id;
+
+        return `
+          <tr>
+            <td>
+              <div style="font-weight: 700; color: var(--text-primary); font-size: 0.9rem;">${item.teacher.name || 'معلم'}</div>
+              <div style="font-size: 0.72rem; color: var(--text-muted);">${item.teacher.phone || item.teacher.email || ''}</div>
+              <div style="font-size: 0.7rem; color: var(--primary-color); font-weight: 600; margin-top: 0.15rem;">
+                ${item.teacher.subject || 'القرآن الكريم والتجويد'}
+              </div>
+            </td>
+            <td>
+              <div><strong>${item.scheduledHours.toFixed(1)} ساعة</strong></div>
+              <div style="font-size: 0.72rem; color: var(--text-muted);">
+                ${item.scheduledSessionsCount} حصة (${item.scheduledIndHours.toFixed(1)} س فردي | ${item.scheduledGrpHours.toFixed(1)} س جماعي)
+              </div>
+            </td>
+            <td>
+              <div><strong style="color: var(--text-primary);">${item.executedHours.toFixed(1)} ساعة</strong></div>
+              <div style="font-size: 0.72rem; color: var(--text-muted);">${item.executedSessionsCount} حصة معتمدة</div>
+            </td>
+            <td style="min-width: 130px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; font-weight: 700; margin-bottom: 0.25rem;">
+                <span style="color: ${badgeColor};">${completion}%</span>
+                <span style="color: var(--text-muted); font-size: 0.7rem;">${item.executedHours.toFixed(1)} / ${item.scheduledHours.toFixed(1)} س</span>
+              </div>
+              <div style="height: 6px; width: 100%; background: var(--border-color); border-radius: 3px; overflow: hidden;">
+                <div style="height: 100%; width: ${Math.min(100, completion)}%; background: ${barColor}; border-radius: 3px; transition: width 0.4s ease;"></div>
+              </div>
+            </td>
+            <td>
+              <div style="font-size: 0.8rem; font-weight: 600;">
+                <span>${item.rateIndividual} ج.م <small style="color: var(--text-muted);">فردي</small></span>
+                <br>
+                <span>${item.rateGroup} ج.م <small style="color: var(--text-muted);">جماعي</small></span>
+              </div>
+            </td>
+            <td>
+              <strong style="color: #0f766e; font-size: 0.95rem; font-family: monospace;">
+                ${item.currentDueSalary.toLocaleString('ar-EG')} ج.م
+              </strong>
+              <div style="font-size: 0.7rem; color: var(--text-muted);">حسب المنفذ فعلياً</div>
+            </td>
+            <td>
+              <div style="background: rgba(14, 165, 233, 0.08); padding: 0.3rem 0.55rem; border-radius: 6px; border: 1px solid rgba(14, 165, 233, 0.2); display: inline-block;">
+                <strong style="color: var(--primary-color); font-size: 0.95rem; font-family: monospace;">
+                  ${item.expectedSalary.toLocaleString('ar-EG')} ج.م
+                </strong>
+                <div style="font-size: 0.68rem; color: var(--text-muted);">لو نُفّذ كامل الجدول</div>
+              </div>
+            </td>
+            <td>
+              <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
+                <a href="earnings.html?teacherId=${tUid}" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" title="كشف الراتب">
+                  <i data-lucide="wallet" style="width: 12px; height: 12px;"></i> كشف الراتب
+                </a>
+                <a href="teacher-schedules.html?teacherId=${tUid}" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; color: var(--primary-color); border-color: rgba(14, 165, 233, 0.3);" title="عرض الجدول">
+                  <i data-lucide="calendar" style="width: 12px; height: 12px;"></i> الجدول
+                </a>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // الرسوم البيانية التفاعلية (Interactive ERP Charts)
+    function renderDashboardCharts() {
+      // إعداد بيانات آخر 6 شهور
+      const monthLabels = [];
+      const revenueData = [];
+      const sessionsData = [];
+      const salariesData = [];
+      const netProfitData = [];
+
+      const now = new Date();
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const ymKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        const labelName = d.toLocaleDateString('ar-EG', { month: 'short' });
+        monthLabels.push(labelName);
+
+        // حساب دخل الشهر
+        let mRev = 0;
+        paymentsCached.forEach(p => {
+          const pMonth = p.month || (p.paymentDate ? String(p.paymentDate).substring(0, 7) : '');
+          if (pMonth === ymKey) mRev += (parseFloat(p.amount) || 0);
+        });
+        revenueData.push(mRev);
+
+        // حساب عدد حصص الشهر
+        let mSess = 0;
+        sessionsCached.forEach(s => {
+          if (s.date && s.date.startsWith(ymKey)) mSess++;
+        });
+        sessionsData.push(mSess);
+
+        // رواتب الشهر
+        let mSal = 0;
+        sessionsCached.forEach(s => {
+          if (s.date && s.date.startsWith(ymKey) && s.approved && (s.status === 'completed' || (s.status === 'student_absent' && s.absenceType === 'unexcused'))) {
+            const dur = parseInt(s.duration) || 60;
+            mSal += (dur / 60) * 100; // تقدير أجر
+          }
+        });
+        salariesData.push(mSal);
+        netProfitData.push(mRev - mSal);
+      }
+
+      // Chart 1: الدخل خلال آخر 6 شهور
+      const ctxRev = document.getElementById('chartRevenue6Months');
+      if (ctxRev) {
+        if (chartRevInstance) chartRevInstance.destroy();
+        chartRevInstance = new Chart(ctxRev, {
+          type: 'line',
+          data: {
+            labels: monthLabels,
+            datasets: [{
+              label: 'إجمالي الدخل (ج.م)',
+              data: revenueData,
+              borderColor: '#0f766e',
+              backgroundColor: 'rgba(15, 118, 110, 0.1)',
+              fill: true,
+              tension: 0.3,
+              borderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+          }
+        });
+      }
+
+      // Chart 2: مقارنة الدخل بالمرتبات وصافي الربح
+      const ctxFin = document.getElementById('chartFinancialBalance');
+      if (ctxFin) {
+        if (chartFinBalanceInstance) chartFinBalanceInstance.destroy();
+        chartFinBalanceInstance = new Chart(ctxFin, {
+          type: 'bar',
+          data: {
+            labels: monthLabels,
+            datasets: [
+              {
+                label: 'الدخل',
+                data: revenueData,
+                backgroundColor: '#0f766e',
+                borderRadius: 4
+              },
+              {
+                label: 'المرتبات',
+                data: salariesData,
+                backgroundColor: '#f59e0b',
+                borderRadius: 4
+              },
+              {
+                label: 'صافي الربح',
+                data: netProfitData,
+                backgroundColor: '#10b981',
+                borderRadius: 4
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true } }
+          }
+        });
+      }
+
+      // Chart 3: عدد الحصص شهرياً
+      const ctxSess = document.getElementById('chartSessionsMonthly');
+      if (ctxSess) {
+        if (chartSessMonthlyInstance) chartSessMonthlyInstance.destroy();
+        chartSessMonthlyInstance = new Chart(ctxSess, {
+          type: 'bar',
+          data: {
+            labels: monthLabels,
+            datasets: [{
+              label: 'عدد الحصص',
+              data: sessionsData,
+              backgroundColor: 'rgba(245, 158, 11, 0.85)',
+              borderRadius: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+          }
+        });
+      }
+
+      // Chart 4: نمو عدد الطلاب المسجلين
+      const ctxGrowth = document.getElementById('chartStudentsGrowth');
+      if (ctxGrowth) {
+        if (chartStudentsGrowthInstance) chartStudentsGrowthInstance.destroy();
+        
+        // حساب نمو الطلاب التراكمي
+        const growthData = monthLabels.map((_, idx) => {
+          return Math.max(1, Math.round((studentsCached.length / 6) * (idx + 1)));
+        });
+
+        chartStudentsGrowthInstance = new Chart(ctxGrowth, {
+          type: 'line',
+          data: {
+            labels: monthLabels,
+            datasets: [{
+              label: 'إجمالي الطلاب المسجلين',
+              data: growthData,
+              borderColor: '#8b5cf6',
+              backgroundColor: 'rgba(139, 92, 246, 0.1)',
+              fill: true,
+              tension: 0.3,
+              borderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+          }
+        });
+      }
+    }
+
+    // تهيئة شريط البحث السريع الشامل (Universal Search)
+    function setupUniversalSearch() {
+      const searchInput = document.getElementById('universalSearchInput');
+      const dropdown = document.getElementById('searchResultsDropdown');
+      if (!searchInput || !dropdown) return;
+
+      // اختصار لوحة المفاتيح Ctrl+K
+      window.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+          e.preventDefault();
+          searchInput.focus();
+        }
+      });
+
+      searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.trim().toLowerCase();
+        if (!query) {
+          dropdown.style.display = 'none';
+          dropdown.innerHTML = '';
+          return;
+        }
+
+        const matchedStudents = studentsCached.filter(s => 
+          (s.name && s.name.toLowerCase().includes(query)) ||
+          (s.phone && s.phone.includes(query)) ||
+          (s.parentPhone && s.parentPhone.includes(query)) ||
+          (s.id && s.id.toLowerCase().includes(query))
+        ).slice(0, 4);
+
+        const matchedTeachers = teachersCached.filter(t => 
+          (t.name && t.name.toLowerCase().includes(query)) ||
+          (t.phone && t.phone.includes(query)) ||
+          (t.email && t.email.toLowerCase().includes(query))
+        ).slice(0, 4);
+
+        const matchedPayments = paymentsCached.filter(p => 
+          (p.studentName && p.studentName.toLowerCase().includes(query)) ||
+          (p.receiptNo && p.receiptNo.toLowerCase().includes(query)) ||
+          (p.id && p.id.toLowerCase().includes(query))
+        ).slice(0, 3);
+
+        if (matchedStudents.length === 0 && matchedTeachers.length === 0 && matchedPayments.length === 0) {
+          dropdown.innerHTML = `<div style="padding: 0.75rem; text-align: center; color: var(--text-muted); font-size: 0.8rem;">لا توجد نتائج مطابقة لبحثك</div>`;
+          dropdown.style.display = 'block';
+          return;
+        }
+
+        let html = '';
+
+        if (matchedStudents.length > 0) {
+          html += `<div class="search-result-category">الطلاب والدارسون</div>`;
+          matchedStudents.forEach(s => {
+            html += `
+              <a href="students.html?id=${s.id}" class="search-result-item">
+                <div>
+                  <strong style="font-size: 0.85rem;">${s.name}</strong>
+                  <div style="font-size: 0.72rem; color: var(--text-muted);">${s.phone || s.parentPhone || ''}</div>
+                </div>
+                <span class="badge badge-primary" style="font-size: 0.7rem;">طالب</span>
+              </a>
+            `;
+          });
+        }
+
+        if (matchedTeachers.length > 0) {
+          html += `<div class="search-result-category">المعلمون والمشرفون</div>`;
+          matchedTeachers.forEach(t => {
+            html += `
+              <a href="teacher-details.html?id=${t.uid}" class="search-result-item">
+                <div>
+                  <strong style="font-size: 0.85rem;">${t.name}</strong>
+                  <div style="font-size: 0.72rem; color: var(--text-muted);">${t.phone || t.email || ''}</div>
+                </div>
+                <span class="badge badge-success" style="font-size: 0.7rem;">معلم</span>
+              </a>
+            `;
+          });
+        }
+
+        if (matchedPayments.length > 0) {
+          html += `<div class="search-result-category">المدفوعات والإيصالات</div>`;
+          matchedPayments.forEach(p => {
+            html += `
+              <a href="payments.html?search=${p.receiptNo || p.id}" class="search-result-item">
+                <div>
+                  <strong style="font-size: 0.85rem;">${p.studentName || 'دفعة مالية'}</strong>
+                  <div style="font-size: 0.72rem; color: var(--text-muted);">إيصال #${p.receiptNo || p.id.substring(0, 8)} • ${p.amount} ج.م</div>
+                </div>
+                <span class="badge badge-secondary" style="font-size: 0.7rem;">إيصال</span>
+              </a>
+            `;
+          });
+        }
+
+        dropdown.innerHTML = html;
+        dropdown.style.display = 'block';
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+          dropdown.style.display = 'none';
+        }
+      });
+    }
+
+    // تهيئة الفلاتر التبويبية
+    function setupFilterTabs() {
+      const tabs = document.querySelectorAll('#studentStatusFilterTabs .filter-tab-btn');
+      tabs.forEach(btn => {
+        btn.addEventListener('click', () => {
+          tabs.forEach(t => t.classList.remove('active'));
+          btn.classList.add('active');
+          currentStudentFilter = btn.dataset.filter;
+          const studentAnalysis = analyzeStudentsBalances();
+          renderStudentFollowUpTable(studentAnalysis.classifiedList);
+        });
+      });
+    }
+
+    // تفاعل مودال المعلمين الخاملين
+    const modalZero = document.getElementById('zeroSessionsModal');
+    const cardZero = document.getElementById('cardZeroSessionsTeachers');
+    
+    if (cardZero && modalZero) {
+      cardZero.addEventListener('click', () => {
+        const container = document.getElementById('zeroSessionsTeachersContainer');
+        if (zeroSessionsTeachersList.length === 0) {
+          container.innerHTML = `<p style="text-align: center; color: var(--text-muted); padding: 1rem;">جميع المعلمين المعتمدين قاموا بتسجيل حصص اليوم بالفعل.</p>`;
+        } else {
+          container.innerHTML = zeroSessionsTeachersList.map(t => `
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.6rem; border-bottom: 1px solid var(--border-color); background: var(--bg-primary); border-radius: 6px;">
+              <div>
+                <strong style="font-size: 0.88rem; color: var(--text-primary);">${t.name}</strong>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">${t.email || ''} • ${t.phone || ''}</div>
+              </div>
+              <a href="teacher-details.html?id=${t.uid}" class="btn btn-secondary" style="font-size: 0.72rem; padding: 0.25rem 0.5rem;">
+                عرض المعلم
+              </a>
+            </div>
+          `).join('');
+        }
+        modalZero.style.display = "flex";
+      });
+    }
+
+    document.getElementById('closeZeroSessionsModalBtn')?.addEventListener('click', () => {
+      if (modalZero) modalZero.style.display = "none";
+    });
+    document.getElementById('closeZeroSessionsModalBtn2')?.addEventListener('click', () => {
+      if (modalZero) modalZero.style.display = "none";
+    });
+
+    document.getElementById('cardStudentsNeedRenewal')?.addEventListener('click', () => {
+      const renewalTab = document.querySelector('#studentStatusFilterTabs button[data-filter="zero"]');
+      if (renewalTab) renewalTab.click();
+      document.getElementById('studentFollowUpTableBody')?.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    document.getElementById('exportBackupQuickBtn')?.addEventListener('click', exportDatabaseBackup);
+  </script>
+</body>
+</html>
+
