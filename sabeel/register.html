@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>أكاديمية سبيل - تسجيل معلم جديد</title>
+  
+  <script>
+    if (localStorage.getItem('academy_dark_mode') === 'true') {
+      document.documentElement.classList.add('dark-theme');
+    }
+  </script>
+
+  <link rel="stylesheet" href="assets/css/variables.css">
+  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/auth.css">
+  
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- PWA & Native Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+</head>
+<body class="auth-page-wrapper">
+
+  <main class="auth-app-shell" style="max-width: 440px;">
+    
+    <!-- App Header Identity -->
+    <header class="auth-app-identity" style="margin-bottom: 1.25rem;">
+      <div class="auth-app-logo">
+        <img src="/icons/icon-192.png" alt="Sabeel Academy Logo" class="academy-logo-img">
+      </div>
+      <h1 class="auth-app-name">أكاديمية سَبِيل</h1>
+      <p class="auth-app-tagline">بوابة انضمام المعلمين الجدد</p>
+    </header>
+
+    <section class="auth-app-card">
+      <div class="auth-card-top-tag">
+        <i data-lucide="user-plus" style="width: 13px; height: 13px;"></i>
+        <span>طلب انضمام لهيئة التدريس</span>
+      </div>
+
+      <form id="registerForm" novalidate>
+        <div class="auth-form-group">
+          <label for="name" class="auth-label">الاسم الكامل</label>
+          <div class="auth-input-wrapper">
+            <i data-lucide="user" class="auth-input-icon"></i>
+            <input type="text" id="name" class="auth-input auth-input-with-icon" placeholder="أدخل اسمك الثلاثي أو الرباعي" required autocomplete="name">
+          </div>
+        </div>
+
+        <div class="auth-form-group">
+          <label for="phone" class="auth-label">رقم الهاتف أو الواتساب</label>
+          <div class="auth-input-wrapper">
+            <i data-lucide="phone" class="auth-input-icon"></i>
+            <input type="tel" id="phone" class="auth-input auth-input-with-icon" placeholder="05xxxxxxxx" required style="direction: ltr; text-align: left;" autocomplete="tel">
+          </div>
+        </div>
+
+        <div class="auth-form-group">
+          <label for="emailPrefix" class="auth-label">اسم الحساب المقترح</label>
+          <div class="auth-input-wrapper" style="direction: ltr;">
+            <input 
+              type="text" 
+              id="emailPrefix" 
+              class="auth-input auth-email-input" 
+              placeholder="اسم الحساب (مثال: ahmed123)" 
+              required 
+              autocomplete="username"
+              spellcheck="false"
+              autocapitalize="none"
+            >
+            <span class="auth-email-domain-badge">@gmail.com</span>
+          </div>
+        </div>
+
+        <div class="auth-form-group">
+          <label for="password" class="auth-label">كلمة المرور (8 رموز أو أكثر)</label>
+          <div class="auth-input-wrapper">
+            <i data-lucide="lock" class="auth-input-icon"></i>
+            <input type="password" id="password" class="auth-input auth-input-with-icon" placeholder="••••••••" minlength="8" required autocomplete="new-password">
+          </div>
+        </div>
+
+        <button type="submit" class="auth-submit-btn" style="margin-top: 1.25rem;">
+          <i data-lucide="send" style="width: 18px; height: 18px;"></i>
+          <span>إرسال طلب الانضمام</span>
+        </button>
+      </form>
+
+      <div class="auth-footer-prompt">
+        <span>لديك حساب بالفعل؟</span>
+        <a href="index.html" class="auth-link" style="margin-right: 0.25rem;">تسجيل الدخول</a>
+      </div>
+    </section>
+
+    <footer class="auth-page-footer">
+      <span>نظام سَبِيل &bull; تطوير </span>
+      <span style="color: var(--primary-color); font-weight: 700;">Sabilix</span>
+    </footer>
+
+  </main>
+
+  <div id="toast-container"></div>
+
+  <script type="module" src="assets/js/features/auth/registerController.js"></script>
+
+  <script>
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
+  </script>
+</body>
+</html>
