@@ -1,0 +1,6 @@
+{
+  "name": "أكاديمية سبيل",
+  "description": "نظام سَبِيل الذكي لإدارة شؤون المعلمين، الطلاب، المجموعات والرواتب والأجور بالتحديث اللحظي المباشر.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
