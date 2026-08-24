@@ -1,0 +1,326 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ==========================================
+    // 0. القاعدة العامة: المبدأ الأمني القائم على الصفر ثقة (Zero-Trust)
+    // منع الوصول افتراضياً لجميع المستندات التي لم يتم السماح بها صراحة
+    // ==========================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ==========================================
+    // الدوال المساعدة للأمان والحقق من الهوية والصلاحيات
+    // ==========================================
+
+    // دالة التحقق من أن المستخدم قام بتسجيل الدخول
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // دالة اختصار استدعاء البيانات الواردة في الطلب (incoming data)
+    function incoming() {
+      return request.resource.data;
+    }
+
+    // دالة اختصار استدعاء البيانات الحالية في قاعدة البيانات (existing data)
+    function existing() {
+      return resource.data;
+    }
+
+    // دالة التحقق من ملكية المستخدم الحالية للحساب
+    function isSelf(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // دالة جلب مستند حساب المستخدم الحالي لاستخراج الأدوار والصلاحيات
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // دالة التحقق من أن المستخدم يمتلك دور مسؤول (Admin) معتمد
+    function isAdmin() {
+      return isSignedIn() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             getUserData().role == 'admin';
+    }
+
+    // دالة التحقق من أن المستخدم معلم معتمد ونشط بالدراسة (Approved Teacher)
+    function isApprovedTeacher() {
+      return isSignedIn() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             getUserData().role == 'teacher' && 
+             getUserData().status == 'approved';
+    }
+
+
+    // ==========================================
+    // 1. حماية مجموعة المستخدمين (/users)
+    // ==========================================
+    match /users/{userId} {
+      // قراءة بيانات حساب فردي: فقط صاحبه أو الأدمن (يمنع المعلم من استعراض حسابات زملائه)
+      allow get: if isSelf(userId) || isAdmin();
+      
+      // استعراض القائمة كاملة: محصور بالأدمن فقط لضمان عدم تسريب البيانات الشخصية (PII)
+      allow list: if isAdmin();
+
+      // إنشاء حساب جديد: يُسمح للمستخدم عند التسجيل بإنشاء حسابه بشرط إجباره على دور "معلم" وحالة "معلق pending"
+      // أو الأدمن الذي يستطيع إضافة أي حساب
+      allow create: if isAdmin() || (
+        isSignedIn() && 
+        isSelf(userId) && 
+        incoming().role == 'teacher' && 
+        (incoming().status == 'pending' || !('status' in incoming()))
+      );
+
+      // التعديل: الأدمن يمتلك الصلاحية الكاملة. 
+      // المعلم يمتلك تعديل بياناته الشخصية وبيانات الدخول دون مساس بدوره (role) أو حالته (status)
+      allow update: if isAdmin() || (
+        isSignedIn() && 
+        isSelf(userId) && 
+        (!('role' in incoming()) || incoming().role == existing().role) && 
+        (!('status' in incoming()) || !('status' in existing()) || incoming().status == existing().status)
+      );
+
+      // الحذف: محصور بالأدمن فقط
+      allow delete: if isAdmin();
+    }
+
+
+    // ==========================================
+    // 2. حماية مجموعة الطلاب (/students)
+    // ==========================================
+    match /students/{studentId} {
+      // القراءة: الأدمن، أو المعلم المعتمد للطلاب المسندين إليه فقط (teacherId أو requestedByTeacherId)
+      allow read: if isAdmin() || (
+        isApprovedTeacher() && (
+          existing().teacherId == request.auth.uid || 
+          existing().requestedByTeacherId == request.auth.uid
+        )
+      );
+
+      // الإضافة: الأدمن، أو المعلم المعتمد بشرط ربط الطالب برقم هوية المعلم الحالي
+      allow create: if isAdmin() || (
+        isApprovedTeacher() && (
+          incoming().teacherId == request.auth.uid || 
+          incoming().requestedByTeacherId == request.auth.uid
+        )
+      );
+
+      // التعديل: الأدمن، أو المعلم المعتمد لطلابه فقط
+      allow update: if isAdmin() || (
+        isApprovedTeacher() && (
+          existing().teacherId == request.auth.uid || 
+          existing().requestedByTeacherId == request.auth.uid
+        )
+      );
+
+      // الحذف: محصور بالأدمن
+      allow delete: if isAdmin();
+    }
+
+
+    // ==========================================
+    // 3. حماية مجموعة طلبات إلحاق الطلاب (/studentRequests)
+    // ==========================================
+    match /studentRequests/{requestId} {
+      allow read: if isAdmin() || (isApprovedTeacher() && existing().teacherId == request.auth.uid);
+      allow create: if isAdmin() || (isApprovedTeacher() && incoming().teacherId == request.auth.uid);
+      allow update: if isAdmin() || (isApprovedTeacher() && existing().teacherId == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+
+
+    // ==========================================
+    // 3.1. حماية مجموعة المجموعات الجماعية (/groups)
+    // ==========================================
+    match /groups/{groupId} {
+      allow read: if isAdmin() || (isApprovedTeacher() && (
+        existing().teacherId == request.auth.uid || 
+        existing().requestedByTeacherId == request.auth.uid
+      ));
+      allow create: if isAdmin() || (isApprovedTeacher() && (
+        incoming().teacherId == request.auth.uid || 
+        incoming().requestedByTeacherId == request.auth.uid
+      ));
+      allow update: if isAdmin() || (isApprovedTeacher() && (
+        existing().teacherId == request.auth.uid || 
+        existing().requestedByTeacherId == request.auth.uid
+      ));
+      allow delete: if isAdmin();
+    }
+
+
+    // ==========================================
+    // 3.2. حماية سجل حصص المجموعات الجماعية (/group_sessions)
+    // ==========================================
+    match /group_sessions/{sessionId} {
+      allow read: if isAdmin() || (isApprovedTeacher() && existing().teacherId == request.auth.uid);
+      allow create: if isAdmin() || (isApprovedTeacher() && incoming().teacherId == request.auth.uid);
+      allow update: if isAdmin() || (isApprovedTeacher() && existing().teacherId == request.auth.uid);
+      allow delete: if isAdmin() || (isApprovedTeacher() && existing().teacherId == request.auth.uid);
+    }
+
+
+    // ==========================================
+    // 4. حماية مجموعة سجل الحصص (/sessions)
+    // ==========================================
+    match /sessions/{sessionId} {
+      // القراءة: الأدمن، أو المعلم للحصص التابعة له فقط
+      allow read: if isAdmin() || (isApprovedTeacher() && existing().teacherId == request.auth.uid);
+
+      // الإضافة: الأدمن، أو المعلم بشرط تحديد نفسه كمعلم للحصة
+      allow create: if isAdmin() || (isApprovedTeacher() && incoming().teacherId == request.auth.uid);
+
+      // التعديل: الأدمن، أو المعلم للحصص التابعة له فقط بشرط ألا تكون الحصة معتمدة ومقفلة (approved == false)
+      // تمنع تغيير بيانات الحصة بعد اعتمادها لحماية حسابات المرتبات
+      allow update: if isAdmin() || (
+        isApprovedTeacher() && 
+        existing().teacherId == request.auth.uid && 
+        incoming().teacherId == request.auth.uid && 
+        (existing().approved == false || !('approved' in existing()))
+      );
+
+      // الحذف: الأدمن، أو المعلم للحصص غير المعتمدة فقط
+      allow delete: if isAdmin() || (
+        isApprovedTeacher() && 
+        existing().teacherId == request.auth.uid && 
+        (existing().approved == false || !('approved' in existing()))
+      );
+    }
+
+
+    // ==========================================
+    // 5. حماية مجموعة الباقات والاشتراكات ورصيد الحصص والمدفوعات
+    // ==========================================
+    match /studentPackages/{packageId} {
+      allow read: if isAdmin() || isSignedIn();
+      allow create, update: if isAdmin() || isApprovedTeacher();
+      allow delete: if isAdmin();
+    }
+
+    match /lessonCreditsLogs/{logId} {
+      allow read: if isAdmin() || isSignedIn();
+      allow create: if isAdmin() || isApprovedTeacher();
+      allow update, delete: if isAdmin();
+    }
+
+    match /studentBalances/{studentId} {
+      allow read: if isAdmin() || isSignedIn();
+      allow write: if isAdmin() || isApprovedTeacher();
+    }
+
+    match /studentLedger/{ledgerId} {
+      allow read: if isAdmin() || isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /subscriptions/{subscriptionId} {
+      allow read: if isAdmin() || isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /payments/{paymentId} {
+      allow read: if isAdmin() || isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /packages/{packageId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+
+    // ==========================================
+    // 6. حماية مجموعة أرشيف الرواتب (/salaryArchive)
+    // ==========================================
+    match /salaryArchive/{archiveId} {
+      // القراءة: الأدمن، أو المعلم لسجلات راتبه الخاصة فقط
+      allow read: if isAdmin() || (isSignedIn() && existing().teacherId == request.auth.uid);
+
+      // الإضافة: الأدمن، أو المعلم عند طلب تحويل/تأكيد الراتب الخاص به
+      allow create: if isAdmin() || (isApprovedTeacher() && incoming().teacherId == request.auth.uid);
+
+      // التعديل: الأدمن، أو المعلم لتأكيد استلام الراتب الخاص به
+      allow update: if isAdmin() || (
+        isApprovedTeacher() && 
+        existing().teacherId == request.auth.uid && 
+        incoming().teacherId == request.auth.uid
+      );
+
+      // الحذف: محصور بالأدمن
+      allow delete: if isAdmin();
+    }
+
+
+    // ==========================================
+    // 7. حماية الإشعارات والمراسلات (/notifications)
+    // ==========================================
+    match /notifications/{notificationId} {
+      // القراءة والإضافة والتعديل متاحة لجميع مستخدمي المنظومة المسجلين لاستلام وتحديث حالة الإشعارات
+      allow read, write: if isSignedIn();
+    }
+
+
+    // ==========================================
+    // 7.1. حماية استطلاعات الرأي وفيدباك المعلمين (/feedbacks)
+    // ==========================================
+    match /feedbacks/{feedbackId} {
+      allow read: if isAdmin() || (isSignedIn() && existing().teacherId == request.auth.uid);
+      allow create: if isSignedIn();
+      allow update: if isAdmin() || (isSignedIn() && existing().teacherId == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+
+
+    // ==========================================
+    // 8. حماية سجل التدقيق والأنشطة (/auditLogs & activity logs)
+    // ==========================================
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn();
+      allow update, delete: if isAdmin();
+    }
+
+    match /teacher_activity_logs/{logId} {
+      allow read: if isAdmin() || (isSignedIn() && existing().teacherId == request.auth.uid);
+      allow create: if isSignedIn();
+      allow update, delete: if isAdmin();
+    }
+
+    match /teacher_attendance_logs/{logId} {
+      allow read: if isAdmin() || (isSignedIn() && existing().teacherId == request.auth.uid);
+      allow create: if isSignedIn();
+      allow update, delete: if isAdmin();
+    }
+
+    match /teacher_mistakes/{logId} {
+      allow read: if isAdmin() || (isSignedIn() && existing().teacherId == request.auth.uid);
+      allow create: if isSignedIn();
+      allow update, delete: if isAdmin();
+    }
+
+    match /teacher_salary_transactions/{transId} {
+      allow read: if isAdmin() || (isSignedIn() && existing().teacherId == request.auth.uid);
+      allow write: if isAdmin();
+    }
+
+
+    // ==========================================
+    // 9. حماية إعدادات الأكاديمية والمحذوفات
+    // ==========================================
+    match /settings/{settingId} {
+      allow read: if settingId == 'academy' || isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /trash/{trashId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /version_history/{versionId} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

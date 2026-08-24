@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - لوحة تحكم المعلم الذكية</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+
+  <style>
+    .teacher-hero-banner {
+      background: linear-gradient(135deg, rgba(15, 118, 110, 0.08) 0%, rgba(3, 105, 161, 0.04) 100%);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius-lg);
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+    }
+
+    .upcoming-session-card {
+      background: var(--bg-secondary);
+      border: 1.5px solid var(--primary-color);
+      border-radius: var(--border-radius-lg);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 14px rgba(15, 118, 110, 0.08);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .upcoming-session-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 5px;
+      background: var(--primary-color);
+    }
+
+    .live-pulse-dot {
+      width: 10px;
+      height: 10px;
+      background: #10b981;
+      border-radius: 50%;
+      display: inline-block;
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      animation: pulseGreen 1.6s infinite;
+    }
+
+    @keyframes pulseGreen {
+      0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      }
+      70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+      }
+      100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+      }
+    }
+
+    .today-agenda-item {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius-sm);
+      padding: 0.85rem 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      transition: all var(--transition-fast);
+      margin-bottom: 0.5rem;
+    }
+
+    .today-agenda-item:hover {
+      border-color: var(--primary-color);
+      transform: translateX(-3px);
+    }
+
+    .draft-alert-banner {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px dashed var(--warning);
+      border-radius: var(--border-radius);
+      padding: 0.85rem 1.25rem;
+      margin-bottom: 1.25rem;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        
+        <!-- التنبيه باستئناف المسودة إن وجدت -->
+        <div id="teacherDraftBanner" class="draft-alert-banner">
+          <div style="display: flex; align-items: center; gap: 0.6rem; font-size: 0.88rem; font-weight: 600; color: var(--text-primary);">
+            <i data-lucide="save" style="color: var(--warning); width: 20px; height: 20px;"></i>
+            <span>لديك مسودة جلسة غير مكتملة تم حفظها تلقائياً. هل ترغب في استئناف التسجيل؟</span>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <a href="today-sessions.html?resumeDraft=true" class="btn btn-sm btn-primary">استئناف المسودة ✍️</a>
+            <button id="btnDismissDraft" class="btn btn-sm btn-secondary">تجاهل</button>
+          </div>
+        </div>
+
+        <!-- ترويسة الترحيب ومؤشر الأداء الشهري -->
+        <div class="teacher-hero-banner">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.35rem;">
+              <span class="live-pulse-dot"></span>
+              <span style="font-size: 0.78rem; font-weight: 700; color: var(--success); text-transform: uppercase;">بوابة المعلم المباشرة</span>
+            </div>
+            <h1 id="welcomeTeacherMessage" style="font-size: 1.45rem; font-weight: 800; color: var(--text-primary); margin: 0;">مرحباً بك مجدداً...</h1>
+            <p id="currentDateDisplay" style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">جاري تحميل تاريخ اليوم والجدول...</p>
+          </div>
+
+          <div style="min-width: 220px; flex: 1; max-width: 320px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.35rem;">
+              <span style="color: var(--text-secondary);">نسبة إنجاز ساعات الشهر:</span>
+              <span id="monthlyHoursProgressText" style="color: var(--primary-color);">0%</span>
+            </div>
+            <div style="height: 8px; width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 999px; overflow: hidden;">
+              <div id="monthlyHoursProgressBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--primary-color), #10b981); border-radius: 999px; transition: width 0.6s ease;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;">
+              <span id="executedHoursSummary">المنجز: 0 ساعة</span>
+              <span id="targetHoursSummary">الهدف: 40 ساعة</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- بطاقة الحصة القادمة مباشرة (Interactive Next Session Radar) -->
+        <div id="nextSessionContainer" style="display: none;">
+          <div class="upcoming-session-card">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+                  <span class="badge badge-primary" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;">الحصة القادمة التالية 🎯</span>
+                  <span id="nextSessionTimeBadge" style="font-size: 0.78rem; font-weight: 700; color: var(--primary-color);"></span>
+                </div>
+                <h2 id="nextSessionTitle" style="font-size: 1.25rem; font-weight: 800; color: var(--text-primary); margin: 0 0 0.35rem 0;">-</h2>
+                <div id="nextSessionDetails" style="font-size: 0.82rem; color: var(--text-secondary); display: flex; gap: 1rem; flex-wrap: wrap;">
+                  <span><i data-lucide="book-open" style="width: 14px; height: 14px; vertical-align: middle;"></i> <span id="nextSessionSubject">-</span></span>
+                  <span><i data-lucide="clock" style="width: 14px; height: 14px; vertical-align: middle;"></i> <span id="nextSessionDuration">30 دقيقة</span></span>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                <button id="btnStartNextSession" class="btn btn-primary btn-sm" title="بدء الحصة ودخول غرفة التدريس">
+                  <i data-lucide="video" style="width: 15px; height: 15px;"></i>
+                  <span>بدء الحصة / فتح الرابط</span>
+                </button>
+                <a id="btnRecordNextSession" href="today-sessions.html" class="btn btn-secondary btn-sm" title="تسجيل الحصة فور انتهائها">
+                  <i data-lucide="check-square" style="width: 15px; height: 15px;"></i>
+                  <span>تسجيل الحصة</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- شبكة كروت الإحصائيات الفعالة (Metrics Grid) -->
+        <div id="statsCardsContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.15rem; margin-bottom: 2rem;">
+          
+          <!-- الكارت الأول: إجمالي الساعات -->
+          <div class="card" style="border-right: 4px solid var(--primary-color);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+              <span style="color: var(--text-secondary); font-size: 0.82rem; font-weight: 600;">ساعات هذا الشهر</span>
+              <i data-lucide="hourglass" style="color: var(--primary-color); width: 18px; height: 18px;"></i>
+            </div>
+            <h3 id="totalMonthHours" style="font-size: 1.6rem; font-weight: 800; color: var(--text-primary); margin: 0;">0.00 ساعة</h3>
+            <span style="color: var(--text-muted); font-size: 0.72rem; margin-top: 0.2rem; display: block;">الدروس المعتمدة والغياب غير المبرر</span>
+          </div>
+
+          <!-- كارت حصص اليوم -->
+          <div class="card" style="border-right: 4px solid #8b5cf6;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+              <span style="color: var(--text-secondary); font-size: 0.82rem; font-weight: 600;">حصص اليوم المجدولة</span>
+              <i data-lucide="play" style="color: #8b5cf6; width: 18px; height: 18px;"></i>
+            </div>
+            <h3 id="todaySessionsCount" style="font-size: 1.6rem; font-weight: 800; color: var(--text-primary); margin: 0;">0 حصة</h3>
+            <span style="color: var(--text-muted); font-size: 0.72rem; margin-top: 0.2rem; display: block;">إجمالي حصصك لليوم الحالي</span>
+          </div>
+
+          <!-- كارت الحصص المتبقية اليوم -->
+          <div class="card" style="border-right: 4px solid #f97316;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+              <span style="color: var(--text-secondary); font-size: 0.82rem; font-weight: 600;">المتبقي لتسجيله اليوم</span>
+              <i data-lucide="clock" style="color: #f97316; width: 18px; height: 18px;"></i>
+            </div>
+            <h3 id="todaySessionsRemaining" style="font-size: 1.6rem; font-weight: 800; color: var(--text-primary); margin: 0;">0 حصة</h3>
+            <span style="color: var(--text-muted); font-size: 0.72rem; margin-top: 0.2rem; display: block;">الحصص المتبقية بانتظار التسجيل</span>
+          </div>
+
+          <!-- الكارت الثاني: إجمالي عدد الحصص -->
+          <div class="card" style="border-right: 4px solid var(--success);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+              <span style="color: var(--text-secondary); font-size: 0.82rem; font-weight: 600;">حصص الشهر المعتمدة</span>
+              <i data-lucide="calendar-check" style="color: var(--success); width: 18px; height: 18px;"></i>
+            </div>
+            <h3 id="totalMonthSessions" style="font-size: 1.6rem; font-weight: 800; color: var(--text-primary); margin: 0;">0 حصة</h3>
+            <span style="color: var(--text-muted); font-size: 0.72rem; margin-top: 0.2rem; display: block;">الحصص المنجزة التي دخلت الحساب</span>
+          </div>
+
+          <!-- الكارت الثالث: المرتب الحالي -->
+          <div class="card" style="border-right: 4px solid var(--warning);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+              <span style="color: var(--text-secondary); font-size: 0.82rem; font-weight: 600;">المرتب المستحق حالياً</span>
+              <i data-lucide="wallet" style="color: var(--warning); width: 18px; height: 18px;"></i>
+            </div>
+            <h3 id="currentMonthSalary" style="font-size: 1.6rem; font-weight: 800; color: var(--text-primary); margin: 0;">0.00 ج.م</h3>
+            <span style="color: var(--text-muted); font-size: 0.72rem; margin-top: 0.2rem; display: block;">الأجر المحسوب للحصص المعتمدة</span>
+          </div>
+
+          <!-- الكارت الرابع: عدد الطلاب -->
+          <div class="card" style="border-right: 4px solid #0284c7;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+              <span style="color: var(--text-secondary); font-size: 0.82rem; font-weight: 600;">الدارسون النشطون</span>
+              <i data-lucide="users" style="color: #0284c7; width: 18px; height: 18px;"></i>
+            </div>
+            <h3 id="totalStudents" style="font-size: 1.6rem; font-weight: 800; color: var(--text-primary); margin: 0;">0 دارس</h3>
+            <span style="color: var(--text-muted); font-size: 0.72rem; margin-top: 0.2rem; display: block;">الطلاب المسجلون تحت جدولك</span>
+          </div>
+
+        </div>
+
+        <!-- جدول وأجندة حصص اليوم السريعة (Today's Classes Schedule List) -->
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 1.75rem;">
+          
+          <!-- العمود الرئيسي: جدول حصص اليوم المباشر -->
+          <div class="card">
+            <div class="card-header" style="margin-bottom: 0.85rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="calendar-days" style="color: var(--primary-color); width: 20px; height: 20px;"></i>
+                <h3 style="font-size: 1.05rem; font-weight: 700; margin: 0;">جدول وأجندة حصصك اليوم</h3>
+              </div>
+              <a href="today-sessions.html" class="btn btn-sm btn-outline">
+                <span>فتح شاشة الحصص الجارية</span>
+                <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i>
+              </a>
+            </div>
+
+            <div id="todayAgendaList">
+              <div style="text-align: center; color: var(--text-muted); padding: 2rem 1rem;">
+                <div class="skeleton-box" style="height: 48px; margin-bottom: 0.5rem; border-radius: 8px;"></div>
+                <div class="skeleton-box" style="height: 48px; margin-bottom: 0.5rem; border-radius: 8px;"></div>
+                <div class="skeleton-box" style="height: 48px; border-radius: 8px;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- العمود الجانبي: الروابط السريعة -->
+          <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+
+            <!-- بطاقة روابط المعلم السريعة -->
+            <div class="card" style="background: var(--bg-primary);">
+              <h4 style="font-size: 0.88rem; font-weight: 700; margin: 0 0 0.65rem 0; color: var(--text-primary);">
+                روابط وأدوات سريعة
+              </h4>
+              <div style="display: flex; flex-direction: column; gap: 0.45rem;">
+                <a href="weekly-schedule.html" class="btn btn-secondary btn-sm" style="justify-content: flex-start; gap: 0.5rem;">
+                  <i data-lucide="calendar-range" style="width: 14px; height: 14px; color: var(--primary-color);"></i>
+                  <span>الجدول الأسبوعي الكامل</span>
+                </a>
+                <a href="current-salary.html" class="btn btn-secondary btn-sm" style="justify-content: flex-start; gap: 0.5rem;">
+                  <i data-lucide="receipt" style="width: 14px; height: 14px; color: var(--warning);"></i>
+                  <span>كشف الراتب والمحاسبة التفصيلي</span>
+                </a>
+                <a href="students.html" class="btn btn-secondary btn-sm" style="justify-content: flex-start; gap: 0.5rem;">
+                  <i data-lucide="users" style="width: 14px; height: 14px; color: #0284c7;"></i>
+                  <span>سجل الطلاب وتقارير الحفظ</span>
+                </a>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { 
+      getDoc, 
+      doc, 
+      collection, 
+      query, 
+      where, 
+      onSnapshot, 
+      getDocs 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { loadTeacherDashboardStats, checkAndAutoArchivePreviousMonth } from '../assets/js/features/teachers/teachersController.js';
+    import { DraftManager } from '../assets/js/shared/utils/draftManager.js';
+    import { updateTargetIcons } from '../assets/js/shared/utils/perfUtils.js';
+
+    protectRoute('teacher');
+
+    let currentTeacher = null;
+    let unsubStats = null;
+    let unsubAgenda = null;
+
+    // تهيئة عرض التاريخ العربي المنسق
+    function initDateDisplay() {
+      const now = new Date();
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      const dateStr = now.toLocaleDateString('ar-EG', options);
+      const dateEl = document.getElementById('currentDateDisplay');
+      if (dateEl) {
+        dateEl.textContent = `اليوم: ${dateStr}`;
+      }
+    }
+
+    // التحقق من وجود مسودة جلسة غير مكتملة
+    function checkDrafts() {
+      try {
+        const draftBanner = document.getElementById('teacherDraftBanner');
+        const dismissBtn = document.getElementById('btnDismissDraft');
+        if (!draftBanner) return;
+
+        const draftData = DraftManager.loadDraft('sessionForm');
+        if (draftData && Object.keys(draftData).length > 0) {
+          draftBanner.style.display = 'flex';
+          updateTargetIcons(draftBanner);
+        }
+
+        if (dismissBtn) {
+          dismissBtn.onclick = () => {
+            draftBanner.style.display = 'none';
+          };
+        }
+      } catch (err) {
+        console.warn('Draft check warning:', err);
+      }
+    }
+
+    // مساعدة لتوحيد وتنسيق أيام الأسبوع العربية
+    function normalizeArabicDay(dayStr) {
+      if (!dayStr) return '';
+      return String(dayStr).trim()
+        .replace(/[أإآ]/g, 'ا')
+        .replace(/ة/g, 'ه');
+    }
+
+    // تحليل الوقت بالدقائق للترتيب الزمني الدقيق
+    function parseTimeToMinutes(timeStr) {
+      if (!timeStr || typeof timeStr !== 'string') return 9999;
+      let str = timeStr.trim().toLowerCase();
+      let isPM = false;
+      let isAM = false;
+      if (str.includes("pm") || str.includes("مساءً") || str.includes("مساء") || str.includes("م")) {
+        isPM = true;
+      }
+      if (str.includes("am") || str.includes("صباحاً") || str.includes("صباح") || str.includes("ص")) {
+        isAM = true;
+      }
+      let match = str.match(/(\d+):(\d+)/);
+      if (!match) match = str.match(/(\d+)/);
+      if (!match) return 9999;
+      let hours = parseInt(match[1]);
+      let minutes = match[2] ? parseInt(match[2]) : 0;
+      if (isPM && hours < 12) {
+        hours += 12;
+      } else if (isAM && hours === 12) {
+        hours = 0;
+      }
+      if (hours < 12 && !isAM && !isPM) {
+        if (hours > 0 && hours < 12) {
+          hours += 12; // الافتراضي للحصص هو المساء ما لم يُذكر غير ذلك
+        }
+      }
+      return hours * 60 + minutes;
+    }
+
+    // تنسيق عرض الوقت بشكل جمالي عربي ومقروء
+    function formatDisplayTime(rawTime) {
+      if (!rawTime || rawTime === '00:00' || rawTime === '0:00') return 'مرن';
+      if (typeof rawTime !== 'string') return String(rawTime);
+      let str = rawTime.trim();
+      if (str.includes('م') || str.includes('ص') || str.includes('مساء') || str.includes('صباح')) {
+        return str;
+      }
+      const match = str.match(/^(\d{1,2}):(\d{2})$/);
+      if (match) {
+        let h = parseInt(match[1]);
+        const m = match[2];
+        const suffix = h >= 12 ? 'م' : 'ص';
+        if (h > 12) h -= 12;
+        if (h === 0) h = 12;
+        const hStr = h < 10 ? `0${h}` : `${h}`;
+        return `${hStr}:${m} ${suffix}`;
+      }
+      return str;
+    }
+
+    // شحن أجندة اليوم والحصة القادمة
+    function loadTodayAgendaAndUpcoming(teacher) {
+      if (!teacher || !teacher.uid) return;
+
+      const todayStr = new Date().toISOString().split('T')[0];
+      const arabicDays = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+      const todayArabic = arabicDays[new Date().getDay()];
+
+      let cachedStudents = [];
+      let cachedGroups = [];
+      let cachedSessions = [];
+
+      const renderAgendaUI = () => {
+        const agendaListEl = document.getElementById('todayAgendaList');
+        const nextContainer = document.getElementById('nextSessionContainer');
+        if (!agendaListEl) return;
+
+        const scheduledItems = [];
+
+        // 1. Individual Students
+        cachedStudents.forEach(st => {
+          if (st.status === 'archived' || st.status === 'Suspended' || st.status === 'pending_approval') return;
+          if (st.subscriptionType === 'group' || st.groupId) return;
+
+          const days = st.schedule?.days || st.sessionDays || st.days || [];
+          const isScheduledToday = days.some(d => normalizeArabicDay(d) === normalizeArabicDay(todayArabic));
+          
+          const recordedSession = cachedSessions.find(s => s.studentId === st.id);
+          const hasPostponedToday = recordedSession && recordedSession.status === 'delayed';
+
+          if (isScheduledToday || hasPostponedToday) {
+            // استخراج توقيت الحصة المخصص لهذا اليوم أو التوقيت العام
+            let rawTime = '';
+            if (st.schedule?.differentTimes && st.schedule?.times) {
+              const matchedKey = Object.keys(st.schedule.times).find(k => normalizeArabicDay(k) === normalizeArabicDay(todayArabic));
+              if (matchedKey && st.schedule.times[matchedKey]) {
+                rawTime = st.schedule.times[matchedKey];
+              }
+            }
+            if (!rawTime) {
+              rawTime = st.schedule?.uniformTime || st.sessionTime || st.time || st.schedule?.time || st.timeSlot || '';
+            }
+            if (!rawTime && recordedSession) {
+              rawTime = recordedSession.time || recordedSession.sessionTime || recordedSession.scheduledTime || '';
+            }
+
+            scheduledItems.push({
+              id: st.id,
+              name: st.name,
+              phone: st.phone || '',
+              rawTime: rawTime || '05:30 م',
+              displayTime: formatDisplayTime(rawTime || '05:30 م'),
+              duration: parseInt(st.schedule?.duration || st.sessionDuration || 30),
+              subject: st.subject || st.studyField || 'القرآن الكريم',
+              type: 'individual',
+              meetingLink: st.meetingLink || '',
+              status: recordedSession ? recordedSession.status : 'scheduled',
+              recordedSession: recordedSession || null
+            });
+          }
+        });
+
+        // 2. Groups
+        cachedGroups.forEach(grp => {
+          if (grp.status === 'archived') return;
+          const grpDays = grp.day ? [grp.day] : (grp.days || []);
+          const isScheduledToday = grpDays.some(d => normalizeArabicDay(d) === normalizeArabicDay(todayArabic));
+          
+          const recordedGS = cachedSessions.find(s => s.groupId === grp.id || s.groupSessionId === grp.id);
+
+          if (isScheduledToday || recordedGS) {
+            let rawTime = grp.time || grp.sessionTime || grp.schedule?.uniformTime || grp.schedule?.time || '';
+            if (!rawTime && grp.schedule?.times) {
+              const matchedKey = Object.keys(grp.schedule.times).find(k => normalizeArabicDay(k) === normalizeArabicDay(todayArabic));
+              if (matchedKey && grp.schedule.times[matchedKey]) {
+                rawTime = grp.schedule.times[matchedKey];
+              }
+            }
+            if (!rawTime && recordedGS) {
+              rawTime = recordedGS.time || recordedGS.sessionTime || recordedGS.scheduledTime || '';
+            }
+
+            scheduledItems.push({
+              id: grp.id,
+              name: grp.name,
+              phone: '',
+              rawTime: rawTime || '05:30 م',
+              displayTime: formatDisplayTime(rawTime || '05:30 م'),
+              duration: parseInt(grp.duration || 60),
+              subject: grp.subject || 'حلقة جماعية',
+              type: 'group',
+              meetingLink: grp.meetingLink || '',
+              status: recordedGS ? recordedGS.status : 'scheduled',
+              recordedSession: recordedGS || null
+            });
+          }
+        });
+
+        // ترتيب الحصص زمنياً بالدقائق
+        scheduledItems.sort((a, b) => parseTimeToMinutes(a.rawTime) - parseTimeToMinutes(b.rawTime));
+
+        if (scheduledItems.length === 0) {
+          agendaListEl.innerHTML = `
+            <div style="text-align: center; color: var(--text-muted); padding: 2rem 1rem;">
+              <i data-lucide="calendar-x" style="width: 38px; height: 38px; margin-bottom: 0.5rem; opacity: 0.6;"></i>
+              <p style="font-size: 0.9rem; margin: 0; font-weight: 600;">لا توجد حصص مجدولة اليوم (${todayArabic}).</p>
+              <span style="font-size: 0.78rem;">يمكنك مراجعة جدولك الأسبوعي من القائمة الجانبية.</span>
+            </div>
+          `;
+          if (nextContainer) nextContainer.style.display = 'none';
+          updateTargetIcons(agendaListEl);
+          return;
+        }
+
+        // إيجاد الحصة القادمة التالية غير المكتملة
+        const upcomingItem = scheduledItems.find(it => it.status === 'scheduled');
+        if (upcomingItem && nextContainer) {
+          nextContainer.style.display = 'block';
+          document.getElementById('nextSessionTitle').textContent = `${upcomingItem.type === 'group' ? 'حلقة: ' : 'الطالب: '}${upcomingItem.name}`;
+          document.getElementById('nextSessionTimeBadge').textContent = `الساعة ${upcomingItem.displayTime}`;
+          document.getElementById('nextSessionSubject').textContent = upcomingItem.subject;
+          document.getElementById('nextSessionDuration').textContent = `${upcomingItem.duration} دقيقة`;
+          
+          const startBtn = document.getElementById('btnStartNextSession');
+          if (startBtn) {
+            startBtn.onclick = () => {
+              if (upcomingItem.meetingLink) {
+                window.open(upcomingItem.meetingLink, '_blank');
+              } else {
+                window.location.href = `today-sessions.html?studentId=${upcomingItem.id}`;
+              }
+            };
+          }
+
+          const recordBtn = document.getElementById('btnRecordNextSession');
+          if (recordBtn) {
+            recordBtn.href = `today-sessions.html?studentId=${upcomingItem.id}&type=${upcomingItem.type}`;
+          }
+        } else if (nextContainer) {
+          nextContainer.style.display = 'none';
+        }
+
+        agendaListEl.innerHTML = scheduledItems.map(item => {
+          let statusBadge = '<span class="badge badge-info" style="font-size:0.7rem;">مجدولة ⏰</span>';
+          if (item.status === 'completed') {
+            statusBadge = '<span class="badge badge-success" style="font-size:0.7rem;">تمت بنجاح ✅</span>';
+          } else if (item.status === 'student_absent') {
+            statusBadge = '<span class="badge badge-danger" style="font-size:0.7rem;">غياب طالب ❌</span>';
+          } else if (item.status === 'cancelled' || item.status === 'delayed') {
+            statusBadge = '<span class="badge badge-warning" style="font-size:0.7rem;">مؤجلة ⏳</span>';
+          }
+
+          const linkBtn = item.meetingLink ? `
+            <a href="${item.meetingLink}" target="_blank" class="btn btn-sm btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.72rem;" title="فتح رابط الغرفة">
+              <i data-lucide="video" style="width: 12px; height: 12px;"></i>
+            </a>
+          ` : '';
+
+          return `
+            <div class="today-agenda-item">
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div style="font-size: 0.85rem; font-weight: 800; color: var(--primary-color); min-width: 68px; text-align: center; background: var(--bg-secondary); padding: 0.35rem 0.55rem; border-radius: 6px; border: 1px solid var(--border-color); direction: ltr;">
+                  ${item.displayTime}
+                </div>
+                <div>
+                  <div style="font-size: 0.9rem; font-weight: 700; color: var(--text-primary);">
+                    ${item.name}
+                  </div>
+                  <div style="font-size: 0.72rem; color: var(--text-muted);">
+                    ${item.subject} • ${item.duration} دقيقة
+                  </div>
+                </div>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 0.45rem;">
+                ${statusBadge}
+                ${linkBtn}
+                <a href="today-sessions.html?studentId=${item.id}&type=${item.type}" class="btn btn-sm btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.72rem;">
+                  ${item.status === 'completed' ? 'تفاصيل' : 'تسجيل'}
+                </a>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        updateTargetIcons(agendaListEl);
+      };
+
+      // Listen to students
+      const qStudents = query(collection(db, "students"), where("teacherId", "==", teacher.uid));
+      onSnapshot(qStudents, (snap) => {
+        cachedStudents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderAgendaUI();
+      });
+
+      // Listen to groups
+      const qGroups = query(collection(db, "groups"), where("teacherId", "==", teacher.uid));
+      onSnapshot(qGroups, (snap) => {
+        cachedGroups = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderAgendaUI();
+      });
+
+      // Listen to today's sessions
+      const qSessions = query(collection(db, "sessions"), where("teacherId", "==", teacher.uid), where("date", "==", todayStr));
+      onSnapshot(qSessions, (snap) => {
+        cachedSessions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderAgendaUI();
+      });
+    }
+
+    // 1. التهيئة الفورية للواجهة (0ms Delay) من الذاكرة المحلية
+    const sessionCache = sessionStorage.getItem('sabeel_user_session');
+    if (sessionCache) {
+      try {
+        currentTeacher = JSON.parse(sessionCache);
+        const welcomeEl = document.getElementById('welcomeTeacherMessage');
+        if (welcomeEl) welcomeEl.textContent = `مرحباً بك المعلم: ${currentTeacher.name || ''}`;
+        initDateDisplay();
+        renderSidebar('dashboard', 'teacher');
+        renderNavbar('لوحة تحكم المعلم', { name: currentTeacher.name || 'المعلم', roleName: 'معلم معتمد' });
+      } catch (e) {}
+    }
+
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        try {
+          if (!currentTeacher || !currentTeacher.name) {
+            const userDoc = await getDoc(doc(db, "users", user.uid));
+            if (userDoc.exists()) {
+              currentTeacher = { uid: user.uid, ...userDoc.data() };
+              const welcomeEl = document.getElementById('welcomeTeacherMessage');
+              if (welcomeEl) welcomeEl.textContent = `مرحباً بك المعلم: ${currentTeacher.name}`;
+              initDateDisplay();
+              renderSidebar('dashboard', 'teacher');
+              renderNavbar('لوحة تحكم المعلم', { name: currentTeacher.name, roleName: 'معلم معتمد' });
+            }
+          }
+
+          if (currentTeacher) {
+            // تحقق من الجدولة الشهرية وأرشفة الحصص السابقة تلقائياً
+            checkAndAutoArchivePreviousMonth(currentTeacher).catch(e => console.warn("Archive error:", e));
+
+            // تشغيل العدادات اللحظية
+            if (unsubStats) unsubStats();
+            unsubStats = loadTeacherDashboardStats(currentTeacher);
+
+            // تحميل جدول اليوم والحصة القادمة
+            loadTodayAgendaAndUpcoming(currentTeacher);
+
+            // التحقق من المسودات المحفوظة
+            checkDrafts();
+          }
+        } catch (err) {
+          console.error("خطأ قراءة بيانات المعلم:", err);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
