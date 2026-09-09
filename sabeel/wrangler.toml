@@ -1,8 +1,0 @@
-name = "teachers"
-main = "_worker.js"
-compatibility_date = "2024-01-01"
-
-[vars]
-BACKUP_CRON_SECRET = "sabeel-academy-secret-token"
-FIREBASE_PROJECT_ID = "sabeelteacher"
-FIREBASE_API_KEY = "AIzaSyCDQ7fVz00-BsITXg5qgIkh5KN9SkDJ3Lc"
