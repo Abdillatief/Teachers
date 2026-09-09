@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - مركز فيدباك واستطلاعات رأي المعلمين</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .feedback-card {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.25rem;
+      transition: all 0.2s ease-in-out;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .feedback-card:hover {
+      border-color: #8b5cf6;
+      box-shadow: 0 4px 16px rgba(139, 92, 246, 0.08);
+    }
+    .feedback-card.status-new {
+      border-right: 4px solid #8b5cf6;
+      background: linear-gradient(90deg, rgba(139, 92, 246, 0.03) 0%, var(--bg-primary) 100%);
+    }
+    .feedback-card.status-addressed {
+      border-right: 4px solid #10b981;
+    }
+    .feedback-card.status-reviewed {
+      border-right: 4px solid #3b82f6;
+    }
+    .rating-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .rating-badge.rating-excellent {
+      background: rgba(16, 185, 129, 0.15);
+      color: #059669;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .rating-badge.rating-suggestion {
+      background: rgba(139, 92, 246, 0.15);
+      color: #7c3aed;
+      border: 1px solid rgba(139, 92, 246, 0.3);
+    }
+    .rating-badge.rating-notes {
+      background: rgba(245, 158, 11, 0.15);
+      color: #b45309;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .rating-badge.rating-negative {
+      background: rgba(239, 68, 68, 0.15);
+      color: #b91c1c;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .filter-pill-btn {
+      padding: 0.55rem 1rem;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      border: 1px solid var(--border-color);
+      background: var(--bg-primary);
+      color: var(--text-secondary);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .filter-pill-btn.active {
+      background: #7c3aed;
+      color: #ffffff;
+      border-color: #7c3aed;
+      box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
+    }
+    .reply-box {
+      background: rgba(139, 92, 246, 0.05);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: 8px;
+      padding: 0.85rem;
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body class="admin-theme">
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Navbar -->
+      <header class="navbar" id="appNavbar"></header>
+
+      <!-- Page Content -->
+      <div class="content-container">
+        <!-- Page Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+          <div>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.5rem;">
+              <span style="display: inline-flex; padding: 0.4rem; background: rgba(139, 92, 246, 0.15); color: #7c3aed; border-radius: 8px;">
+                <i data-lucide="messages-square" style="width: 24px; height: 24px;"></i>
+              </span>
+              مركز فيدباك واستطلاعات رأي المعلمين
+            </h1>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">
+              إرسال استطلاعات رأي للمعلمين، استقبال مقترحاتهم وملاحظاتهم، والرد المباشر لتعزيز جودة العمل والتواصل.
+            </p>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+            <button type="button" class="btn btn-secondary" id="btnRefreshFeedbacks" title="تحديث البيانات">
+              <i data-lucide="rotate-cw" style="width: 16px; height: 16px;"></i>
+              <span>تحديث</span>
+            </button>
+            <button type="button" class="btn btn-primary" id="btnOpenNewFeedbackRequestModal" style="background: #7c3aed; border-color: #7c3aed;">
+              <i data-lucide="send" style="width: 16px; height: 16px;"></i>
+              <span>إرسال استطلاع رأي للمعلمين 💡</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- KPI Stats Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="card" style="padding: 1rem; display: flex; align-items: center; gap: 0.85rem;">
+            <div style="background: rgba(139, 92, 246, 0.15); color: #7c3aed; padding: 0.75rem; border-radius: 10px;">
+              <i data-lucide="message-square" style="width: 24px; height: 24px;"></i>
+            </div>
+            <div>
+              <div style="font-size: 1.45rem; font-weight: 800; color: var(--text-primary);" id="statTotalFeedback">0</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">إجمالي الآراء الواردة</div>
+            </div>
+          </div>
+
+          <div class="card" style="padding: 1rem; display: flex; align-items: center; gap: 0.85rem;">
+            <div style="background: rgba(245, 158, 11, 0.15); color: #b45309; padding: 0.75rem; border-radius: 10px;">
+              <i data-lucide="clock" style="width: 24px; height: 24px;"></i>
+            </div>
+            <div>
+              <div style="font-size: 1.45rem; font-weight: 800; color: #b45309;" id="statPendingFeedback">0</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">آراء جديدة بانتظار المراجعة</div>
+            </div>
+          </div>
+
+          <div class="card" style="padding: 1rem; display: flex; align-items: center; gap: 0.85rem;">
+            <div style="background: rgba(16, 185, 129, 0.15); color: #059669; padding: 0.75rem; border-radius: 10px;">
+              <i data-lucide="check-check" style="width: 24px; height: 24px;"></i>
+            </div>
+            <div>
+              <div style="font-size: 1.45rem; font-weight: 800; color: #059669;" id="statAddressedFeedback">0</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">تمت المراجعة والرد عليها</div>
+            </div>
+          </div>
+
+          <div class="card" style="padding: 1rem; display: flex; align-items: center; gap: 0.85rem;">
+            <div style="background: rgba(59, 130, 246, 0.15); color: #2563eb; padding: 0.75rem; border-radius: 10px;">
+              <i data-lucide="users" style="width: 24px; height: 24px;"></i>
+            </div>
+            <div>
+              <div style="font-size: 1.45rem; font-weight: 800; color: #2563eb;" id="statTeachersParticipated">0</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">معلمون شاركوا بالرأي</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div style="display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.5rem; margin-bottom: 1rem;">
+          <button class="filter-pill-btn active" data-status="all">
+            <i data-lucide="layers" style="width: 15px; height: 15px;"></i> جميع الآراء
+          </button>
+          <button class="filter-pill-btn" data-status="new">
+            <i data-lucide="sparkles" style="width: 15px; height: 15px; color: #8b5cf6;"></i> جديدة
+          </button>
+          <button class="filter-pill-btn" data-status="addressed">
+            <i data-lucide="check-circle" style="width: 15px; height: 15px; color: #10b981;"></i> تم الرد والتعامل
+          </button>
+          <button class="filter-pill-btn" data-status="reviewed">
+            <i data-lucide="eye" style="width: 15px; height: 15px; color: #3b82f6;"></i> تمت المراجعة
+          </button>
+        </div>
+
+        <!-- Search & Filter Controls -->
+        <div class="card" style="padding: 1rem; margin-bottom: 1.5rem;">
+          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 0.75rem; flex-wrap: wrap;">
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.3rem; display: block;">بحث بالكلمات أو اسم المعلم</label>
+              <input type="text" id="feedbackSearchInput" class="form-control" placeholder="ابحث باسم المعلم، الموضوع، أو نص الرأي...">
+            </div>
+
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.3rem; display: block;">تصفية حسب طبيعة الرأي</label>
+              <select id="ratingFilterSelect" class="form-control">
+                <option value="">جميع التقييمات والآراء</option>
+                <option value="ممتاز">🌟 ممتاز ومؤيد</option>
+                <option value="اقتراح">💡 اقتراح تطوير</option>
+                <option value="ملاحظات">⚠️ ملاحظات وتعديلات</option>
+                <option value="غير مناسب">🔴 غير مناسب</option>
+              </select>
+            </div>
+
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.3rem; display: block;">تصفية حسب الموضوع</label>
+              <select id="topicFilterSelect" class="form-control">
+                <option value="">جميع الموضوعات والاستطلاعات</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feedbacks List Container -->
+        <div id="feedbacksContainer" style="display: flex; flex-direction: column; gap: 1rem;">
+          <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
+            <div class="loading-spinner" style="margin: 0 auto 1rem auto;"></div>
+            <span>جاري تحميل آراء ومقترحات المعلمين...</span>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal: Send New Feedback Request To Teachers -->
+  <div id="newFeedbackRequestModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; z-index: 99999; padding: 1rem;">
+    <div class="card modal-card" style="width: 100%; max-width: 540px; position: relative; border-top: 4px solid #7c3aed; box-shadow: var(--shadow-xl);">
+      <button type="button" id="closeNewFeedbackModalBtn" style="position: absolute; left: 1rem; top: 1rem; background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+      
+      <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem;">
+        <div style="width: 44px; height: 44px; background: rgba(139, 92, 246, 0.15); color: #7c3aed; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+          <i data-lucide="send" style="width: 22px; height: 22px;"></i>
+        </div>
+        <div>
+          <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--text-primary); margin: 0;">إرسال استطلاع رأي جديد للمعلمين</h3>
+          <p style="font-size: 0.78rem; color: var(--text-muted); margin: 0;">سيصل إشعار فوري للمعلمين يتيح لهم إبداء آرائهم وملاحظاتهم مباشرة.</p>
+        </div>
+      </div>
+
+      <form id="newFeedbackRequestForm">
+        <div style="margin-bottom: 1rem;">
+          <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-primary); display: block; margin-bottom: 0.35rem;">عنوان / موضوع الاستطلاع *</label>
+          <input type="text" id="reqTopicInput" class="form-control" placeholder="مثال: استطلاع رأي حول تطبيق لائحة الاختبارات الجديدة" required>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+          <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-primary); display: block; margin-bottom: 0.35rem;">نص السؤال وتفاصيل الاستطلاع للمعلمين *</label>
+          <textarea id="reqQuestionInput" rows="4" class="form-control" placeholder="اكتب هنا الأسئلة أو النقاط التي ترغب في أخذ آراء واقتراحات المعلمين حولها بالتفصيل..." required></textarea>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+          <div>
+            <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-primary); display: block; margin-bottom: 0.35rem;">المستهدفون بالإشعار</label>
+            <select id="reqTargetSelect" class="form-control">
+              <option value="teachers">📢 جميع المعلمين (تعميم عام)</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-primary); display: block; margin-bottom: 0.35rem;">أولوية التثبيت</label>
+            <div style="display: flex; align-items: center; gap: 0.5rem; height: 38px;">
+              <input type="checkbox" id="reqIsPinnedCheckbox" style="width: 18px; height: 18px; cursor: pointer;">
+              <label for="reqIsPinnedCheckbox" style="font-size: 0.8rem; cursor: pointer; color: var(--text-secondary); font-weight: 600;">📌 تثبيت في أعلى الإشعارات</label>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+          <button type="button" class="btn btn-secondary" id="cancelNewFeedbackModalBtn">إلغاء</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitFeedbackRequest" style="background: #7c3aed; border-color: #7c3aed; display: inline-flex; align-items: center; gap: 0.35rem;">
+            <i data-lucide="send" style="width: 15px; height: 15px;"></i>
+            <span>إرسال الاستطلاع الآن</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Reply to Teacher Feedback -->
+  <div id="replyFeedbackModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; z-index: 99999; padding: 1rem;">
+    <div class="card modal-card" style="width: 100%; max-width: 520px; position: relative; border-top: 4px solid #10b981; box-shadow: var(--shadow-xl);">
+      <button type="button" id="closeReplyModalBtn" style="position: absolute; left: 1rem; top: 1rem; background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+      
+      <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+        <div style="width: 40px; height: 40px; background: rgba(16, 185, 129, 0.15); color: #059669; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+          <i data-lucide="reply" style="width: 20px; height: 20px;"></i>
+        </div>
+        <div>
+          <h3 style="font-size: 1.05rem; font-weight: 800; color: var(--text-primary); margin: 0;">الرد على رأي المعلم</h3>
+          <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0;" id="replyModalTeacherName">المعلم: -</p>
+        </div>
+      </div>
+
+      <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; padding: 0.75rem; margin-bottom: 1rem;">
+        <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;">رأي المعلم المسجل:</span>
+        <p style="font-size: 0.82rem; color: var(--text-primary); line-height: 1.5; margin: 0;" id="replyModalTeacherMessage">-</p>
+      </div>
+
+      <form id="replyFeedbackForm">
+        <input type="hidden" id="replyFeedbackId">
+        <input type="hidden" id="replyTeacherId">
+        <input type="hidden" id="replyTopic">
+
+        <div style="margin-bottom: 1rem;">
+          <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-primary); display: block; margin-bottom: 0.35rem;">نص رد الإدارة على المعلم *</label>
+          <textarea id="replyTextInput" rows="4" class="form-control" placeholder="اكتب رد الإدارة وتوجيهاتها للمعلم هنا... سيصل كإشعار مباشر للمعلم." required></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+          <button type="button" class="btn btn-secondary" id="cancelReplyModalBtn">إلغاء</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitReply" style="background: #10b981; border-color: #10b981; display: inline-flex; align-items: center; gap: 0.35rem;">
+            <i data-lucide="send" style="width: 15px; height: 15px;"></i>
+            <span>إرسال الرد للمعلم 🚀</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { doc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { dataStore } from '../assets/js/shared/data/dataStore.js';
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+    import { showCustomConfirm } from '../assets/js/shared/utils/helpers.js';
+    import { 
+      sendFeedbackRequestToTeachers, 
+      replyToTeacherFeedback 
+    } from '../assets/js/shared/utils/adminNotificationService.js';
+
+    let currentAdminUser = null;
+    let allFeedbacks = [];
+    let allTeachers = [];
+    let currentStatusFilter = 'all';
+    let currentRatingFilter = '';
+    let currentTopicFilter = '';
+    let currentSearchTerm = '';
+
+    // Auth Guard
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = '../login.html';
+        return;
+      }
+
+      try {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          if (userData.role !== 'admin' && userData.role !== 'sub_admin') {
+            Toast.error('غير مصرح لك بالدخول لهذه الصفحة');
+            window.location.href = '../login.html';
+            return;
+          }
+          currentAdminUser = { ...user, ...userData };
+          renderSidebar('feedback', userData);
+          renderNavbar('فيدباك المعلمين', { name: userData.name || 'المدير', roleName: 'إدارة الأكاديمية' });
+          initFeedbackPage();
+        } else {
+          window.location.href = '../login.html';
+        }
+      } catch (err) {
+        console.error("Auth guard error:", err);
+      }
+    });
+
+    function initFeedbackPage() {
+      // Subscribe to Teachers for selection
+      dataStore.subscribe('teachers', (teachers) => {
+        allTeachers = teachers || [];
+        populateTeacherSelect();
+      });
+
+      // Subscribe to Feedbacks
+      dataStore.subscribe('feedbacks', (feedbacks) => {
+        allFeedbacks = feedbacks || [];
+        updateStats();
+        populateTopicSelect();
+        renderFeedbacks();
+      });
+
+      // Search and Filters
+      document.getElementById('feedbackSearchInput')?.addEventListener('input', (e) => {
+        currentSearchTerm = e.target.value.toLowerCase().trim();
+        renderFeedbacks();
+      });
+
+      document.getElementById('ratingFilterSelect')?.addEventListener('change', (e) => {
+        currentRatingFilter = e.target.value;
+        renderFeedbacks();
+      });
+
+      document.getElementById('topicFilterSelect')?.addEventListener('change', (e) => {
+        currentTopicFilter = e.target.value;
+        renderFeedbacks();
+      });
+
+      document.querySelectorAll('.filter-pill-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.filter-pill-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentStatusFilter = btn.dataset.status || 'all';
+          renderFeedbacks();
+        });
+      });
+
+      document.getElementById('btnRefreshFeedbacks')?.addEventListener('click', () => {
+        Toast.info('جاري تحديث البيانات...');
+        if (dataStore.refreshCollection) {
+          dataStore.refreshCollection('feedbacks');
+        }
+        renderFeedbacks();
+      });
+
+      // New Feedback Request Modal Events
+      const newModal = document.getElementById('newFeedbackRequestModal');
+      document.getElementById('btnOpenNewFeedbackRequestModal')?.addEventListener('click', () => {
+        if (newModal) newModal.style.display = 'flex';
+        if (window.lucide) window.lucide.createIcons();
+      });
+      document.getElementById('closeNewFeedbackModalBtn')?.addEventListener('click', () => {
+        if (newModal) newModal.style.display = 'none';
+      });
+      document.getElementById('cancelNewFeedbackModalBtn')?.addEventListener('click', () => {
+        if (newModal) newModal.style.display = 'none';
+      });
+
+      // Submit New Feedback Request
+      document.getElementById('newFeedbackRequestForm')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const topic = document.getElementById('reqTopicInput')?.value.trim();
+        const question = document.getElementById('reqQuestionInput')?.value.trim();
+        const target = document.getElementById('reqTargetSelect')?.value || 'teachers';
+        const isPinned = document.getElementById('reqIsPinnedCheckbox')?.checked || false;
+
+        if (!topic || !question) {
+          Toast.error('يرجى ملء كافة الحقول المطلوبة');
+          return;
+        }
+
+        const submitBtn = document.getElementById('btnSubmitFeedbackRequest');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = `<span class="loading-spinner" style="width: 14px; height: 14px; margin-left: 5px;"></span> جاري الإرسال...`;
+        }
+
+        try {
+          await sendFeedbackRequestToTeachers({
+            topic,
+            question,
+            target,
+            isPinned,
+            adminId: currentAdminUser.uid || 'admin',
+            adminName: currentAdminUser.name || 'إدارة الأكاديمية'
+          });
+
+          Toast.success('تم إرسال استطلاع الرأي للمعلمين بنجاح 🚀');
+          if (newModal) newModal.style.display = 'none';
+          document.getElementById('newFeedbackRequestForm').reset();
+        } catch (err) {
+          console.error("Error sending feedback request:", err);
+          Toast.error('حدث خطأ أثناء الإرسال: ' + err.message);
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `<i data-lucide="send" style="width: 15px; height: 15px;"></i><span>إرسال الاستطلاع الآن</span>`;
+            if (window.lucide) window.lucide.createIcons();
+          }
+        }
+      });
+
+      // Reply Modal Events
+      const replyModal = document.getElementById('replyFeedbackModal');
+      document.getElementById('closeReplyModalBtn')?.addEventListener('click', () => {
+        if (replyModal) replyModal.style.display = 'none';
+      });
+      document.getElementById('cancelReplyModalBtn')?.addEventListener('click', () => {
+        if (replyModal) replyModal.style.display = 'none';
+      });
+
+      // Submit Reply Form
+      document.getElementById('replyFeedbackForm')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const feedbackId = document.getElementById('replyFeedbackId')?.value;
+        const teacherId = document.getElementById('replyTeacherId')?.value;
+        const topic = document.getElementById('replyTopic')?.value;
+        const replyText = document.getElementById('replyTextInput')?.value.trim();
+
+        if (!feedbackId || !replyText) {
+          Toast.error('يرجى كتابة نص الرد');
+          return;
+        }
+
+        const submitBtn = document.getElementById('btnSubmitReply');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = `<span class="loading-spinner" style="width: 14px; height: 14px; margin-left: 5px;"></span> جاري الإرسال...`;
+        }
+
+        try {
+          await replyToTeacherFeedback({
+            feedbackId,
+            teacherId,
+            topic,
+            adminReply: replyText,
+            adminId: currentAdminUser.uid || 'admin',
+            adminName: currentAdminUser.name || 'إدارة الأكاديمية'
+          });
+
+          Toast.success('تم إرسال الرد للمعلم بنجاح ✉️');
+          if (replyModal) replyModal.style.display = 'none';
+          document.getElementById('replyFeedbackForm').reset();
+        } catch (err) {
+          console.error("Error replying to feedback:", err);
+          Toast.error('حدث خطأ أثناء إرسال الرد: ' + err.message);
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `<i data-lucide="send" style="width: 15px; height: 15px;"></i><span>إرسال الرد للمعلم 🚀</span>`;
+            if (window.lucide) window.lucide.createIcons();
+          }
+        }
+      });
+    }
+
+    function populateTeacherSelect() {
+      const select = document.getElementById('reqTargetSelect');
+      if (!select) return;
+      
+      let html = `<option value="teachers">📢 جميع المعلمين (تعميم عام)</option>`;
+      allTeachers.forEach(t => {
+        const id = t.id || t.uid;
+        const name = t.name || t.fullName || 'معلم';
+        html += `<option value="${id}">👨‍🏫 المعلم: ${name}</option>`;
+      });
+      select.innerHTML = html;
+    }
+
+    function populateTopicSelect() {
+      const select = document.getElementById('topicFilterSelect');
+      if (!select) return;
+      const currentVal = select.value;
+      const topics = Array.from(new Set(allFeedbacks.map(f => f.topic).filter(Boolean)));
+      
+      let html = `<option value="">جميع الموضوعات والاستطلاعات (${topics.length})</option>`;
+      topics.forEach(top => {
+        html += `<option value="${top}" ${top === currentVal ? 'selected' : ''}>${top}</option>`;
+      });
+      select.innerHTML = html;
+    }
+
+    function updateStats() {
+      const total = allFeedbacks.length;
+      const pending = allFeedbacks.filter(f => !f.status || f.status === 'new').length;
+      const addressed = allFeedbacks.filter(f => f.status === 'addressed' || f.adminReplied).length;
+      const uniqueTeachers = new Set(allFeedbacks.map(f => f.teacherId).filter(Boolean)).size;
+
+      document.getElementById('statTotalFeedback').textContent = total;
+      document.getElementById('statPendingFeedback').textContent = pending;
+      document.getElementById('statAddressedFeedback').textContent = addressed;
+      document.getElementById('statTeachersParticipated').textContent = uniqueTeachers;
+    }
+
+    function getRatingBadgeHtml(rating = '') {
+      if (rating.includes('ممتاز') || rating.includes('راضي')) {
+        return `<span class="rating-badge rating-excellent"><i data-lucide="star" style="width: 12px; height: 12px;"></i> ${rating}</span>`;
+      }
+      if (rating.includes('اقتراح')) {
+        return `<span class="rating-badge rating-suggestion"><i data-lucide="lightbulb" style="width: 12px; height: 12px;"></i> ${rating}</span>`;
+      }
+      if (rating.includes('ملاحظات')) {
+        return `<span class="rating-badge rating-notes"><i data-lucide="alert-circle" style="width: 12px; height: 12px;"></i> ${rating}</span>`;
+      }
+      if (rating.includes('غير مناسب')) {
+        return `<span class="rating-badge rating-negative"><i data-lucide="x-circle" style="width: 12px; height: 12px;"></i> ${rating}</span>`;
+      }
+      return `<span class="rating-badge rating-suggestion">${rating || 'مشاركة رأي'}</span>`;
+    }
+
+    function renderFeedbacks() {
+      const container = document.getElementById('feedbacksContainer');
+      if (!container) return;
+
+      let filtered = [...allFeedbacks];
+
+      // Status filter
+      if (currentStatusFilter === 'new') {
+        filtered = filtered.filter(f => !f.status || f.status === 'new');
+      } else if (currentStatusFilter === 'addressed') {
+        filtered = filtered.filter(f => f.status === 'addressed' || f.adminReplied);
+      } else if (currentStatusFilter === 'reviewed') {
+        filtered = filtered.filter(f => f.status === 'reviewed');
+      }
+
+      // Rating filter
+      if (currentRatingFilter) {
+        filtered = filtered.filter(f => (f.rating || '').includes(currentRatingFilter));
+      }
+
+      // Topic filter
+      if (currentTopicFilter) {
+        filtered = filtered.filter(f => f.topic === currentTopicFilter);
+      }
+
+      // Search term
+      if (currentSearchTerm) {
+        filtered = filtered.filter(f => {
+          const name = (f.teacherName || '').toLowerCase();
+          const topic = (f.topic || '').toLowerCase();
+          const msg = (f.message || '').toLowerCase();
+          const email = (f.teacherEmail || '').toLowerCase();
+          return name.includes(currentSearchTerm) || topic.includes(currentSearchTerm) || msg.includes(currentSearchTerm) || email.includes(currentSearchTerm);
+        });
+      }
+
+      // Sort newest first
+      filtered.sort((a, b) => {
+        const tA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.createdAt || 0).getTime();
+        const tB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.createdAt || 0).getTime();
+        return tB - tA;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="card" style="text-align: center; padding: 3rem 1rem; color: var(--text-muted);">
+            <div style="width: 56px; height: 56px; background: rgba(139, 92, 246, 0.1); color: #7c3aed; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem auto;">
+              <i data-lucide="inbox" style="width: 28px; height: 28px;"></i>
+            </div>
+            <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.35rem;">لا توجد آراء مطابقة للفلاتر المحددة</h3>
+            <p style="font-size: 0.85rem; margin-bottom: 1rem;">يمكنك إرسال استطلاع رأي جديد للمعلمين لبدء جمع آرائهم ومقترحاتهم.</p>
+            <button type="button" class="btn btn-primary" onclick="document.getElementById('btnOpenNewFeedbackRequestModal').click()" style="background: #7c3aed; border-color: #7c3aed;">
+              <i data-lucide="send" style="width: 14px; height: 14px;"></i>
+              إرسال استطلاع رأي جديد
+            </button>
+          </div>
+        `;
+        if (window.lucide) window.lucide.createIcons();
+        return;
+      }
+
+      container.innerHTML = filtered.map(fb => {
+        const isAddressed = fb.status === 'addressed' || fb.adminReplied;
+        const isReviewed = fb.status === 'reviewed';
+        const statusClass = isAddressed ? 'status-addressed' : (isReviewed ? 'status-reviewed' : 'status-new');
+        
+        const dateStr = fb.createdAt?.seconds 
+          ? new Date(fb.createdAt.seconds * 1000).toLocaleString('ar-EG') 
+          : (fb.createdAt ? new Date(fb.createdAt).toLocaleString('ar-EG') : 'الآن');
+
+        const cleanPhone = (fb.teacherPhone || '').replace(/\D/g, '');
+        const waLink = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(`السلام عليكم أستاذ ${fb.teacherName || ''}، بخصوص رأيكم القيم وملاحظاتكم حول موضوع (${fb.topic || ''})...`)}` : '';
+
+        return `
+          <div class="feedback-card ${statusClass}" id="card_${fb.id}">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div style="width: 42px; height: 42px; background: rgba(139, 92, 246, 0.15); color: #7c3aed; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem;">
+                  ${(fb.teacherName || 'م').trim().charAt(0)}
+                </div>
+                <div>
+                  <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                    <strong style="font-size: 0.95rem; color: var(--text-primary);">${fb.teacherName || 'معلم'}</strong>
+                    ${getRatingBadgeHtml(fb.rating)}
+                    ${isAddressed ? `<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #059669; font-size: 0.7rem; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.3);">✅ تم الرد والتعامل</span>` : (isReviewed ? `<span class="badge" style="background: rgba(59, 130, 246, 0.15); color: #2563eb; font-size: 0.7rem; font-weight: 700; border: 1px solid rgba(59, 130, 246, 0.3);">👁️ تمت المراجعة</span>` : `<span class="badge" style="background: rgba(139, 92, 246, 0.15); color: #7c3aed; font-size: 0.7rem; font-weight: 700; border: 1px solid rgba(139, 92, 246, 0.3);">✨ جديد</span>`)}
+                  </div>
+                  <div style="font-size: 0.72rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem; margin-top: 0.15rem; flex-wrap: wrap;">
+                    <span>🕒 ${dateStr}</span>
+                    ${fb.teacherPhone ? `<span>📱 ${fb.teacherPhone}</span>` : ''}
+                    ${fb.teacherEmail ? `<span>✉️ ${fb.teacherEmail}</span>` : ''}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Action buttons -->
+              <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+                ${waLink ? `
+                  <a href="${waLink}" target="_blank" class="btn btn-sm btn-secondary" style="color: #059669; border-color: rgba(16, 185, 129, 0.3); font-size: 0.75rem; display: inline-flex; align-items: center; gap: 0.25rem;" title="محادثة واتساب مباشرة">
+                    <i data-lucide="phone" style="width: 13px; height: 13px;"></i>
+                    <span>واتساب</span>
+                  </a>
+                ` : ''}
+
+                <button type="button" class="btn btn-sm btn-primary btn-reply-feedback" data-id="${fb.id}" data-teacher-id="${fb.teacherId || ''}" data-teacher-name="${fb.teacherName || ''}" data-topic="${fb.topic || ''}" data-message="${(fb.message || '').replace(/"/g, '&quot;')}" style="background: #7c3aed; border-color: #7c3aed; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 0.25rem;">
+                  <i data-lucide="reply" style="width: 13px; height: 13px;"></i>
+                  <span>${isAddressed ? 'تعديل الرد' : 'الرد على المعلم'}</span>
+                </button>
+
+                <button type="button" class="btn btn-sm btn-secondary btn-toggle-status" data-id="${fb.id}" data-status="${fb.status || 'new'}" style="font-size: 0.75rem; display: inline-flex; align-items: center; gap: 0.25rem;" title="تغيير حالة الرأي">
+                  <i data-lucide="${isReviewed ? 'rotate-ccw' : 'check'}" style="width: 13px; height: 13px;"></i>
+                  <span>${isReviewed ? 'إعادة كجديد' : 'تمت المراجعة'}</span>
+                </button>
+
+                <button type="button" class="btn btn-sm btn-secondary btn-delete-feedback" data-id="${fb.id}" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.2); font-size: 0.75rem; padding: 0.35rem 0.5rem;" title="حذف هذا الرأي">
+                  <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Subject & Question reference -->
+            <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; padding: 0.55rem 0.75rem; font-size: 0.78rem;">
+              <span style="color: #7c3aed; font-weight: 700;">الموضوع: </span>
+              <strong style="color: var(--text-primary);">${fb.topic || 'استطلاع رأي عام'}</strong>
+              ${fb.question ? `<div style="color: var(--text-muted); font-size: 0.74rem; margin-top: 0.15rem;">السؤال: ${fb.question}</div>` : ''}
+            </div>
+
+            <!-- Teacher Message Body -->
+            <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; padding: 0.85rem; font-size: 0.88rem; color: var(--text-primary); line-height: 1.6; white-space: pre-line;">
+              ${fb.message || 'لا يوجد نص'}
+            </div>
+
+            <!-- Admin Reply if exists -->
+            ${fb.adminReply ? `
+              <div class="reply-box">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem;">
+                  <span style="font-size: 0.75rem; font-weight: 700; color: #7c3aed; display: flex; align-items: center; gap: 0.35rem;">
+                    <i data-lucide="check-circle-2" style="width: 14px; height: 14px;"></i>
+                    رد الإدارة (${fb.adminName || 'إدارة الأكاديمية'}):
+                  </span>
+                  <span style="font-size: 0.68rem; color: var(--text-muted);">${fb.repliedAt?.seconds ? new Date(fb.repliedAt.seconds * 1000).toLocaleString('ar-EG') : ''}</span>
+                </div>
+                <p style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5; margin: 0; white-space: pre-line;">${fb.adminReply}</p>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+
+      if (window.lucide) window.lucide.createIcons();
+
+      // Attach card action handlers
+      container.querySelectorAll('.btn-reply-feedback').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id;
+          const teacherId = btn.dataset.teacherId;
+          const teacherName = btn.dataset.teacherName;
+          const topic = btn.dataset.topic;
+          const message = btn.dataset.message;
+
+          document.getElementById('replyFeedbackId').value = id;
+          document.getElementById('replyTeacherId').value = teacherId;
+          document.getElementById('replyTopic').value = topic;
+          document.getElementById('replyModalTeacherName').textContent = `المعلم: ${teacherName}`;
+          document.getElementById('replyModalTeacherMessage').textContent = message;
+
+          const fbItem = allFeedbacks.find(f => f.id === id);
+          document.getElementById('replyTextInput').value = fbItem?.adminReply || '';
+
+          const replyModal = document.getElementById('replyFeedbackModal');
+          if (replyModal) replyModal.style.display = 'flex';
+          if (window.lucide) window.lucide.createIcons();
+        });
+      });
+
+      container.querySelectorAll('.btn-toggle-status').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.dataset.id;
+          const currentStatus = btn.dataset.status;
+          const newStatus = (currentStatus === 'reviewed') ? 'new' : 'reviewed';
+          
+          try {
+            await updateDoc(doc(db, "feedbacks", id), {
+              status: newStatus
+            });
+            Toast.success(newStatus === 'reviewed' ? 'تم تحديد الرأي كـ "تمت المراجعة"' : 'تمت إعادة تعيين حالة الرأي');
+          } catch (err) {
+            console.error("Error updating status:", err);
+            Toast.error('فشل تحديث الحالة: ' + err.message);
+          }
+        });
+      });
+
+      container.querySelectorAll('.btn-delete-feedback').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id;
+          showCustomConfirm('هل أنت متأكد من رغبتك في حذف هذا الرأي نهائياً؟', async () => {
+            try {
+              await deleteDoc(doc(db, "feedbacks", id));
+              Toast.success('تم حذف الرأي بنجاح.');
+            } catch (err) {
+              console.error("Error deleting feedback:", err);
+              Toast.error('فشل حذف الرأي: ' + err.message);
+            }
+          });
+        });
+      });
+    }
+  </script>
+</body>
+</html>
