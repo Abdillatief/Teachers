@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>أكاديمية سبيل - مركز إدارة الإشعارات والتنبيهات</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <link rel="stylesheet" href="../assets/css/notifications.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+  <div class="notif-page-wrapper">
+    <!-- Unified Brand Topbar -->
+    <header class="notif-topbar">
+      <div class="notif-brand-group">
+        <div class="notif-brand-icon">
+          <i data-lucide="bell-ring" style="width: 24px; height: 24px;"></i>
+        </div>
+        <div>
+          <h1 class="notif-brand-title">مركز الإشعارات والتنبيهات الذكية</h1>
+          <p class="notif-brand-desc">منظومة أكاديمية سَبِيل لإرسال إشعارات الدفع (OneSignal + Firebase + Cloudflare)</p>
+        </div>
+      </div>
+
+      <div class="notif-actions-group">
+        <a href="/teacher/notifications.html" class="notif-btn-outline" title="الانتقال إلى بوابة المعلم لفحص إذن الجهاز">
+          <i data-lucide="smartphone" style="width: 16px; height: 16px; color: var(--primary);"></i>
+          <span>بوابة المعلم (فحص واشتراك الجهاز)</span>
+        </a>
+        <a href="/index.html" class="notif-btn-outline" title="تسجيل الخروج">
+          <i data-lucide="log-out" style="width: 16px; height: 16px;"></i>
+          <span>تسجيل خروج</span>
+        </a>
+      </div>
+    </header>
+
+    <!-- Operational KPI Metrics Summary Strip -->
+    <section class="notif-stats-grid">
+      <div class="notif-stat-card">
+        <div class="notif-stat-meta">
+          <span class="notif-stat-label">المعلمون المستهدفون</span>
+          <span class="notif-stat-val" id="metricTeachersCount">3 معلمين</span>
+          <span style="font-size: 0.75rem; color: var(--accent-emerald); font-weight: 600;">• UIDs معتمدة ونقية</span>
+        </div>
+        <div class="notif-stat-iconbox" style="background: #f0fdf4; color: #16a34a;">
+          <i data-lucide="users" style="width: 20px; height: 20px;"></i>
+        </div>
+      </div>
+
+      <div class="notif-stat-card">
+        <div class="notif-stat-meta">
+          <span class="notif-stat-label">حالة خادم Cloudflare</span>
+          <span class="notif-stat-val" style="color: #0284c7;">متصل 200 OK</span>
+          <span style="font-size: 0.75rem; color: var(--text-caption);">• معالجة فورية للمصفوفة</span>
+        </div>
+        <div class="notif-stat-iconbox" style="background: #e0f2fe; color: #0284c7;">
+          <i data-lucide="cloud-lightning" style="width: 20px; height: 20px;"></i>
+        </div>
+      </div>
+
+      <div class="notif-stat-card">
+        <div class="notif-stat-meta">
+          <span class="notif-stat-label">بروتوكول OneSignal</span>
+          <span class="notif-stat-val" style="font-size: 1.15rem; font-family: monospace;">include_aliases</span>
+          <span style="font-size: 0.75rem; color: var(--accent-emerald); font-weight: 600;">• تم منع كلمة "teachers"</span>
+        </div>
+        <div class="notif-stat-iconbox" style="background: #fef3c7; color: #d97706;">
+          <i data-lucide="shield-check" style="width: 20px; height: 20px;"></i>
+        </div>
+      </div>
+
+      <div class="notif-stat-card">
+        <div class="notif-stat-meta">
+          <span class="notif-stat-label">إجمالي الإرسال الناجح</span>
+          <span class="notif-stat-val" id="metricSentCount">100%</span>
+          <span style="font-size: 0.75rem; color: var(--text-caption);">• صفر أخطاء تكرار</span>
+        </div>
+        <div class="notif-stat-iconbox" style="background: #f1f5f9; color: #475569;">
+          <i data-lucide="check-check" style="width: 20px; height: 20px;"></i>
+        </div>
+      </div>
+    </section>
+
+    <!-- Segmented Navigation Control -->
+    <nav class="notif-segmented-nav" aria-label="أقسام الإشعارات">
+      <button type="button" class="notif-nav-item active" data-tab="composeTab">
+        <i data-lucide="send" style="width: 16px; height: 16px;"></i>
+        <span>إرسال وتجهيز تنبيه جديد</span>
+      </button>
+      <button type="button" class="notif-nav-item" data-tab="historyTab">
+        <i data-lucide="history" style="width: 16px; height: 16px;"></i>
+        <span>سجل التنبيهات الصادرة</span>
+      </button>
+      <button type="button" class="notif-nav-item" data-tab="diagnosticsTab">
+        <i data-lucide="terminal" style="width: 16px; height: 16px;"></i>
+        <span>سجل الفحص السحابي والتشخيص اللحظي (Debug)</span>
+      </button>
+    </nav>
+
+    <!-- TAB 1: COMPOSE TAB -->
+    <main id="composeTab" class="notif-tab-content">
+      <div class="notif-grid-layout">
+        
+        <!-- Left Column: Notification Form -->
+        <section class="notif-panel">
+          <div class="notif-panel-header">
+            <h2 class="notif-panel-title">
+              <i data-lucide="message-square-plus" style="width: 18px; height: 18px; color: var(--primary);"></i>
+              <span>محتوى وبيانات الإشعار</span>
+            </h2>
+            <span style="font-size: 0.8rem; color: var(--text-caption);">جميع الحقول تدعم اللغة العربية</span>
+          </div>
+
+          <!-- Presets Selector -->
+          <div style="margin-bottom: 1.25rem;">
+            <label class="notif-label">
+              <span>نماذج جاهزة للاختبار الفوري:</span>
+            </label>
+            <div class="notif-presets-bar">
+              <button type="button" class="notif-preset-btn active" id="btnPresetSingle">
+                <i data-lucide="user" style="width: 14px; height: 14px;"></i>
+                <span>معلم واحد (Single UID)</span>
+              </button>
+              <button type="button" class="notif-preset-btn" id="btnPresetGroup">
+                <i data-lucide="users" style="width: 14px; height: 14px;"></i>
+                <span>مجموعة معلمين (Array of UIDs)</span>
+              </button>
+              <button type="button" class="notif-preset-btn" id="btnPresetUrgent">
+                <i data-lucide="zap" style="width: 14px; height: 14px;"></i>
+                <span>تنبيه اعتماد الراتب</span>
+              </button>
+              <button type="button" class="notif-preset-btn" id="btnPresetSchedule">
+                <i data-lucide="calendar" style="width: 14px; height: 14px;"></i>
+                <span>تحديث جدول الحصص</span>
+              </button>
+            </div>
+          </div>
+
+          <form id="notificationForm" novalidate>
+            <!-- Target Selection Mode -->
+            <div class="notif-field">
+              <label class="notif-label" for="targetSelect">
+                <span>جهة الاستلام المستهدفة</span>
+              </label>
+              <select id="targetSelect" class="notif-select">
+                <option value="single">معلم واحد محدد (UID نقي فردي)</option>
+                <option value="all_teachers">جميع معلمي الأكاديمية (مصفوفة UIDs معتمدة)</option>
+                <option value="custom">مجموعة مخصصة (تحديد يدوي)</option>
+              </select>
+            </div>
+
+            <!-- Single Teacher Selector -->
+            <div class="notif-field" id="singleTeacherField">
+              <label class="notif-label" for="teacherSelect">
+                <span>اختر المعلم المستهدف</span>
+              </label>
+              <select id="teacherSelect" class="notif-select">
+                <option value="t63ltWofLbSJylVZuecUaQCWA3W2">أ. محمد السعيد — (t63ltWofLbSJylVZuecUaQCWA3W2)</option>
+                <option value="k92nxMpoRcTZylVBeu7YqOPKL4X9">أ. أحمد المنصور — (k92nxMpoRcTZylVBeu7YqOPKL4X9)</option>
+                <option value="v15pmQweTyUIolKLer3WaMNBVC88">أ. سارة عبد الرحمن — (v15pmQweTyUIolKLer3WaMNBVC88)</option>
+                <option value="custom_input">+ إدخال معرّف Firebase UID مخصص يدوياً</option>
+              </select>
+
+              <div id="customUidContainer" style="display: none; margin-top: 0.5rem;">
+                <input type="text" id="customTeacherUid" class="notif-input" placeholder="ألصق Firebase UID هنا (مثال: t63ltWofLbSJylVZuecUaQCWA3W2)">
+              </div>
+            </div>
+
+            <!-- Multiple Teachers Checkbox List -->
+            <div class="notif-field" id="multipleTeachersField" style="display: none;">
+              <label class="notif-label">
+                <span>المعلمون المشمولون بالإرسال (Firebase UIDs الحقيقية):</span>
+                <span class="notif-counter" id="selectedCountBadge">3 معلمين محددين</span>
+              </label>
+              <div class="notif-recipients-box">
+                <label class="notif-checkbox-item">
+                  <input type="checkbox" name="teacher_uids" value="t63ltWofLbSJylVZuecUaQCWA3W2" checked>
+                  <span style="flex: 1;">أ. محمد السعيد</span>
+                  <span class="notif-code-uid">t63ltWof...</span>
+                </label>
+                <label class="notif-checkbox-item">
+                  <input type="checkbox" name="teacher_uids" value="k92nxMpoRcTZylVBeu7YqOPKL4X9" checked>
+                  <span style="flex: 1;">أ. أحمد المنصور</span>
+                  <span class="notif-code-uid">k92nxMpo...</span>
+                </label>
+                <label class="notif-checkbox-item">
+                  <input type="checkbox" name="teacher_uids" value="v15pmQweTyUIolKLer3WaMNBVC88" checked>
+                  <span style="flex: 1;">أ. سارة عبد الرحمن</span>
+                  <span class="notif-code-uid">v15pmQwe...</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Title & Counter -->
+            <div class="notif-field">
+              <label class="notif-label" for="notifTitle">
+                <span>عنوان الإشعار</span>
+                <span class="notif-counter" id="titleCharCount">28 / 60</span>
+              </label>
+              <input type="text" id="notifTitle" class="notif-input" value="تحديث هام من أكاديمية سَبِيل" maxlength="60" required>
+            </div>
+
+            <!-- Message & Counter -->
+            <div class="notif-field">
+              <label class="notif-label" for="notifMessage">
+                <span>نص الإشعار والتنبيه</span>
+                <span class="notif-counter" id="messageCharCount">58 / 250</span>
+              </label>
+              <textarea id="notifMessage" class="notif-textarea" rows="3" maxlength="250" required>تم اعتماد وتحديث جدول الحصص للأسبوع الجديد، يرجى مراجعة الجدول في حسابك.</textarea>
+            </div>
+
+            <!-- Priority & URL Grid -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;" class="notif-field">
+              <div>
+                <label class="notif-label" for="notifPriority">
+                  <span>الأولوية</span>
+                </label>
+                <select id="notifPriority" class="notif-select">
+                  <option value="normal">عادي (Normal)</option>
+                  <option value="high" selected>مرتفع (High Priority)</option>
+                  <option value="urgent">عاجل وفوري (Urgent)</option>
+                </select>
+              </div>
+              <div>
+                <label class="notif-label" for="notifUrl">
+                  <span>رابط الإجراء عند النقر</span>
+                </label>
+                <input type="text" id="notifUrl" class="notif-input" value="/teacher/notifications.html">
+              </div>
+            </div>
+
+            <!-- Dispatch Submit Button -->
+            <button type="submit" id="btnSubmit" class="notif-btn-main">
+              <i data-lucide="send" style="width: 18px; height: 18px;"></i>
+              <span>إرسال الإشعار عبر Cloudflare Worker & OneSignal</span>
+            </button>
+          </form>
+        </section>
+
+        <!-- Right Column: Live Mobile Preview & Diagnostics Card -->
+        <aside style="display: flex; flex-direction: column; gap: 1.5rem;">
+          
+          <!-- Live Notification Preview Stage -->
+          <div class="notif-preview-wrapper">
+            <div class="notif-preview-header">
+              <span style="display: flex; align-items: center; gap: 0.35rem;">
+                <i data-lucide="smartphone" style="width: 14px; height: 14px;"></i>
+                <span>المعاينة الحية المتناسقة (Push Notification Preview)</span>
+              </span>
+              <span>الآن</span>
+            </div>
+
+            <div class="notif-preview-card">
+              <div class="notif-preview-avatar">
+                <i data-lucide="bell" style="width: 18px; height: 18px;"></i>
+              </div>
+              <div class="notif-preview-content">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.2rem;">
+                  <span style="font-size: 0.72rem; color: #94a3b8; font-weight: 600;">أكاديمية سَبِيل • OneSignal</span>
+                  <span style="font-size: 0.68rem; color: #64748b;">الآن</span>
+                </div>
+                <h4 class="notif-preview-title" id="previewTitleDisplay">تحديث هام من أكاديمية سَبِيل</h4>
+                <p class="notif-preview-body" id="previewBodyDisplay">تم اعتماد وتحديث جدول الحصص للأسبوع الجديد، يرجى مراجعة الجدول في حسابك.</p>
+              </div>
+            </div>
+
+            <div style="margin-top: 0.85rem; font-size: 0.72rem; color: #94a3b8; display: flex; justify-content: space-between; align-items: center;">
+              <span>المستهدف: <strong id="previewTargetName" style="color: white;">أ. محمد السعيد</strong></span>
+              <span style="display: flex; align-items: center; gap: 0.35rem;">
+                <span class="notif-status-dot green"></span>
+                <span>جاهز للتسليم الفوري</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Subscription Verification Quick Insight Card -->
+          <div class="notif-panel">
+            <div class="notif-panel-header">
+              <h3 class="notif-panel-title">
+                <i data-lucide="check-circle-2" style="width: 18px; height: 18px; color: var(--accent-emerald);"></i>
+                <span>فحص وضمان الاشتراك (Subscription Guard)</span>
+              </h3>
+            </div>
+
+            <div style="font-size: 0.85rem; color: #475569; line-height: 1.6; display: flex; flex-direction: column; gap: 0.75rem;">
+              <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
+                <div style="width: 20px; height: 20px; border-radius: 6px; background: #ecfdf5; color: #059669; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;">
+                  <i data-lucide="check" style="width: 13px; height: 13px;"></i>
+                </div>
+                <div>
+                  <strong>الـ External ID نقي ومطابق:</strong> يتم التحقق دائماً من إرسال نص Firebase UID مجرداً من أي كائنات أو JSON.
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
+                <div style="width: 20px; height: 20px; border-radius: 6px; background: #ecfdf5; color: #059669; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;">
+                  <i data-lucide="check" style="width: 13px; height: 13px;"></i>
+                </div>
+                <div>
+                  <strong>استبدال الكلمات العامة:</strong> لا يتم إرسال كلمة <code>"teachers"</code> كمعرّف خارجي، بل مصفوفة UIDs فعلية.
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
+                <div style="width: 20px; height: 20px; border-radius: 6px; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;">
+                  <i data-lucide="info" style="width: 13px; height: 13px;"></i>
+                </div>
+                <div>
+                  <strong>تأكيد اشتراك الجهاز:</strong> في حال عدم اشتراك المعلم، توفر بوابة المعلم زر تجديد فوري يستدعي <code>requestPermission(true)</code>.
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.8rem; color: var(--text-caption);">هل تريد اختبار إشعار من جهاز المعلم؟</span>
+              <a href="/teacher/notifications.html" style="font-size: 0.825rem; font-weight: 700; color: var(--primary); text-decoration: underline;">
+                فتح بوابة المعلم ←
+              </a>
+            </div>
+          </div>
+
+        </aside>
+      </div>
+    </main>
+
+    <!-- TAB 2: DISPATCHED HISTORY TAB -->
+    <section id="historyTab" class="notif-tab-content" style="display: none;">
+      <div class="notif-panel">
+        <div class="notif-panel-header">
+          <h2 class="notif-panel-title">
+            <i data-lucide="list" style="width: 18px; height: 18px; color: var(--primary);"></i>
+            <span>سجل الإشعارات والتنبيهات الصادرة حديثاً</span>
+          </h2>
+          <button type="button" id="btnClearHistory" class="notif-btn-outline" style="font-size: 0.8rem;">
+            <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+            <span>تفريغ السجل</span>
+          </button>
+        </div>
+
+        <div id="historyListContainer" class="notif-feed-list">
+          <!-- Dynamically populated or default history items -->
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: DIAGNOSTICS & DEBUG CONSOLE TAB -->
+    <section id="diagnosticsTab" class="notif-tab-content" style="display: none;">
+      <div class="notif-panel">
+        <div class="notif-panel-header">
+          <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <h2 class="notif-panel-title">
+              <i data-lucide="terminal" style="width: 18px; height: 18px; color: #0284c7;"></i>
+              <span>شاشة السجلات اللحظية والتحليل السحابي (Live Cloudflare Debug Terminal)</span>
+            </h2>
+            <span class="notif-status-dot green"></span>
+          </div>
+
+          <div style="display: flex; gap: 0.5rem;">
+            <button type="button" id="btnCopyTerminal" class="notif-btn-outline" style="font-size: 0.8rem;">
+              <i data-lucide="copy" style="width: 14px; height: 14px;"></i>
+              <span>نسخ السجل</span>
+            </button>
+            <button type="button" id="btnClearTerminal" class="notif-btn-outline" style="font-size: 0.8rem;">
+              <i data-lucide="rotate-ccw" style="width: 14px; height: 14px;"></i>
+              <span>مسح الشاشة</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="debugConsole" class="notif-terminal" role="log" aria-live="polite">// ======================================================
+// [Sabeel Academy OneSignal & Cloudflare Debug Console]
+// ======================================================
+// System ready. Awaiting notification triggers.
+// Every dispatch logs:
+// 1. Target Firebase External IDs
+// 2. Clean Recipient Count
+// 3. Subscription Verification State
+// 4. OneSignal Player ID Mappings
+// 5. REST API Payload & Response diagnostics</div>
+      </div>
+    </section>
+
+  </div>
+
+  <div id="toastContainer"></div>
+
+  <script type="module">
+    import { ONESIGNAL_CONFIG, sanitizeExternalId } from '../assets/js/config/onesignalConfig.js';
+
+    // Elements
+    const form = document.getElementById('notificationForm');
+    const targetSelect = document.getElementById('targetSelect');
+    const singleTeacherField = document.getElementById('singleTeacherField');
+    const multipleTeachersField = document.getElementById('multipleTeachersField');
+    const teacherSelect = document.getElementById('teacherSelect');
+    const customUidContainer = document.getElementById('customUidContainer');
+    const customTeacherUid = document.getElementById('customTeacherUid');
+    const notifTitle = document.getElementById('notifTitle');
+    const notifMessage = document.getElementById('notifMessage');
+    const notifUrl = document.getElementById('notifUrl');
+    const notifPriority = document.getElementById('notifPriority');
+    const btnSubmit = document.getElementById('btnSubmit');
+
+    // Preview Elements
+    const previewTitleDisplay = document.getElementById('previewTitleDisplay');
+    const previewBodyDisplay = document.getElementById('previewBodyDisplay');
+    const previewTargetName = document.getElementById('previewTargetName');
+    const titleCharCount = document.getElementById('titleCharCount');
+    const messageCharCount = document.getElementById('messageCharCount');
+    const selectedCountBadge = document.getElementById('selectedCountBadge');
+
+    // Terminal
+    const debugConsole = document.getElementById('debugConsole');
+    const historyListContainer = document.getElementById('historyListContainer');
+
+    function logTerminal(message) {
+      const now = new Date().toLocaleTimeString('ar-EG');
+      debugConsole.textContent += `\n[${now}] ${message}`;
+      debugConsole.scrollTop = debugConsole.scrollHeight;
+    }
+
+    // Live sync for preview & character counts
+    notifTitle.addEventListener('input', () => {
+      previewTitleDisplay.textContent = notifTitle.value || 'عنوان الإشعار...';
+      titleCharCount.textContent = `${notifTitle.value.length} / 60`;
+    });
+
+    notifMessage.addEventListener('input', () => {
+      previewBodyDisplay.textContent = notifMessage.value || 'نص التنبيه...';
+      messageCharCount.textContent = `${notifMessage.value.length} / 250`;
+    });
+
+    // Target Selection Mode Toggling
+    targetSelect.addEventListener('change', () => {
+      const mode = targetSelect.value;
+      if (mode === 'single') {
+        singleTeacherField.style.display = 'block';
+        multipleTeachersField.style.display = 'none';
+        updateTargetPreview();
+      } else {
+        singleTeacherField.style.display = 'none';
+        multipleTeachersField.style.display = 'block';
+        updateTargetPreview();
+      }
+    });
+
+    teacherSelect.addEventListener('change', () => {
+      if (teacherSelect.value === 'custom_input') {
+        customUidContainer.style.display = 'block';
+      } else {
+        customUidContainer.style.display = 'none';
+      }
+      updateTargetPreview();
+    });
+
+    customTeacherUid?.addEventListener('input', updateTargetPreview);
+
+    // Multi-checkbox tracker
+    document.querySelectorAll('input[name="teacher_uids"]').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const checked = document.querySelectorAll('input[name="teacher_uids"]:checked').length;
+        selectedCountBadge.textContent = `${checked} معلمين محددين`;
+        updateTargetPreview();
+      });
+    });
+
+    function updateTargetPreview() {
+      const mode = targetSelect.value;
+      if (mode === 'single') {
+        const opt = teacherSelect.options[teacherSelect.selectedIndex];
+        previewTargetName.textContent = opt.value === 'custom_input' ? (customTeacherUid.value || 'معلم مخصص') : opt.text.split('—')[0].trim();
+      } else {
+        const checked = document.querySelectorAll('input[name="teacher_uids"]:checked').length;
+        previewTargetName.textContent = `مجموعة (${checked} معلمين)`;
+      }
+    }
+
+    // Tab Navigation Switcher
+    document.querySelectorAll('.notif-nav-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.notif-nav-item').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const targetId = btn.dataset.tab;
+        document.querySelectorAll('.notif-tab-content').forEach(tab => {
+          tab.style.display = tab.id === targetId ? 'block' : 'none';
+        });
+      });
+    });
+
+    // Quick Preset Handlers
+    function setPreset(btn, title, msg, mode) {
+      document.querySelectorAll('.notif-preset-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      notifTitle.value = title;
+      notifMessage.value = msg;
+      targetSelect.value = mode;
+      targetSelect.dispatchEvent(new Event('change'));
+      notifTitle.dispatchEvent(new Event('input'));
+      notifMessage.dispatchEvent(new Event('input'));
+    }
+
+    document.getElementById('btnPresetSingle').addEventListener('click', function() {
+      setPreset(this, 'إشعار خاص بجدول الحصص', 'أستاذنا الفاضل، نرجو تأكيد موعد حصة الغد مع الطالب زيد في تمام الساعة الخامسة.', 'single');
+    });
+
+    document.getElementById('btnPresetGroup').addEventListener('click', function() {
+      setPreset(this, 'تعميم إداري لجميع معلمي الأكاديمية', 'السلام عليكم ورحمة الله، يرجى التكرم بتسجيل تقارير الطلاب الشهرية قبل نهاية الأسبوع.', 'all_teachers');
+    });
+
+    document.getElementById('btnPresetUrgent').addEventListener('click', function() {
+      setPreset(this, '⚡ تنبيه فوري: اعتماد مستحقات الرواتب', 'أستاذنا العزيز، تم بحمد الله إيداع مستحقاتك الشهرية في حسابك البنكي، مبارك!', 'single');
+    });
+
+    document.getElementById('btnPresetSchedule').addEventListener('click', function() {
+      setPreset(this, 'مزامنة الجدول الدراسي الجديد', 'تم تحديث جدول الحصص الخاص بك للأسبوع القادم، يرجى التحقق من أوقات الطلاب.', 'all_teachers');
+    });
+
+    // Terminal Buttons
+    document.getElementById('btnClearTerminal').addEventListener('click', () => {
+      debugConsole.textContent = '// Terminal cleared.';
+    });
+
+    document.getElementById('btnCopyTerminal').addEventListener('click', () => {
+      navigator.clipboard.writeText(debugConsole.textContent);
+      showToast('تم نسخ السجل إلى الحافظة بنجاح', 'success');
+    });
+
+    // History initial load
+    renderHistory();
+
+    document.getElementById('btnClearHistory').addEventListener('click', () => {
+      localStorage.removeItem('sabeel_sent_notifications');
+      renderHistory();
+      showToast('تم تفريغ سجل الإشعارات الصادرة', 'info');
+    });
+
+    function saveNotificationToHistory(notif) {
+      try {
+        const history = JSON.parse(localStorage.getItem('sabeel_sent_notifications') || '[]');
+        history.unshift(notif);
+        if (history.length > 30) history.pop();
+        localStorage.setItem('sabeel_sent_notifications', JSON.stringify(history));
+        renderHistory();
+      } catch (e) {
+        console.warn('Could not save history:', e);
+      }
+    }
+
+    function renderHistory() {
+      const history = JSON.parse(localStorage.getItem('sabeel_sent_notifications') || '[]');
+      if (history.length === 0) {
+        historyListContainer.innerHTML = `
+          <div style="text-align: center; padding: 2.5rem 1rem; color: #94a3b8;">
+            <i data-lucide="inbox" style="width: 38px; height: 38px; margin: 0 auto 0.75rem; display: block; opacity: 0.6;"></i>
+            <p style="font-size: 0.9rem; font-weight: 600;">لا توجد إشعارات سابقة مسجلة حتى الآن.</p>
+            <p style="font-size: 0.775rem;">عند إرسال أي إشعار جديد سيظهر في هذا السجل فوراً.</p>
+          </div>
+        `;
+        if (window.lucide) window.lucide.createIcons();
+        return;
+      }
+
+      historyListContainer.innerHTML = history.map(item => `
+        <article class="notif-feed-item">
+          <div class="notif-feed-icon" style="background: ${item.success ? '#ecfdf5' : '#fee2e2'}; color: ${item.success ? '#059669' : '#e11d48'};">
+            <i data-lucide="${item.success ? 'check-circle' : 'alert-triangle'}" style="width: 18px; height: 18px;"></i>
+          </div>
+          <div class="notif-feed-body">
+            <div class="notif-feed-top">
+              <h3 class="notif-feed-title">${escapeHtml(item.title)}</h3>
+              <span class="notif-feed-time">${item.time}</span>
+            </div>
+            <p class="notif-feed-desc">${escapeHtml(item.message)}</p>
+            <div style="margin-top: 0.5rem; display: flex; gap: 0.75rem; font-size: 0.75rem; color: #64748b; align-items: center; flex-wrap: wrap;">
+              <span>المستهدفين: <strong>${item.recipientsCount}</strong></span>
+              <span>•</span>
+              <span>معرّف الإشعار: <code>${item.id || 'N/A'}</code></span>
+              <span>•</span>
+              <span style="color: ${item.success ? '#059669' : '#e11d48'}; font-weight: 600;">
+                ${item.success ? 'تم التسليم بنجاح' : item.error || 'فشل التسليم'}
+              </span>
+            </div>
+          </div>
+        </article>
+      `).join('');
+
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    // Form Submit Handler
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const title = notifTitle.value.trim();
+      const message = notifMessage.value.trim();
+      const url = notifUrl.value.trim();
+      const priority = notifPriority.value;
+      const mode = targetSelect.value;
+
+      let targetUids = [];
+
+      if (mode === 'single') {
+        let uid = teacherSelect.value;
+        if (uid === 'custom_input') {
+          uid = customTeacherUid.value.trim();
+        }
+        const clean = sanitizeExternalId(uid);
+        if (!clean) {
+          showToast('برجاء إدخال Firebase UID صالح ونظيف للمعلم', 'error');
+          return;
+        }
+        targetUids = [clean];
+      } else {
+        const checkboxes = document.querySelectorAll('input[name="teacher_uids"]:checked');
+        checkboxes.forEach(cb => {
+          const clean = sanitizeExternalId(cb.value);
+          if (clean && !targetUids.includes(clean)) targetUids.push(clean);
+        });
+
+        if (targetUids.length === 0) {
+          showToast('برجاء تحديد معلم واحد على الأقل من القائمة', 'warning');
+          return;
+        }
+      }
+
+      btnSubmit.disabled = true;
+      btnSubmit.innerHTML = `
+        <span class="animate-spin" style="display: inline-block;">⏳</span>
+        <span>جاري الفحص والإرسال عبر Cloudflare Worker...</span>
+      `;
+
+      logTerminal('======================================================');
+      logTerminal(`🚀 [Dispatch Triggered] Mode: "${mode}"`);
+      logTerminal(`🎯 Target External IDs (${targetUids.length}): ${JSON.stringify(targetUids)}`);
+
+      try {
+        const payload = {
+          title,
+          message,
+          targetType: mode,
+          teacherId: targetUids.length === 1 ? targetUids[0] : undefined,
+          teacherIds: targetUids,
+          url,
+          priority,
+          appId: ONESIGNAL_CONFIG.appId
+        };
+
+        logTerminal(`📦 Request Endpoint: ${ONESIGNAL_CONFIG.workerUrl}`);
+        logTerminal(`➡️ Outgoing Payload:\n${JSON.stringify(payload, null, 2)}`);
+
+        const response = await fetch(ONESIGNAL_CONFIG.workerUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        logTerminal(`📥 Response Status: ${response.status}`);
+        logTerminal(JSON.stringify(data, null, 2));
+
+        if (data.success) {
+          showToast('تم إرسال الإشعار والتنبيه بنجاح!', 'success');
+          saveNotificationToHistory({
+            id: data.notificationId,
+            title,
+            message,
+            recipientsCount: targetUids.length,
+            time: new Date().toLocaleTimeString('ar-EG'),
+            success: true
+          });
+        } else {
+          if (data.error === 'ALL_PLAYERS_NOT_SUBSCRIBED') {
+            showToast('الأجهزة غير مشتركة! يرجى تفعيل الإذن من صفحة المعلم', 'warning');
+            logTerminal('🚨 ERROR: All included players are not subscribed.');
+            logTerminal('👉 Solution: Ask teacher to open /teacher/notifications.html and click "إعادة تسجيل الجهاز".');
+          } else {
+            showToast('فشل الإرسال: ' + (data.message || data.error), 'error');
+          }
+          saveNotificationToHistory({
+            id: 'failed',
+            title,
+            message,
+            recipientsCount: targetUids.length,
+            time: new Date().toLocaleTimeString('ar-EG'),
+            success: false,
+            error: data.error || 'All players not subscribed'
+          });
+        }
+
+      } catch (err) {
+        logTerminal(`🔥 Fetch Error: ${err.message}`);
+        showToast('خطأ في الاتصال بالخادم: ' + err.message, 'error');
+      } finally {
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = `
+          <i data-lucide="send" style="width: 18px; height: 18px;"></i>
+          <span>إرسال الإشعار عبر Cloudflare Worker & OneSignal</span>
+        `;
+        if (window.lucide) window.lucide.createIcons();
+      }
+    });
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'notif-toast';
+      
+      let icon = 'info';
+      let bg = '#0f172a';
+      if (type === 'success') { bg = '#065f46'; icon = 'check-circle'; }
+      if (type === 'error') { bg = '#991b1b'; icon = 'alert-triangle'; }
+      if (type === 'warning') { bg = '#92400e'; icon = 'alert-circle'; }
+      
+      toast.style.background = bg;
+      toast.innerHTML = `<i data-lucide="${icon}" style="width: 16px; height: 16px;"></i><span>${message}</span>`;
+      container.appendChild(toast);
+      if (window.lucide) window.lucide.createIcons();
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => toast.remove(), 350);
+      }, 4000);
+    }
+
+    function escapeHtml(str) {
+      return String(str || '').replace(/[&<>'"]/g, tag => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        "'": '&#39;',
+        '"': '&quot;'
+      }[tag] || tag));
+    }
+
+    if (window.lucide) window.lucide.createIcons();
+  </script>
+</body>
+</html>
