@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - الأرباح وصافي الدخل المالي</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js للتحليلات المالية البيانية المتقدمة -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .earnings-kpi-card {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+      transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    }
+    .earnings-kpi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    .earnings-tabs-header {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 0.5rem;
+      margin-bottom: 1.5rem;
+      overflow-x: auto;
+    }
+    .earnings-tab-btn {
+      background: none;
+      border: none;
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      transition: all var(--transition-fast);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .earnings-tab-btn.active, .earnings-tab-btn:hover {
+      background-color: var(--primary-light);
+      color: var(--primary-color);
+    }
+    .earnings-tab-content {
+      display: none;
+    }
+    .earnings-tab-content.active {
+      display: block;
+    }
+    .profit-positive {
+      color: var(--success);
+      font-weight: 800;
+    }
+    .profit-negative {
+      color: var(--danger);
+      font-weight: 800;
+    }
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+    @media print {
+      .sidebar, .navbar, #earningsControlsBar, .no-print {
+        display: none !important;
+      }
+      .main-wrapper {
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      .app-container {
+        display: block !important;
+      }
+    }
+  </style>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        
+        <!-- الترويسة وأزرار التحكم بالدورات المالية -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem;" id="earningsControlsBar">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+              <span class="badge" style="position: static; background: var(--primary-light); color: var(--primary-color); font-weight: 800; font-size: 0.75rem;">الإدارة المالية الشاملة 📊</span>
+              <span style="font-size: 0.85rem; color: var(--text-muted);" id="currentLiveStatusIndicator">● متصل بالبيانات اللحظية</span>
+            </div>
+            <h1 style="font-size: 1.6rem; font-weight: 900; color: var(--text-primary); margin: 0;">الأرباح وصافي الدخل المالي</h1>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">
+              حساب المرتبات المتوقع خروجها بدقة، ومطابقة التحصيلات من الطلاب، وتتبع الحصص التجريبية وأثرها المالي شهرياً.
+            </p>
+          </div>
+
+          <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 0.25rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.2rem 0.4rem;">
+              <button id="btnPrevMonth" class="btn btn-secondary no-print" style="padding: 0.3rem 0.5rem; border: none; background: transparent; cursor: pointer;" title="الشهر السابق">
+                <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
+              </button>
+              <div style="display: flex; align-items: center;">
+                <i data-lucide="calendar" style="width: 16px; height: 16px; color: var(--primary-color); margin-left: 0.3rem;"></i>
+                <select id="monthSelectDropdown" class="form-control" style="border: none; background: transparent; font-weight: 800; padding: 0.35rem 0.4rem; outline: none; cursor: pointer; color: var(--text-primary);">
+                  <!-- تعبئة الشهور ديناميكياً -->
+                </select>
+              </div>
+              <button id="btnNextMonth" class="btn btn-secondary no-print" style="padding: 0.3rem 0.5rem; border: none; background: transparent; cursor: pointer;" title="الشهر التالي">
+                <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i>
+              </button>
+            </div>
+
+            <a href="payroll-reconciliation.html" class="btn btn-secondary no-print" style="font-weight: 700; gap: 0.4rem; color: var(--primary-color);" title="نظام مطابقة وتدقيق الرواتب">
+              <i data-lucide="scale" style="width: 16px; height: 16px;"></i> مطابقة الرواتب
+            </a>
+
+            <button class="btn btn-secondary no-print" id="btnExportCsv" style="font-weight: 700; gap: 0.4rem;" title="تصدير جدول الأرباح كملف CSV">
+              <i data-lucide="download" style="width: 16px; height: 16px;"></i> تصدير كشف
+            </button>
+
+            <button class="btn btn-primary no-print" id="btnPrintReport" style="font-weight: 800; gap: 0.4rem;" title="طباعة التقرير المالي">
+              <i data-lucide="printer" style="width: 16px; height: 16px;"></i> طباعة التقرير
+            </button>
+          </div>
+        </div>
+
+        <!-- كروت الإحصائيات الرئيسية الأربعة للأرباح والمصروفات -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; margin-bottom: 1.75rem;">
+          
+          <!-- كارت 1: صافي الربح المتوقع -->
+          <div class="earnings-kpi-card" style="border-right: 4px solid var(--success);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+              <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-secondary);">صافي الربح المتوقع</span>
+              <div style="background: rgba(34, 197, 94, 0.1); color: var(--success); padding: 0.4rem; border-radius: 8px;">
+                <i data-lucide="trending-up" style="width: 20px; height: 20px;"></i>
+              </div>
+            </div>
+            <h2 id="kpiExpectedNetProfit" style="font-size: 1.85rem; font-weight: 900; color: var(--success); font-family: monospace; margin: 0.25rem 0;">0.00 ج.م</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; margin-top: 0.5rem; border-top: 1px solid var(--border-color); padding-top: 0.5rem;">
+              <span style="color: var(--text-muted);">هامش الربح المتوقع:</span>
+              <strong id="kpiProfitMargin" style="color: var(--success); font-weight: 800;">0%</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
+              <span>الصافي الفعلي المحصل حتى الآن:</span>
+              <strong id="kpiRealizedNetProfit" style="color: var(--text-primary);">0.00 ج.م</strong>
+            </div>
+          </div>
+
+          <!-- كارت 2: إجمالي الإيرادات المتوقعة -->
+          <div class="earnings-kpi-card" style="border-right: 4px solid var(--primary-color);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+              <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-secondary);">إجمالي الإيرادات المتوقعة</span>
+              <div style="background: var(--primary-light); color: var(--primary-color); padding: 0.4rem; border-radius: 8px;">
+                <i data-lucide="banknote" style="width: 20px; height: 20px;"></i>
+              </div>
+            </div>
+            <h2 id="kpiExpectedRevenue" style="font-size: 1.85rem; font-weight: 900; color: var(--primary-color); font-family: monospace; margin: 0.25rem 0;">0.00 ج.م</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; margin-top: 0.5rem; border-top: 1px solid var(--border-color); padding-top: 0.5rem;">
+              <span style="color: var(--text-muted);">المحصل فعلياً بالمدفوعات:</span>
+              <strong id="kpiRealizedRevenue" style="color: var(--primary-color); font-weight: 800;">0.00 ج.م</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
+              <span>الطلاب المسجلون بالجدول:</span>
+              <strong id="kpiScheduledStudentsCount" style="color: var(--text-primary);">0 طالب</strong>
+            </div>
+          </div>
+
+          <!-- كارت 3: إجمالي المرتبات المتوقعة للخروج -->
+          <div class="earnings-kpi-card" style="border-right: 4px solid var(--warning);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+              <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-secondary);">المرتبات المتوقعة للخروج</span>
+              <div style="background: rgba(245, 158, 11, 0.1); color: var(--warning); padding: 0.4rem; border-radius: 8px;">
+                <i data-lucide="wallet" style="width: 20px; height: 20px;"></i>
+              </div>
+            </div>
+            <h2 id="kpiExpectedSalaries" style="font-size: 1.85rem; font-weight: 900; color: var(--warning); font-family: monospace; margin: 0.25rem 0;">0.00 ج.م</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; margin-top: 0.5rem; border-top: 1px solid var(--border-color); padding-top: 0.5rem;">
+              <span style="color: var(--text-muted);">المعتمد/المصروف حتى اللحظة:</span>
+              <strong id="kpiApprovedSalaries" style="color: var(--warning); font-weight: 800;">0.00 ج.م</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
+              <span>عدد المعلمين المجدولين:</span>
+              <strong id="kpiTeachersCount" style="color: var(--text-primary);">0 معلم</strong>
+            </div>
+          </div>
+
+          <!-- كارت 4: إجمالي الساعات والحصص المتوقعة -->
+          <div class="earnings-kpi-card" style="border-right: 4px solid #8b5cf6;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+              <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-secondary);">الساعات والحصص المتوقعة</span>
+              <div style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6; padding: 0.4rem; border-radius: 8px;">
+                <i data-lucide="calendar-check" style="width: 20px; height: 20px;"></i>
+              </div>
+            </div>
+            <h2 id="kpiExpectedHours" style="font-size: 1.85rem; font-weight: 900; color: #8b5cf6; font-family: monospace; margin: 0.25rem 0;">0.00 س</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; margin-top: 0.5rem; border-top: 1px solid var(--border-color); padding-top: 0.5rem;">
+              <span style="color: var(--text-muted);">توزيع الساعات:</span>
+              <strong id="kpiHoursBreakdown" style="color: #8b5cf6; font-weight: 800;">0 س فردي • 0 س جماعي</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
+              <span>إجمالي الحصص المتوقعة:</span>
+              <strong id="kpiExpectedSessions" style="color: var(--text-primary);">0 حصة</strong>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- قسم العرض المزدوج: الرسوم البيانية + بانل جانبي للحصص التجريبية في الشهر -->
+        <div style="display: grid; grid-template-columns: 2.1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; align-items: stretch;" id="dashboardMainGrid">
+          
+          <!-- العمود الأيسر: الرسوم البيانية التحليلية -->
+          <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            
+            <!-- رسم بياني 1: مقارنة الإيرادات مقابل المرتبات وصافي الربح -->
+            <div class="card" style="flex: 1;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="font-weight: 800; font-size: 1.05rem; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                  <i data-lucide="bar-chart-3" style="color: var(--primary-color);"></i> الميزان المالي الشهري (إيرادات vs رواتب vs ربح)
+                </h3>
+              </div>
+              <div style="height: 240px; position: relative;">
+                <canvas id="financialComparisonChart"></canvas>
+              </div>
+            </div>
+
+            <!-- رسم بياني 2: توزيع الإيرادات حسب نوع التدريس -->
+            <div class="card">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <h3 style="font-weight: 800; font-size: 1.05rem; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                  <i data-lucide="pie-chart" style="color: var(--success);"></i> توزيع الإيرادات (فردي vs جماعي)
+                </h3>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: center;">
+                <div style="height: 160px; position: relative;">
+                  <canvas id="teachingTypeChart"></canvas>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.85rem;">
+                  <div style="background: var(--bg-primary); padding: 0.6rem 0.8rem; border-radius: 8px; border-right: 3px solid #0ea5e9;">
+                    <span style="color: var(--text-muted); display: block; font-size: 0.75rem;">حصص فردية:</span>
+                    <strong id="chartIndPercent" style="color: #0ea5e9; font-size: 1rem;">0% (0 ج.م)</strong>
+                  </div>
+                  <div style="background: var(--bg-primary); padding: 0.6rem 0.8rem; border-radius: 8px; border-right: 3px solid #10b981;">
+                    <span style="color: var(--text-muted); display: block; font-size: 0.75rem;">مجموعات جماعية:</span>
+                    <strong id="chartGrpPercent" style="color: #10b981; font-size: 1rem;">0% (0 ج.م)</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- العمود الأيمن / الجانبي: الحصص والطلاب التجريبية في الشهر (Trial Sessions Panel) -->
+          <div class="card" style="border-top: 4px solid #f59e0b; display: flex; flex-direction: column; height: 100%;" id="sideTrialSessionsCard">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+              <div>
+                <h3 style="font-weight: 800; font-size: 1.05rem; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.4rem;">
+                  <i data-lucide="sparkles" style="color: #f59e0b;"></i> الحصص التجريبية للشهر 🧪
+                </h3>
+                <p style="font-size: 0.76rem; color: var(--text-secondary); margin: 0.2rem 0 0 0;">
+                  تتبع الحصص التجريبية، أجور المعلمين، ونسب التحويل لاشتراك فعلي.
+                </p>
+              </div>
+              <span class="badge-pill" id="sideTrialCountBadge" style="background: rgba(245, 158, 11, 0.15); color: #d97706; font-weight: 800;">
+                0 حصة
+              </span>
+            </div>
+
+            <!-- إحصائيات سريعة للجانب التجريبي -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.75rem; background: var(--bg-primary); padding: 0.6rem; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div>
+                <span style="font-size: 0.72rem; color: var(--text-muted); display: block;">تكلفة المعلمين:</span>
+                <strong id="sideTrialCost" style="font-size: 0.95rem; color: var(--warning); font-family: monospace;">0.00 ج.م</strong>
+              </div>
+              <div>
+                <span style="font-size: 0.72rem; color: var(--text-muted); display: block;">نسبة التحويل لاشتراك:</span>
+                <strong id="sideTrialConversion" style="font-size: 0.95rem; color: var(--success); font-family: monospace;">0%</strong>
+              </div>
+            </div>
+
+            <!-- قائمة الحصص التجريبية الجانبية -->
+            <div style="flex: 1; max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem;" id="sideTrialListContainer">
+              <div style="text-align: center; color: var(--text-muted); padding: 2rem 1rem; font-size: 0.82rem;">
+                جاري جلب بيانات الحصص التجريبية لهذا الشهر...
+              </div>
+            </div>
+
+            <!-- رابط سريع لتبويب التجريبي بالكامل -->
+            <div style="margin-top: 0.75rem; pt: 0.5rem; border-top: 1px solid var(--border-color); text-align: center;">
+              <button id="btnSwitchToTrialTab" class="btn btn-secondary" style="width: 100%; font-size: 0.8rem; font-weight: 700; justify-content: center; gap: 0.3rem; padding: 0.4rem;">
+                <i data-lucide="list-filter" style="width: 14px; height: 14px;"></i> عرض كشف الحصص التجريبية بالتفصيل
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- التبويبات والجداول التفصيلية للأرباح والمصروفات -->
+        <div class="card" style="padding: 1.5rem;">
+          
+          <!-- ترويسة التبويبات والبحث والفلترة -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+            <div class="earnings-tabs-header" style="margin-bottom: 0; border-bottom: none; gap: 0.4rem;">
+              <button class="earnings-tab-btn active" data-tab="tab-teachers-profit">
+                <i data-lucide="users"></i> أرباح ورواتب المعلمين
+              </button>
+              <button class="earnings-tab-btn" data-tab="tab-sessions-revenue">
+                <i data-lucide="graduation-cap"></i> إيرادات الحصص والطلاب
+              </button>
+              <button class="earnings-tab-btn" data-tab="tab-trials-detailed">
+                <i data-lucide="sparkles" style="color: #f59e0b;"></i> الحصص التجريبية والتكاليف
+              </button>
+              <button class="earnings-tab-btn" data-tab="tab-realized-payments">
+                <i data-lucide="receipt"></i> المقبوضات الفعلية والمدفوعات
+              </button>
+            </div>
+
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+              <div class="form-group" style="margin: 0;">
+                <input type="text" id="tableSearchInput" class="form-control" placeholder="🔍 بحث بالاسم..." style="padding: 0.4rem 0.8rem; font-size: 0.85rem; width: 200px;">
+              </div>
+              <select id="tableTypeFilter" class="form-control" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; font-weight: 700; width: 140px;">
+                <option value="all">كل الأنواع</option>
+                <option value="individual">حصص فردية</option>
+                <option value="group">مجموعات جماعية</option>
+                <option value="trial">حصص تجريبية</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 1. تبويب جدول أرباح ورواتب المعلمين -->
+          <div id="tab-teachers-profit" class="earnings-tab-content active">
+            <div class="table-container" style="margin-top: 0; max-height: 500px; overflow-y: auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>المعلم المشرف</th>
+                    <th>تسعيرة الساعة</th>
+                    <th>الطلاب والمجموعات</th>
+                    <th>الساعات المتوقعة</th>
+                    <th>الحصص التجريبية</th>
+                    <th>المرتب المتوقع (ج.م)</th>
+                    <th>المعتمد حالياً (ج.م)</th>
+                    <th>الإيراد المتوقع (ج.م)</th>
+                    <th>صافي ربح الأكاديمية</th>
+                    <th>هامش الربح</th>
+                    <th>إجراء</th>
+                  </tr>
+                </thead>
+                <tbody id="teachersProfitTableBody">
+                  <tr><td colspan="11" style="text-align: center; color: var(--text-muted); padding: 2rem;">جاري حساب وتدقيق كشوف الأرباح والرواتب...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 2. تبويب جدول إيرادات الحصص والطلاب والمجموعات -->
+          <div id="tab-sessions-revenue" class="earnings-tab-content">
+            <div class="table-container" style="margin-top: 0; max-height: 500px; overflow-y: auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>الطالب / المجموعة</th>
+                    <th>المعلم المشرف</th>
+                    <th>نوع التدريس</th>
+                    <th>أيام المواعيد المجدولة</th>
+                    <th>الحصص/الشهر</th>
+                    <th>الساعات المتوقعة</th>
+                    <th>إيراد الحصة/الباقة (ج.م)</th>
+                    <th>تكلفة راتب المعلم (ج.م)</th>
+                    <th>صافي ربح الأكاديمية</th>
+                  </tr>
+                </thead>
+                <tbody id="sessionsRevenueTableBody">
+                  <tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 2rem;">جاري تحليل وتدقيق إيرادات الحصص...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 3. تبويب الحصص التجريبية التفصيلي -->
+          <div id="tab-trials-detailed" class="earnings-tab-content">
+            <div style="background: var(--bg-primary); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+              <div>
+                <strong style="font-size: 0.95rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.4rem;">
+                  <i data-lucide="sparkles" style="color: #f59e0b;"></i> كشف الحصص التجريبية المنفذة خلال شهر (<span id="tabTrialMonthLabel">-</span>):
+                </strong>
+                <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0.2rem 0 0 0;">
+                  توضح هذه القائمة جميع الجلسات التجريبية، أجر المعلم المستحق عنها، وما إذا كان الطالب التجريبي قد تحول لاشتراك فعلي.
+                </p>
+              </div>
+              <div style="display: flex; gap: 1.5rem; text-align: left;">
+                <div>
+                  <span style="font-size: 0.75rem; color: var(--text-muted); display: block;">إجمالي تكلفة المعلمين:</span>
+                  <strong id="tabTrialCostTotal" style="font-size: 1.15rem; color: var(--warning); font-family: monospace;">0.00 ج.م</strong>
+                </div>
+                <div>
+                  <span style="font-size: 0.75rem; color: var(--text-muted); display: block;">معدل تحويل الطلاب:</span>
+                  <strong id="tabTrialConversionRate" style="font-size: 1.15rem; color: var(--success); font-family: monospace;">0%</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="table-container" style="margin-top: 0; max-height: 450px; overflow-y: auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>تاريخ ووقت الحصة</th>
+                    <th>اسم الطالب التجريبي</th>
+                    <th>المعلم المشرف</th>
+                    <th>المدة</th>
+                    <th>أجر المعلم المستحق</th>
+                    <th>حالة الحصة</th>
+                    <th>حالة الاشتراك الفعلي</th>
+                    <th>ملاحظات الجلسة</th>
+                  </tr>
+                </thead>
+                <tbody id="trialsTableBody">
+                  <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">جاري جلب بيانات الحصص التجريبية...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 4. تبويب جدول المقبوضات الفعلية والمدفوعات -->
+          <div id="tab-realized-payments" class="earnings-tab-content">
+            <div style="background: var(--bg-primary); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+              <div>
+                <strong style="font-size: 0.95rem; color: var(--text-primary);">مطابقة المحصل الفعلي مقابل التوقعات:</strong>
+                <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0.2rem 0 0 0;">
+                  يقارن النظام بين المبالغ التي دفعها الطلاب في سجل المدفوعات وبين المتوقع وفقاً للجداول.
+                </p>
+              </div>
+              <div style="display: flex; gap: 1.5rem; text-align: left;">
+                <div>
+                  <span style="font-size: 0.75rem; color: var(--text-muted); display: block;">إجمالي المدفوعات المسجلة:</span>
+                  <strong id="tabRealizedPaymentsTotal" style="font-size: 1.2rem; color: var(--primary-color); font-family: monospace;">0.00 ج.م</strong>
+                </div>
+                <div>
+                  <span style="font-size: 0.75rem; color: var(--text-muted); display: block;">نسبة التحصيل من المتوقع:</span>
+                  <strong id="tabRealizedCollectionRate" style="font-size: 1.2rem; color: var(--success); font-family: monospace;">0%</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="table-container" style="margin-top: 0; max-height: 450px; overflow-y: auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>تاريخ الإيصال</th>
+                    <th>اسم الطالب</th>
+                    <th>المبلغ المحصل</th>
+                    <th>طريقة الدفع</th>
+                    <th>الشهر المستهدف</th>
+                    <th>ملاحظات السداد</th>
+                  </tr>
+                </thead>
+                <tbody id="realizedPaymentsTableBody">
+                  <tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">جاري جلب إيصالات الدفع المحصلة...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { 
+      collection, 
+      onSnapshot, 
+      query, 
+      where, 
+      getDocs 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { 
+      calculateExpectedTeacherSalary, 
+      calculateAcademyEarningsOverview 
+    } from '../assets/js/shared/utils/helpers.js';
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+
+    protectRoute('admin');
+
+    let allTeachers = [];
+    let allStudents = [];
+    let allGroups = [];
+    let allSessions = [];
+    let allPayments = [];
+    let allSubscriptions = [];
+    let currentSelectedMonth = new Date().toISOString().substring(0, 7);
+    let latestAcademyOverview = null;
+
+    let chartFinancialComparison = null;
+    let chartTeachingType = null;
+
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        renderSidebar('earnings', 'admin');
+        renderNavbar('الأرباح وصافي الدخل المالي', { name: 'الإدارة العامة', roleName: 'مدير الأكاديمية' });
+
+        initMonthSelector();
+        initRealtimeData();
+        setupEventListeners();
+      }
+    });
+
+    const monthNames = [
+      "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+      "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+    ];
+
+    function initMonthSelector() {
+      const select = document.getElementById('monthSelectDropdown');
+      if (!select) return;
+
+      const now = new Date();
+      const options = [];
+
+      // Next 2 months (+2, +1)
+      for (let i = 2; i >= 1; i--) {
+        const nextDate = new Date(now.getFullYear(), now.getMonth() + i, 1);
+        const nextYm = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`;
+        options.push({
+          value: nextYm,
+          label: `${monthNames[nextDate.getMonth()]} ${nextDate.getFullYear()} (مستقبلي)`
+        });
+      }
+
+      // Current month (0)
+      const currentYm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      options.push({
+        value: currentYm,
+        label: `${monthNames[now.getMonth()]} ${now.getFullYear()} [الشهر الحالي]`
+      });
+
+      // Past 8 months
+      for (let i = 1; i <= 8; i++) {
+        const pastDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const pastYm = `${pastDate.getFullYear()}-${String(pastDate.getMonth() + 1).padStart(2, '0')}`;
+        options.push({
+          value: pastYm,
+          label: `${monthNames[pastDate.getMonth()]} ${pastDate.getFullYear()}`
+        });
+      }
+
+      select.innerHTML = options.map(opt => `
+        <option value="${opt.value}" ${opt.value === currentSelectedMonth ? 'selected' : ''}>${opt.label}</option>
+      `).join('');
+
+      select.addEventListener('change', (e) => {
+        currentSelectedMonth = e.target.value;
+        recalculateAndRenderAll();
+      });
+
+      // Previous and Next month buttons
+      const btnPrev = document.getElementById('btnPrevMonth');
+      const btnNext = document.getElementById('btnNextMonth');
+
+      if (btnPrev) {
+        btnPrev.addEventListener('click', () => {
+          const [y, m] = currentSelectedMonth.split('-').map(Number);
+          const prevDate = new Date(y, m - 2, 1);
+          const prevYm = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+          setMonthSelection(prevYm);
+        });
+      }
+
+      if (btnNext) {
+        btnNext.addEventListener('click', () => {
+          const [y, m] = currentSelectedMonth.split('-').map(Number);
+          const nextDate = new Date(y, m, 1);
+          const nextYm = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`;
+          setMonthSelection(nextYm);
+        });
+      }
+    }
+
+    function setMonthSelection(ym) {
+      currentSelectedMonth = ym;
+      const select = document.getElementById('monthSelectDropdown');
+      if (select) {
+        // Check if option exists, otherwise add it
+        let exists = false;
+        for (let i = 0; i < select.options.length; i++) {
+          if (select.options[i].value === ym) {
+            select.selectedIndex = i;
+            exists = true;
+            break;
+          }
+        }
+        if (!exists) {
+          const [y, m] = ym.split('-').map(Number);
+          const opt = document.createElement('option');
+          opt.value = ym;
+          opt.textContent = `${monthNames[m - 1]} ${y}`;
+          opt.selected = true;
+          select.appendChild(opt);
+        }
+      }
+      recalculateAndRenderAll();
+    }
+
+    function initRealtimeData() {
+      // 1. مزامنة المعلمين
+      onSnapshot(collection(db, "users"), (snap) => {
+        allTeachers = [];
+        snap.forEach(d => {
+          const data = d.data();
+          if (data.role === 'teacher') {
+            allTeachers.push({ uid: d.id, id: d.id, ...data });
+          }
+        });
+        recalculateAndRenderAll();
+      });
+
+      // 2. مزامنة الطلاب
+      onSnapshot(collection(db, "students"), (snap) => {
+        allStudents = [];
+        snap.forEach(d => allStudents.push({ id: d.id, ...d.data() }));
+        recalculateAndRenderAll();
+      });
+
+      // 3. مزامنة المجموعات
+      onSnapshot(collection(db, "groups"), (snap) => {
+        allGroups = [];
+        snap.forEach(d => allGroups.push({ id: d.id, ...d.data() }));
+        recalculateAndRenderAll();
+      });
+
+      // 4. مزامنة الحصص
+      onSnapshot(collection(db, "sessions"), (snap) => {
+        allSessions = [];
+        snap.forEach(d => allSessions.push({ id: d.id, ...d.data() }));
+        recalculateAndRenderAll();
+      });
+
+      // 5. مزامنة المقبوضات والمدفوعات
+      onSnapshot(collection(db, "payments"), (snap) => {
+        allPayments = [];
+        snap.forEach(d => allPayments.push({ id: d.id, ...d.data() }));
+        recalculateAndRenderAll();
+      });
+
+      // 6. مزامنة الاشتراكات للربط التام والمطابقة مع شاشة المدفوعات
+      onSnapshot(collection(db, "subscriptions"), (snap) => {
+        allSubscriptions = [];
+        snap.forEach(d => allSubscriptions.push({ id: d.id, ...d.data() }));
+        recalculateAndRenderAll();
+      });
+    }
+
+    function recalculateAndRenderAll() {
+      if (allTeachers.length === 0 && allStudents.length === 0) return;
+
+      latestAcademyOverview = calculateAcademyEarningsOverview(
+        allTeachers,
+        allStudents,
+        allGroups,
+        allSessions,
+        allPayments,
+        currentSelectedMonth,
+        allSubscriptions
+      );
+
+      renderKPIs(latestAcademyOverview);
+      renderCharts(latestAcademyOverview);
+      renderSideTrialWidget(latestAcademyOverview);
+      renderTables(latestAcademyOverview);
+    }
+
+    function renderKPIs(overview) {
+      // 1. صافي الربح المتوقع
+      const expProfitEl = document.getElementById('kpiExpectedNetProfit');
+      const profitMarginEl = document.getElementById('kpiProfitMargin');
+      const realProfitEl = document.getElementById('kpiRealizedNetProfit');
+
+      if (expProfitEl) {
+        expProfitEl.textContent = `${overview.totalExpectedNetProfit.toFixed(2)} ج.م`;
+        expProfitEl.style.color = overview.totalExpectedNetProfit >= 0 ? 'var(--success)' : 'var(--danger)';
+      }
+      if (profitMarginEl) {
+        profitMarginEl.textContent = `${overview.expectedProfitMargin.toFixed(1)}%`;
+        profitMarginEl.style.color = overview.expectedProfitMargin >= 0 ? 'var(--success)' : 'var(--danger)';
+      }
+      if (realProfitEl) {
+        realProfitEl.textContent = `${overview.totalRealizedNetProfit.toFixed(2)} ج.م`;
+      }
+
+      // 2. الإيرادات المتوقعة (مطابقة تماماً للمدفوعات واشتراكات الشهر)
+      const expRevEl = document.getElementById('kpiExpectedRevenue');
+      const realRevEl = document.getElementById('kpiRealizedRevenue');
+      const schedStdEl = document.getElementById('kpiScheduledStudentsCount');
+
+      if (expRevEl) expRevEl.textContent = `${overview.totalProjectedRevenue.toFixed(2)} ج.م`;
+      if (realRevEl) realRevEl.textContent = `${overview.totalRealizedRevenue.toFixed(2)} ج.م`;
+      if (schedStdEl) {
+        if (overview.expectedRevenueSource === 'subscriptions') {
+          schedStdEl.innerHTML = `<span style="color: var(--primary-color); font-weight: 800;">${overview.subscriptionsCount} اشتراك بالشهر (مطابق للمدفوعات 🔗)</span>`;
+        } else {
+          schedStdEl.textContent = `${overview.activeStudentsCount} طالب (${overview.activeGroupsCount} مجموعة)`;
+        }
+      }
+
+      // 3. المرتبات المتوقعة للخروج
+      const expSalEl = document.getElementById('kpiExpectedSalaries');
+      const appSalEl = document.getElementById('kpiApprovedSalaries');
+      const teachCountEl = document.getElementById('kpiTeachersCount');
+
+      if (expSalEl) expSalEl.textContent = `${overview.totalExpectedSalary.toFixed(2)} ج.م`;
+      if (appSalEl) appSalEl.textContent = `${overview.totalApprovedSalary.toFixed(2)} ج.م`;
+      if (teachCountEl) teachCountEl.textContent = `${overview.teachersCount} معلم`;
+
+      // 4. الساعات والحصص المتوقعة
+      const expHoursEl = document.getElementById('kpiExpectedHours');
+      const hoursBreakdownEl = document.getElementById('kpiHoursBreakdown');
+      const expSessEl = document.getElementById('kpiExpectedSessions');
+
+      if (expHoursEl) expHoursEl.textContent = `${overview.totalExpectedHours.toFixed(1)} س`;
+      if (hoursBreakdownEl) {
+        hoursBreakdownEl.textContent = `${overview.totalExpectedIndHours.toFixed(1)} س فردي • ${overview.totalExpectedGrpHours.toFixed(1)} س جماعي`;
+      }
+      if (expSessEl) expSessEl.textContent = `${overview.totalExpectedSessions} حصة (المعتمد: ${overview.totalApprovedSessions})`;
+    }
+
+    function renderCharts(overview) {
+      // 1. رسم بياني المقارنة المالية
+      const ctxFin = document.getElementById('financialComparisonChart');
+      if (ctxFin) {
+        if (chartFinancialComparison) chartFinancialComparison.destroy();
+
+        chartFinancialComparison = new Chart(ctxFin, {
+          type: 'bar',
+          data: {
+            labels: ['الإيرادات المتوقعة', 'المرتبات المتوقعة', 'صافي الربح المتوقع', 'المقبوضات المحصلة', 'الرواتب المعتمدة'],
+            datasets: [{
+              label: 'القيمة المالية (ج.م)',
+              data: [
+                overview.totalProjectedRevenue,
+                overview.totalExpectedSalary,
+                overview.totalExpectedNetProfit,
+                overview.totalRealizedRevenue,
+                overview.totalApprovedSalary
+              ],
+              backgroundColor: [
+                'rgba(14, 165, 233, 0.85)',
+                'rgba(245, 158, 11, 0.85)',
+                'rgba(34, 197, 94, 0.85)',
+                'rgba(59, 130, 246, 0.65)',
+                'rgba(239, 68, 68, 0.65)'
+              ],
+              borderRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: (context) => ` ${context.parsed.y.toLocaleString()} ج.م`
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  callback: (val) => `${val} ج.م`
+                }
+              }
+            }
+          }
+        });
+      }
+
+      // 2. رسم بياني نسبة التدريس (فردي vs جماعي)
+      const ctxType = document.getElementById('teachingTypeChart');
+      if (ctxType) {
+        if (chartTeachingType) chartTeachingType.destroy();
+
+        const indRev = overview.teachersBreakdown.reduce((sum, t) => {
+          return sum + t.studentsDetails.reduce((sSum, std) => sSum + std.revenue, 0);
+        }, 0);
+        const grpRev = overview.teachersBreakdown.reduce((sum, t) => {
+          return sum + t.groupsDetails.reduce((gSum, grp) => gSum + grp.revenue, 0);
+        }, 0);
+
+        const total = indRev + grpRev || 1;
+        const indP = Math.round((indRev / total) * 100);
+        const grpP = 100 - indP;
+
+        const elInd = document.getElementById('chartIndPercent');
+        const elGrp = document.getElementById('chartGrpPercent');
+        if (elInd) elInd.textContent = `${indP}% (${indRev.toFixed(0)} ج.م)`;
+        if (elGrp) elGrp.textContent = `${grpP}% (${grpRev.toFixed(0)} ج.م)`;
+
+        chartTeachingType = new Chart(ctxType, {
+          type: 'doughnut',
+          data: {
+            labels: ['حصص فردية', 'مجموعات جماعية'],
+            datasets: [{
+              data: [indRev, grpRev],
+              backgroundColor: ['#0ea5e9', '#10b981'],
+              borderWidth: 2,
+              borderColor: '#ffffff'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false }
+            },
+            cutout: '70%'
+          }
+        });
+      }
+    }
+
+    // عرض الحصص التجريبية في البانل الجانبي المميز
+    function renderSideTrialWidget(overview) {
+      const trialStats = overview.trialStats || { totalCount: 0, totalTeacherCost: 0, conversionRate: 0, sessions: [] };
+
+      const badgeEl = document.getElementById('sideTrialCountBadge');
+      const costEl = document.getElementById('sideTrialCost');
+      const convEl = document.getElementById('sideTrialConversion');
+      const containerEl = document.getElementById('sideTrialListContainer');
+
+      if (badgeEl) badgeEl.textContent = `${trialStats.totalCount} حصة تجريبية`;
+      if (costEl) costEl.textContent = `${trialStats.totalTeacherCost.toFixed(2)} ج.م`;
+      if (convEl) convEl.textContent = `${trialStats.conversionRate}% (${trialStats.convertedCount || 0} مشترك)`;
+
+      if (!containerEl) return;
+
+      if (trialStats.sessions.length === 0) {
+        containerEl.innerHTML = `
+          <div style="text-align: center; color: var(--text-muted); padding: 2.5rem 1rem;">
+            <i data-lucide="sparkles" style="width: 28px; height: 28px; color: var(--text-muted); margin-bottom: 0.5rem; opacity: 0.6;"></i>
+            <p style="font-size: 0.85rem; margin: 0;">لا توجد حصص تجريبية مسجلة خلال هذا الشهر (${currentSelectedMonth}).</p>
+          </div>
+        `;
+      } else {
+        containerEl.innerHTML = trialStats.sessions.slice(0, 8).map(s => {
+          const statusBadge = s.status === 'completed' 
+            ? '<span class="badge-pill" style="background: rgba(34, 197, 94, 0.12); color: var(--success); font-size: 0.7rem;">مكتملة ✅</span>'
+            : '<span class="badge-pill" style="background: rgba(239, 68, 68, 0.12); color: var(--danger); font-size: 0.7rem;">غياب / تأجيل</span>';
+
+          const convBadge = s.isConverted 
+            ? '<span class="badge-pill" style="background: rgba(14, 165, 233, 0.12); color: var(--primary-color); font-size: 0.7rem;">مشترك فعلي 🎉</span>'
+            : '<span class="badge-pill" style="background: rgba(245, 158, 11, 0.12); color: #d97706; font-size: 0.7rem;">جلسة تجريبية ⏳</span>';
+
+          return `
+            <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.6rem 0.75rem; display: flex; flex-direction: column; gap: 0.35rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <strong style="font-size: 0.86rem; color: var(--text-primary);">${s.studentName}</strong>
+                ${statusBadge}
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.76rem; color: var(--text-secondary);">
+                <span>المعلم: <strong>${s.teacherName}</strong></span>
+                <span style="color: var(--warning); font-family: monospace; font-weight: 700;">+${s.teacherCost.toFixed(2)} ج.م</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: var(--text-muted); border-top: 1px dashed var(--border-color); padding-top: 0.3rem;">
+                <span>📅 ${s.date} ${s.time ? `(${s.time})` : ''} • ${s.durationMins} د</span>
+                ${convBadge}
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function renderTables(overview) {
+      const searchTerm = (document.getElementById('tableSearchInput')?.value || '').trim().toLowerCase();
+      const typeFilter = document.getElementById('tableTypeFilter')?.value || 'all';
+
+      // 1. جدول أرباح ورواتب المعلمين
+      const teachersTbody = document.getElementById('teachersProfitTableBody');
+      if (teachersTbody) {
+        const filteredTeachers = overview.teachersBreakdown.filter(t => {
+          if (searchTerm && !t.teacherName.toLowerCase().includes(searchTerm) && !t.teacherEmail.toLowerCase().includes(searchTerm)) {
+            return false;
+          }
+          if (typeFilter === 'individual' && t.studentsCount === 0) return false;
+          if (typeFilter === 'group' && t.groupsCount === 0) return false;
+          if (typeFilter === 'trial' && (!t.trialSessionsCount || t.trialSessionsCount === 0)) return false;
+          return true;
+        });
+
+        if (filteredTeachers.length === 0) {
+          teachersTbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--text-muted); padding: 2rem;">لا يوجد معلمين يطابقون خيارات البحث المحددة.</td></tr>`;
+        } else {
+          teachersTbody.innerHTML = filteredTeachers.map(t => {
+            const profitClass = t.expectedNetProfit >= 0 ? 'profit-positive' : 'profit-negative';
+            const trialBadge = t.trialSessionsCount > 0 
+              ? `<span class="badge-pill" style="background: rgba(245, 158, 11, 0.15); color: #d97706; font-size: 0.75rem; font-weight: 800;" title="استثناء: حصص تجريبية مسجلة من أرشيف الحصص">
+                  +${t.trialSessionsCount} تجريبية (${t.trialTeacherCost.toFixed(0)} ج.م) 🧪
+                </span>` 
+              : `<span style="font-size: 0.75rem; color: var(--text-muted);">-</span>`;
+
+            return `
+              <tr>
+                <td>
+                  <strong>${t.teacherName}</strong>
+                  <div style="font-size: 0.72rem; color: var(--text-muted);">${t.teacherEmail}</div>
+                </td>
+                <td>
+                  <div style="font-size: 0.8rem;">فردي: <strong>${t.rateInd} ج.م</strong></div>
+                  <div style="font-size: 0.8rem; color: var(--text-muted);">جماعي: <strong>${t.rateGrp} ج.م</strong></div>
+                </td>
+                <td>
+                  <span class="badge-pill" style="background: rgba(14, 165, 233, 0.1); color: var(--primary-color);">
+                    ${t.studentsCount} طالب فردي
+                  </span>
+                  ${t.groupsCount > 0 ? `
+                    <span class="badge-pill" style="background: rgba(16, 185, 129, 0.1); color: var(--success); margin-top: 0.2rem;">
+                      ${t.groupsCount} مجموعة
+                    </span>
+                  ` : ''}
+                </td>
+                <td>
+                  <strong>${t.expectedTotalHours.toFixed(1)} س</strong>
+                  <div style="font-size: 0.72rem; color: var(--text-muted);">${t.expectedSessionsCount} حصة</div>
+                </td>
+                <td>
+                  ${trialBadge}
+                </td>
+                <td>
+                  <strong style="color: var(--warning); font-family: monospace; font-size: 0.95rem;">${t.expectedSalary.toFixed(2)} ج.م</strong>
+                </td>
+                <td>
+                  <strong style="color: var(--primary-color); font-family: monospace;">${t.approvedSalary.toFixed(2)} ج.م</strong>
+                  <div style="font-size: 0.7rem; color: var(--text-muted);">${t.approvedHours.toFixed(1)} س معتمدة</div>
+                </td>
+                <td>
+                  <strong style="color: var(--primary-color); font-family: monospace; font-size: 0.95rem;">${t.projectedRevenue.toFixed(2)} ج.م</strong>
+                </td>
+                <td>
+                  <strong class="${profitClass}" style="font-family: monospace; font-size: 0.95rem;">${t.expectedNetProfit.toFixed(2)} ج.م</strong>
+                </td>
+                <td>
+                  <span class="badge-pill" style="background: ${t.profitMargin >= 0 ? 'rgba(34, 197, 94, 0.12)' : 'rgba(239, 68, 68, 0.12)'}; color: ${t.profitMargin >= 0 ? 'var(--success)' : 'var(--danger)'};">
+                    ${t.profitMargin.toFixed(1)}%
+                  </span>
+                </td>
+                <td>
+                  <a href="teacher-details.html?id=${t.teacherId}&tab=tab-payroll" class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.78rem; font-weight: 700; gap: 0.25rem;" title="فتح الملف المالي للمعلم">
+                    <i data-lucide="wallet" style="width: 14px; height: 14px; color: var(--success);"></i> الملف المالي
+                  </a>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+      }
+
+      // 2. جدول تفصيل الحصص والطلاب
+      const sessionsTbody = document.getElementById('sessionsRevenueTableBody');
+      if (sessionsTbody) {
+        const filteredItems = overview.itemsBreakdown.filter(item => {
+          if (searchTerm && !item.name.toLowerCase().includes(searchTerm) && !item.teacherName.toLowerCase().includes(searchTerm)) {
+            return false;
+          }
+          if (typeFilter !== 'all' && item.type !== typeFilter) return false;
+          return true;
+        });
+
+        if (filteredItems.length === 0) {
+          sessionsTbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 2rem;">لا توجد حصص أو طلاب يطابقون خيارات التصفية.</td></tr>`;
+        } else {
+          sessionsTbody.innerHTML = filteredItems.map(item => {
+            const isGrp = item.type === 'group';
+            const profitClass = item.netProfit >= 0 ? 'profit-positive' : 'profit-negative';
+            const daysLabel = item.scheduleDays && item.scheduleDays.length > 0 ? item.scheduleDays.join('، ') : 'غير محدد';
+            
+            return `
+              <tr>
+                <td>
+                  <strong>${item.name}</strong>
+                  ${isGrp ? `<div style="font-size: 0.72rem; color: var(--text-muted);">${item.memberCount} دارس بالمجموعة</div>` : ''}
+                </td>
+                <td>${item.teacherName}</td>
+                <td>
+                  <span class="badge-pill" style="background: ${isGrp ? 'rgba(16, 185, 129, 0.1)' : 'rgba(14, 165, 233, 0.1)'}; color: ${isGrp ? 'var(--success)' : 'var(--primary-color)'};">
+                    ${isGrp ? 'مجموعة جماعية' : 'حصة فردية'}
+                  </span>
+                </td>
+                <td><span style="font-size: 0.8rem; color: var(--text-secondary);">${daysLabel}</span></td>
+                <td><strong>${item.sessionsCount}</strong></td>
+                <td>${item.totalHours.toFixed(1)} س (${item.durationMins} د)</td>
+                <td><strong style="color: var(--primary-color); font-family: monospace;">${item.revenue.toFixed(2)} ج.م</strong></td>
+                <td><strong style="color: var(--warning); font-family: monospace;">${item.teacherCost.toFixed(2)} ج.م</strong></td>
+                <td><strong class="${profitClass}" style="font-family: monospace;">${item.netProfit.toFixed(2)} ج.م</strong></td>
+              </tr>
+            `;
+          }).join('');
+        }
+      }
+
+      // 3. جدول الحصص التجريبية التفصيلي
+      const trialsTbody = document.getElementById('trialsTableBody');
+      const tabTrialMonthLabel = document.getElementById('tabTrialMonthLabel');
+      const tabTrialCostTotal = document.getElementById('tabTrialCostTotal');
+      const tabTrialConversionRate = document.getElementById('tabTrialConversionRate');
+
+      if (tabTrialMonthLabel) tabTrialMonthLabel.textContent = currentSelectedMonth;
+      if (tabTrialCostTotal) tabTrialCostTotal.textContent = `${overview.trialStats.totalTeacherCost.toFixed(2)} ج.م`;
+      if (tabTrialConversionRate) tabTrialConversionRate.textContent = `${overview.trialStats.conversionRate}% (${overview.trialStats.convertedCount} طلاب)`;
+
+      if (trialsTbody) {
+        const trialSessions = overview.trialStats.sessions || [];
+        const filteredTrials = trialSessions.filter(s => {
+          if (searchTerm && !s.studentName.toLowerCase().includes(searchTerm) && !s.teacherName.toLowerCase().includes(searchTerm)) {
+            return false;
+          }
+          return true;
+        });
+
+        if (filteredTrials.length === 0) {
+          trialsTbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">لا توجد حصص تجريبية مسجلة لشهر (${currentSelectedMonth}).</td></tr>`;
+        } else {
+          trialsTbody.innerHTML = filteredTrials.map(s => {
+            const statusBadge = s.status === 'completed'
+              ? '<span class="badge-pill" style="background: rgba(34, 197, 94, 0.12); color: var(--success);">حصة مكتملة ✅</span>'
+              : '<span class="badge-pill" style="background: rgba(239, 68, 68, 0.12); color: var(--danger);">تأجيل / غياب</span>';
+
+            const convBadge = s.isConverted
+              ? '<span class="badge-pill" style="background: rgba(14, 165, 233, 0.15); color: var(--primary-color); font-weight: 800;">تم التحويل لاشتراك رسمي 🎉</span>'
+              : '<span class="badge-pill" style="background: rgba(245, 158, 11, 0.12); color: #d97706;">جلسة تجريبية فقط ⏳</span>';
+
+            return `
+              <tr>
+                <td>
+                  <strong>${s.date}</strong>
+                  ${s.time ? `<div style="font-size: 0.72rem; color: var(--text-muted);">${s.time}</div>` : ''}
+                </td>
+                <td><strong>${s.studentName}</strong></td>
+                <td>${s.teacherName}</td>
+                <td>${s.durationMins} دقيقة (${s.durationHours.toFixed(1)} س)</td>
+                <td><strong style="color: var(--warning); font-family: monospace;">${s.teacherCost.toFixed(2)} ج.م</strong></td>
+                <td>${statusBadge}</td>
+                <td>${convBadge}</td>
+                <td style="font-size: 0.8rem; color: var(--text-secondary); max-width: 180px;">${s.notes || '-'}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+      }
+
+      // 4. جدول المقبوضات الفعلية
+      const paymentsTbody = document.getElementById('realizedPaymentsTableBody');
+      if (paymentsTbody) {
+        const targetMonthPayments = allPayments.filter(p => {
+          const pMonth = p.month || (p.paymentDate ? String(p.paymentDate).substring(0, 7) : '');
+          return pMonth === currentSelectedMonth;
+        });
+
+        const paymentsTotal = targetMonthPayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+        const colRate = overview.totalProjectedRevenue > 0
+          ? Math.min(100, Math.round((paymentsTotal / overview.totalProjectedRevenue) * 100))
+          : 0;
+
+        const totalEl = document.getElementById('tabRealizedPaymentsTotal');
+        const rateEl = document.getElementById('tabRealizedCollectionRate');
+        if (totalEl) totalEl.textContent = `${paymentsTotal.toLocaleString()} ج.م`;
+        if (rateEl) rateEl.textContent = `${colRate}%`;
+
+        if (targetMonthPayments.length === 0) {
+          paymentsTbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">لا توجد إيصالات مدفوعات مسجلة لدورة شهر (${currentSelectedMonth}) حتى الآن.</td></tr>`;
+        } else {
+          paymentsTbody.innerHTML = targetMonthPayments.map(p => {
+            const dateStr = p.paymentDate || p.date || (p.createdAt ? new Date(p.createdAt.seconds ? p.createdAt.seconds * 1000 : p.createdAt).toLocaleDateString('ar-EG') : '-');
+            return `
+              <tr>
+                <td>${dateStr}</td>
+                <td><strong>${p.studentName || p.userName || 'طالب'}</strong></td>
+                <td><strong style="color: var(--success); font-family: monospace;">${(parseFloat(p.amount) || 0).toFixed(2)} ج.م</strong></td>
+                <td><span class="badge-pill" style="background: rgba(14, 165, 233, 0.1); color: var(--primary-color);">${p.paymentMethod || 'تحويل إلكتروني'}</span></td>
+                <td><strong style="font-family: monospace;">${p.month || currentSelectedMonth}</strong></td>
+                <td style="font-size: 0.82rem; color: var(--text-secondary);">${p.notes || 'سداد اشتراك شهري'}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+      }
+
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function setupEventListeners() {
+      // تبديل التبويبات
+      document.querySelectorAll('.earnings-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.earnings-tab-btn').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.earnings-tab-content').forEach(c => c.classList.remove('active'));
+
+          btn.classList.add('active');
+          const targetId = btn.dataset.tab;
+          const targetContent = document.getElementById(targetId);
+          if (targetContent) targetContent.classList.add('active');
+        });
+      });
+
+      // زر الانتقال لتبويب الحصص التجريبية من البانل الجانبي
+      const btnSwitchTrial = document.getElementById('btnSwitchToTrialTab');
+      if (btnSwitchTrial) {
+        btnSwitchTrial.addEventListener('click', () => {
+          document.querySelectorAll('.earnings-tab-btn').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.earnings-tab-content').forEach(c => c.classList.remove('active'));
+
+          const trialTabBtn = document.querySelector('[data-tab="tab-trials-detailed"]');
+          if (trialTabBtn) trialTabBtn.classList.add('active');
+
+          const trialContent = document.getElementById('tab-trials-detailed');
+          if (trialContent) trialContent.classList.add('active');
+
+          // Scroll to table smoothly
+          trialContent.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      }
+
+      // البحث والتصفية
+      const searchInput = document.getElementById('tableSearchInput');
+      if (searchInput) {
+        searchInput.addEventListener('input', () => {
+          if (latestAcademyOverview) renderTables(latestAcademyOverview);
+        });
+      }
+
+      const typeFilter = document.getElementById('tableTypeFilter');
+      if (typeFilter) {
+        typeFilter.addEventListener('change', () => {
+          if (latestAcademyOverview) renderTables(latestAcademyOverview);
+        });
+      }
+
+      // طباعة التقرير
+      const printBtn = document.getElementById('btnPrintReport');
+      if (printBtn) {
+        printBtn.addEventListener('click', () => {
+          window.print();
+        });
+      }
+
+      // تصدير CSV
+      const exportBtn = document.getElementById('btnExportCsv');
+      if (exportBtn) {
+        exportBtn.addEventListener('click', () => {
+          exportOverviewToCsv();
+        });
+      }
+    }
+
+    function exportOverviewToCsv() {
+      if (!latestAcademyOverview || !latestAcademyOverview.teachersBreakdown) {
+        Toast.danger("لا توجد بيانات متاحة للتصدير حالياً.");
+        return;
+      }
+
+      const rows = [
+        ["المعلم", "سعر الساعة فردي", "سعر الساعة جماعي", "الطلاب المجدولين", "المجموعات", "الساعات المتوقعة", "الحصص التجريبية", "تكلفة التجريبي (ج.م)", "المرتب المتوقع (ج.م)", "المرتب المعتمد (ج.م)", "الإيراد المتوقع (ج.م)", "صافي ربح الأكاديمية (ج.م)", "هامش الربح %"]
+      ];
+
+      latestAcademyOverview.teachersBreakdown.forEach(t => {
+        rows.push([
+          `"${t.teacherName}"`,
+          t.rateInd,
+          t.rateGrp,
+          t.studentsCount,
+          t.groupsCount,
+          t.expectedTotalHours.toFixed(1),
+          t.trialSessionsCount || 0,
+          (t.trialTeacherCost || 0).toFixed(2),
+          t.expectedSalary.toFixed(2),
+          t.approvedSalary.toFixed(2),
+          t.projectedRevenue.toFixed(2),
+          t.expectedNetProfit.toFixed(2),
+          `${t.profitMargin.toFixed(1)}%`
+        ]);
+      });
+
+      const csvContent = "\uFEFF" + rows.map(e => e.join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `تقرير_أرباح_الأكاديمية_والحصص_التجريبية_${currentSelectedMonth}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      Toast.success("تم تصدير كشف أرباح المعلمين والحصص التجريبية كملف CSV بنجاح! 📥");
+    }
+  </script>
+</body>
+</html>
