@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - نظام مطابقة الرواتب (Payroll Reconciliation)</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+
+  <style>
+    /* Styling Specific to Payroll Reconciliation System */
+    .recon-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .recon-kpi-card {
+      background: var(--bg-surface);
+      border-radius: var(--border-radius);
+      border: 1px solid var(--border-color);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .recon-kpi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .recon-kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      left: 0;
+      height: 4px;
+      background: var(--card-accent, var(--primary-color));
+    }
+
+    .recon-nav-tabs {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 2px solid var(--border-color);
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.25rem;
+      overflow-x: auto;
+    }
+
+    .recon-nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.25rem;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-weight: 700;
+      font-size: 0.95rem;
+      border-radius: var(--border-radius) var(--border-radius) 0 0;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .recon-nav-btn:hover {
+      color: var(--primary-color);
+      background: rgba(13, 148, 136, 0.05);
+    }
+
+    .recon-nav-btn.active {
+      color: var(--primary-color);
+      font-weight: 800;
+      background: var(--bg-surface);
+    }
+
+    .recon-nav-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      right: 0;
+      left: 0;
+      height: 3px;
+      background: var(--primary-color);
+      border-radius: 2px 2px 0 0;
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      z-index: 10000;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-card {
+      background: var(--bg-surface);
+      border-radius: var(--border-radius);
+      border: 1px solid var(--border-color);
+      width: 100%;
+      max-width: 960px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      animation: modalFadeIn 0.2s ease-out;
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.98); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .modal-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-primary);
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .modal-footer {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--border-color);
+      background: var(--bg-primary);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+    }
+
+    .modal-tab-btn {
+      padding: 0.6rem 1rem;
+      border: 1px solid var(--border-color);
+      background: var(--bg-primary);
+      color: var(--text-secondary);
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s ease;
+    }
+
+    .modal-tab-btn.active {
+      background: var(--primary-color);
+      color: #fff;
+      border-color: var(--primary-color);
+    }
+
+    .spin {
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
+    @media print {
+      .sidebar, .navbar, .recon-nav-tabs, .recon-controls-bar, .btn-inspect-recon, .btn-quick-audit, #btnPrevMonth, #btnNextMonth, #btnRefreshRecon, #btnExportReconCsv, #btnPrintRecon {
+        display: none !important;
+      }
+      .main-wrapper {
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      .content-body {
+        padding: 0 !important;
+      }
+      .card {
+        border: none !important;
+        box-shadow: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        
+        <!-- Page Header & Top Toolbar -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <h1 style="font-size: 1.5rem; font-weight: 900; color: var(--text-primary); margin: 0;">
+                نظام مطابقة الرواتب (Payroll Reconciliation)
+              </h1>
+              <span class="badge badge-primary" style="font-weight: 800; font-size: 0.75rem;">إصدار التدقيق المباشر 2.0</span>
+            </div>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; margin-top: 0.25rem;">
+              فحص فوري دقيق ومقارنة بين الحصص المسجلة في قاعدة البيانات والمرتب المحسوب مع كشف وتفسير أسباب الاستبعاد بضغطة واحدة.
+            </p>
+          </div>
+
+          <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+            <!-- Month Selector Controls -->
+            <div style="display: flex; align-items: center; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 0.2rem 0.4rem; box-shadow: var(--shadow-sm);">
+              <button id="btnPrevMonth" class="btn btn-secondary" style="padding: 0.35rem 0.6rem; border: none;" title="الشهر السابق">
+                <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
+              </button>
+              <input type="month" id="reconMonthSelect" style="border: none; outline: none; font-weight: 800; font-size: 0.88rem; color: var(--text-primary); background: transparent; padding: 0.2rem 0.5rem; cursor: pointer;">
+              <button id="btnNextMonth" class="btn btn-secondary" style="padding: 0.35rem 0.6rem; border: none;" title="الشهر التالي">
+                <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i>
+              </button>
+            </div>
+
+            <button id="btnRefreshRecon" class="btn btn-secondary" style="font-weight: 800; gap: 0.4rem; font-size: 0.85rem;">
+              <i data-lucide="refresh-cw"></i> تحديث وفحص مباشر
+            </button>
+
+            <button id="btnExportReconCsv" class="btn btn-secondary" style="font-weight: 800; gap: 0.4rem; font-size: 0.85rem; color: var(--primary-color);">
+              <i data-lucide="file-spreadsheet"></i> تصدير Excel/CSV
+            </button>
+
+            <button id="btnPrintRecon" class="btn btn-secondary" style="font-weight: 800; gap: 0.4rem; font-size: 0.85rem;">
+              <i data-lucide="printer"></i> طباعة الكشف
+            </button>
+          </div>
+        </div>
+
+        <!-- KPI Summary Cards -->
+        <div class="recon-kpi-grid">
+          <div class="recon-kpi-card" style="--card-accent: var(--primary-color);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <div style="font-size: 0.8rem; font-weight: 800; color: var(--text-secondary);">إجمالي المعلمين المفحوصين</div>
+                <div id="kpiTotalTeachers" style="font-size: 1.6rem; font-weight: 900; color: var(--text-primary); margin-top: 0.25rem;">-</div>
+              </div>
+              <div style="width: 40px; height: 40px; border-radius: 8px; background: rgba(13, 148, 136, 0.1); color: var(--primary-color); display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="users" style="width: 20px; height: 20px;"></i>
+              </div>
+            </div>
+            <div id="kpiSessionsSummary" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">جاري فحص الجلسات...</div>
+          </div>
+
+          <div class="recon-kpi-card" style="--card-accent: var(--success);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <div style="font-size: 0.8rem; font-weight: 800; color: var(--text-secondary);">متطابق بنسبة 100% 🟢</div>
+                <div id="kpiBalancedCount" style="font-size: 1.6rem; font-weight: 900; color: var(--success); margin-top: 0.25rem;">-</div>
+              </div>
+              <div style="width: 40px; height: 40px; border-radius: 8px; background: rgba(34, 197, 94, 0.1); color: var(--success); display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="check-check" style="width: 20px; height: 20px;"></i>
+              </div>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">سليم تماماً وبلا أي فروقات غير مفسرة</div>
+          </div>
+
+          <div class="recon-kpi-card" style="--card-accent: var(--warning);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <div style="font-size: 0.8rem; font-weight: 800; color: var(--text-secondary);">فروقات مفسرة ومقبولة 🟡</div>
+                <div id="kpiAcceptableCount" style="font-size: 1.6rem; font-weight: 900; color: var(--warning); margin-top: 0.25rem;">-</div>
+              </div>
+              <div style="width: 40px; height: 40px; border-radius: 8px; background: rgba(245, 158, 11, 0.1); color: var(--warning); display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="info" style="width: 20px; height: 20px;"></i>
+              </div>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">حصص بانتظار الاعتماد أو غياب مبرر</div>
+          </div>
+
+          <div class="recon-kpi-card" style="--card-accent: var(--danger);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <div style="font-size: 0.8rem; font-weight: 800; color: var(--text-secondary);">يتطلب مراجعة وتدقيق 🔴</div>
+                <div id="kpiCriticalCount" style="font-size: 1.6rem; font-weight: 900; color: var(--danger); margin-top: 0.25rem;">-</div>
+              </div>
+              <div style="width: 40px; height: 40px; border-radius: 8px; background: rgba(239, 68, 68, 0.1); color: var(--danger); display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="alert-triangle" style="width: 20px; height: 20px;"></i>
+              </div>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">فروقات تحتاج تدخل ومراجعة الإدارة</div>
+          </div>
+
+          <div class="recon-kpi-card" style="--card-accent: #6366f1;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <div style="font-size: 0.8rem; font-weight: 800; color: var(--text-secondary);">إجمالي الفروقات المحتملة</div>
+                <div id="kpiDiscrepancyVolume" style="font-size: 1.6rem; font-weight: 900; color: #4f46e5; margin-top: 0.25rem;">-</div>
+              </div>
+              <div style="width: 40px; height: 40px; border-radius: 8px; background: rgba(99, 102, 241, 0.1); color: #6366f1; display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="scale" style="width: 20px; height: 20px;"></i>
+              </div>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">مجموع قيم الحصص المعلقة والتسويات</div>
+          </div>
+        </div>
+
+        <!-- Navigation Tabs Bar -->
+        <div class="recon-nav-tabs">
+          <button class="recon-nav-btn active" data-tab-target="tab-current-reconciliation">
+            <i data-lucide="scale"></i> مطابقة المرتب الحالي (Current Salary)
+          </button>
+          <button class="recon-nav-btn" data-tab-target="tab-archive-reconciliation">
+            <i data-lucide="archive"></i> مطابقة رواتب الأرشيف (Archive Reconciliation)
+          </button>
+          <button class="recon-nav-btn" data-tab-target="tab-audit-logs">
+            <i data-lucide="history"></i> سجل عمليات وتدقيق المطابقات (Audit Logs)
+          </button>
+        </div>
+
+        <!-- ========================================================== -->
+        <!-- TAB 1: Current Month Payroll Reconciliation                -->
+        <!-- ========================================================== -->
+        <div id="tab-current-reconciliation" class="recon-tab-pane" style="display: block;">
+          
+          <!-- Filter and Search Toolbar -->
+          <div class="card recon-controls-bar" style="margin-bottom: 1.25rem; padding: 1rem 1.25rem;">
+            <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 1rem; align-items: center;">
+              <div style="display: flex; gap: 0.6rem; align-items: center; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 0.5rem 0.85rem;">
+                <i data-lucide="search" style="width: 18px; height: 18px; color: var(--text-muted);"></i>
+                <input type="text" id="searchTeacherInput" placeholder="البحث باسم المعلم أو البريد الإلكتروني..." style="border: none; outline: none; background: transparent; width: 100%; font-size: 0.88rem; color: var(--text-primary); font-weight: 600;">
+              </div>
+
+              <div style="display: flex; gap: 0.6rem; align-items: center; justify-content: flex-end;">
+                <span style="font-size: 0.84rem; font-weight: 700; color: var(--text-secondary); white-space: nowrap;">مؤشر السلامة:</span>
+                <select id="filterIntegrityStatus" class="form-control" style="font-weight: 700; font-size: 0.85rem; padding: 0.45rem 0.85rem; width: auto;">
+                  <option value="all">جميع الحالات</option>
+                  <option value="balanced">🟢 متطابق بنسبة 100%</option>
+                  <option value="acceptable_discrepancy">🟡 فروقات مفسرة ومقبولة</option>
+                  <option value="critical_discrepancy">🔴 يتطلب فحص وتدقيق</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Current Reconciliation Main Table -->
+          <div class="card" style="padding: 0; overflow: hidden;">
+            <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+              <h3 style="font-size: 1.05rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="check-circle" style="color: var(--primary-color); width: 20px;"></i>
+                كشف مطابقة رواتب المعلمين للدورة المحددة
+              </h3>
+              <span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">
+                * الحساب يتم بالكامل من أصل الجلسات الخام (Raw Data) مع كشف أسباب الاستبعاد
+              </span>
+            </div>
+
+            <div class="table-container" style="margin: 0;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>المعلم والتسعيرة</th>
+                    <th>الحصص (معتمدة / مسجلة)</th>
+                    <th>الساعات المحسوبة</th>
+                    <th>المرتب المحسوب (Raw DB)</th>
+                    <th>المرتب المتوقع (جدول الطلاب)</th>
+                    <th>الفارق المالي</th>
+                    <th>مؤشر سلامة الراتب</th>
+                    <th style="text-align: center;">إجراءات الفحص</th>
+                  </tr>
+                </thead>
+                <tbody id="tblCurrentReconBody">
+                  <tr>
+                    <td colspan="8" style="text-align: center; padding: 3rem; color: var(--text-muted);">
+                      <i data-lucide="loader-2" class="spin" style="width: 28px; height: 28px; margin-bottom: 0.5rem;"></i>
+                      <div>جاري مطابقة وفحص الرواتب مباشرة من قاعدة البيانات...</div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================================== -->
+        <!-- TAB 2: Archive Salary Reconciliation                       -->
+        <!-- ========================================================== -->
+        <div id="tab-archive-reconciliation" class="recon-tab-pane" style="display: none;">
+          <div class="card recon-controls-bar" style="margin-bottom: 1.25rem; padding: 1rem 1.25rem;">
+            <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 1rem; align-items: center;">
+              <div style="display: flex; gap: 0.6rem; align-items: center; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 0.5rem 0.85rem;">
+                <i data-lucide="search" style="width: 18px; height: 18px; color: var(--text-muted);"></i>
+                <input type="text" id="searchArchiveTeacherInput" placeholder="البحث باسم المعلم في الأرشيف..." style="border: none; outline: none; background: transparent; width: 100%; font-size: 0.88rem; color: var(--text-primary); font-weight: 600;">
+              </div>
+
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <span style="font-size: 0.84rem; font-weight: 700; color: var(--text-secondary); white-space: nowrap;">الدورة:</span>
+                <select id="filterArchiveMonthSelect" class="form-control" style="font-weight: 700; font-size: 0.85rem; padding: 0.45rem 0.85rem;">
+                  <option value="all">جميع الشهور المؤرشفة</option>
+                </select>
+              </div>
+
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <span style="font-size: 0.84rem; font-weight: 700; color: var(--text-secondary); white-space: nowrap;">الحالة:</span>
+                <select id="filterArchiveStatus" class="form-control" style="font-weight: 700; font-size: 0.85rem; padding: 0.45rem 0.85rem;">
+                  <option value="all">جميع الحالات</option>
+                  <option value="balanced">🟢 مطابق للأرشيف 100%</option>
+                  <option value="acceptable_discrepancy">🟡 فروقات مسواة</option>
+                  <option value="critical_discrepancy">🔴 عدم تطابق أرشيفي</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="padding: 0; overflow: hidden;">
+            <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+              <h3 style="font-size: 1.05rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="archive" style="color: var(--primary-color); width: 20px;"></i>
+                مطابقة رواتب الأرشيف التاريخية مع الجلسات الفعلية
+              </h3>
+              <span style="font-size: 0.8rem; color: var(--text-secondary);">
+                يكشف أي تعديل تم بعد أرشفة الدورة المالية أو وجود جلسات غير مرتبطة
+              </span>
+            </div>
+
+            <div class="table-container" style="margin: 0;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>المعلم</th>
+                    <th>الدورة الشهرية</th>
+                    <th>المبلغ المؤرشف</th>
+                    <th>المعاد حسابه من الجلسات</th>
+                    <th>فارق المبلغ</th>
+                    <th>مؤشر التطابق الأرشيفي</th>
+                    <th>المشرف والملاحظات</th>
+                    <th style="text-align: center;">إجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="tblArchiveReconBody">
+                  <tr>
+                    <td colspan="8" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
+                      جاري تحميل بيانات الأرشيف...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================================== -->
+        <!-- TAB 3: Reconciliation Audit Logs History                   -->
+        <!-- ========================================================== -->
+        <div id="tab-audit-logs" class="recon-tab-pane" style="display: none;">
+          <div class="card" style="padding: 0; overflow: hidden;">
+            <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <h3 style="font-size: 1.05rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                  <i data-lucide="shield-check" style="color: var(--success); width: 20px;"></i>
+                  سجل عمليات التدقيق والمطابقة الرسمية (Reconciliation Audit Trail)
+                </h3>
+                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                  يتم توثيق كل عملية فحص ومطابقة رسمية يقوم بها مسؤولو الإدارة في مجموعة (payrollReconciliationLogs)
+                </div>
+              </div>
+            </div>
+
+            <div class="table-container" style="margin: 0;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>تاريخ ووقت التدقيق</th>
+                    <th>المعلم المفحوص</th>
+                    <th>الشهر المالي</th>
+                    <th>النتيجة والمؤشر</th>
+                    <th>المرتب المحسوب</th>
+                    <th>قيمة الفارق المالي</th>
+                    <th>المشرف المعتمد والملاحظات</th>
+                  </tr>
+                </thead>
+                <tbody id="tblAuditLogsBody">
+                  <tr>
+                    <td colspan="7" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
+                      جاري تحميل سجل التدقيق...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ========================================================== -->
+  <!-- MODAL: Inspector for Current Month Teacher Discrepancies   -->
+  <!-- ========================================================== -->
+  <div class="modal-overlay" id="reconDetailModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div style="width: 38px; height: 38px; border-radius: 8px; background: rgba(13, 148, 136, 0.1); color: var(--primary-color); display: flex; align-items: center; justify-content: center;">
+            <i data-lucide="search" style="width: 20px; height: 20px;"></i>
+          </div>
+          <div>
+            <h3 style="font-size: 1.15rem; font-weight: 900; margin: 0; color: var(--text-primary);">
+              فحص وتفسير راتب: <span id="modalTeacherName" style="color: var(--primary-color);">-</span>
+            </h3>
+            <div style="font-size: 0.8rem; color: var(--text-secondary);">
+              الدورة المالية: <strong id="modalMonthDisplay">-</strong> | حالة الراتب: <span id="modalStatusBadge" class="badge badge-success">-</span>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-secondary close-recon-modal" style="padding: 0.4rem; border: none;">
+          <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Rationale Callout Banner -->
+        <div style="background: rgba(13, 148, 136, 0.05); border: 1px solid rgba(13, 148, 136, 0.2); border-radius: 8px; padding: 0.85rem 1.15rem; margin-bottom: 1.25rem; display: flex; align-items: flex-start; gap: 0.75rem;">
+          <i data-lucide="info" style="color: var(--primary-color); width: 20px; height: 20px; flex-shrink: 0; margin-top: 0.15rem;"></i>
+          <div style="font-size: 0.85rem; color: var(--text-primary); line-height: 1.5;">
+            <strong>تفسير النظام للفروقات: </strong>
+            <span id="modalStatusRationale">-</span>
+          </div>
+        </div>
+
+        <!-- High-level Metric Comparison Bar -->
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1.25rem;">
+          <div style="background: var(--bg-primary); padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted);">الحصص (مسجلة / معتمدة / مستبعدة)</div>
+            <div style="font-size: 1.15rem; font-weight: 900; color: var(--text-primary); margin-top: 0.2rem;">
+              <span id="modalMetricIncludedSessions" style="color: var(--success);">0</span> / 
+              <span id="modalMetricRecordedSessions">0</span> 
+              <span style="font-size: 0.8rem; color: var(--warning); font-weight: 800;">(<span id="modalMetricExcludedSessions">0</span> مستبعدة)</span>
+            </div>
+          </div>
+
+          <div style="background: var(--bg-primary); padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted);">الساعات المعتمدة المحتسبة</div>
+            <div id="modalMetricIncludedHours" style="font-size: 1.15rem; font-weight: 900; color: var(--primary-color); margin-top: 0.2rem;">0 س</div>
+          </div>
+
+          <div style="background: var(--bg-primary); padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted);">المرتب المحسوب (Raw DB)</div>
+            <div id="modalMetricCalculatedSalary" style="font-size: 1.15rem; font-weight: 900; color: var(--primary-color); margin-top: 0.2rem;">0 ج.م</div>
+          </div>
+
+          <div style="background: var(--bg-primary); padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted);">المتوقع vs الفارق</div>
+            <div style="font-size: 1.15rem; font-weight: 900; margin-top: 0.2rem;">
+              <span id="modalMetricExpectedSalary" style="font-size: 0.95rem; color: var(--text-secondary);">0</span>
+              <span id="modalMetricDiscrepancy" style="font-size: 1.05rem; font-weight: 900; color: var(--warning); margin-right: 0.35rem;">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Sub-Navigation Tabs -->
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; justify-content: space-between; align-items: center;">
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="modal-tab-btn active" data-target="modal-tab-excluded">
+              <i data-lucide="alert-circle" style="width: 15px;"></i> الحصص المستبعدة وأسبابها
+            </button>
+            <button class="modal-tab-btn" data-target="modal-tab-included">
+              <i data-lucide="check-circle-2" style="width: 15px;"></i> الحصص المحتسبة في الراتب
+            </button>
+            <button class="modal-tab-btn" data-target="modal-tab-formula">
+              <i data-lucide="calculator" style="width: 15px;"></i> معادلة الاحتساب المالي
+            </button>
+          </div>
+
+          <div id="modalBatchApproveContainer"></div>
+        </div>
+
+        <!-- SUBTAB 1: Excluded Sessions -->
+        <div id="modal-tab-excluded" class="modal-tab-pane" style="display: block;">
+          <div class="table-container" style="max-height: 280px; margin: 0;">
+            <table>
+              <thead>
+                <tr>
+                  <th>تاريخ الحصة</th>
+                  <th>الدارس / المجموعة</th>
+                  <th>المدة</th>
+                  <th>سبب الاستبعاد الدقيق</th>
+                  <th>الأثر المالي المتوقع</th>
+                  <th style="text-align: center;">إجراء سريع</th>
+                </tr>
+              </thead>
+              <tbody id="tblModalExcludedSessions"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SUBTAB 2: Included Sessions -->
+        <div id="modal-tab-included" class="modal-tab-pane" style="display: none;">
+          <div class="table-container" style="max-height: 280px; margin: 0;">
+            <table>
+              <thead>
+                <tr>
+                  <th>تاريخ الحصة</th>
+                  <th>الدارس / المجموعة</th>
+                  <th>المدة والساعات</th>
+                  <th>تسعيرة الساعة</th>
+                  <th>المبلغ المستحق</th>
+                  <th>الحالة</th>
+                </tr>
+              </thead>
+              <tbody id="tblModalIncludedSessions"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SUBTAB 3: Formula & Scheduling Analysis -->
+        <div id="modal-tab-formula" class="modal-tab-pane" style="display: none;">
+          <div id="modalFormulaContent"></div>
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button id="btnModalSaveAudit" class="btn btn-primary" style="font-weight: 800; gap: 0.4rem; font-size: 0.85rem;">
+          <i data-lucide="shield-check"></i> توثيق المطابقة في سجل التدقيق الرسمي
+        </button>
+        <button class="btn btn-secondary close-recon-modal" style="font-weight: 700;">
+          إغلاق النافذة
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================== -->
+  <!-- MODAL: Inspector for Archive Record Comparison             -->
+  <!-- ========================================================== -->
+  <div class="modal-overlay" id="archiveDetailModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div style="width: 38px; height: 38px; border-radius: 8px; background: rgba(13, 148, 136, 0.1); color: var(--primary-color); display: flex; align-items: center; justify-content: center;">
+            <i data-lucide="archive" style="width: 20px; height: 20px;"></i>
+          </div>
+          <div>
+            <h3 style="font-size: 1.15rem; font-weight: 900; margin: 0; color: var(--text-primary);">
+              مطابقة سجل الأرشيف: <span id="archiveModalTeacherName" style="color: var(--primary-color);">-</span>
+            </h3>
+            <div style="font-size: 0.8rem; color: var(--text-secondary);">
+              الدورة المؤرشفة: <strong id="archiveModalMonth">-</strong>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-secondary close-recon-modal" style="padding: 0.4rem; border: none;">
+          <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.25rem;">
+          <div style="background: var(--bg-primary); padding: 0.85rem 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted);">المبلغ المسجل بالأرشيف</div>
+            <div id="archiveModalAmount" style="font-size: 1.2rem; font-weight: 900; color: var(--text-primary); margin-top: 0.2rem;">0 ج.م</div>
+          </div>
+          <div style="background: var(--bg-primary); padding: 0.85rem 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted);">المعاد حسابه من الجلسات الفعلية</div>
+            <div id="archiveModalRecomputed" style="font-size: 1.2rem; font-weight: 900; color: var(--primary-color); margin-top: 0.2rem;">0 ج.م</div>
+          </div>
+          <div style="background: var(--bg-primary); padding: 0.85rem 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted);">الفارق بين الأرشيف والجلسات</div>
+            <div id="archiveModalDiff" style="font-size: 1.2rem; font-weight: 900; color: var(--warning); margin-top: 0.2rem;">0 ج.م</div>
+          </div>
+        </div>
+
+        <div style="background: rgba(13, 148, 136, 0.05); border: 1px solid rgba(13, 148, 136, 0.2); border-radius: 8px; padding: 0.85rem 1.15rem; margin-bottom: 1.25rem;">
+          <strong style="font-size: 0.85rem; color: var(--primary-color);">تحليل التطابق: </strong>
+          <span id="archiveModalRationale" style="font-size: 0.85rem; color: var(--text-primary);">-</span>
+        </div>
+
+        <!-- POST ARCHIVE SESSIONS HIGHLIGHT SECTION -->
+        <div id="archiveModalPostArchiveSection" style="display: none; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; color: #be123c; font-weight: 900; font-size: 0.95rem;">
+              <i data-lucide="alert-triangle" style="width: 18px; height: 18px;"></i>
+              تفاصيل الحصص الإضافية المسجلة / المعتمدة بعد أرشفة الراتب (<span id="archivePostArchiveCount">0</span> حصة)
+            </div>
+            <span class="badge" style="background-color: #ffe4e6; color: #9f1239; font-weight: 800; font-size: 0.75rem; border: 1px solid #fecdd3;">
+              تاريخ تجميد الأرشيف: <span id="archiveModalCreatedAtDate">-</span>
+            </span>
+          </div>
+          <div style="font-size: 0.82rem; color: #475569; margin-bottom: 0.75rem; line-height: 1.5;">
+            الحصص الموضحة أدناه تمت إضافتها أو اعتمادها في قاعدة البيانات <strong>بعد تاريخ تجميد وأرشفة الراتب</strong>، وهي المسؤولة عن رفع إجمالي الجلسات وفارق الراتب (+<span id="archivePostArchiveDiffVal">100</span> ج.م):
+          </div>
+          <div class="table-container" style="margin: 0; background: #ffffff; border-radius: 6px; border: 1px solid #fecdd3; max-height: 220px;">
+            <table>
+              <thead>
+                <tr style="background: #ffe4e6; color: #9f1239; font-size: 0.8rem;">
+                  <th>تاريخ وتوقيت الحصة</th>
+                  <th>اسم الدارس / الطالب</th>
+                  <th>المدة والساعات</th>
+                  <th>تاريخ ووقت التسجيل</th>
+                  <th>من سجل الحصة</th>
+                  <th>حالة الاعتماد</th>
+                  <th>المبلغ</th>
+                </tr>
+              </thead>
+              <tbody id="tblArchiveModalPostArchiveSessions"></tbody>
+            </table>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.75rem; flex-wrap: wrap; gap: 0.5rem; background: #ffffff; border-radius: 6px; padding: 0.6rem 0.85rem; border: 1px solid #fecdd3;">
+            <div style="font-size: 0.8rem; color: #9a3412; font-weight: 700; display: flex; align-items: center; gap: 0.4rem;">
+              <i data-lucide="shield-check" style="width: 16px; height: 16px; color: #ea580c;"></i>
+              <span>نظام حماية المستحقات: الحصص مسجلة ومرحّلة تلقائياً لراتب الشهر الجديد بملاحظة "مرحّلة من شهر <span id="archivePostArchiveSourceMonth">-</span>".</span>
+            </div>
+            <button id="btnCarryOverSessionsAction" class="btn" style="font-size: 0.8rem; font-weight: 800; background: #ea580c; color: #ffffff; border: none; padding: 0.35rem 0.75rem; display: inline-flex; align-items: center; gap: 0.35rem; border-radius: 6px; cursor: pointer;">
+              <i data-lucide="forward" style="width: 14px; height: 14px;"></i> تثبيت الترحيل للشهر الجديد فوراً
+            </button>
+          </div>
+        </div>
+
+        <h4 style="font-weight: 800; font-size: 0.95rem; margin-bottom: 0.75rem; color: var(--text-primary);">
+          جميع الجلسات التاريخية المطابقة للدورة في قاعدة البيانات (<span id="archiveModalAllSessionsCount">0</span>)
+        </h4>
+
+        <div class="table-container" style="max-height: 280px; margin: 0;">
+          <table>
+            <thead>
+              <tr>
+                <th>تاريخ الحصة</th>
+                <th>الدارس / المجموعة</th>
+                <th>المدة والساعات</th>
+                <th>التسعيرة والمبلغ</th>
+                <th>تاريخ التسجيل ومن سجلها</th>
+                <th>حالة الأرشفة</th>
+              </tr>
+            </thead>
+            <tbody id="tblArchiveModalSessions"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary close-recon-modal" style="font-weight: 700;">
+          إغلاق النافذة
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State Overlay -->
+  <div id="reconLoadingState" style="display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.7); z-index: 9999; align-items: center; justify-content: center; flex-direction: column; gap: 0.75rem;">
+    <i data-lucide="loader-2" class="spin" style="width: 38px; height: 38px; color: var(--primary-color);"></i>
+    <div style="font-weight: 800; font-size: 1rem; color: var(--text-primary);">جاري فحص ومطابقة جميع الرواتب لحظياً...</div>
+  </div>
+
+  <!-- App Logic Initialization Script -->
+  <script type="module">
+    import { auth } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { initPayrollReconciliation } from '../assets/js/features/payroll/payrollReconciliationController.js';
+
+    protectRoute('admin');
+
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        renderSidebar('payroll-reconciliation', 'admin');
+        renderNavbar('نظام مطابقة الرواتب والأجور', { name: 'الإدارة العامة', roleName: 'مدير الأكاديمية' });
+        
+        await initPayrollReconciliation();
+
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      }
+    });
+  </script>
+</body>
+</html>
