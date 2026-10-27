@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - المالية والأرباح الشهرية</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    .fin-kpi-card {
+      background-color: var(--bg-card, #ffffff);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .fin-kpi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    .fin-kpi-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.65rem;
+    }
+    .fin-kpi-amount {
+      font-size: 2.25rem;
+      font-weight: 900;
+      font-family: monospace, sans-serif;
+      margin: 0.25rem 0 0.5rem 0;
+      line-height: 1.1;
+    }
+    .fin-kpi-meta {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border-color);
+      padding-top: 0.6rem;
+      margin-top: 0.6rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+    .fin-tab-btn {
+      background: none;
+      border: none;
+      font-size: 0.92rem;
+      font-weight: 800;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 0.65rem 1.25rem;
+      border-radius: 8px;
+      transition: all var(--transition-fast);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .fin-tab-btn.active {
+      background-color: var(--primary-light);
+      color: var(--primary-color);
+    }
+    .fin-tab-content {
+      display: none;
+    }
+    .fin-tab-content.active {
+      display: block;
+    }
+    .teacher-calc-row {
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+    .teacher-calc-row:hover {
+      background-color: rgba(14, 165, 233, 0.05) !important;
+    }
+    .pound-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      background: rgba(217, 119, 6, 0.1);
+      color: #b45309;
+      padding: 2px 7px;
+      border-radius: 6px;
+    }
+    @media print {
+      .sidebar, .navbar, #finControlsBar, #latifNoticeBar, .no-print {
+        display: none !important;
+      }
+      .main-wrapper {
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      .app-container {
+        display: block !important;
+      }
+    }
+  </style>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        
+        <!-- الترويسة وأزرار التحكم -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;" id="finControlsBar">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+              <span class="badge" style="position: static; background: var(--primary-light); color: var(--primary-color); font-weight: 800; font-size: 0.75rem;">المالية السهلة والدقيقة 💎</span>
+              <span style="font-size: 0.8rem; color: var(--text-muted);" id="calcModeNotice">● الحساب التقديري لجداول الحصص</span>
+            </div>
+            <h1 style="font-size: 1.6rem; font-weight: 900; color: var(--text-primary); margin: 0;">المالية والأرباح الشهرية المتوقعة</h1>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; margin-top: 0.25rem;">
+              متوسط الفلوس الخارجة كرواتب للمعلمين، متوسط الداخل من اشتراكات الطلاب، وصافي الأرباح المتوقعة بدقة كل جنيه.
+            </p>
+          </div>
+
+          <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+            <!-- زر التبديل السريع لاستبعاد / تضمين أ. عبداللطيف -->
+            <button id="btnToggleLatifTop" class="btn btn-secondary no-print" style="font-size: 0.82rem; font-weight: 800; padding: 0.35rem 0.75rem; gap: 0.4rem;" title="التبديل بين استبعاد أو تضمين أ. عبداللطيف وطلابه في الحسابات">
+              <span id="btnToggleLatifTopIcon">🛡️</span>
+              <span id="btnToggleLatifTopText">أ. عبداللطيف: مستبعد</span>
+            </button>
+
+            <!-- نوع طريقة الحساب (شهري قياسي أو تقويم فعلي) -->
+            <div style="display: flex; align-items: center; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.25rem 0.5rem;" title="طريقة احتساب عدد حصص الشهر">
+              <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); margin-left: 0.4rem;">طريقة الحساب:</span>
+              <select id="calcMethodSelect" class="form-control" style="border: none; background: transparent; font-weight: 800; padding: 0.25rem 0.2rem; outline: none; cursor: pointer; color: var(--primary-color); font-size: 0.85rem;">
+                <option value="standard" selected>شهري قياسي (4 أسابيع)</option>
+                <option value="calendar">أيام التقويم الفعلية للشهر</option>
+              </select>
+            </div>
+
+            <!-- اختيار الشهر -->
+            <div style="display: flex; align-items: center; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.25rem 0.5rem;">
+              <button id="btnPrevMonth" class="btn btn-secondary no-print" style="padding: 0.25rem 0.4rem; border: none; background: transparent; cursor: pointer;" title="الشهر السابق">
+                <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
+              </button>
+              <div style="display: flex; align-items: center; gap: 0.35rem; padding: 0 0.35rem;">
+                <i data-lucide="calendar" style="width: 16px; height: 16px; color: var(--primary-color);"></i>
+                <select id="monthSelectDropdown" class="form-control" style="border: none; background: transparent; font-weight: 800; padding: 0.3rem 0.2rem; outline: none; cursor: pointer; color: var(--text-primary); font-size: 0.9rem;">
+                  <!-- الشهور -->
+                </select>
+              </div>
+              <button id="btnNextMonth" class="btn btn-secondary no-print" style="padding: 0.25rem 0.4rem; border: none; background: transparent; cursor: pointer;" title="الشهر التالي">
+                <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i>
+              </button>
+            </div>
+
+            <button class="btn btn-secondary no-print" id="btnPrintReport" style="font-weight: 800; gap: 0.4rem;" title="طباعة التقرير">
+              <i data-lucide="printer" style="width: 16px; height: 16px;"></i> طباعة
+            </button>
+          </div>
+        </div>
+
+        <!-- شريط توضيح استبعاد أ. عبداللطيف وطلابه وزر التضمين -->
+        <div id="latifNoticeBar" style="background: rgba(14, 165, 233, 0.05); border: 1px dashed rgba(14, 165, 233, 0.3); padding: 0.75rem 1.15rem; border-radius: 10px; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 0.85rem; flex-wrap: wrap; transition: all 0.3s ease;">
+          <div style="display: flex; align-items: center; gap: 0.65rem; font-size: 0.85rem; color: var(--text-secondary);">
+            <i data-lucide="shield-check" id="latifNoticeIcon" style="width: 20px; height: 20px; color: var(--primary-color); flex-shrink: 0;"></i>
+            <span id="latifNoticeText">
+              تم <strong>استبعاد المعلم أ. عبداللطيف فتحي شكري وجميع الطلاب المسندين معه</strong> (<span id="latifExcludedCount" style="font-weight: 800; color: var(--text-primary);">0</span> طالب) واحصائياته بالكامل من هذه الحسابات والمالية.
+            </span>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+            <span id="latifStatusBadge" style="font-size: 0.78rem; font-weight: 800; color: #d97706; background: rgba(217, 119, 6, 0.12); padding: 3px 9px; border-radius: 6px;">مستبعد حالياً 🛡️</span>
+            <button id="btnToggleLatif" class="btn btn-secondary no-print" style="font-size: 0.83rem; font-weight: 800; gap: 0.4rem; padding: 0.35rem 0.85rem; border-color: var(--border-color); cursor: pointer; transition: all 0.2s ease;">
+              <i data-lucide="user-plus" id="btnToggleLatifIcon" style="width: 15px; height: 15px;"></i>
+              <span id="btnToggleLatifText">تضمين أ. عبداللطيف وطلابه</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- الكروت الثلاثة الرئيسية: الخارج (رواتب) | الداخل (لو كله دفع) | صافي الربح (الربح بقا) -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
+          
+          <!-- 1. متوسط الفلوس الخارجة كل شهر (رواتب المعلمين) -->
+          <div class="fin-kpi-card" style="border-right: 5px solid #d97706; background: linear-gradient(180deg, rgba(217, 119, 6, 0.03), var(--bg-card));">
+            <div class="fin-kpi-title">
+              <span>متوسط الفلوس الخارجة كل شهر (رواتب) 💸</span>
+              <div style="background: rgba(217, 119, 6, 0.12); color: #d97706; padding: 0.4rem; border-radius: 8px;">
+                <i data-lucide="banknote" style="width: 20px; height: 20px;"></i>
+              </div>
+            </div>
+            <div class="fin-kpi-amount" id="kpiOutgoingSalaries" style="color: #d97706;">0.00 ج.م</div>
+            <div style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 0.25rem;">
+              رواتب الجداول الكاملة لـ <strong id="kpiTeachersCount" style="color: var(--text-primary);">0</strong> معلماً نشطاً
+            </div>
+            <div class="fin-kpi-meta">
+              <span>إجمالي الساعات والحصص:</span>
+              <strong id="kpiTotalHours" style="color: #d97706; font-weight: 800;">0 ساعة (0 حصة)</strong>
+            </div>
+          </div>
+
+          <!-- 2. متوسط الداخل من الطلاب (لو كله دفع) -->
+          <div class="fin-kpi-card" style="border-right: 5px solid #0284c7; background: linear-gradient(180deg, rgba(2, 132, 199, 0.03), var(--bg-card));">
+            <div class="fin-kpi-title">
+              <span>متوسط الداخل من الطلاب (لو كله دفع) 📥</span>
+              <div style="background: rgba(2, 132, 199, 0.12); color: #0284c7; padding: 0.4rem; border-radius: 8px;">
+                <i data-lucide="wallet" style="width: 20px; height: 20px;"></i>
+              </div>
+            </div>
+            <div class="fin-kpi-amount" id="kpiIncomingRevenue" style="color: #0284c7;">0.00 ج.م</div>
+            <div style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 0.25rem;">
+              إجمالي اشتراكات <strong id="kpiStudentsCount" style="color: var(--text-primary);">0</strong> طالباً نشطاً
+            </div>
+            <div class="fin-kpi-meta">
+              <span>متوسط اشتراك الطالب:</span>
+              <strong id="kpiAvgStudentFee" style="color: #0284c7; font-weight: 800;">0 ج.م</strong>
+            </div>
+          </div>
+
+          <!-- 3. الربح بقا (صافي الأرباح المتوقعة) -->
+          <div class="fin-kpi-card" style="border-right: 5px solid #16a34a; background: linear-gradient(180deg, rgba(22, 163, 74, 0.03), var(--bg-card));">
+            <div class="fin-kpi-title">
+              <span>صافي الربح المتوقع (الربح بقا) 💰</span>
+              <div style="background: rgba(22, 163, 74, 0.12); color: #16a34a; padding: 0.4rem; border-radius: 8px;">
+                <i data-lucide="trending-up" style="width: 20px; height: 20px;"></i>
+              </div>
+            </div>
+            <div class="fin-kpi-amount" id="kpiNetProfit" style="color: #16a34a;">0.00 ج.م</div>
+            <div style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 0.25rem;">
+              (متوسط الداخل من الطلاب) - (متوسط رواتب المعلمين)
+            </div>
+            <div class="fin-kpi-meta">
+              <span>هامش الربح المتوقع:</span>
+              <strong id="kpiProfitMarginBadge" style="color: #16a34a; font-weight: 800; font-size: 0.9rem;">0%</strong>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- شريط التوزيع المالي البصري -->
+        <div class="card" style="padding: 1.25rem; margin-bottom: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+            <strong style="font-size: 0.92rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.4rem;">
+              <i data-lucide="pie-chart" style="width: 17px; height: 17px; color: var(--primary-color);"></i>
+              الميزان المالي: نسبة رواتب المعلمين مقارنة بصافي أرباح الأكاديمية
+            </strong>
+            <span id="ratioSummaryText" style="font-size: 0.82rem; color: var(--text-secondary);">
+              الرواتب تمثل 0% من إجمالي الدخل
+            </span>
+          </div>
+
+          <div style="width: 100%; height: 16px; background-color: #f1f5f9; border-radius: 999px; overflow: hidden; display: flex;">
+            <div id="barSalaries" style="background-color: #d97706; width: 50%; height: 100%; transition: width 0.5s ease;" title="الرواتب"></div>
+            <div id="barProfit" style="background-color: #16a34a; width: 50%; height: 100%; transition: width 0.5s ease;" title="صافي الربح"></div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; margin-top: 0.5rem; color: var(--text-muted);">
+            <div style="display: flex; align-items: center; gap: 0.35rem;">
+              <span style="display: inline-block; width: 10px; height: 10px; background-color: #d97706; border-radius: 2px;"></span>
+              <span>رواتب المعلمين الخارجة: <strong id="barSalariesPercent">0%</strong></span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.35rem;">
+              <span style="display: inline-block; width: 10px; height: 10px; background-color: #16a34a; border-radius: 2px;"></span>
+              <span>صافي الربح (الربح بقا): <strong id="barProfitPercent">0%</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- الجداول والتبويبات التفصيلية -->
+        <div class="card" style="padding: 1.25rem;">
+          
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button class="fin-tab-btn active" data-tab="tab-teachers">
+                <i data-lucide="users" style="width: 17px; height: 17px;"></i>
+                <span>كشف رواتب المعلمين (الخارج) - اضغط للتفاصيل</span>
+                <span class="badge" id="tabTeachersBadge" style="background: rgba(217, 119, 6, 0.15); color: #d97706; font-size: 0.75rem; padding: 2px 7px;">0</span>
+              </button>
+              <button class="fin-tab-btn" data-tab="tab-students">
+                <i data-lucide="graduation-cap" style="width: 17px; height: 17px;"></i>
+                <span>كشف اشتراكات الطلاب (الداخل)</span>
+                <span class="badge" id="tabStudentsBadge" style="background: rgba(2, 132, 199, 0.15); color: #0284c7; font-size: 0.75rem; padding: 2px 7px;">0</span>
+              </button>
+            </div>
+
+            <!-- بحث سريع -->
+            <div style="position: relative; min-width: 240px;" class="no-print">
+              <i data-lucide="search" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--text-muted);"></i>
+              <input type="text" id="quickSearchInput" class="form-control" placeholder="بحث باسم المعلم أو الطالب..." style="padding-right: 32px; font-size: 0.85rem; height: 36px;">
+            </div>
+          </div>
+
+          <!-- تبويب 1: كشف رواتب المعلمين (الخارج) -->
+          <div id="tab-teachers" class="fin-tab-content active">
+            <div style="margin-bottom: 0.85rem; font-size: 0.82rem; color: var(--text-secondary); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+              <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <i data-lucide="info" style="width: 15px; height: 15px; color: var(--primary-color);"></i>
+                <span>اضغط على أي صف أو زر <strong>تفاصيل كل جنيه 🔍</strong> لعرض مستحقات الطلاب وحسابات كل حصة بالمليم.</span>
+              </div>
+              <span class="pound-chip"><i data-lucide="calculator" style="width: 12px; height: 12px;"></i> حسبة دقيقة بالجنيه والقرش</span>
+            </div>
+            <div class="table-container" style="margin-top: 0;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>المعلم</th>
+                    <th>الطلاب المجدولون</th>
+                    <th>الحصص المتوقعة</th>
+                    <th>إجمالي الساعات</th>
+                    <th>أجر الساعة</th>
+                    <th>المرتب المتوقع خروجه</th>
+                    <th>النسبة</th>
+                    <th class="no-print">تفاصيل كل جنيه</th>
+                  </tr>
+                </thead>
+                <tbody id="teachersBreakdownTableBody">
+                  <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">جاري تحميل كشوفات الرواتب بدقة الجداول...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- تبويب 2: كشف اشتراكات الطلاب (الداخل) -->
+          <div id="tab-students" class="fin-tab-content">
+            <div class="table-container" style="margin-top: 0;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>اسم الطالب</th>
+                    <th>المعلم المشرف</th>
+                    <th>نوع الاشتراك</th>
+                    <th>الجدول الأسبوعي</th>
+                    <th>الحصص والساعات</th>
+                    <th>الاشتراك الشهري</th>
+                    <th>حالة السداد</th>
+                  </tr>
+                </thead>
+                <tbody id="studentsBreakdownTableBody">
+                  <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">جاري تحميل ومزامنة اشتراكات الطلاب...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal: تفاصيل كل جنيه دقيق جداً للمعلم -->
+  <div id="teacherFinDetailModal" style="display: none; position: fixed; inset: 0; background-color: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 1rem;">
+    <div style="background: var(--bg-card, #ffffff); border: 1px solid var(--border-color); border-radius: 14px; width: 100%; max-width: 900px; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 30px -5px rgba(0,0,0,0.3);">
+      
+      <!-- Modal Header -->
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); background: var(--bg-secondary);">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div style="width: 46px; height: 46px; border-radius: 50%; background: var(--primary-light); color: var(--primary-color); display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.2rem;" id="modalTeacherInitial">
+            م
+          </div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <h3 style="font-size: 1.25rem; font-weight: 900; color: var(--text-primary); margin: 0;" id="modalTeacherName">-</h3>
+              <span id="modalTeacherRoleBadge" class="badge badge-info" style="font-size: 0.7rem; padding: 2px 7px;">معلم معتمد</span>
+            </div>
+            <span style="font-size: 0.82rem; color: var(--text-secondary);" id="modalTeacherSubtitle">تفاصيل دقيقة لكل جنيه من مستحقات الطلاب والجداول</span>
+          </div>
+        </div>
+        <button id="closeTeacherModalBtn" style="background: transparent; border: none; font-size: 1.6rem; cursor: pointer; color: var(--text-muted); padding: 0.25rem 0.5rem; border-radius: 6px; line-height: 1;">&times;</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div style="padding: 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.25rem;">
+        
+        <!-- ملخص الكروت الأربعة السريعة للمرتب -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.85rem;">
+          <div style="background: var(--bg-primary); padding: 0.85rem 1rem; border-radius: 8px; border: 1px solid var(--border-color); border-right: 4px solid #d97706;">
+            <span style="font-size: 0.75rem; color: var(--text-secondary); display: block;">المرتب المتوقع خروجه</span>
+            <strong id="modalExpectedSalary" style="font-size: 1.4rem; color: #d97706; font-family: monospace;">0.00 ج.م</strong>
+          </div>
+          <div style="background: var(--bg-primary); padding: 0.85rem 1rem; border-radius: 8px; border: 1px solid var(--border-color); border-right: 4px solid var(--primary-color);">
+            <span style="font-size: 0.75rem; color: var(--text-secondary); display: block;">إجمالي الساعات المتوقعة</span>
+            <strong id="modalTotalHours" style="font-size: 1.4rem; color: var(--primary-color); font-family: monospace;">0.00 س</strong>
+          </div>
+          <div style="background: var(--bg-primary); padding: 0.85rem 1rem; border-radius: 8px; border: 1px solid var(--border-color); border-right: 4px solid #8b5cf6;">
+            <span style="font-size: 0.75rem; color: var(--text-secondary); display: block;">إجمالي الحصص المجدولة</span>
+            <strong id="modalTotalSessions" style="font-size: 1.4rem; color: #8b5cf6; font-family: monospace;">0 حصة</strong>
+          </div>
+          <div style="background: var(--bg-primary); padding: 0.85rem 1rem; border-radius: 8px; border: 1px solid var(--border-color); border-right: 4px solid #10b981;">
+            <span style="font-size: 0.75rem; color: var(--text-secondary); display: block;">أجر الساعة المعتمد</span>
+            <strong id="modalRates" style="font-size: 1.05rem; color: #10b981; font-weight: 800;">-</strong>
+          </div>
+        </div>
+
+        <!-- جدول تفصيل كل طالب وجنيهاته بدقة -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem;">
+            <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.4rem;">
+              <i data-lucide="calculator" style="width: 17px; height: 17px; color: var(--primary-color);"></i>
+              تفصيل مستحقات الطلاب الفرديين (كل طالب وجنيهاته بدقة)
+            </h4>
+            <span style="font-size: 0.78rem; color: var(--text-muted);" id="modalStudentsCountBadge">0 طلاب</span>
+          </div>
+          <div class="table-container" style="margin-top: 0; max-height: 280px; overflow-y: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>الطالب</th>
+                  <th>أيام الحصص</th>
+                  <th>مدة الحصة</th>
+                  <th>حصص الشهر</th>
+                  <th>الساعات</th>
+                  <th>أجر الحصة</th>
+                  <th>المستحق للمعلم</th>
+                  <th>اشتراك الطالب</th>
+                  <th>ربح الأكاديمية</th>
+                </tr>
+              </thead>
+              <tbody id="modalStudentsBreakdownBody">
+                <!-- تفاصيل الطلاب -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- جدول تفصيل المجموعات الجماعية (إن وجدت) -->
+        <div id="modalGroupsSection" style="display: none;">
+          <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.65rem; display: flex; align-items: center; gap: 0.4rem;">
+            <i data-lucide="users-round" style="width: 17px; height: 17px; color: #8b5cf6;"></i>
+            تفصيل استحقاقات المجموعات الجماعية
+          </h4>
+          <div class="table-container" style="margin-top: 0;">
+            <table>
+              <thead>
+                <tr>
+                  <th>المجموعة</th>
+                  <th>أيام الحصص</th>
+                  <th>مدة الحصة</th>
+                  <th>حصص الشهر</th>
+                  <th>الساعات</th>
+                  <th>أجر الحصة</th>
+                  <th>المستحق للمعلم</th>
+                </tr>
+              </thead>
+              <tbody id="modalGroupsBreakdownBody">
+                <!-- تفاصيل المجموعات -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- تفكيك المعادلة الرياضية الشاملة للراتب (فكة كل جنيه) -->
+        <div style="background: rgba(14, 165, 233, 0.04); border: 1px dashed rgba(14, 165, 233, 0.35); border-radius: 10px; padding: 1rem 1.25rem; font-size: 0.85rem; display: flex; flex-direction: column; gap: 0.45rem;">
+          <strong style="color: var(--primary-color); font-size: 0.92rem; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.35rem;">
+            <i data-lucide="file-spreadsheet" style="width: 16px; height: 16px;"></i>
+            تفكيك المعادلة الحسابية للراتب (فكة كل جنيه بدقة):
+          </strong>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--text-secondary);">[+] مجموع أجر حصص الطلاب الفرديين:</span>
+            <strong id="modalMathInd" class="font-mono" style="color: var(--text-primary);">0.00 ج.م</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--text-secondary);">[+] مجموع أجر حصص المجموعات الجماعية:</span>
+            <strong id="modalMathGrp" class="font-mono" style="color: var(--text-primary);">0.00 ج.م</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--success);">[+] المكافآت الإدارية المعتمدة:</span>
+            <strong id="modalMathBonus" class="font-mono" style="color: var(--success);">+0.00 ج.م</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--danger);">[-] الخصومات أو السلفيات:</span>
+            <strong id="modalMathDeduct" class="font-mono" style="color: var(--danger);">-0.00 ج.م</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-top: 1px solid var(--border-color); padding-top: 0.5rem; font-size: 0.98rem; font-weight: 900;">
+            <span style="color: var(--text-primary);">[=] إجمالي المرتب المتوقع خروجه للمعلم:</span>
+            <strong id="modalMathTotal" class="font-mono" style="color: #d97706; font-size: 1.15rem;">0.00 ج.م</strong>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-top: 1px solid var(--border-color); background: var(--bg-secondary);">
+        <span style="font-size: 0.78rem; color: var(--text-muted);">
+          الحساب مبني بدقة 100% على جداول الطلاب المعتمدة لشهر (<span id="modalMonthName">-</span>).
+        </span>
+        <div style="display: flex; gap: 0.5rem;">
+          <button id="modalPrintTeacherBtn" class="btn btn-primary" style="font-weight: 800; font-size: 0.85rem; gap: 0.35rem;">
+            <i data-lucide="printer" style="width: 15px; height: 15px;"></i> طباعة كشف المعلم
+          </button>
+          <button id="modalCloseBtnBottom" class="btn btn-secondary" style="font-size: 0.85rem;">
+            إغلاق
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { dataStore } from '../assets/js/shared/data/dataStore.js';
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+
+    protectRoute('admin');
+
+    // Global State
+    let rawTeachers = [];
+    let rawStudents = [];
+    let rawSubscriptions = [];
+    let rawPackages = [];
+    let rawGroups = [];
+    let selectedMonth = new Date().toISOString().substring(0, 7); // "YYYY-MM"
+    let calcMethod = 'standard'; // 'standard' (4 weeks) or 'calendar' (actual weekday occurrences in month)
+    let excludeLatif = true; // Exclude Abdellatif by default (can be toggled on/off with button)
+    let computedTeacherCalculations = new Map();
+
+    const monthsAr = [
+      "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+      "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+    ];
+
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        renderSidebar('earnings', 'admin');
+        renderNavbar('المالية والأرباح الشهرية', { name: user.displayName || 'الإدارة', roleName: 'مدير الأكاديمية' });
+
+        populateMonthsDropdown();
+        setupEventListeners();
+        startDataSubscriptions();
+      }
+    });
+
+    // Populate Months Dropdown
+    function populateMonthsDropdown() {
+      const select = document.getElementById('monthSelectDropdown');
+      if (!select) return;
+
+      const now = new Date();
+      let html = '';
+      for (let i = 2; i >= -12; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+        const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        const label = `${monthsAr[d.getMonth()]} ${d.getFullYear()}`;
+        const isSelected = ym === selectedMonth ? 'selected' : '';
+        html += `<option value="${ym}" ${isSelected}>${label}</option>`;
+      }
+
+      select.innerHTML = html;
+      select.value = selectedMonth;
+
+      select.addEventListener('change', (e) => {
+        selectedMonth = e.target.value;
+        recalculateAndRender();
+      });
+    }
+
+    // Normalizing Arabic Day strings
+    function normalizeArabicDay(dayStr) {
+      if (!dayStr) return "";
+      return String(dayStr).trim()
+        .replace(/[أإآ]/g, "ا")
+        .replace(/ة/g, "ه");
+    }
+
+    // Exact count of each weekday in a given year and month (0-indexed month)
+    function getDaysCountInMonth(year, monthIndex) {
+      const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+      const arabicDaysMap = {
+        0: normalizeArabicDay("الأحد"),
+        1: normalizeArabicDay("الاثنين"),
+        2: normalizeArabicDay("الثلاثاء"),
+        3: normalizeArabicDay("الأربعاء"),
+        4: normalizeArabicDay("الخميس"),
+        5: normalizeArabicDay("الجمعة"),
+        6: normalizeArabicDay("السبت")
+      };
+      const count = {};
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dt = new Date(year, monthIndex, d);
+        const dayName = arabicDaysMap[dt.getDay()];
+        count[dayName] = (count[dayName] || 0) + 1;
+      }
+      return { daysInMonth, count };
+    }
+
+    // Check if teacher is Abdullatif (Excluded 100% as requested)
+    function isLatifTeacher(teacher) {
+      if (!teacher) return false;
+      const name = String(teacher.name || '').trim();
+      const uid = String(teacher.uid || teacher.id || '');
+      return uid === 't63ltWofLbSJylVZuecUaQCWA3W2' || 
+             uid === 'oqOr81nEGiTpBYFG6457ZkGInBM2' || 
+             name.includes('عبداللطيف') || 
+             name.includes('عبد اللطيف');
+    }
+
+    // Check if student is assigned to Abdullatif (Excluded 100% as requested)
+    function isLatifStudent(student) {
+      if (!student) return false;
+      const tId = String(student.teacherId || student.teacherUid || '');
+      const tName = String(student.teacherName || '').trim();
+      return tId === 't63ltWofLbSJylVZuecUaQCWA3W2' || 
+             tId === 'oqOr81nEGiTpBYFG6457ZkGInBM2' || 
+             tName.includes('عبداللطيف') || 
+             tName.includes('عبد اللطيف');
+    }
+
+    // Check if student matches a teacher
+    function doesStudentMatchTeacher(student, teacher) {
+      if (!student || !teacher) return false;
+      const tId = teacher.uid || teacher.id;
+      if (student.teacherId === tId || student.teacherUid === tId) return true;
+
+      if (student.teacherName && teacher.name) {
+        const cleanS = student.teacherName.trim().replace(/[أإآ]/g, "ا").replace(/ة/g, "ه");
+        const cleanT = teacher.name.trim().replace(/[أإآ]/g, "ا").replace(/ة/g, "ه");
+        if (cleanS === cleanT) return true;
+        // Handle common typos like أميره سامح vs أميره مسامح
+        if (cleanS.includes("مسامح") && cleanT.includes("مسامح")) return true;
+        if (cleanS.includes("سامح") && cleanT.includes("مسامح")) return true;
+        // Match first two words (e.g. سلسبيل جمال, أحمد علي, علي صالح)
+        const partsS = cleanS.split(" ").filter(Boolean);
+        const partsT = cleanT.split(" ").filter(Boolean);
+        if (partsS.length >= 2 && partsT.length >= 2 && partsS[0] === partsT[0] && partsS[1] === partsT[1]) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    // Start Realtime Firestore DataStore Subscriptions
+    function startDataSubscriptions() {
+      // 1. Teachers: include teachers and supervisors
+      dataStore.subscribe('users', (users) => {
+        rawTeachers = (users || []).filter(u => 
+          (u.role === 'teacher' || u.role === 'supervisor') && 
+          u.status !== 'pending'
+        );
+        recalculateAndRender();
+      });
+
+      // 2. Students: only active non-archived students
+      dataStore.subscribe('students', (students) => {
+        rawStudents = (students || []).filter(s => 
+          s.status !== 'archived' && 
+          s.status !== 'Suspended' && 
+          s.status !== 'suspended' && 
+          s.status !== 'inactive' &&
+          s.status !== 'rejected'
+        );
+        recalculateAndRender();
+      });
+
+      // 3. Subscriptions (to check precise student subscription prices and payments)
+      dataStore.subscribe('subscriptions', (subs) => {
+        rawSubscriptions = subs || [];
+        recalculateAndRender();
+      });
+
+      // 4. Packages (studentPackages for contracted package lessons, durations, and pricing)
+      dataStore.subscribe('packages', (pkgs) => {
+        rawPackages = pkgs || [];
+        recalculateAndRender();
+      });
+
+      // 5. Groups
+      dataStore.subscribe('groups', (groups) => {
+        rawGroups = (groups || []).filter(g => g.status !== 'archived' && g.archived !== true);
+        recalculateAndRender();
+      });
+    }
+
+    // Setup Event Listeners
+    function setupEventListeners() {
+      // Toggle Abdellatif Exclusion Handler
+      function toggleLatifExclusion() {
+        excludeLatif = !excludeLatif;
+        if (excludeLatif) {
+          Toast.info("تم استبعاد المعلم أ. عبداللطيف وطلابه من الحسابات المالية.");
+        } else {
+          Toast.info("تم تضمين المعلم أ. عبداللطيف وطلابه في الحسابات المالية والأرباح.");
+        }
+        recalculateAndRender();
+      }
+
+      document.getElementById('btnToggleLatif')?.addEventListener('click', toggleLatifExclusion);
+      document.getElementById('btnToggleLatifTop')?.addEventListener('click', toggleLatifExclusion);
+
+      // Calculation Method Change
+      document.getElementById('calcMethodSelect')?.addEventListener('change', (e) => {
+        calcMethod = e.target.value;
+        const notice = document.getElementById('calcModeNotice');
+        if (notice) {
+          notice.textContent = calcMethod === 'standard' 
+            ? '● الحساب الشهري القياسي (4 أسابيع)' 
+            : '● الحساب حسب تكرار أيام التقويم الفعلي';
+        }
+        recalculateAndRender();
+      });
+
+      // Prev / Next Month
+      document.getElementById('btnPrevMonth')?.addEventListener('click', () => shiftMonth(-1));
+      document.getElementById('btnNextMonth')?.addEventListener('click', () => shiftMonth(1));
+
+      // Tabs Navigation
+      document.querySelectorAll('.fin-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.fin-tab-btn').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.fin-tab-content').forEach(c => c.classList.remove('active'));
+          btn.classList.add('active');
+          const target = btn.dataset.tab;
+          document.getElementById(target)?.classList.add('active');
+        });
+      });
+
+      // Quick Search
+      document.getElementById('quickSearchInput')?.addEventListener('input', (e) => {
+        filterTableRows(e.target.value.trim().toLowerCase());
+      });
+
+      // Print Report
+      document.getElementById('btnPrintReport')?.addEventListener('click', () => window.print());
+
+      // Modal Close Handlers
+      const modal = document.getElementById('teacherFinDetailModal');
+      document.getElementById('closeTeacherModalBtn')?.addEventListener('click', () => {
+        if (modal) modal.style.display = 'none';
+      });
+      document.getElementById('modalCloseBtnBottom')?.addEventListener('click', () => {
+        if (modal) modal.style.display = 'none';
+      });
+      modal?.addEventListener('click', (e) => {
+        if (e.target === modal) modal.style.display = 'none';
+      });
+
+      // Modal Print Handler
+      document.getElementById('modalPrintTeacherBtn')?.addEventListener('click', () => {
+        window.print();
+      });
+    }
+
+    function shiftMonth(delta) {
+      const parts = selectedMonth.split('-');
+      const y = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10) - 1;
+      const newDate = new Date(y, m + delta, 1);
+      selectedMonth = `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, '0')}`;
+      const select = document.getElementById('monthSelectDropdown');
+      if (select) select.value = selectedMonth;
+      recalculateAndRender();
+    }
+
+    function filterTableRows(query) {
+      const activeTab = document.querySelector('.fin-tab-content.active');
+      if (!activeTab) return;
+      const rows = activeTab.querySelectorAll('tbody tr');
+      rows.forEach(r => {
+        const text = r.textContent.toLowerCase();
+        if (!query || text.includes(query)) {
+          r.style.display = '';
+        } else {
+          r.style.display = 'none';
+        }
+      });
+    }
+
+    /**
+     * Resolves exact monthly parameters for a student with 100% precision:
+     * - Monthly contracted lessons/sessions count
+     * - Session duration in minutes (from student or package)
+     * - Total student hours
+     * - Monthly subscription fee / revenue (لو كله دفع)
+     * - Schedule days
+     * - Payment status in selected month
+     */
+    function getStudentScheduleAndPricing(student, selectedYm, method, year, monthIndex) {
+      if (!student) return null;
+
+      const sId = student.id || student.uid;
+      const sName = student.name ? student.name.trim() : '';
+
+      // Match packages and subscriptions for this student
+      const pkg = (rawPackages || []).find(p => (sId && p.studentId === sId) || (sName && p.studentName === sName));
+      const subMonth = (rawSubscriptions || []).find(s => ((sId && s.studentId === sId) || (sName && s.studentName === sName)) && s.month === selectedYm);
+      const subAny = subMonth || (rawSubscriptions || []).find(s => (sId && s.studentId === sId) || (sName && s.studentName === sName));
+
+      // Extract schedule days
+      let rawDays = (student.schedule && student.schedule.days && student.schedule.days.length > 0) 
+        ? student.schedule.days 
+        : (student.sessionDays && student.sessionDays.length > 0 ? student.sessionDays : (student.days || []));
+      if (!Array.isArray(rawDays)) rawDays = [rawDays];
+      const normDays = rawDays.map(d => normalizeArabicDay(d)).filter(Boolean);
+
+      // Sessions in month:
+      // Priority 1: Explicit totalLessons on student document (contracted package lessons: 8, 4, 12, 3...)
+      // Priority 2: Explicit totalLessons in student's package
+      // Priority 3: Calendar weekday occurrences if method === 'calendar'
+      // Priority 4: Academic 4-week standard (daysPerWeek * 4)
+      let sessions = 0;
+      if (parseInt(student.totalLessons, 10) > 0) {
+        sessions = parseInt(student.totalLessons, 10);
+      } else if (pkg && parseInt(pkg.totalLessons, 10) > 0) {
+        sessions = parseInt(pkg.totalLessons, 10);
+      } else if (method === 'calendar' && normDays.length > 0) {
+        const dayCounts = getDaysCountInMonth(year, monthIndex).count;
+        normDays.forEach(d => {
+          sessions += (dayCounts[d] || 0);
+        });
+      } else {
+        const daysPerWeek = normDays.length > 0 ? normDays.length : 2;
+        sessions = daysPerWeek * 4;
+      }
+
+      // Duration in minutes:
+      let durMins = parseFloat(student.sessionDuration || student.duration || (student.schedule && student.schedule.duration) || student.timeDuration || 0);
+      if (!durMins && pkg) {
+        durMins = parseFloat(pkg.lessonDuration || pkg.duration || 0);
+      }
+      if (!durMins) durMins = 30;
+
+      const hoursPerSession = durMins / 60;
+      const totalHours = sessions * hoursPerSession;
+
+      // Monthly Subscription Fee / Expected Inflow:
+      let fee = 0;
+      if (parseFloat(student.packagePrice) > 0) {
+        fee = parseFloat(student.packagePrice);
+      } else if (parseFloat(student.subscriptionPrice) > 0) {
+        fee = parseFloat(student.subscriptionPrice);
+      } else if (parseFloat(student.monthlyFee) > 0) {
+        fee = parseFloat(student.monthlyFee);
+      } else if (parseFloat(student.price) > 0) {
+        fee = parseFloat(student.price);
+      } else if (subMonth && parseFloat(subMonth.amount || subMonth.price || subMonth.totalAmount) > 0) {
+        fee = parseFloat(subMonth.amount || subMonth.price || subMonth.totalAmount);
+      } else if (subAny && parseFloat(subAny.amount || subAny.price || subAny.totalAmount) > 0) {
+        fee = parseFloat(subAny.amount || subAny.price || subAny.totalAmount);
+      } else if (pkg && parseFloat(pkg.totalAmount || pkg.price) > 0) {
+        fee = parseFloat(pkg.totalAmount || pkg.price);
+      } else {
+        fee = Math.max(200, Math.round(totalHours * 100));
+      }
+
+      // Payment status in selected month
+      const hasPaid = (rawSubscriptions || []).some(sub => 
+        ((sId && sub.studentId === sId) || (sName && sub.studentName === sName)) && 
+        sub.month === selectedYm && 
+        (sub.status === 'fully_paid' || sub.status === 'paid')
+      );
+
+      return {
+        days: normDays.length > 0 ? normDays : ['محدد بالاتفاق'],
+        sessionsInMonth: sessions,
+        durMins,
+        hoursPerSession,
+        totalHours,
+        monthlyFee: fee,
+        hasPaid
+      };
+    }
+
+    // Accurate calculation of teacher's schedule according to assigned students & groups
+    function calculateTeacherScheduleAccurate(teacher, allStudents, allGroups, year, monthIndex) {
+      const dayCounts = getDaysCountInMonth(year, monthIndex).count;
+      
+      // Hourly rate determination
+      let rateInd = 100;
+      if (parseFloat(teacher.hourlyRateIndividual) > 0) {
+        rateInd = parseFloat(teacher.hourlyRateIndividual);
+      } else if (parseFloat(teacher.hourlyRate) > 0) {
+        rateInd = parseFloat(teacher.hourlyRate);
+      }
+
+      let rateGrp = rateInd;
+      if (parseFloat(teacher.hourlyRateGroup) > 0) {
+        rateGrp = parseFloat(teacher.hourlyRateGroup);
+      }
+
+      const myStudents = allStudents.filter(s => doesStudentMatchTeacher(s, teacher));
+      const tId = teacher.uid || teacher.id;
+      const myGroups = allGroups.filter(g => g.teacherId === tId || g.teacherUid === tId || (g.teacherName && teacher.name && g.teacherName.trim() === teacher.name.trim()));
+
+      const studentDetails = [];
+      let totalIndHours = 0;
+      let totalIndCost = 0;
+      let totalIndSessions = 0;
+
+      myStudents.forEach(st => {
+        const info = getStudentScheduleAndPricing(st, selectedMonth, calcMethod, year, monthIndex);
+        
+        // Cost per session & total cost for teacher
+        const costPerSession = info.hoursPerSession * rateInd;
+        const cost = info.sessionsInMonth * costPerSession;
+
+        totalIndHours += info.totalHours;
+        totalIndCost += cost;
+        totalIndSessions += info.sessionsInMonth;
+
+        studentDetails.push({
+          id: st.id,
+          name: st.name || 'طالب',
+          days: info.days,
+          durMins: info.durMins,
+          hoursPerSession: info.hoursPerSession,
+          sessionsInMonth: info.sessionsInMonth,
+          totalHours: info.totalHours,
+          rate: rateInd,
+          costPerSession: costPerSession,
+          cost: cost,
+          studentRev: info.monthlyFee,
+          netProfit: info.monthlyFee - cost
+        });
+      });
+
+      const groupDetails = [];
+      let totalGrpHours = 0;
+      let totalGrpCost = 0;
+      let totalGrpSessions = 0;
+
+      myGroups.forEach(grp => {
+        let rawDays = grp.day ? [grp.day] : (grp.days || []);
+        if (!Array.isArray(rawDays)) rawDays = [rawDays];
+        const normDays = rawDays.map(d => normalizeArabicDay(d)).filter(Boolean);
+        const daysPerWeek = normDays.length > 0 ? normDays.length : 1;
+
+        let sessionsInMonth = 0;
+        if (calcMethod === 'calendar' && normDays.length > 0) {
+          normDays.forEach(d => {
+            sessionsInMonth += (dayCounts[d] || 0);
+          });
+        } else {
+          sessionsInMonth = daysPerWeek * 4;
+        }
+
+        const durMins = parseFloat(grp.duration || grp.sessionDuration || 60) || 60;
+        const hoursPerSession = durMins / 60;
+        const totalGroupHours = sessionsInMonth * hoursPerSession;
+        const costPerSession = hoursPerSession * rateGrp;
+        const cost = sessionsInMonth * costPerSession;
+
+        totalGrpHours += totalGroupHours;
+        totalGrpCost += cost;
+        totalGrpSessions += sessionsInMonth;
+
+        groupDetails.push({
+          id: grp.id,
+          name: grp.name || 'مجموعة جماعية',
+          days: normDays.length > 0 ? normDays : ['محدد بالجدول'],
+          durMins: durMins,
+          hoursPerSession: hoursPerSession,
+          sessionsInMonth: sessionsInMonth,
+          totalHours: totalGroupHours,
+          rate: rateGrp,
+          costPerSession: costPerSession,
+          cost: cost
+        });
+      });
+
+      const bonuses = parseFloat(teacher.salaryBonuses || 0);
+      const deductions = parseFloat(teacher.salaryDeductions || 0);
+      const netSalary = Math.max(0, totalIndCost + totalGrpCost + bonuses - deductions);
+
+      return {
+        teacher,
+        rateInd,
+        rateGrp,
+        studentsCount: myStudents.length,
+        groupsCount: myGroups.length,
+        totalSessions: totalIndSessions + totalGrpSessions,
+        totalHours: totalIndHours + totalGrpHours,
+        totalIndHours,
+        totalGrpHours,
+        totalIndCost,
+        totalGrpCost,
+        bonuses,
+        deductions,
+        netSalary,
+        studentDetails,
+        groupDetails
+      };
+    }
+
+    // Core Financial Computation & UI Rendering
+    function recalculateAndRender() {
+      const [selYearStr, selMonthStr] = selectedMonth.split('-');
+      const selYear = parseInt(selYearStr, 10);
+      const selMonthIndex = parseInt(selMonthStr, 10) - 1;
+
+      // Latif students count for information note
+      const latifCount = rawStudents.filter(s => isLatifStudent(s)).length;
+      const elLatifCount = document.getElementById('latifExcludedCount');
+      if (elLatifCount) elLatifCount.textContent = latifCount;
+
+      // Update UI elements for Latif notice bar and toggle buttons
+      const noticeBar = document.getElementById('latifNoticeBar');
+      const noticeText = document.getElementById('latifNoticeText');
+      const statusBadge = document.getElementById('latifStatusBadge');
+      const btnToggle = document.getElementById('btnToggleLatif');
+      const btnToggleText = document.getElementById('btnToggleLatifText');
+      const btnTopText = document.getElementById('btnToggleLatifTopText');
+      const btnTopIcon = document.getElementById('btnToggleLatifTopIcon');
+
+      if (excludeLatif) {
+        if (noticeBar) {
+          noticeBar.style.background = 'rgba(14, 165, 233, 0.05)';
+          noticeBar.style.borderColor = 'rgba(14, 165, 233, 0.3)';
+        }
+        if (noticeText) {
+          noticeText.innerHTML = `تم <strong>استبعاد المعلم أ. عبداللطيف فتحي شكري وجميع الطلاب المسندين معه</strong> (<span style="font-weight: 800; color: var(--text-primary);">${latifCount}</span> طالب) واحصائياته بالكامل من هذه الحسابات والمالية.`;
+        }
+        if (statusBadge) {
+          statusBadge.textContent = 'مستبعد حالياً 🛡️';
+          statusBadge.style.color = '#d97706';
+          statusBadge.style.background = 'rgba(217, 119, 6, 0.12)';
+        }
+        if (btnToggleText) btnToggleText.textContent = 'تضمين أ. عبداللطيف وطلابه';
+        if (btnToggle) {
+          btnToggle.className = 'btn btn-secondary no-print';
+          btnToggle.title = 'اضغط لتضمين أ. عبداللطيف وطلابه في الحسابات المالية';
+        }
+        if (btnTopText) btnTopText.textContent = 'أ. عبداللطيف: مستبعد 🛡️';
+        if (btnTopIcon) btnTopIcon.textContent = '🛡️';
+      } else {
+        if (noticeBar) {
+          noticeBar.style.background = 'rgba(16, 185, 129, 0.07)';
+          noticeBar.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+        }
+        if (noticeText) {
+          noticeText.innerHTML = `يتم حالياً <strong>تضمين المعلم أ. عبداللطيف فتحي شكري وجميع الطلاب المسندين معه</strong> (<span style="font-weight: 800; color: var(--text-primary);">${latifCount}</span> طالب) في كافة الحسابات والرواتب والأرباح.`;
+        }
+        if (statusBadge) {
+          statusBadge.textContent = 'مُضمّن في الحسابات 👥';
+          statusBadge.style.color = '#059669';
+          statusBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+        }
+        if (btnToggleText) btnToggleText.textContent = 'استبعاد أ. عبداللطيف وطلابه';
+        if (btnToggle) {
+          btnToggle.className = 'btn btn-primary no-print';
+          btnToggle.title = 'اضغط لاستبعاد أ. عبداللطيف وطلابه من الحسابات المالية';
+        }
+        if (btnTopText) btnTopText.textContent = 'أ. عبداللطيف: مُضمّن 👥';
+        if (btnTopIcon) btnTopIcon.textContent = '👥';
+      }
+
+      // Filter active teachers, students, groups according to excludeLatif
+      const activeTeachers = excludeLatif 
+        ? rawTeachers.filter(t => !isLatifTeacher(t))
+        : [...rawTeachers];
+
+      const activeStudents = excludeLatif 
+        ? rawStudents.filter(s => !isLatifStudent(s))
+        : [...rawStudents];
+
+      const activeGroups = excludeLatif 
+        ? rawGroups.filter(g => {
+            const tId = g.teacherId || g.teacherUid || '';
+            const tName = g.teacherName || '';
+            return tId !== 't63ltWofLbSJylVZuecUaQCWA3W2' && 
+                   tId !== 'oqOr81nEGiTpBYFG6457ZkGInBM2' && 
+                   !tName.includes('عبداللطيف') && 
+                   !tName.includes('عبد اللطيف');
+          })
+        : [...rawGroups];
+
+      // 1. Compute Expected Outgoing Salaries (الرواتب المتوقع خروجها للمعلمين بدقة الجداول)
+      let totalOutgoingSalaries = 0;
+      let totalExpectedHours = 0;
+      let totalExpectedSessions = 0;
+      computedTeacherCalculations.clear();
+      const teacherRows = [];
+
+      activeTeachers.forEach(teacher => {
+        const tId = teacher.uid || teacher.id;
+        const calc = calculateTeacherScheduleAccurate(teacher, activeStudents, activeGroups, selYear, selMonthIndex);
+        computedTeacherCalculations.set(tId, calc);
+
+        totalOutgoingSalaries += calc.netSalary;
+        totalExpectedHours += calc.totalHours;
+        totalExpectedSessions += calc.totalSessions;
+
+        teacherRows.push({
+          uid: tId,
+          name: teacher.name || 'معلم',
+          phone: teacher.phone || teacher.paymentVodafone || '-',
+          studentsCount: calc.studentsCount,
+          groupsCount: calc.groupsCount,
+          totalSessions: calc.totalSessions,
+          rateInd: calc.rateInd,
+          hours: calc.totalHours,
+          salary: calc.netSalary
+        });
+      });
+
+      // Sort teachers: active teaching staff with classes first, then by salary descending
+      teacherRows.sort((a, b) => {
+        const aHas = (a.studentsCount > 0 || a.groupsCount > 0) ? 1 : 0;
+        const bHas = (b.studentsCount > 0 || b.groupsCount > 0) ? 1 : 0;
+        if (aHas !== bHas) return bHas - aHas;
+        return b.salary - a.salary;
+      });
+
+      // 2. Compute Expected Incoming Revenue (متوسط الداخل من الطلاب لو كله دفع)
+      let totalIncomingRevenue = 0;
+      const studentRows = [];
+
+      activeStudents.forEach(student => {
+        const info = getStudentScheduleAndPricing(student, selectedMonth, calcMethod, selYear, selMonthIndex);
+
+        totalIncomingRevenue += info.monthlyFee;
+
+        studentRows.push({
+          id: student.id,
+          name: student.name || 'طالب',
+          teacherName: student.teacherName || 'غير معين',
+          type: student.subscriptionType === 'group' || student.groupId ? 'جماعي' : 'فردي',
+          daysText: info.days.join('، '),
+          sessionsCount: info.sessionsInMonth,
+          duration: info.durMins,
+          monthlyFee: info.monthlyFee,
+          hasPaid: info.hasPaid
+        });
+      });
+
+      // Sort students by fee descending
+      studentRows.sort((a, b) => b.monthlyFee - a.monthlyFee);
+
+      // 3. Compute Net Expected Profit (صافي الربح المتوقع - الربح بقا)
+      const netProfit = Math.round(totalIncomingRevenue - totalOutgoingSalaries);
+      const margin = totalIncomingRevenue > 0 
+        ? ((netProfit / totalIncomingRevenue) * 100).toFixed(1) 
+        : 0;
+
+      // Active teaching staff who actually have assigned students or classes
+      const activeTeachingStaff = teacherRows.filter(t => t.studentsCount > 0 || t.groupsCount > 0);
+
+      // 4. Update the 3 KPI Cards
+      const elIncoming = document.getElementById('kpiIncomingRevenue');
+      const elOutgoing = document.getElementById('kpiOutgoingSalaries');
+      const elNetProfit = document.getElementById('kpiNetProfit');
+      const elStudentsCount = document.getElementById('kpiStudentsCount');
+      const elTeachersCount = document.getElementById('kpiTeachersCount');
+      const elAvgFee = document.getElementById('kpiAvgStudentFee');
+      const elTotalHours = document.getElementById('kpiTotalHours');
+      const elMargin = document.getElementById('kpiProfitMarginBadge');
+
+      if (elIncoming) elIncoming.textContent = `${Math.round(totalIncomingRevenue).toLocaleString()} ج.م`;
+      if (elOutgoing) elOutgoing.textContent = `${Math.round(totalOutgoingSalaries).toLocaleString()} ج.م`;
+      if (elStudentsCount) elStudentsCount.textContent = activeStudents.length;
+      if (elTeachersCount) elTeachersCount.textContent = activeTeachingStaff.length;
+
+      const avgFee = activeStudents.length > 0 ? Math.round(totalIncomingRevenue / activeStudents.length) : 0;
+      if (elAvgFee) elAvgFee.textContent = `${avgFee.toLocaleString()} ج.م`;
+      
+      const cleanHoursStr = Number.isInteger(totalExpectedHours) 
+        ? `${totalExpectedHours}` 
+        : totalExpectedHours.toFixed(1).replace('.0', '');
+      if (elTotalHours) elTotalHours.textContent = `${cleanHoursStr} ساعة (${totalExpectedSessions} حصة)`;
+
+      if (elNetProfit) {
+        elNetProfit.textContent = `${netProfit.toLocaleString()} ج.م`;
+        if (netProfit >= 0) {
+          elNetProfit.style.color = '#16a34a';
+          if (elMargin) {
+            elMargin.textContent = `+${margin}%`;
+            elMargin.style.color = '#16a34a';
+          }
+        } else {
+          elNetProfit.style.color = '#dc2626';
+          if (elMargin) {
+            elMargin.textContent = `${margin}%`;
+            elMargin.style.color = '#dc2626';
+          }
+        }
+      }
+
+      // 5. Update Financial Ratio Bar
+      const salariesPercent = totalIncomingRevenue > 0 
+        ? Math.min(100, Math.round((totalOutgoingSalaries / totalIncomingRevenue) * 100)) 
+        : 50;
+      const profitPercent = Math.max(0, 100 - salariesPercent);
+
+      const barSal = document.getElementById('barSalaries');
+      const barProf = document.getElementById('barProfit');
+      const txtRatio = document.getElementById('ratioSummaryText');
+      const txtSalPercent = document.getElementById('barSalariesPercent');
+      const txtProfPercent = document.getElementById('barProfitPercent');
+
+      if (barSal) barSal.style.width = `${salariesPercent}%`;
+      if (barProf) barProf.style.width = `${profitPercent}%`;
+      if (txtSalPercent) txtSalPercent.textContent = `${salariesPercent}%`;
+      if (txtProfPercent) txtProfPercent.textContent = `${profitPercent}%`;
+      if (txtRatio) {
+        txtRatio.textContent = `الرواتب المتوقعة تمثل (${salariesPercent}%) من إجمالي دخل الطلاب`;
+      }
+
+      // Update Tab Badges
+      const bTeachers = document.getElementById('tabTeachersBadge');
+      const bStudents = document.getElementById('tabStudentsBadge');
+      if (bTeachers) bTeachers.textContent = activeTeachingStaff.length;
+      if (bStudents) bStudents.textContent = studentRows.length;
+
+      // 6. Render Teachers Table
+      const tBodyTeachers = document.getElementById('teachersBreakdownTableBody');
+      if (tBodyTeachers) {
+        if (teacherRows.length === 0) {
+          tBodyTeachers.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">لا يوجد معلمين مسجلين لهذه الدورة</td></tr>`;
+        } else {
+          tBodyTeachers.innerHTML = teacherRows.map(t => {
+            const share = totalOutgoingSalaries > 0 
+              ? ((t.salary / totalOutgoingSalaries) * 100).toFixed(1) 
+              : 0;
+            const studentsCell = (t.studentsCount > 0 || t.groupsCount > 0)
+              ? `<strong style="color: var(--primary-color);">${t.studentsCount} طلاب ${t.groupsCount > 0 ? `+ ${t.groupsCount} مجموعة` : ''}</strong>`
+              : `<span class="badge" style="background: var(--bg-primary); color: var(--text-muted); font-size: 0.75rem;">لا توجد حصص مسندة</span>`;
+            
+            const hoursCell = Number.isInteger(t.hours) ? `${t.hours} س` : `${t.hours.toFixed(1)} س`;
+            
+            return `
+              <tr class="teacher-calc-row" data-teacher-id="${t.uid}" title="اضغط لعرض تفاصيل كل جنيه">
+                <td>
+                  <strong>${t.name}</strong>
+                  <div style="font-size: 0.75rem; color: var(--text-muted);">${t.phone}</div>
+                </td>
+                <td>${studentsCell}</td>
+                <td><span style="font-weight: 700; color: #8b5cf6;">${t.totalSessions} حصة</span></td>
+                <td><span style="font-weight: 700; color: var(--text-secondary);">${hoursCell}</span></td>
+                <td><strong>${t.rateInd} ج.م</strong></td>
+                <td>
+                  <strong style="color: #d97706; font-size: 1.05rem; font-family: monospace;">${t.salary.toLocaleString()} ج.م</strong>
+                </td>
+                <td>
+                  <div style="display: flex; align-items: center; gap: 0.4rem;">
+                    <div style="width: 45px; height: 6px; background: #e2e8f0; border-radius: 999px; overflow: hidden;">
+                      <div style="width: ${share}%; height: 100%; background: #d97706;"></div>
+                    </div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">${share}%</span>
+                  </div>
+                </td>
+                <td class="no-print">
+                  <button class="btn btn-primary btn-sm view-teacher-breakdown-btn" data-teacher-id="${t.uid}" style="padding: 0.3rem 0.65rem; font-size: 0.78rem; font-weight: 800; gap: 0.3rem;">
+                    <i data-lucide="calculator" style="width: 13px; height: 13px;"></i> تفاصيل كل جنيه 🔍
+                  </button>
+                </td>
+              </tr>
+            `;
+          }).join('');
+
+          // Bind row clicks to open detailed pound-by-pound modal
+          tBodyTeachers.querySelectorAll('.teacher-calc-row').forEach(row => {
+            row.addEventListener('click', () => {
+              const tId = row.dataset.teacherId;
+              openTeacherFinancialModal(tId);
+            });
+          });
+        }
+      }
+
+      // 7. Render Students Table
+      const tBodyStudents = document.getElementById('studentsBreakdownTableBody');
+      if (tBodyStudents) {
+        if (studentRows.length === 0) {
+          tBodyStudents.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">لا يوجد طلاب مسجلين لهذه الدورة</td></tr>`;
+        } else {
+          tBodyStudents.innerHTML = studentRows.map(s => {
+            const statusHtml = s.hasPaid 
+              ? `<span class="badge" style="background: var(--success-light); color: var(--success); font-weight: 800; font-size: 0.75rem;">تم السداد ✅</span>`
+              : `<span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #d97706; font-weight: 800; font-size: 0.75rem;">بانتظار السداد ⏳</span>`;
+            
+            return `
+              <tr>
+                <td><strong>${s.name}</strong></td>
+                <td><span style="color: var(--text-secondary); font-size: 0.85rem;">${s.teacherName}</span></td>
+                <td><span class="badge" style="background: var(--bg-primary); border: 1px solid var(--border-color); font-size: 0.75rem;">${s.type}</span></td>
+                <td><span style="font-size: 0.8rem; color: var(--text-secondary);">${s.daysText}</span></td>
+                <td><span style="font-size: 0.82rem; color: var(--text-muted);">${s.sessionsCount} حصة (${s.duration} د)</span></td>
+                <td><strong style="color: #0284c7; font-size: 0.95rem; font-family: monospace;">${s.monthlyFee.toLocaleString()} ج.م</strong></td>
+                <td>${statusHtml}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+      }
+
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+    }
+
+    // Open detailed pound-by-pound modal for a specific teacher
+    function openTeacherFinancialModal(teacherId) {
+      const calc = computedTeacherCalculations.get(teacherId);
+      if (!calc) {
+        Toast.warning("تعذر العثور على بيانات هذا المعلم.");
+        return;
+      }
+
+      const modal = document.getElementById('teacherFinDetailModal');
+      if (!modal) return;
+
+      const t = calc.teacher;
+      const initial = (t.name || 'م').trim().charAt(0);
+
+      document.getElementById('modalTeacherInitial').textContent = initial;
+      document.getElementById('modalTeacherName').textContent = t.name || 'معلم';
+      
+      const roleText = t.role === 'supervisor' ? 'مشرف ومعلم' : 'معلم معتمد';
+      document.getElementById('modalTeacherRoleBadge').textContent = roleText;
+
+      const [y, m] = selectedMonth.split('-');
+      const monthLabel = `${monthsAr[parseInt(m, 10) - 1]} ${y}`;
+      document.getElementById('modalMonthName').textContent = monthLabel;
+      document.getElementById('modalTeacherSubtitle').textContent = `كشف مستحقات جدول الطلاب لشهر (${monthLabel}) بالتفصيل الدقيق لكل جنيه`;
+
+      const cleanTotalHours = Number.isInteger(calc.totalHours) ? `${calc.totalHours}` : calc.totalHours.toFixed(1).replace('.0', '');
+      document.getElementById('modalExpectedSalary').textContent = `${Math.round(calc.netSalary).toLocaleString()} ج.م`;
+      document.getElementById('modalTotalHours').textContent = `${cleanTotalHours} س`;
+      document.getElementById('modalTotalSessions').textContent = `${calc.totalSessions} حصة`;
+      document.getElementById('modalRates').textContent = `${calc.rateInd} ج.م فردي | ${calc.rateGrp} ج.م جماعي`;
+
+      const badgeStudentsCount = document.getElementById('modalStudentsCountBadge');
+      if (badgeStudentsCount) badgeStudentsCount.textContent = `${calc.studentDetails.length} طلاب مسندين`;
+
+      // Render Individual Students Breakdown (Every Single Pound Accounted For)
+      const sBody = document.getElementById('modalStudentsBreakdownBody');
+      if (sBody) {
+        if (!calc.studentDetails || calc.studentDetails.length === 0) {
+          sBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">لا يوجد طلاب فرديين مسندين لهذا المعلم حالياً</td></tr>`;
+        } else {
+          sBody.innerHTML = calc.studentDetails.map(st => {
+            const daysText = Array.isArray(st.days) ? st.days.join(' و ') : st.days;
+            const profitColor = st.netProfit >= 0 ? 'var(--success)' : 'var(--danger)';
+            const profitSign = st.netProfit >= 0 ? '+' : '';
+            const hoursPerSessionText = Number.isInteger(st.hoursPerSession) ? `${st.hoursPerSession}` : st.hoursPerSession.toFixed(2);
+            const totalHoursText = Number.isInteger(st.totalHours) ? `${st.totalHours}` : st.totalHours.toFixed(1).replace('.0', '');
+            const costPerSessionText = Number.isInteger(st.costPerSession) ? `${st.costPerSession}` : st.costPerSession.toFixed(1);
+            const costText = Number.isInteger(st.cost) ? `${st.cost.toLocaleString()}` : st.cost.toFixed(1);
+            const netProfitText = Number.isInteger(st.netProfit) ? `${Math.round(st.netProfit).toLocaleString()}` : st.netProfit.toFixed(1);
+
+            return `
+              <tr>
+                <td><strong>${st.name}</strong></td>
+                <td><span style="color: var(--text-secondary); font-size: 0.82rem;">${daysText}</span></td>
+                <td><span class="badge" style="background: var(--bg-primary);">${st.durMins} د (${hoursPerSessionText} س)</span></td>
+                <td><strong style="color: #8b5cf6;">${st.sessionsInMonth} حصة</strong></td>
+                <td><span style="font-weight: 700; color: var(--text-primary);">${totalHoursText} س</span></td>
+                <td><span class="pound-chip">${costPerSessionText} ج.م/حصة</span></td>
+                <td>
+                  <strong style="color: #d97706; font-size: 0.95rem; font-family: monospace;">${costText} ج.م</strong>
+                </td>
+                <td><span style="color: #0284c7; font-weight: 700; font-family: monospace;">${Math.round(st.studentRev).toLocaleString()} ج.م</span></td>
+                <td><strong style="color: ${profitColor}; font-family: monospace;">${profitSign}${netProfitText} ج.م</strong></td>
+              </tr>
+            `;
+          }).join('');
+        }
+      }
+
+      // Render Groups Breakdown (if any)
+      const grpSection = document.getElementById('modalGroupsSection');
+      const gBody = document.getElementById('modalGroupsBreakdownBody');
+      if (calc.groupDetails && calc.groupDetails.length > 0) {
+        if (grpSection) grpSection.style.display = 'block';
+        if (gBody) {
+          gBody.innerHTML = calc.groupDetails.map(grp => {
+            const daysText = Array.isArray(grp.days) ? grp.days.join(' و ') : grp.days;
+            const hoursPerSessionText = Number.isInteger(grp.hoursPerSession) ? `${grp.hoursPerSession}` : grp.hoursPerSession.toFixed(2);
+            const totalHoursText = Number.isInteger(grp.totalHours) ? `${grp.totalHours}` : grp.totalHours.toFixed(1).replace('.0', '');
+            const costPerSessionText = Number.isInteger(grp.costPerSession) ? `${grp.costPerSession}` : grp.costPerSession.toFixed(1);
+            const costText = Number.isInteger(grp.cost) ? `${grp.cost.toLocaleString()}` : grp.cost.toFixed(1);
+
+            return `
+              <tr>
+                <td><strong>${grp.name}</strong></td>
+                <td><span style="color: var(--text-secondary); font-size: 0.82rem;">${daysText}</span></td>
+                <td><span class="badge" style="background: var(--bg-primary);">${grp.durMins} د (${hoursPerSessionText} س)</span></td>
+                <td><strong style="color: #8b5cf6;">${grp.sessionsInMonth} حصة</strong></td>
+                <td><span style="font-weight: 700; color: var(--text-primary);">${totalHoursText} س</span></td>
+                <td><span class="pound-chip">${costPerSessionText} ج.م/حصة</span></td>
+                <td>
+                  <strong style="color: #d97706; font-size: 0.95rem; font-family: monospace;">${costText} ج.م</strong>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+      } else {
+        if (grpSection) grpSection.style.display = 'none';
+      }
+
+      // Math Formula Breakdown Step by Step
+      const indHoursText = Number.isInteger(calc.totalIndHours) ? `${calc.totalIndHours}` : calc.totalIndHours.toFixed(1).replace('.0', '');
+      const grpHoursText = Number.isInteger(calc.totalGrpHours) ? `${calc.totalGrpHours}` : calc.totalGrpHours.toFixed(1).replace('.0', '');
+      document.getElementById('modalMathInd').textContent = `${Math.round(calc.totalIndCost).toLocaleString()} ج.م (${indHoursText} ساعة فردي)`;
+      document.getElementById('modalMathGrp').textContent = `${Math.round(calc.totalGrpCost).toLocaleString()} ج.م (${grpHoursText} ساعة جماعي)`;
+      document.getElementById('modalMathBonus').textContent = `+${Math.round(calc.bonuses).toLocaleString()} ج.م`;
+      document.getElementById('modalMathDeduct').textContent = `-${Math.round(calc.deductions).toLocaleString()} ج.م`;
+      document.getElementById('modalMathTotal').textContent = `${Math.round(calc.netSalary).toLocaleString()} ج.م`;
+
+      modal.style.display = 'flex';
+      if (window.lucide) {
+        window.lucide.createIcons({ root: modal });
+      }
+    }
+  </script>
+</body>
+</html>

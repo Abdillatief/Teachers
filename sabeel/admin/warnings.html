@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - مركز التحذيرات والرقابة</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .warning-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .warning-card:hover {
+      border-color: #ea580c;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    .warning-card.reviewed {
+      opacity: 0.82;
+      border-left: 4px solid var(--success);
+      background-color: var(--bg-secondary);
+    }
+    .warning-card.pending {
+      border-right: 4px solid #ea580c;
+    }
+    .warning-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+    .warning-badge-duplicate {
+      background-color: rgba(234, 88, 12, 0.1);
+      color: #ea580c;
+      border: 1px solid rgba(234, 88, 12, 0.25);
+    }
+    .tab-btn {
+      padding: 0.65rem 1.25rem;
+      font-weight: 700;
+      font-size: 0.9rem;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tab-btn.active {
+      color: var(--primary-color);
+      border-bottom-color: var(--primary-color);
+    }
+  </style>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        
+        <!-- Header -->
+        <div style="margin-bottom: 1.75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="alert-triangle" style="color: #ea580c; width: 26px; height: 26px;"></i>
+              مركز التحذيرات والرقابة الإدارية
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; margin-top: 0.25rem;">
+              رصد العمليات الاستثنائية والتحذيرات التلقائية مثل تكرار الحصص لنفس الطالب في اليوم ذاته.
+            </p>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <button id="btnRefreshWarnings" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 1rem;">
+              <i data-lucide="rotate-cw" style="width: 15px; height: 15px;"></i> تحديث البيانات
+            </button>
+          </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="card" style="padding: 1.25rem; border-right: 4px solid #ea580c;">
+            <div style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700;">التحذيرات النشطة (قيد المراجعة)</div>
+            <h3 id="statPendingCount" style="font-size: 1.75rem; font-weight: 800; color: #ea580c; margin: 0.25rem 0 0 0;">0</h3>
+          </div>
+          <div class="card" style="padding: 1.25rem; border-right: 4px solid var(--primary-color);">
+            <div style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700;">تحذيرات الحصص المكررة اليوم</div>
+            <h3 id="statDuplicateCount" style="font-size: 1.75rem; font-weight: 800; color: var(--primary-color); margin: 0.25rem 0 0 0;">0</h3>
+          </div>
+          <div class="card" style="padding: 1.25rem; border-right: 4px solid var(--success);">
+            <div style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700;">تحذيرات تمت مراجعتها</div>
+            <h3 id="statReviewedCount" style="font-size: 1.75rem; font-weight: 800; color: var(--success); margin: 0.25rem 0 0 0;">0</h3>
+          </div>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div style="display: flex; gap: 0.5rem; border-bottom: 2px solid var(--border-color); margin-bottom: 1.5rem;">
+          <button id="tabActive" class="tab-btn active" data-tab="active">
+            <i data-lucide="bell-ring" style="width: 16px; height: 16px;"></i>
+            التحذيرات النشطة (<span id="activeTabCounter">0</span>)
+          </button>
+          <button id="tabArchive" class="tab-btn" data-tab="archive">
+            <i data-lucide="archive" style="width: 16px; height: 16px;"></i>
+            سجل التحذيرات المؤرشفة
+          </button>
+        </div>
+
+        <!-- Filters -->
+        <div class="card" style="padding: 1rem 1.25rem; margin-bottom: 1.25rem;">
+          <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+            <div style="flex: 1; min-width: 240px;">
+              <input type="text" id="searchInput" class="form-control" placeholder="بحث باسم المعلم أو الطالب...">
+            </div>
+            <div style="width: 200px;">
+              <select id="typeFilter" class="form-control">
+                <option value="all">جميع أنواع التحذيرات</option>
+                <option value="duplicate_session">تكرار تسجيل الحصة</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Warnings List Container -->
+        <div id="warningsListContainer">
+          <div style="text-align: center; color: var(--text-muted); padding: 3rem;">
+            جاري تحميل سجل التحذيرات...
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { dataStore } from '../assets/js/shared/data/dataStore.js';
+    import { markWarningReviewed } from '../assets/js/features/warnings/warningService.js';
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+
+    // Route Protection: Admin Only
+    protectRoute('admin');
+
+    let allWarnings = [];
+    let currentTab = 'active'; // 'active' | 'archive'
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderSidebar('warnings', 'admin');
+      renderNavbar('التحذيرات والرقابة', { name: 'الإدارة', roleName: 'مدير النظام' });
+
+      // Tab Switchers
+      document.getElementById('tabActive').addEventListener('click', () => switchTab('active'));
+      document.getElementById('tabArchive').addEventListener('click', () => switchTab('archive'));
+
+      // Filter events
+      document.getElementById('searchInput').addEventListener('input', renderList);
+      document.getElementById('typeFilter').addEventListener('change', renderList);
+      document.getElementById('btnRefreshWarnings').addEventListener('click', () => {
+        Toast.info("جاري تحديث التحذيرات...");
+      });
+
+      // Subscribe to warnings via dataStore
+      dataStore.subscribe('warnings', (warnings) => {
+        allWarnings = warnings || [];
+        updateKPIs();
+        renderList();
+      });
+    });
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tab);
+      });
+      renderList();
+    }
+
+    function updateKPIs() {
+      const pending = allWarnings.filter(w => w.status !== 'reviewed');
+      const reviewed = allWarnings.filter(w => w.status === 'reviewed');
+      const duplicates = allWarnings.filter(w => w.type === 'duplicate_session');
+
+      document.getElementById('statPendingCount').textContent = pending.length;
+      document.getElementById('statDuplicateCount').textContent = duplicates.length;
+      document.getElementById('statReviewedCount').textContent = reviewed.length;
+      document.getElementById('activeTabCounter').textContent = pending.length;
+    }
+
+    function renderList() {
+      const container = document.getElementById('warningsListContainer');
+      const searchVal = document.getElementById('searchInput').value.trim().toLowerCase();
+      const typeVal = document.getElementById('typeFilter').value;
+
+      let filtered = allWarnings.filter(w => {
+        const isReviewed = w.status === 'reviewed';
+        if (currentTab === 'active' && isReviewed) return false;
+        if (currentTab === 'archive' && !isReviewed) return false;
+
+        if (typeVal !== 'all' && w.type !== typeVal) return false;
+
+        if (searchVal) {
+          const teacher = (w.teacherName || '').toLowerCase();
+          const student = (w.studentName || '').toLowerCase();
+          if (!teacher.includes(searchVal) && !student.includes(searchVal)) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="card" style="text-align: center; padding: 3rem; color: var(--text-muted);">
+            <i data-lucide="${currentTab === 'active' ? 'check-circle' : 'archive'}" style="width: 42px; height: 42px; margin: 0 auto 0.75rem auto; color: var(--text-muted); opacity: 0.5;"></i>
+            <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 0.25rem 0; color: var(--text-primary);">
+              ${currentTab === 'active' ? 'لا توجد تحذيرات نشطة معلقة' : 'أرشيف التحذيرات فارغ'}
+            </h3>
+            <p style="font-size: 0.85rem; margin: 0;">
+              ${currentTab === 'active' ? 'كافة العمليات والحصص المسجلة تسير وفق النمط الطبيعي.' : 'لم يتم نقل أي تحذيرات إلى الأرشيف بعد.'}
+            </p>
+          </div>
+        `;
+        if (window.lucide) window.lucide.createIcons();
+        return;
+      }
+
+      container.innerHTML = filtered.map(w => {
+        const isReviewed = w.status === 'reviewed';
+        const typeLabel = w.type === 'duplicate_session' ? 'تكرار تسجيل حصة' : (w.title || 'تحذير نظام');
+
+        return `
+          <div class="warning-card ${isReviewed ? 'reviewed' : 'pending'}" id="warning-${w.id}">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.75rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <span class="warning-badge warning-badge-duplicate">
+                  <i data-lucide="copy" style="width: 14px; height: 14px;"></i>
+                  ${typeLabel}
+                </span>
+                <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted);">
+                  تاريخ الحصة: <strong style="color: var(--text-primary);">${w.date || 'غير محدد'}</strong>
+                </span>
+                ${isReviewed ? `
+                  <span class="badge" style="background: rgba(16, 185, 129, 0.1); color: var(--success); font-weight: 700; padding: 0.25rem 0.6rem;">
+                    تمت المراجعة والاعتماد
+                  </span>` : `
+                  <span class="badge" style="background: rgba(234, 88, 12, 0.1); color: #ea580c; font-weight: 700; padding: 0.25rem 0.6rem;">
+                    قيد المراجعة الإدارية
+                  </span>`
+                }
+              </div>
+
+              ${!isReviewed ? `
+                <button type="button" class="btn btn-secondary btn-review" data-id="${w.id}" style="font-size: 0.82rem; padding: 0.4rem 0.85rem; font-weight: 700; border-color: var(--success); color: var(--success); display: inline-flex; align-items: center; gap: 0.35rem;">
+                  <i data-lucide="check" style="width: 14px; height: 14px;"></i>
+                  تمت المراجعة
+                </button>
+              ` : `
+                <span style="font-size: 0.75rem; color: var(--text-muted);">
+                  تمت المراجعة بواسطة: ${w.reviewedByName || 'الإدارة'}
+                </span>
+              `}
+            </div>
+
+            <!-- Details Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; background-color: var(--bg-primary); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">اسم المعلم:</div>
+                <div style="font-size: 0.95rem; font-weight: 800; color: var(--text-primary); margin-top: 0.2rem;">${w.teacherName || 'غير مسجل'}</div>
+              </div>
+
+              <div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">اسم الطالب:</div>
+                <div style="font-size: 0.95rem; font-weight: 800; color: var(--text-primary); margin-top: 0.2rem;">${w.studentName || 'غير مسجل'}</div>
+              </div>
+
+              <div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">وقت التسجيل الأول:</div>
+                <div style="font-size: 0.95rem; font-weight: 800; color: #64748b; margin-top: 0.2rem;">${w.firstTime || '--:--'}</div>
+              </div>
+
+              <div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">وقت التسجيل الثاني:</div>
+                <div style="font-size: 0.95rem; font-weight: 800; color: #ea580c; margin-top: 0.2rem;">${w.secondTime || '--:--'}</div>
+              </div>
+            </div>
+
+            <div style="font-size: 0.78rem; color: var(--text-muted); display: flex; justify-content: space-between;">
+              <span>معرّف السجل: <code>${w.id}</code></span>
+              <span>تاريخ الإشعار: ${w.createdAt ? new Date(w.createdAt.toDate ? w.createdAt.toDate() : w.createdAt).toLocaleDateString('ar-EG') : 'الآن'}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (window.lucide) window.lucide.createIcons();
+
+      // Bind review action buttons
+      container.querySelectorAll('.btn-review').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const warningId = e.currentTarget.dataset.id;
+          btn.disabled = true;
+          btn.innerHTML = `<span class="loading-spinner" style="width:14px;height:14px;"></span> جاري الاعتماد...`;
+
+          const res = await markWarningReviewed(warningId, {
+            uid: auth?.currentUser?.uid,
+            name: 'إدارة الأكاديمية'
+          });
+
+          if (res.success) {
+            Toast.success("تم تأكيد مراجعة التحذير ونقله إلى الأرشيف بنجاح.");
+          } else {
+            Toast.danger("تعذر مراجعة التحذير، يرجى المحاولة لاحقاً.");
+            btn.disabled = false;
+          }
+        });
+      });
+    }
+  </script>
+</body>
+</html>
