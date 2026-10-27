@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>سبيل - إدارة حسابات وصلاحيات المشرفين</title>
+  
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+
+  <style>
+    .perm-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      background: var(--bg-primary, #f1f5f9);
+      color: var(--text-secondary, #475569);
+      border: 1px solid var(--border-color, #e2e8f0);
+      white-space: nowrap;
+    }
+    .perm-badge.active {
+      background: rgba(13, 148, 136, 0.12);
+      color: var(--primary-color, #0d9488);
+      border-color: rgba(13, 148, 136, 0.25);
+    }
+    .stats-card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat-mini-card {
+      background: var(--bg-surface, #ffffff);
+      border: 1px solid var(--border-color, #e2e8f0);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    .tab-nav-btn {
+      padding: 0.75rem 1.25rem;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary, #64748b);
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+    }
+    .tab-nav-btn.active {
+      color: var(--primary-color, #0d9488);
+      border-bottom-color: var(--primary-color, #0d9488);
+    }
+    .perm-matrix-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1rem;
+    }
+    .perm-group-box {
+      background: var(--bg-primary, #f8fafc);
+      border: 1px solid var(--border-color, #e2e8f0);
+      border-radius: 10px;
+      padding: 1rem;
+    }
+    .perm-group-title {
+      font-weight: 800;
+      font-size: 0.9rem;
+      color: var(--text-primary, #0f172a);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+    }
+    .perm-item-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--text-primary, #1e293b);
+      margin-bottom: 0.6rem;
+      user-select: none;
+    }
+    .perm-item-label input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: var(--primary-color, #0d9488);
+    }
+    .preset-pill-btn {
+      padding: 0.35rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid var(--border-color, #e2e8f0);
+      background: var(--bg-surface, #ffffff);
+      color: var(--text-primary, #334155);
+      transition: all 0.2s ease;
+    }
+    .preset-pill-btn:hover {
+      background: var(--primary-color, #0d9488);
+      color: #ffffff;
+      border-color: var(--primary-color, #0d9488);
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 800;
+    }
+    .status-badge.approved {
+      background: rgba(16, 185, 129, 0.12);
+      color: #10b981;
+    }
+    .status-badge.pending {
+      background: rgba(245, 158, 11, 0.12);
+      color: #f59e0b;
+      animation: pulse 2s infinite;
+    }
+    .status-badge.suspended {
+      background: rgba(239, 68, 68, 0.12);
+      color: #ef4444;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body" style="padding-bottom: 4rem;">
+        
+        <!-- Page Header -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+          <div>
+            <h1 style="font-size: 1.6rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.3rem;">
+              إدارة حسابات وصلاحيات المشرفين 🛡️
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">
+              مراجعة طلبات الانضمام المعلقة، وتعيين مصفوفة الصلاحيات الأمنية والمالية والإدارية بدقة لكل مشرف.
+            </p>
+          </div>
+          <button id="openDirectAddBtn" class="btn btn-primary" style="display: flex; align-items: center; gap: 0.5rem; font-weight: 700; padding: 0.65rem 1.25rem;">
+            <i data-lucide="user-plus" style="width: 18px; height: 18px;"></i>
+            <span>إضافة مشرف فوري</span>
+          </button>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="stats-card-grid">
+          <div class="stat-mini-card">
+            <div>
+              <div style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">طلبات معلقة</div>
+              <div id="statPendingCount" style="font-size: 1.5rem; font-weight: 800; color: var(--warning, #f59e0b);">0</div>
+            </div>
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(245, 158, 11, 0.12); display: flex; align-items: center; justify-content: center; color: var(--warning, #f59e0b);">
+              <i data-lucide="clock" style="width: 20px; height: 20px;"></i>
+            </div>
+          </div>
+
+          <div class="stat-mini-card">
+            <div>
+              <div style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">مشرفون معتمدون</div>
+              <div id="statApprovedCount" style="font-size: 1.5rem; font-weight: 800; color: var(--success, #10b981);">0</div>
+            </div>
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(16, 185, 129, 0.12); display: flex; align-items: center; justify-content: center; color: var(--success, #10b981);">
+              <i data-lucide="shield-check" style="width: 20px; height: 20px;"></i>
+            </div>
+          </div>
+
+          <div class="stat-mini-card">
+            <div>
+              <div style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">مشرفون معلقون / مجمدون</div>
+              <div id="statSuspendedCount" style="font-size: 1.5rem; font-weight: 800; color: var(--danger, #ef4444);">0</div>
+            </div>
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(239, 68, 68, 0.12); display: flex; align-items: center; justify-content: center; color: var(--danger, #ef4444);">
+              <i data-lucide="user-x" style="width: 20px; height: 20px;"></i>
+            </div>
+          </div>
+
+          <div class="stat-mini-card">
+            <div>
+              <div style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">إجمالي حسابات المشرفين</div>
+              <div id="statTotalCount" style="font-size: 1.5rem; font-weight: 800; color: var(--primary-color, #0d9488);">0</div>
+            </div>
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(13, 148, 136, 0.12); display: flex; align-items: center; justify-content: center; color: var(--primary-color, #0d9488);">
+              <i data-lucide="users" style="width: 20px; height: 20px;"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div style="display: flex; gap: 1rem; border-bottom: 1px solid var(--border-color, #e2e8f0); margin-bottom: 1.5rem;">
+          <button id="tabPendingBtn" class="tab-nav-btn active">
+            <i data-lucide="user-check" style="width: 17px; height: 17px;"></i>
+            <span>طلبات الانضمام المعلقة</span>
+            <span id="tabPendingBadge" class="badge" style="background-color: var(--warning, #f59e0b); color: #fff; font-size: 0.7rem; padding: 2px 7px; border-radius: 10px; display: none;">0</span>
+          </button>
+          <button id="tabApprovedBtn" class="tab-nav-btn">
+            <i data-lucide="shield" style="width: 17px; height: 17px;"></i>
+            <span>المشرفون المعتمدون والصلاحيات النشطة</span>
+          </button>
+        </div>
+
+        <!-- TAB 1: PENDING SUPERVISORS -->
+        <section id="pendingTabContent" style="display: block;">
+          <div class="card" style="padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="user-plus" style="width: 20px; height: 20px; color: var(--warning);"></i>
+                طلبات انضمام المشرفين والمساعدين الجدد
+              </h3>
+              <span style="font-size: 0.8rem; color: var(--text-secondary);">يتم مراجعة الطلب ومنح الصلاحيات قبل تفعيل الحساب</span>
+            </div>
+
+            <div id="pendingSupervisorsContainer">
+              <div style="text-align: center; color: var(--text-muted); padding: 3rem;">
+                <i class="animate-spin" data-lucide="loader-2" style="width: 28px; height: 28px; margin: 0 auto 0.5rem auto; display: block;"></i>
+                جاري جلب ومزامنة طلبات المشرفين المعلقة...
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 2: APPROVED SUPERVISORS -->
+        <section id="approvedTabContent" style="display: none;">
+          <div class="card" style="padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.25rem;">
+              <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="shield-check" style="width: 20px; height: 20px; color: var(--primary-color);"></i>
+                قائمة المشرفين المعتمدين والمساعدين
+              </h3>
+
+              <!-- Filter / Search -->
+              <div style="position: relative; min-width: 240px;">
+                <i data-lucide="search" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-muted);"></i>
+                <input type="text" id="searchApprovedInput" class="form-control" placeholder="بحث باسم المشرف أو البريد..." style="padding-right: 34px; font-size: 0.85rem;">
+              </div>
+            </div>
+
+            <div class="table-container" style="margin-top: 0;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>المشرف والبيانات</th>
+                    <th>القسم / المسمى</th>
+                    <th>الحالة</th>
+                    <th>الصلاحيات الممنوحة</th>
+                    <th style="text-align: center;">إجراءات التحكم</th>
+                  </tr>
+                </thead>
+                <tbody id="approvedAdminsTableBody">
+                  <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                      جاري تحميل بيانات المشرفين المعتمدين...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- MODAL: PERMISSIONS MATRIX (Review & Edit Permissions) -->
+  <div id="permissionsModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; backdrop-filter: blur(3px); align-items: center; justify-content: center; padding: 1rem;">
+    <div style="background: var(--bg-surface, #ffffff); width: 100%; max-width: 780px; max-height: 90vh; border-radius: 16px; display: flex; flex-direction: column; box-shadow: 0 20px 40px rgba(0,0,0,0.25); overflow: hidden; border: 1px solid var(--border-color, #e2e8f0);">
+      
+      <!-- Modal Header -->
+      <div style="padding: 1.25rem 1.5rem; background: var(--bg-primary, #f8fafc); border-bottom: 1px solid var(--border-color, #e2e8f0); display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h3 id="modalSupervisorName" style="font-size: 1.15rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.2rem;">
+            تحديد صلاحيات المشرف
+          </h3>
+          <p id="modalSupervisorMeta" style="font-size: 0.82rem; color: var(--text-secondary); margin: 0;">
+            حدد الصلاحيات المسموح بها لهذا المشرف بدقة
+          </p>
+        </div>
+        <button id="closePermModalBtn" type="button" style="background: none; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer;">&times;</button>
+      </div>
+
+      <!-- Modal Body (Scrollable) -->
+      <div style="padding: 1.5rem; overflow-y: auto; flex: 1;">
+        
+        <!-- Quick Presets -->
+        <div style="margin-bottom: 1.25rem; background: var(--bg-surface, #ffffff); border: 1px dashed var(--border-color, #cbd5e1); border-radius: 10px; padding: 0.75rem 1rem;">
+          <div style="font-size: 0.82rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem;">
+            <i data-lucide="zap" style="width: 14px; height: 14px; color: var(--warning);"></i>
+            قوالب الصلاحيات الجاهزة السريعة:
+          </div>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button type="button" class="preset-pill-btn" id="presetAllBtn">👑 مشرف عام (كافة الصلاحيات)</button>
+            <button type="button" class="preset-pill-btn" id="presetStudentsBtn">🎓 شؤون الطلاب والاشتراكات</button>
+            <button type="button" class="preset-pill-btn" id="presetTeachersBtn">👨‍🏫 شؤون المعلمين والحصص</button>
+            <button type="button" class="preset-pill-btn" id="presetFinanceBtn">💰 المشرف المالي والمحاسب</button>
+            <button type="button" class="preset-pill-btn" id="presetResetBtn" style="color: var(--danger);">🔄 إلغاء التحديد</button>
+          </div>
+        </div>
+
+        <form id="permissionsMatrixForm">
+          <input type="hidden" id="permTargetUid">
+
+          <div class="perm-matrix-grid">
+            
+            <!-- Group 1: الطلاب والدارسون -->
+            <div class="perm-group-box">
+              <div class="perm-group-title">
+                <span>🎓 الطلاب والاشتراكات</span>
+                <button type="button" class="btn-group-toggle" data-group="students" style="font-size: 0.72rem; border: none; background: none; color: var(--primary-color); cursor: pointer; font-weight: 700;">تحديد القسم</button>
+              </div>
+              <label class="perm-item-label">
+                <input type="checkbox" id="perm_viewStudents" data-group="students" checked>
+                <span>استعراض بيانات وسجلات الطلاب</span>
+              </label>
+              <label class="perm-item-label">
+                <input type="checkbox" id="perm_addEditStudents" data-group="students">
+                <span>إضافة وتعديل بيانات الطلاب</span>
+              </label>
+              <label class="perm-item-label">
+                <input type="checkbox" id="perm_deleteStudents" data-group="students">
+                <span>أرشفة وحذف ملفات الطلاب</span>
+              </label>
+              <label class="perm-item-label">
+                <input type="checkbox" id="perm_transferStudents" data-group="students">
+                <span>نقل الطلاب بين المعلمين</span>
+              </label>
+              <label class="perm-item-label">
+                <input type="checkbox" id="perm_manageSubscriptions" data-group="students">
+                <span>إدارة وتجديد اشتراكات الطلاب</span>
+              </label>
+            </div>
+
+            <!-- Group 2: المعلمون والحصص -->
+            <div class="perm-group-box">
+              <div class="perm-group-title">
+                <span>👨‍🏫 المعلمون والحصص</span>
+                <button type="button" class="btn-group-toggle" data-group="teachers" style="font-size: 0.72rem; border: none; background: none; color: var(--primary-color); cursor: pointer; font-weight: 700;">تحديد القسم</button>
+              </div>
+              <label class="perm-item-label">
+                <input type="checkbox" id="perm_viewTeachers" data-group="teachers" checked>
+                <span>استعراض قائمة وملفات المعلمين</span>
+              </label>
+              <label class="perm-item-label">
+                <input type="checkbox" id="perm_approveTeachers" data-group="teachers">
+                <span>قبول واعتماد المعلمين الجدد وتعديل الساعات</span>
+              </label>
+              <label class="perm-item-label">
+                <input type="checkbox" id="perm_manageTeacherSchedules" data-group="teachers">
+                <span>إدارة جداول المعلمين والشواغر</span>
+              </label>
+              <label class="perm-item-label">
+                <input type="checkbox" id="perm_manageSessions" data-group="teachers" checked>
+                <span>متابعة واعتماد وتعديل الحصص اليومية</span>
+              </label>
+              <label class="perm-item-label">
+                <input type="checkbox" id="perm_manageGroups" data-group="teachers">
+                <span>إنشاء وإدارة المجموعات الجماعية</span>
+              </label>
+            </div>
+
+            <!-- Group 3: المالية والرواتب -->
+            <div class="perm-group-box">
+              <div class="perm-group-title">
+                <span>💰 المالية والأجور</span>
+                <button type="button" class="btn-group-toggle" data-group="finance" style="font-size: 0.72rem; border: none; background: none; color: var(--primary-color); cursor: pointer; font-weight: 700;">تحديد القسم</button>
+              </div>
+              <label class="perm-item-label">
+                <input type="checkbox" id="perm_viewFinancials" data-group="finance">
+                <span>استعراض الأرباح والإيرادات العامة</span>
+              </label>
+              <label class="perm-item-label">
+                <input type="checkbox" id="perm_managePayroll" data-group="finance">
+                <span>اعتماد ومطابقة وصرف رواتب المعلمين</span>
+              </label>
+              <label class="perm-item-label">
+                <input type="checkbox" id="perm_managePayments" data-group="finance">
+                <span>تسجيل وتأكيد مدفوعات الطلاب والإيصالات</span>
+              </label>
+              <label class="perm-item-label">
+                <input type="checkbox" id="perm_manageSalaryArchive" data-group="finance">
+                <span>الاطلاع على أرشيف ومسيرات الرواتب</span>
+              </label>
+            </div>
+
+            <!-- Group 4: النظام والتقارير -->
+            <div class="perm-group-box">
+              <div class="perm-group-title">
+                <span>⚙️ النظام والتقارير</span>
+                <button type="button" class="btn-group-toggle" data-group="system" style="font-size: 0.72rem; border: none; background: none; color: var(--primary-color); cursor: pointer; font-weight: 700;">تحديد القسم</button>
+              </div>
+              <label class="perm-item-label">
+                <input type="checkbox" id="perm_sendNotifications" data-group="system" checked>
+                <span>إرسال وبث التنبيهات والإشعارات</span>
+              </label>
+              <label class="perm-item-label">
+                <input type="checkbox" id="perm_viewReports" data-group="system">
+                <span>الاطلاع على تقارير الأداء والإحصائيات</span>
+              </label>
+              <label class="perm-item-label">
+                <input type="checkbox" id="perm_viewInvestigation" data-group="system">
+                <span>مركز التحقيق ومراجعة الصندوق الأسود</span>
+              </label>
+              <label class="perm-item-label">
+                <input type="checkbox" id="perm_exportData" data-group="system">
+                <span>تصدير وتنزيل النسخ الاحتياطية</span>
+              </label>
+              <label class="perm-item-label">
+                <input type="checkbox" id="perm_editSettings" data-group="system">
+                <span>تعديل إعدادات وهوية الأكاديمية</span>
+              </label>
+            </div>
+
+          </div>
+        </form>
+      </div>
+
+      <!-- Modal Footer -->
+      <div style="padding: 1rem 1.5rem; background: var(--bg-primary, #f8fafc); border-top: 1px solid var(--border-color, #e2e8f0); display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+        <button type="button" id="cancelPermModalBtn" class="btn btn-secondary">إلغاء</button>
+        <button type="button" id="saveAndApprovePermBtn" class="btn btn-primary" style="display: flex; align-items: center; gap: 0.5rem; font-weight: 700;">
+          <i data-lucide="check-circle" style="width: 17px; height: 17px;"></i>
+          <span id="savePermBtnText">حفظ وتفعيل الصلاحيات</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL: DIRECT ADD SUPERVISOR (Instant Account Creation) -->
+  <div id="directAddModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; backdrop-filter: blur(3px); align-items: center; justify-content: center; padding: 1rem;">
+    <div style="background: var(--bg-surface, #ffffff); width: 100%; max-width: 500px; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.25); overflow: hidden; border: 1px solid var(--border-color, #e2e8f0);">
+      
+      <div style="padding: 1.25rem 1.5rem; background: var(--bg-primary, #f8fafc); border-bottom: 1px solid var(--border-color, #e2e8f0); display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.4rem;">
+          <i data-lucide="user-plus" style="width: 18px; height: 18px; color: var(--primary-color);"></i>
+          إنشاء حساب مشرف إداري فوري
+        </h3>
+        <button id="closeDirectAddBtn" type="button" style="background: none; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer;">&times;</button>
+      </div>
+
+      <form id="directAddAdminForm" style="padding: 1.5rem;">
+        <div class="form-group">
+          <label for="directName">الاسم الكامل للمشرف</label>
+          <input type="text" id="directName" class="form-control" placeholder="مثال: أحمد عبد الله" required>
+        </div>
+
+        <div class="form-group">
+          <label for="directEmail">البريد الإلكتروني أو اسم الحساب</label>
+          <input type="email" id="directEmail" class="form-control" placeholder="supervisor@gmail.com" required>
+        </div>
+
+        <div class="form-group">
+          <label for="directPhone">رقم الهاتف / الواتساب</label>
+          <input type="tel" id="directPhone" class="form-control" placeholder="05xxxxxxxx" required style="direction: ltr; text-align: left;">
+        </div>
+
+        <div class="form-group">
+          <label for="directDept">تخصص أو قسم الإشراف</label>
+          <select id="directDept" class="form-control">
+            <option value="إشراف عام وتنسيق">إشراف عام وتنسيق إداري</option>
+            <option value="شؤون الطلاب والاشتراكات">شؤون الطلاب والاشتراكات</option>
+            <option value="شؤون المعلمين والحصص">شؤون المعلمين ومتابعة الحصص</option>
+            <option value="الإشراف المالي والأجور">الإشراف المالي ومتابعة الرواتب</option>
+            <option value="إدارة الجداول والمواعيد">إدارة الجداول والشواغر</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="directPassword">كلمة المرور الافتراضية</label>
+          <input type="text" id="directPassword" class="form-control" placeholder="8 رموز أو أكثر" minlength="8" required value="Sabeel@2026">
+        </div>
+
+        <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem;">
+          <button type="button" id="cancelDirectAddBtn" class="btn btn-secondary">إلغاء</button>
+          <button type="submit" class="btn btn-primary" style="font-weight: 700;">إنشاء وتفعيل الحساب</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import '../assets/js/shared/utils/jsonShield.js';
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { 
+      collection, 
+      onSnapshot, 
+      getDoc, 
+      doc, 
+      setDoc, 
+      deleteDoc, 
+      updateDoc,
+      addDoc,
+      query,
+      where,
+      orderBy,
+      serverTimestamp 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+    import { showCustomConfirm } from '../assets/js/shared/utils/helpers.js';
+
+    protectRoute('admin');
+
+    let allAdmins = [];
+    let currentEditingSupervisor = null;
+
+    // Permission Keys list for convenience
+    const ALL_PERM_KEYS = [
+      'viewStudents', 'addEditStudents', 'deleteStudents', 'transferStudents', 'manageSubscriptions',
+      'viewTeachers', 'approveTeachers', 'manageTeacherSchedules', 'manageSessions', 'manageGroups',
+      'viewFinancials', 'managePayroll', 'managePayments', 'manageSalaryArchive',
+      'sendNotifications', 'viewReports', 'viewInvestigation', 'exportData', 'editSettings'
+    ];
+
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        // Enforce Super Admin only check
+        try {
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          if (userDoc.exists() && userDoc.data().isSubAdmin) {
+            Toast.error("صفحة صلاحيات المشرفين مخصصة للإدارة المركزية فقط.");
+            window.location.href = "dashboard.html";
+            return;
+          }
+        } catch (e) {}
+
+        renderSidebar('permissions', 'admin');
+        renderNavbar('إدارة حسابات وصلاحيات المشرفين', { name: 'الإدارة المركزية', roleName: 'مدير النظام' });
+        initSupervisorsRealtime();
+      }
+    });
+
+    // 1. Realtime listener for Admin / Supervisor accounts
+    function initSupervisorsRealtime() {
+      onSnapshot(collection(db, "users"), (snapshot) => {
+        allAdmins = [];
+        snapshot.forEach(docSnap => {
+          const u = docSnap.data();
+          if (u.role === "admin") {
+            allAdmins.push({ uid: docSnap.id, ...u });
+          }
+        });
+
+        updateStatsAndTabs();
+        renderPendingSupervisors();
+        renderApprovedSupervisors();
+      });
+    }
+
+    function updateStatsAndTabs() {
+      const pendingList = allAdmins.filter(a => a.isSubAdmin && a.status === 'pending');
+      const approvedList = allAdmins.filter(a => !a.isSubAdmin || (a.isSubAdmin && a.status === 'approved'));
+      const suspendedList = allAdmins.filter(a => a.isSubAdmin && a.status === 'suspended');
+
+      document.getElementById('statPendingCount').textContent = pendingList.length;
+      document.getElementById('statApprovedCount').textContent = approvedList.length;
+      document.getElementById('statSuspendedCount').textContent = suspendedList.length;
+      document.getElementById('statTotalCount').textContent = allAdmins.length;
+
+      const pendingBadge = document.getElementById('tabPendingBadge');
+      if (pendingBadge) {
+        if (pendingList.length > 0) {
+          pendingBadge.textContent = pendingList.length;
+          pendingBadge.style.display = 'inline-block';
+        } else {
+          pendingBadge.style.display = 'none';
+        }
+      }
+    }
+
+    // 2. Render Pending Supervisors
+    function renderPendingSupervisors() {
+      const container = document.getElementById('pendingSupervisorsContainer');
+      if (!container) return;
+
+      const pendingList = allAdmins.filter(a => a.isSubAdmin && a.status === 'pending');
+
+      if (pendingList.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 3rem 1rem; color: var(--text-secondary);">
+            <div style="width: 56px; height: 56px; border-radius: 50%; background: var(--bg-primary, #f1f5f9); display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem auto; color: var(--text-muted);">
+              <i data-lucide="check-check" style="width: 28px; height: 28px;"></i>
+            </div>
+            <h4 style="font-weight: 700; margin-bottom: 0.3rem; color: var(--text-primary);">لا توجد طلبات انضمام مشرفين معلقة</h4>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">عند تسجيل أي مشرف جديد، سيظهر طلبه هنا فوراً لمراجعته وتحديد الصلاحيات الممنوحة له.</p>
+          </div>
+        `;
+        if (window.lucide) window.lucide.createIcons({ root: container });
+        return;
+      }
+
+      container.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+          ${pendingList.map(item => `
+            <div style="background: var(--bg-surface, #ffffff); border: 1px solid var(--border-color, #e2e8f0); border-radius: 12px; padding: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+              <div style="display: flex; align-items: center; gap: 1rem;">
+                <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(245, 158, 11, 0.12); color: var(--warning, #f59e0b); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 800;">
+                  ${(item.name || 'م').trim().charAt(0)}
+                </div>
+                <div>
+                  <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.2rem;">
+                    <strong style="font-size: 1rem; color: var(--text-primary);">${item.name}</strong>
+                    <span class="status-badge pending">بانتظار الاعتماد ⏳</span>
+                  </div>
+                  <div style="font-size: 0.82rem; color: var(--text-secondary); display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                    <span>📧 ${item.email}</span>
+                    ${item.phone ? `<span>📱 ${item.phone}</span>` : ''}
+                    <span style="color: var(--primary-color); font-weight: 700;">🏷️ ${item.department || item.supervisorTitle || 'إشراف عام'}</span>
+                    <span>📅 ${item.createdAt ? new Date(item.createdAt).toLocaleDateString('ar-EG') : 'حديثاً'}</span>
+                  </div>
+                  ${item.notes ? `<div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.3rem; background: var(--bg-primary, #f1f5f9); padding: 0.25rem 0.5rem; border-radius: 6px;">ملاحظات المتقدم: ${item.notes}</div>` : ''}
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button class="btn btn-primary review-perm-btn" data-uid="${item.uid}" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; font-weight: 700; font-size: 0.85rem;">
+                  <i data-lucide="shield-plus" style="width: 16px; height: 16px;"></i>
+                  <span>مراجعة وتحديد الصلاحيات والقبول</span>
+                </button>
+                <button class="btn btn-secondary reject-request-btn" data-uid="${item.uid}" data-name="${item.name}" style="color: var(--danger, #ef4444); border-color: rgba(239, 68, 68, 0.3); padding: 0.5rem 0.75rem;">
+                  <i data-lucide="user-x" style="width: 16px; height: 16px;"></i>
+                  <span>رفض الطلب</span>
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      if (window.lucide) window.lucide.createIcons({ root: container });
+      bindPendingButtons();
+    }
+
+    function bindPendingButtons() {
+      document.querySelectorAll('.review-perm-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const uid = e.currentTarget.dataset.uid;
+          const supervisor = allAdmins.find(a => a.uid === uid);
+          if (supervisor) {
+            openPermissionsModal(supervisor, true);
+          }
+        });
+      });
+
+      document.querySelectorAll('.reject-request-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const uid = e.currentTarget.dataset.uid;
+          const name = e.currentTarget.dataset.name;
+          showCustomConfirm(`هل تريد بالتأكيد رفض طلب المشرف (${name}) وحذفه من النظام؟`, async () => {
+            try {
+              await deleteDoc(doc(db, "users", uid));
+              await addDoc(collection(db, "auditLogs"), {
+                action: "SUPERVISOR_REJECTED",
+                targetId: uid,
+                targetName: name,
+                actorEmail: auth.currentUser?.email,
+                timestamp: new Date().toISOString()
+              });
+              Toast.success("تم رفض طلب المشرف وحذفه بنجاح.");
+            } catch (err) {
+              console.error(err);
+              Toast.error("فشل رفض الطلب.");
+            }
+          });
+        });
+      });
+    }
+
+    // 3. Render Approved Supervisors
+    function renderApprovedSupervisors() {
+      const tbody = document.getElementById('approvedAdminsTableBody');
+      if (!tbody) return;
+
+      const searchTerm = (document.getElementById('searchApprovedInput')?.value || '').toLowerCase().trim();
+      let list = allAdmins.filter(a => !a.isSubAdmin || a.status !== 'pending');
+
+      if (searchTerm) {
+        list = list.filter(a => 
+          (a.name || '').toLowerCase().includes(searchTerm) || 
+          (a.email || '').toLowerCase().includes(searchTerm)
+        );
+      }
+
+      if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">لا توجد حسابات مطابقة لبحثك.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = list.map(admin => {
+        const isSub = Boolean(admin.isSubAdmin);
+        const isSuspended = admin.status === 'suspended';
+        const roleBadgeLabel = isSub ? (admin.department || admin.supervisorTitle || "مشرف مساعد") : "مدير عام النظام (Super Admin)";
+        const roleBadgeColor = isSub ? "background-color: rgba(245, 158, 11, 0.12); color: #f59e0b;" : "background-color: rgba(16, 185, 129, 0.12); color: #10b981;";
+        
+        let statusBadge = '';
+        if (!isSub) {
+          statusBadge = '<span class="status-badge approved">👑 المالك الكامل</span>';
+        } else if (isSuspended) {
+          statusBadge = '<span class="status-badge suspended">معلق مؤقتاً ⏸️</span>';
+        } else {
+          statusBadge = '<span class="status-badge approved">نشط ومعتمد ✅</span>';
+        }
+
+        const perms = admin.permissions || {};
+        const badges = [];
+
+        if (!isSub) {
+          badges.push('<span class="perm-badge active">👑 كافة الصلاحيات مفتوحة</span>');
+        } else {
+          if (perms.viewStudents) badges.push('<span class="perm-badge active">🎓 الطلاب</span>');
+          if (perms.viewTeachers) badges.push('<span class="perm-badge active">👨‍🏫 المعلمين</span>');
+          if (perms.manageSessions) badges.push('<span class="perm-badge active">⏰ الحصص</span>');
+          if (perms.viewFinancials) badges.push('<span class="perm-badge active">💰 الأرباح</span>');
+          if (perms.managePayroll) badges.push('<span class="perm-badge active">💵 الرواتب</span>');
+          if (perms.manageSubscriptions) badges.push('<span class="perm-badge active">💳 الاشتراكات</span>');
+          if (perms.sendNotifications) badges.push('<span class="perm-badge active">📢 الإشعارات</span>');
+          if (perms.viewReports) badges.push('<span class="perm-badge active">📊 التقارير</span>');
+          if (perms.exportData) badges.push('<span class="perm-badge active">💾 النسخ</span>');
+
+          if (badges.length === 0) {
+            badges.push('<span class="perm-badge" style="color: var(--danger);">🚫 لا توجد صلاحيات</span>');
+          }
+        }
+
+        return `
+          <tr>
+            <td>
+              <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <div style="width: 36px; height: 36px; border-radius: 8px; background: var(--bg-primary, #f1f5f9); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--primary-color);">
+                  ${(admin.name || 'م').trim().charAt(0)}
+                </div>
+                <div>
+                  <strong style="color: var(--text-primary); font-size: 0.92rem;">${admin.name}</strong>
+                  <div style="font-size: 0.76rem; color: var(--text-secondary);">${admin.email}</div>
+                  ${admin.phone ? `<div style="font-size: 0.72rem; color: var(--text-muted); direction: ltr; text-align: right;">${admin.phone}</div>` : ''}
+                </div>
+              </div>
+            </td>
+            <td><span class="badge" style="position: static; font-weight: 700; ${roleBadgeColor}">${roleBadgeLabel}</span></td>
+            <td>${statusBadge}</td>
+            <td style="max-width: 320px;">
+              <div style="display: flex; gap: 0.3rem; flex-wrap: wrap;">
+                ${badges.join('')}
+              </div>
+            </td>
+            <td style="text-align: center;">
+              ${isSub ? `
+                <div style="display: inline-flex; gap: 0.4rem;">
+                  <button class="btn btn-secondary edit-perms-btn" data-uid="${admin.uid}" style="padding: 0.35rem 0.65rem; font-size: 0.8rem; font-weight: 700;" title="تعديل الصلاحيات بالكامل">
+                    <i data-lucide="sliders" style="width: 14px; height: 14px;"></i>
+                    <span>الصلاحيات</span>
+                  </button>
+                  <button class="btn btn-secondary toggle-status-btn" data-uid="${admin.uid}" data-suspended="${isSuspended}" style="padding: 0.35rem 0.65rem; font-size: 0.8rem;" title="${isSuspended ? 'إلغاء التجميد والتفعيل' : 'تجميد الحساب مؤقتاً'}">
+                    <i data-lucide="${isSuspended ? 'play' : 'pause'}" style="width: 14px; height: 14px; color: ${isSuspended ? 'var(--success)' : 'var(--warning)'};"></i>
+                  </button>
+                  <button class="btn btn-secondary delete-admin-btn" data-uid="${admin.uid}" data-name="${admin.name}" style="padding: 0.35rem 0.65rem; color: var(--danger);" title="حذف حساب المشرف">
+                    <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                  </button>
+                </div>
+              ` : '<span style="color: var(--text-muted); font-size: 0.8rem;">رتبة مالك لا تعدل</span>'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      if (window.lucide) window.lucide.createIcons({ root: tbody });
+      bindApprovedButtons();
+    }
+
+    function bindApprovedButtons() {
+      // 1. Edit Permissions
+      document.querySelectorAll('.edit-perms-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const uid = e.currentTarget.dataset.uid;
+          const supervisor = allAdmins.find(a => a.uid === uid);
+          if (supervisor) {
+            openPermissionsModal(supervisor, false);
+          }
+        });
+      });
+
+      // 2. Toggle Status (Active / Suspended)
+      document.querySelectorAll('.toggle-status-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const uid = e.currentTarget.dataset.uid;
+          const isSuspended = e.currentTarget.dataset.suspended === 'true';
+          const supervisor = allAdmins.find(a => a.uid === uid);
+          const newStatus = isSuspended ? 'approved' : 'suspended';
+          const actionText = isSuspended ? 'إلغاء تجميد وتنشيط' : 'تجميد وإيقاف';
+
+          showCustomConfirm(`هل تريد بالتأكيد ${actionText} حساب المشرف (${supervisor?.name || ''})؟`, async () => {
+            try {
+              await updateDoc(doc(db, "users", uid), {
+                status: newStatus,
+                updatedAt: new Date().toISOString()
+              });
+              Toast.success(`تم ${actionText} الحساب بنجاح.`);
+            } catch (err) {
+              console.error(err);
+              Toast.error("فشل تغيير حالة الحساب.");
+            }
+          });
+        });
+      });
+
+      // 3. Delete Admin
+      document.querySelectorAll('.delete-admin-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const uid = e.currentTarget.dataset.uid;
+          const name = e.currentTarget.dataset.name;
+          showCustomConfirm(`هل أنت متأكد من حذف حساب المشرف (${name}) نهائياً من النظام وسحب كافة صلاحياته؟`, async () => {
+            try {
+              await deleteDoc(doc(db, "users", uid));
+              Toast.success("تم حذف حساب المشرف نهائياً.");
+            } catch (err) {
+              console.error(err);
+              Toast.error("فشل حذف الحساب.");
+            }
+          });
+        });
+      });
+    }
+
+    // 4. Permissions Modal Logic
+    function openPermissionsModal(supervisor, isNewApproval = false) {
+      currentEditingSupervisor = supervisor;
+      document.getElementById('permTargetUid').value = supervisor.uid;
+      document.getElementById('modalSupervisorName').textContent = isNewApproval 
+        ? `اعتماد وتحديد صلاحيات: ${supervisor.name} ✍️` 
+        : `تعديل صلاحيات المشرف: ${supervisor.name} ⚙️`;
+      
+      document.getElementById('modalSupervisorMeta').textContent = `${supervisor.email} • القسم المطلوب: ${supervisor.department || supervisor.supervisorTitle || 'إشراف عام'}`;
+      document.getElementById('savePermBtnText').textContent = isNewApproval 
+        ? 'اعتماد وتفعيل حساب المشرف ✅' 
+        : 'حفظ وتحديث الصلاحيات ✅';
+
+      // Load existing permissions
+      const perms = supervisor.permissions || {};
+      ALL_PERM_KEYS.forEach(key => {
+        const checkbox = document.getElementById(`perm_${key}`);
+        if (checkbox) {
+          checkbox.checked = Boolean(perms[key]);
+        }
+      });
+
+      // If new approval and all checkboxes are empty, apply preset based on their department
+      if (isNewApproval && Object.values(perms).every(v => !v)) {
+        const dept = supervisor.department || '';
+        if (dept.includes('طلاب') || dept.includes('اشتراك')) {
+          applyPreset('students');
+        } else if (dept.includes('معلم') || dept.includes('حصة')) {
+          applyPreset('teachers');
+        } else if (dept.includes('مال') || dept.includes('أجور') || dept.includes('راتب')) {
+          applyPreset('finance');
+        } else {
+          applyPreset('all');
+        }
+      }
+
+      const modal = document.getElementById('permissionsModal');
+      modal.style.display = 'flex';
+      if (window.lucide) window.lucide.createIcons({ root: modal });
+    }
+
+    function closePermissionsModal() {
+      document.getElementById('permissionsModal').style.display = 'none';
+      currentEditingSupervisor = null;
+    }
+
+    document.getElementById('closePermModalBtn').addEventListener('click', closePermissionsModal);
+    document.getElementById('cancelPermModalBtn').addEventListener('click', closePermissionsModal);
+
+    // Group toggle buttons
+    document.querySelectorAll('.btn-group-toggle').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const group = e.currentTarget.dataset.group;
+        const checkboxes = document.querySelectorAll(`input[data-group="${group}"]`);
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        checkboxes.forEach(cb => { cb.checked = !allChecked; });
+      });
+    });
+
+    // Presets
+    function applyPreset(preset) {
+      ALL_PERM_KEYS.forEach(key => {
+        const cb = document.getElementById(`perm_${key}`);
+        if (cb) cb.checked = false;
+      });
+
+      if (preset === 'all') {
+        ALL_PERM_KEYS.forEach(key => {
+          const cb = document.getElementById(`perm_${key}`);
+          if (cb) cb.checked = true;
+        });
+      } else if (preset === 'students') {
+        ['viewStudents', 'addEditStudents', 'transferStudents', 'manageSubscriptions', 'manageGroups', 'manageSessions', 'sendNotifications'].forEach(k => {
+          const cb = document.getElementById(`perm_${k}`);
+          if (cb) cb.checked = true;
+        });
+      } else if (preset === 'teachers') {
+        ['viewTeachers', 'approveTeachers', 'manageTeacherSchedules', 'manageSessions', 'manageGroups', 'sendNotifications'].forEach(k => {
+          const cb = document.getElementById(`perm_${k}`);
+          if (cb) cb.checked = true;
+        });
+      } else if (preset === 'finance') {
+        ['viewFinancials', 'managePayroll', 'managePayments', 'manageSalaryArchive', 'viewReports', 'exportData'].forEach(k => {
+          const cb = document.getElementById(`perm_${k}`);
+          if (cb) cb.checked = true;
+        });
+      }
+    }
+
+    document.getElementById('presetAllBtn').addEventListener('click', () => applyPreset('all'));
+    document.getElementById('presetStudentsBtn').addEventListener('click', () => applyPreset('students'));
+    document.getElementById('presetTeachersBtn').addEventListener('click', () => applyPreset('teachers'));
+    document.getElementById('presetFinanceBtn').addEventListener('click', () => applyPreset('finance'));
+    document.getElementById('presetResetBtn').addEventListener('click', () => applyPreset('none'));
+
+    // Save and Approve Permissions
+    document.getElementById('saveAndApprovePermBtn').addEventListener('click', async () => {
+      if (!currentEditingSupervisor) return;
+      const uid = currentEditingSupervisor.uid;
+      const saveBtn = document.getElementById('saveAndApprovePermBtn');
+      saveBtn.disabled = true;
+
+      const newPerms = {};
+      ALL_PERM_KEYS.forEach(key => {
+        const cb = document.getElementById(`perm_${key}`);
+        newPerms[key] = Boolean(cb && cb.checked);
+      });
+
+      const isApproving = currentEditingSupervisor.status === 'pending';
+
+      try {
+        const updateData = {
+          permissions: newPerms,
+          status: 'approved',
+          updatedAt: new Date().toISOString()
+        };
+
+        if (isApproving) {
+          updateData.approvedAt = new Date().toISOString();
+          updateData.approvedBy = auth.currentUser?.email || 'admin';
+        }
+
+        await updateDoc(doc(db, "users", uid), updateData);
+
+        // Audit log
+        await addDoc(collection(db, "auditLogs"), {
+          action: isApproving ? "SUPERVISOR_APPROVED" : "SUPERVISOR_PERMISSIONS_UPDATED",
+          targetId: uid,
+          targetName: currentEditingSupervisor.name,
+          actorEmail: auth.currentUser?.email,
+          permissions: newPerms,
+          timestamp: new Date().toISOString()
+        });
+
+        // Notification to supervisor
+        if (isApproving) {
+          await addDoc(collection(db, "notifications"), {
+            title: "تم اعتماد حسابك الإشرافي بنجاح! 🛡️",
+            body: `مرحباً أ. ${currentEditingSupervisor.name}، قامت الإدارة العامة باعتماد وتفعيل حسابك الإشرافي ومنحك الصلاحيات اللازمة. يمكنك الآن استخدام لوحة الإدارة.`,
+            recipientId: uid,
+            readBy: [],
+            createdAt: new Date().toISOString()
+          });
+        }
+
+        Toast.success(isApproving ? "تم اعتماد حساب المشرف وتفعيل صلاحياته بنجاح ✅" : "تم تحديث وبث صلاحيات المشرف بنجاح ✅");
+        closePermissionsModal();
+
+      } catch (err) {
+        console.error("Save permissions error:", err);
+        Toast.error("حدث خطأ أثناء حفظ الصلاحيات.");
+      } finally {
+        saveBtn.disabled = false;
+      }
+    });
+
+    // 5. Direct Add Supervisor Modal Logic
+    const directAddModal = document.getElementById('directAddModal');
+    document.getElementById('openDirectAddBtn').addEventListener('click', () => {
+      document.getElementById('directAddAdminForm').reset();
+      directAddModal.style.display = 'flex';
+      if (window.lucide) window.lucide.createIcons({ root: directAddModal });
+    });
+
+    function closeDirectAddModal() {
+      directAddModal.style.display = 'none';
+    }
+
+    document.getElementById('closeDirectAddBtn').addEventListener('click', closeDirectAddModal);
+    document.getElementById('cancelDirectAddBtn').addEventListener('click', closeDirectAddModal);
+
+    document.getElementById('directAddAdminForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const name = document.getElementById('directName').value.trim();
+      const email = document.getElementById('directEmail').value.trim();
+      const phone = document.getElementById('directPhone').value.trim();
+      const dept = document.getElementById('directDept').value;
+      const password = document.getElementById('directPassword').value;
+
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+
+      try {
+        const newRef = doc(collection(db, "users"));
+        await setDoc(newRef, {
+          uid: newRef.id,
+          name: name,
+          email: email,
+          phone: phone,
+          department: dept,
+          supervisorTitle: dept,
+          password: password,
+          plainPassword: password,
+          role: "admin",
+          isSubAdmin: true,
+          status: "approved",
+          createdAt: new Date().toISOString(),
+          permissions: {
+            viewStudents: true,
+            addEditStudents: true,
+            manageSessions: true,
+            viewTeachers: true,
+            sendNotifications: true
+          }
+        });
+
+        await addDoc(collection(db, "auditLogs"), {
+          action: "SUPERVISOR_DIRECT_CREATE",
+          targetId: newRef.id,
+          targetName: name,
+          actorEmail: auth.currentUser?.email,
+          timestamp: new Date().toISOString()
+        });
+
+        Toast.success("تم إنشاء وتفعيل حساب المشرف بنجاح! يمكنك الآن تخصيص كامل صلاحياته.");
+        closeDirectAddModal();
+
+      } catch (err) {
+        console.error("Direct add error:", err);
+        Toast.error("فشل إنشاء حساب المشرف.");
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    // 6. Tabs Switcher
+    const tabPendingBtn = document.getElementById('tabPendingBtn');
+    const tabApprovedBtn = document.getElementById('tabApprovedBtn');
+    const pendingTabContent = document.getElementById('pendingTabContent');
+    const approvedTabContent = document.getElementById('approvedTabContent');
+
+    tabPendingBtn.addEventListener('click', () => {
+      tabPendingBtn.classList.add('active');
+      tabApprovedBtn.classList.remove('active');
+      pendingTabContent.style.display = 'block';
+      approvedTabContent.style.display = 'none';
+      if (window.lucide) window.lucide.createIcons();
+    });
+
+    tabApprovedBtn.addEventListener('click', () => {
+      tabApprovedBtn.classList.add('active');
+      tabPendingBtn.classList.remove('active');
+      pendingTabContent.style.display = 'none';
+      approvedTabContent.style.display = 'block';
+      if (window.lucide) window.lucide.createIcons();
+    });
+
+    // Search filter input
+    document.getElementById('searchApprovedInput')?.addEventListener('input', () => {
+      renderApprovedSupervisors();
+    });
+
+  </script>
+</body>
+</html>
