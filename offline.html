@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>أكاديمية سبيل - غير متصل بالإنترنت</title>
+  <link rel="stylesheet" href="/assets/css/variables.css">
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: var(--bg-primary, #0f172a);
+      color: var(--text-primary, #f8fafc);
+      padding: 1.5rem;
+      margin: 0;
+      text-align: center;
+    }
+    .offline-card {
+      background: var(--bg-card, #1e293b);
+      border: 1px solid var(--border-color, #334155);
+      border-radius: 1rem;
+      padding: 2.5rem 2rem;
+      max-width: 440px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+    .icon-container {
+      width: 80px;
+      height: 80px;
+      background: rgba(13, 148, 136, 0.15);
+      color: #0d9488;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.25rem;
+      font-size: 2.5rem;
+    }
+  </style>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+
+</head>
+<body>
+  <div class="offline-card">
+    <div class="icon-container">
+      📡
+    </div>
+    <h2 style="margin-top: 0; color: #14b8a6; font-weight: 800; font-size: 1.4rem;">لا يوجد اتصال بالإنترنت</h2>
+    <p style="color: var(--text-secondary, #94a3b8); font-size: 0.95rem; line-height: 1.6; margin: 1rem 0 1.5rem;">
+      يبدو أن جهازك غير متصل بالإنترنت حالياً. يرجى التحقق من اتصال الواي فاي أو بيانات الهاتف لإجراء التحديثات المباشرة ومزامنة الحصص.
+    </p>
+    <button class="btn btn-primary" onclick="window.location.reload()" style="width: 100%; padding: 0.75rem 1.5rem; font-weight: 700; font-size: 1rem; border-radius: 0.5rem; cursor: pointer; background: #0d9488; color: #fff; border: none;">
+      إعادة المحاولة 🔄
+    </button>
+  </div>
+</body>
+</html>
