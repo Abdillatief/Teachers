@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - متابعة الطلاب (المشرفون)</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="dark-theme">
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        <div class="page-header" style="margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin: 0 0 0.35rem 0; display: flex; align-items: center; gap: 0.6rem;">
+              <i data-lucide="graduation-cap" style="width: 26px; height: 26px; color: var(--primary-color);"></i>
+              متابعة الطلاب والدارسين
+            </h1>
+            <p style="margin: 0; font-size: 0.88rem; color: var(--text-muted);">
+              قائمة الطلاب، المعلمين المسندين، مواعيد الحصص الأسبوعية
+            </p>
+          </div>
+
+          <div style="display: flex; gap: 0.75rem;">
+            <input id="searchStudentInput" type="text" placeholder="بحث باسم الطالب أو المعلم..." style="padding: 0.55rem 1rem; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); font-size: 0.88rem; min-width: 250px;">
+          </div>
+        </div>
+
+        <div id="permissionNotice" style="display: none; padding: 1.5rem; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; color: #f59e0b; margin-bottom: 1.5rem;">
+          <div style="font-weight: 700; margin-bottom: 0.25rem;">صلاحية استعراض الطلاب غير مفعلة لحسابك</div>
+          <div style="font-size: 0.85rem; color: var(--text-secondary);">يرجى التواصل مع الإدارة المركزية لمنحك صلاحية استعراض وتتبع الطلاب (viewStudents).</div>
+        </div>
+
+        <div class="card" id="studentsTableContainer" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden;">
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.90rem; text-align: right;">
+              <thead>
+                <tr style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.82rem;">
+                  <th style="padding: 0.9rem 1.25rem;">اسم الطالب</th>
+                  <th style="padding: 0.9rem 1.25rem;">المعلم المسند</th>
+                  <th style="padding: 0.9rem 1.25rem;">المسار القرآني</th>
+                  <th style="padding: 0.9rem 1.25rem;">الخطة / الباقة</th>
+                  <th style="padding: 0.9rem 1.25rem;">الحالة</th>
+                  <th style="padding: 0.9rem 1.25rem;">رقم التواصل</th>
+                </tr>
+              </thead>
+              <tbody id="studentsTableBody">
+                <tr>
+                  <td colspan="6" style="padding: 2.5rem; text-align: center; color: var(--text-muted);">
+                    <i data-lucide="loader-2" class="animate-spin" style="width: 24px; height: 24px; margin: 0 auto 0.5rem auto; display: block;"></i>
+                    جاري تحميل قائمة الطلاب...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module">
+    import '../assets/js/shared/utils/jsonShield.js';
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSupervisorSidebar } from '../assets/js/shared/components/supervisorSidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    protectRoute('supervisor');
+
+    let allStudents = [];
+    let currentUser = null;
+
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        try {
+          const raw = sessionStorage.getItem('sabeel_user_session');
+          if (raw) currentUser = JSON.parse(raw);
+        } catch (e) {}
+
+        renderSupervisorSidebar('students');
+        renderNavbar('متابعة الطلاب', { 
+          name: currentUser?.name || 'مشرف معتمد', 
+          roleName: currentUser?.supervisorTitle || 'مشرف إداري' 
+        });
+
+        const perms = currentUser?.permissions || {};
+        if (perms.viewStudents === false) {
+          document.getElementById('permissionNotice').style.display = 'block';
+          document.getElementById('studentsTableContainer').style.display = 'none';
+          return;
+        }
+
+        initStudentsListener();
+      }
+    });
+
+    const searchInput = document.getElementById('searchStudentInput');
+    searchInput.addEventListener('input', renderStudentsTable);
+
+    function initStudentsListener() {
+      onSnapshot(collection(db, "students"), (snapshot) => {
+        allStudents = [];
+        snapshot.forEach(docSnap => {
+          allStudents.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        renderStudentsTable();
+      });
+    }
+
+    function renderStudentsTable() {
+      const tbody = document.getElementById('studentsTableBody');
+      const query = (searchInput.value || '').toLowerCase().trim();
+
+      const filtered = allStudents.filter(s => {
+        if (!query) return true;
+        const name = (s.name || '').toLowerCase();
+        const teacher = (s.teacherName || '').toLowerCase();
+        return name.includes(query) || teacher.includes(query);
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" style="padding: 2.5rem; text-align: center; color: var(--text-muted);">
+              لا يوجد طلاب مطابقين للبحث.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      let rows = '';
+      filtered.forEach(s => {
+        rows += `
+          <tr style="border-bottom: 1px solid var(--border-color);">
+            <td style="padding: 0.9rem 1.25rem; font-weight: 600; color: var(--text-primary);">${s.name || '—'}</td>
+            <td style="padding: 0.9rem 1.25rem; color: var(--primary-color); font-weight: 600;">${s.teacherName || '—'}</td>
+            <td style="padding: 0.9rem 1.25rem; color: var(--text-secondary);">${s.studyPlan || s.track || 'حفظ وتلاوة'}</td>
+            <td style="padding: 0.9rem 1.25rem; color: var(--text-muted);">${s.packageName || (s.planLessons ? s.planLessons + ' حصص' : 'باقة قياسية')}</td>
+            <td style="padding: 0.9rem 1.25rem;"><span style="color: #10b981; font-weight: 600;">نشط</span></td>
+            <td style="padding: 0.9rem 1.25rem; color: var(--text-muted); direction: ltr; text-align: right;">${s.phone || '—'}</td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = rows;
+      if (window.lucide) window.lucide.createIcons();
+    }
+  </script>
+</body>
+</html>
