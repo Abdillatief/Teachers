@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - لوحة التحكم وإدارة التشغيل</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0284c7">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+
+  <style>
+    .op-metric-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.15rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+      box-shadow: var(--shadow-sm);
+    }
+    .op-metric-card:hover {
+      transform: translateY(-2px);
+    }
+    .op-quick-action {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 0.85rem 1.15rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text-primary);
+      transition: all 0.2s ease;
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+    .op-quick-action:hover {
+      border-color: var(--primary-color);
+      background: var(--bg-primary);
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+
+        <!-- Welcome Banner -->
+        <div class="card" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+              <span class="badge badge-info">
+                إدارة التشغيل اليومي
+              </span>
+              <span style="color: var(--text-muted); font-size: 0.8rem;" id="supervisorTodayDate"></span>
+            </div>
+            <h1 style="font-size: 1.35rem; font-weight: 700; color: var(--text-primary); margin: 0;">
+              مرحباً بك، <span id="supervisorWelcomeName">المشرف التشغيلي</span>
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0.25rem 0 0 0;">
+              متابعة الطلاب والمعلمين، اعتماد ومراجعة الحصص، متابعة أولياء الأمور، وإرسال القرارات الحساسة للمدير العام.
+            </p>
+          </div>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <a href="requests.html" class="btn btn-secondary">
+              <i data-lucide="send" style="width: 15px; height: 15px;"></i>
+              طلبات المشرف
+            </a>
+            <a href="sessions.html" class="btn btn-primary">
+              <i data-lucide="play-circle" style="width: 15px; height: 15px;"></i>
+              حصص اليوم
+            </a>
+          </div>
+        </div>
+
+        <!-- 6 Operational KPIs (Zero Financials) -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.75rem;">
+          
+          <!-- Students -->
+          <div class="op-metric-card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span class="metric-label">الطلاب المسجلون</span>
+              <div style="width: 32px; height: 32px; border-radius: 6px; background: var(--primary-light); color: var(--primary-color); display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="graduation-cap" style="width: 16px; height: 16px;"></i>
+              </div>
+            </div>
+            <h3 id="statStudentsCount" class="metric-value">0</h3>
+            <span class="metric-footer">طالب نشط بالبرامج</span>
+          </div>
+
+          <!-- Renewal Due (Operational status) -->
+          <div class="op-metric-card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span class="metric-label">مستحق للتجديد</span>
+              <div style="width: 32px; height: 32px; border-radius: 6px; background: var(--warning-light); color: var(--warning); display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="refresh-cw" style="width: 16px; height: 16px;"></i>
+              </div>
+            </div>
+            <h3 id="statRenewalDueCount" class="metric-value" style="color: var(--warning);">0</h3>
+            <span class="metric-footer">حصصه أوشكت أو انتهت</span>
+          </div>
+
+          <!-- Teachers -->
+          <div class="op-metric-card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span class="metric-label">المعلمون النشطون</span>
+              <div style="width: 32px; height: 32px; border-radius: 6px; background: var(--success-light); color: var(--success); display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="users" style="width: 16px; height: 16px;"></i>
+              </div>
+            </div>
+            <h3 id="statTeachersCount" class="metric-value" style="color: var(--success);">0</h3>
+            <span class="metric-footer">معلم معتمد في الأكاديمية</span>
+          </div>
+
+          <!-- Today's Sessions -->
+          <div class="op-metric-card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span class="metric-label">حصص اليوم</span>
+              <div style="width: 32px; height: 32px; border-radius: 6px; background: var(--primary-light); color: var(--primary-color); display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="calendar" style="width: 16px; height: 16px;"></i>
+              </div>
+            </div>
+            <h3 id="statTodaySessionsCount" class="metric-value">0</h3>
+            <span class="metric-footer" id="statTodayCompletedText">0 مكتملة اليوم</span>
+          </div>
+
+          <!-- Pending Admin Requests -->
+          <div class="op-metric-card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span class="metric-label">طلباتي للمدير</span>
+              <div style="width: 32px; height: 32px; border-radius: 6px; background: rgba(30, 111, 159, 0.12); color: var(--secondary-color); display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="send" style="width: 16px; height: 16px;"></i>
+              </div>
+            </div>
+            <h3 id="statPendingRequestsCount" class="metric-value" style="color: var(--secondary-color);">0</h3>
+            <span class="metric-footer">قيد اعتماد وموافقة المدير</span>
+          </div>
+
+          <!-- Operational Warnings -->
+          <div class="op-metric-card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span class="metric-label">تحذيرات تشغيلية</span>
+              <div style="width: 32px; height: 32px; border-radius: 6px; background: var(--danger-light); color: var(--danger); display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="alert-triangle" style="width: 16px; height: 16px;"></i>
+              </div>
+            </div>
+            <h3 id="statWarningsCount" class="metric-value" style="color: var(--danger);">0</h3>
+            <span class="metric-footer">تحتاج مراجعة فورية</span>
+          </div>
+
+        </div>
+
+        <!-- Quick Operational Actions -->
+        <div style="margin-bottom: 2rem;">
+          <h2 style="font-size: 1rem; font-weight: 800; color: var(--text-primary); margin: 0 0 0.85rem 0;">
+            إجراءات تشغيلية سريعة
+          </h2>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem;">
+            <a href="students.html?action=new" class="op-quick-action">
+              <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(2, 132, 199, 0.12); color: #0284c7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i data-lucide="user-plus" style="width: 18px; height: 18px;"></i>
+              </div>
+              <div>إضافة طالب جديد</div>
+            </a>
+
+            <a href="requests.html?action=new" class="op-quick-action">
+              <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(139, 92, 246, 0.12); color: #7c3aed; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i data-lucide="send" style="width: 18px; height: 18px;"></i>
+              </div>
+              <div>رفع طلب إداري للمدير</div>
+            </a>
+
+            <a href="parents.html?action=new" class="op-quick-action">
+              <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(16, 185, 129, 0.12); color: #059669; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i data-lucide="message-circle" style="width: 18px; height: 18px;"></i>
+              </div>
+              <div>تسجيل تواصل مع ولي أمر</div>
+            </a>
+
+            <a href="warnings.html" class="op-quick-action">
+              <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(239, 68, 68, 0.12); color: #dc2626; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i data-lucide="shield-alert" style="width: 18px; height: 18px;"></i>
+              </div>
+              <div>متابعة التحذيرات والأخطاء</div>
+            </a>
+          </div>
+        </div>
+
+        <!-- 2 Column Operational Live Section -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+          
+          <!-- Column 1: Today's Sessions Live Tracker -->
+          <div class="card" style="padding: 1.25rem 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+              <h3 style="font-size: 1rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.4rem;">
+                <i data-lucide="clock" style="width: 18px; height: 18px; color: var(--primary-color);"></i>
+                حصص اليوم الجارية والمسجلة
+              </h3>
+              <a href="sessions.html" style="font-size: 0.8rem; font-weight: 700; color: var(--primary-color); text-decoration: none;">
+                عرض السجل الكامل
+              </a>
+            </div>
+
+            <div id="todaySessionsWidgetContainer" style="display: flex; flex-direction: column; gap: 0.65rem;">
+              <div style="text-align: center; padding: 2rem 1rem; color: var(--text-muted); font-size: 0.85rem;">
+                جارٍ تحميل حصص اليوم...
+              </div>
+            </div>
+          </div>
+
+          <!-- Column 2: Students Due for Renewal Follow-up -->
+          <div class="card" style="padding: 1.25rem 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+              <h3 style="font-size: 1rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.4rem;">
+                <i data-lucide="refresh-cw" style="width: 18px; height: 18px; color: #f59e0b;"></i>
+                طلاب مستحقون للمتابعة والتجديد
+              </h3>
+              <a href="students.html?filter=renewal" style="font-size: 0.8rem; font-weight: 700; color: var(--primary-color); text-decoration: none;">
+                إدارة الطلاب
+              </a>
+            </div>
+
+            <div id="renewalStudentsWidgetContainer" style="display: flex; flex-direction: column; gap: 0.65rem;">
+              <div style="text-align: center; padding: 2rem 1rem; color: var(--text-muted); font-size: 0.85rem;">
+                جارٍ فحص استحقاقات التجديد...
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Recent Supervisor Requests Track -->
+        <div class="card" style="padding: 1.25rem 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+            <h3 style="font-size: 1rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.4rem;">
+              <i data-lucide="send" style="width: 18px; height: 18px; color: #7c3aed;"></i>
+              آخر طلباتي المرسلة للمدير العام
+            </h3>
+            <a href="requests.html" style="font-size: 0.8rem; font-weight: 700; color: var(--primary-color); text-decoration: none;">
+              عرض كافة الطلبات
+            </a>
+          </div>
+
+          <div id="recentRequestsWidgetContainer">
+            <div style="text-align: center; padding: 1.5rem 1rem; color: var(--text-muted); font-size: 0.85rem;">
+              جارٍ تحميل الطلبات...
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { 
+      collection, 
+      onSnapshot, 
+      query, 
+      where, 
+      doc, 
+      getDoc 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { calculateStudentSubscriptionStatus, getRequestTypeLabel } from '../assets/js/features/supervisor/supervisorService.js';
+
+    protectRoute('supervisor');
+    renderSidebar('dashboard', 'supervisor');
+    renderNavbar('لوحة إدارة التشغيل', { name: 'المشرف التشغيلي' });
+
+    // Date display
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todayOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const dateEl = document.getElementById('supervisorTodayDate');
+    if (dateEl) dateEl.textContent = new Date().toLocaleDateString('ar-EG', todayOptions);
+
+    let allStudents = [];
+    let allTeachers = [];
+    let todaySessions = [];
+    let myRequests = [];
+    let activeWarningsCount = 0;
+
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) return;
+
+      // Fetch user display name
+      try {
+        const uDoc = await getDoc(doc(db, "users", user.uid));
+        if (uDoc.exists()) {
+          const uData = uDoc.data();
+          if (uData.name) {
+            const welcomeEl = document.getElementById('supervisorWelcomeName');
+            if (welcomeEl) welcomeEl.textContent = uData.name;
+          }
+        }
+      } catch (e) {}
+
+      // 1. Students Subscription & Counts
+      onSnapshot(collection(db, "students"), (snap) => {
+        allStudents = [];
+        let renewalDueCount = 0;
+        const renewalList = [];
+
+        snap.forEach(d => {
+          const s = { id: d.id, ...d.data() };
+          if (s.status !== 'archived' && s.status !== 'deleted') {
+            allStudents.push(s);
+            const sub = calculateStudentSubscriptionStatus(s);
+            if (sub.needsRenewal) {
+              renewalDueCount++;
+              renewalList.push({ student: s, sub });
+            }
+          }
+        });
+
+        const elStudents = document.getElementById('statStudentsCount');
+        if (elStudents) elStudents.textContent = allStudents.length;
+
+        const elRenewal = document.getElementById('statRenewalDueCount');
+        if (elRenewal) elRenewal.textContent = renewalDueCount;
+
+        renderRenewalWidget(renewalList);
+      });
+
+      // 2. Teachers Count
+      const qTeachers = query(collection(db, "users"), where("role", "==", "teacher"));
+      onSnapshot(qTeachers, (snap) => {
+        allTeachers = [];
+        snap.forEach(d => {
+          const t = d.data();
+          if (t.status !== 'suspended' && t.status !== 'archived') {
+            allTeachers.push({ uid: d.id, ...t });
+          }
+        });
+
+        const elTeachers = document.getElementById('statTeachersCount');
+        if (elTeachers) elTeachers.textContent = allTeachers.length;
+      });
+
+      // 3. Today's Sessions
+      const qSessions = query(collection(db, "sessions"), where("date", "==", todayStr));
+      onSnapshot(qSessions, (snap) => {
+        todaySessions = [];
+        let completed = 0;
+        snap.forEach(d => {
+          const sess = { id: d.id, ...d.data() };
+          todaySessions.push(sess);
+          if (sess.status === 'completed' || sess.attendanceStatus === 'attended') {
+            completed++;
+          }
+        });
+
+        const elTodaySessions = document.getElementById('statTodaySessionsCount');
+        if (elTodaySessions) elTodaySessions.textContent = todaySessions.length;
+
+        const elTodayCompleted = document.getElementById('statTodayCompletedText');
+        if (elTodayCompleted) elTodayCompleted.textContent = `${completed} مكتملة اليوم`;
+
+        renderTodaySessionsWidget(todaySessions);
+      }, (err) => {
+        // Fallback for sessions if index missing
+        onSnapshot(collection(db, "sessions"), (snap) => {
+          todaySessions = [];
+          let completed = 0;
+          snap.forEach(d => {
+            const sess = { id: d.id, ...d.data() };
+            if (sess.date === todayStr) {
+              todaySessions.push(sess);
+              if (sess.status === 'completed' || sess.attendanceStatus === 'attended') {
+                completed++;
+              }
+            }
+          });
+
+          const elTodaySessions = document.getElementById('statTodaySessionsCount');
+          if (elTodaySessions) elTodaySessions.textContent = todaySessions.length;
+
+          const elTodayCompleted = document.getElementById('statTodayCompletedText');
+          if (elTodayCompleted) elTodayCompleted.textContent = `${completed} مكتملة اليوم`;
+
+          renderTodaySessionsWidget(todaySessions);
+        });
+      });
+
+      // 4. Supervisor's Admin Requests
+      const qRequests = query(collection(db, "supervisorRequests"), where("supervisorId", "==", user.uid));
+      onSnapshot(qRequests, (snap) => {
+        myRequests = [];
+        let pending = 0;
+        snap.forEach(d => {
+          const req = { id: d.id, ...d.data() };
+          myRequests.push(req);
+          if (req.status === 'pending') pending++;
+        });
+
+        myRequests.sort((a,b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+
+        const elPending = document.getElementById('statPendingRequestsCount');
+        if (elPending) elPending.textContent = pending;
+
+        renderRecentRequestsWidget(myRequests.slice(0, 5));
+      });
+
+      // 5. Warnings Count
+      onSnapshot(collection(db, "warnings"), (snap) => {
+        activeWarningsCount = 0;
+        snap.forEach(d => {
+          const w = d.data();
+          if (w.status !== 'resolved') activeWarningsCount++;
+        });
+
+        const elWarnings = document.getElementById('statWarningsCount');
+        if (elWarnings) elWarnings.textContent = activeWarningsCount;
+      });
+    });
+
+    function renderTodaySessionsWidget(sessions) {
+      const container = document.getElementById('todaySessionsWidgetContainer');
+      if (!container) return;
+
+      if (sessions.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 2rem 1rem; color: var(--text-muted); font-size: 0.85rem;">
+            <i data-lucide="calendar" style="width: 26px; height: 26px; opacity: 0.5; margin-bottom: 0.25rem;"></i>
+            <div>لا توجد حصص مجدولة أو مسجلة اليوم حتى الآن.</div>
+          </div>
+        `;
+        if (window.lucide) window.lucide.createIcons({ root: container });
+        return;
+      }
+
+      container.innerHTML = sessions.slice(0, 5).map(s => {
+        const isCompleted = s.status === 'completed' || s.attendanceStatus === 'attended';
+        const isAbsent = s.status === 'absent' || s.attendanceStatus === 'absent';
+        
+        let statusBadge = '<span class="badge badge-info">مجدولة</span>';
+        if (isCompleted) {
+          statusBadge = '<span class="badge badge-success">مكتملة</span>';
+        } else if (isAbsent) {
+          statusBadge = '<span class="badge badge-danger">غياب</span>';
+        }
+
+        return `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 0.85rem; background: var(--bg-primary); border-radius: 8px; border: 1px solid var(--border-color); font-size: 0.84rem;">
+            <div>
+              <div style="font-weight: 700; color: var(--text-primary);">${s.studentName || 'طالب'}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">المعلم: ${s.teacherName || 'غير محدد'} | التوقيت: ${s.time || s.startTime || '--'}</div>
+            </div>
+            <div>
+              ${statusBadge}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (window.lucide) window.lucide.createIcons({ root: container });
+    }
+
+    function renderRenewalWidget(list) {
+      const container = document.getElementById('renewalStudentsWidgetContainer');
+      if (!container) return;
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 2rem 1rem; color: #10b981; font-size: 0.85rem;">
+            <i data-lucide="check-circle" style="width: 26px; height: 26px; margin-bottom: 0.25rem;"></i>
+            <div>كافة اشتراكات الطلاب نشطة حالياً ولا يوجد استحقاق تجديد فوري.</div>
+          </div>
+        `;
+        if (window.lucide) window.lucide.createIcons({ root: container });
+        return;
+      }
+
+      container.innerHTML = list.slice(0, 5).map(item => {
+        const s = item.student;
+        const sub = item.sub;
+        const cleanPhone = (s.parentPhone || s.phone || '').replace(/[^0-9+]/g, '');
+        const waLink = cleanPhone ? `https://wa.me/${cleanPhone.replace('+', '')}` : null;
+
+        return `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 0.85rem; background: var(--bg-primary); border-radius: 8px; border: 1px solid var(--border-color); font-size: 0.84rem;">
+            <div>
+              <div style="font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 0.4rem;">
+                ${s.name}
+                <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #d97706; font-size: 0.7rem; padding: 1px 6px;">
+                  ${sub.statusLabel}
+                </span>
+              </div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">المتبقي: ${sub.remainingLessons} حصص من ${sub.totalLessons} | المعلم: ${s.teacherName || 'غير معين'}</div>
+            </div>
+
+            <div>
+              ${waLink ? `
+                <a href="${waLink}" target="_blank" class="btn btn-secondary" style="font-size: 0.72rem; padding: 0.25rem 0.55rem; color: #16a34a; gap: 0.25rem;" title="تواصل واتساب مع ولي الأمر">
+                  <i data-lucide="message-circle" style="width: 13px; height: 13px;"></i>
+                  مراسلة
+                </a>
+              ` : `
+                <span style="font-size: 0.72rem; color: var(--text-muted);">بدون هاتف</span>
+              `}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (window.lucide) window.lucide.createIcons({ root: container });
+    }
+
+    function renderRecentRequestsWidget(requests) {
+      const container = document.getElementById('recentRequestsWidgetContainer');
+      if (!container) return;
+
+      if (requests.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 1.5rem 1rem; color: var(--text-muted); font-size: 0.85rem;">
+            لم تقم برفع أي طلبات إدارية للمدير العام بعد. يمكنك استخدام زر "رفع طلب إداري للمدير".
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = `
+        <div style="overflow-x: auto;">
+          <table class="table" style="width: 100%; margin: 0; text-align: right; font-size: 0.84rem;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border-color);">
+                <th style="padding: 0.6rem 0.75rem; color: var(--text-secondary);">نوع الطلب</th>
+                <th style="padding: 0.6rem 0.75rem; color: var(--text-secondary);">المعني</th>
+                <th style="padding: 0.6rem 0.75rem; color: var(--text-secondary);">السبب والموضوع</th>
+                <th style="padding: 0.6rem 0.75rem; color: var(--text-secondary);">الحالة</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${requests.map(r => {
+                let badge = '<span class="badge badge-warning">قيد المراجعة</span>';
+                if (r.status === 'approved') {
+                  badge = '<span class="badge badge-success">معتمد ومقبول</span>';
+                } else if (r.status === 'rejected') {
+                  badge = '<span class="badge badge-danger">مرفوض</span>';
+                }
+
+                return `
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.6rem 0.75rem; font-weight: 700;">${getRequestTypeLabel(r.type)}</td>
+                    <td style="padding: 0.6rem 0.75rem;">${r.targetName || '--'}</td>
+                    <td style="padding: 0.6rem 0.75rem; color: var(--text-secondary); max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                      ${r.title || r.reason || '--'}
+                    </td>
+                    <td style="padding: 0.6rem 0.75rem;">${badge}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html>

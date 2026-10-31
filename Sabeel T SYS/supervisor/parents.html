@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - متابعة وتواصل أولياء الأمور</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0284c7">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+
+  <style>
+    .interaction-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      box-shadow: var(--shadow-xs);
+      transition: all var(--transition-fast);
+    }
+    .interaction-card:hover {
+      border-color: var(--border-color-strong);
+      box-shadow: var(--shadow-sm);
+    }
+    .note-bubble {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius-sm);
+      padding: 0.75rem 1rem;
+      font-size: 0.85rem;
+      color: var(--text-primary);
+      line-height: 1.6;
+      margin: 0.5rem 0;
+    }
+    .action-bubble {
+      background: var(--primary-light);
+      border: 1px solid var(--primary-border);
+      border-radius: var(--border-radius-sm);
+      padding: 0.65rem 0.9rem;
+      font-size: 0.82rem;
+      color: var(--primary-color);
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        
+        <!-- Header -->
+        <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+              <span class="badge badge-info">
+                العلاقات وأولياء الأمور
+              </span>
+            </div>
+            <h1 style="font-size: 1.35rem; font-weight: 700; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="phone-call" style="color: var(--primary-color); width: 24px; height: 24px;"></i>
+              مركز متابعة أولياء الأمور والشكاوى
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0.25rem 0 0 0;">
+              توثيق ومتابعة تواصل أولياء الأمور، الاستفسارات، الشكاوى التشغيلية، ومتابعات تجديد الاشتراكات مباشرة.
+            </p>
+          </div>
+
+          <div style="display: flex; gap: 0.5rem;">
+            <button id="btnOpenNewInteractionModal" class="btn btn-primary">
+              <i data-lucide="plus-circle" style="width: 15px; height: 15px;"></i>
+              تسجيل تواصل / شكوى جديدة
+            </button>
+          </div>
+        </div>
+
+        <!-- Metrics Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="card" style="padding: 1.15rem 1.25rem; display: flex; align-items: center; gap: 1rem;">
+            <div style="width: 40px; height: 40px; border-radius: 6px; background: var(--primary-light); color: var(--primary-color); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <i data-lucide="message-square" style="width: 20px; height: 20px;"></i>
+            </div>
+            <div>
+              <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">إجمالي سجلات التواصل</div>
+              <div id="statTotalInteractions" style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);">0</div>
+            </div>
+          </div>
+
+          <div class="card" style="padding: 1.15rem 1.25rem; display: flex; align-items: center; gap: 1rem;">
+            <div style="width: 40px; height: 40px; border-radius: 6px; background: var(--warning-light); color: var(--warning); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <i data-lucide="clock" style="width: 20px; height: 20px;"></i>
+            </div>
+            <div>
+              <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">قيد المتابعة / مفتوح</div>
+              <div id="statOpenInteractions" style="font-size: 1.5rem; font-weight: 700; color: var(--warning);">0</div>
+            </div>
+          </div>
+
+          <div class="card" style="padding: 1.15rem 1.25rem; display: flex; align-items: center; gap: 1rem;">
+            <div style="width: 40px; height: 40px; border-radius: 6px; background: var(--danger-light); color: var(--danger); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <i data-lucide="alert-circle" style="width: 20px; height: 20px;"></i>
+            </div>
+            <div>
+              <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">شكاوى تحتاج تدخلاً</div>
+              <div id="statComplaintCount" style="font-size: 1.5rem; font-weight: 700; color: var(--danger);">0</div>
+            </div>
+          </div>
+
+          <div class="card" style="padding: 1.15rem 1.25rem; display: flex; align-items: center; gap: 1rem;">
+            <div style="width: 40px; height: 40px; border-radius: 6px; background: var(--success-light); color: var(--success); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <i data-lucide="check-check" style="width: 20px; height: 20px;"></i>
+            </div>
+            <div>
+              <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">تم الحل والمعالجة</div>
+              <div id="statResolvedCount" style="font-size: 1.5rem; font-weight: 800; color: #059669;">0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter & Search Bar -->
+        <div class="card" style="padding: 1rem 1.25rem; margin-bottom: 1.5rem;">
+          <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+            <div style="display: flex; gap: 0.75rem; flex: 1; min-width: 280px; align-items: center;">
+              <div style="position: relative; flex: 1;">
+                <input type="text" id="parentSearchInput" class="form-control" placeholder="ابحث باسم الطالب، ولي الأمر، الهاتف، أو الموضوع..." style="padding-right: 2.25rem; font-size: 0.85rem;">
+                <i data-lucide="search" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-muted);"></i>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <select id="typeFilter" class="form-control" style="width: auto; font-size: 0.85rem; padding: 0.45rem 1rem;">
+                <option value="all">جميع الأنواع</option>
+                <option value="complaint">شكوى</option>
+                <option value="inquiry">استفسار</option>
+                <option value="renewal_followup">متابعة تجديد اشتراك</option>
+                <option value="absence_followup">متابعة غياب</option>
+                <option value="general">ملاحظة عامة</option>
+              </select>
+
+              <select id="statusFilter" class="form-control" style="width: auto; font-size: 0.85rem; padding: 0.45rem 1rem;">
+                <option value="all">جميع الحالات</option>
+                <option value="open">مفتوح / قيد المتابعة</option>
+                <option value="pending_reply">بانتظار رد ولي الأمر</option>
+                <option value="resolved">تم الحل والمعالجة</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactions List -->
+        <div id="interactionsContainer">
+          <div class="card" style="padding: 3rem 1rem; text-align: center;">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; color: var(--text-muted);">
+              <i data-lucide="loader" class="spin" style="width: 28px; height: 28px; color: var(--primary-color);"></i>
+              <span>جارٍ تحميل سجلات أولياء الأمور...</span>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal: New Interaction -->
+  <div id="newInteractionModal" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div class="card" style="width: 100%; max-width: 580px; max-height: 90vh; overflow-y: auto; margin: 1.5rem; padding: 1.75rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.85rem;">
+        <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="phone-forwarded" style="width: 20px; height: 20px; color: var(--primary-color);"></i>
+          <span>تسجيل تواصل جديد مع ولي الأمر</span>
+        </h3>
+        <button id="btnCloseInteractionModal" style="background: none; border: none; cursor: pointer; color: var(--text-muted);">
+          <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+        </button>
+      </div>
+
+      <form id="interactionForm">
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">اختر الطالب المعني *</label>
+          <select id="modalStudentSelect" class="form-control" required style="font-size: 0.85rem;">
+            <option value="">-- جارٍ تحميل الطلاب --</option>
+          </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+          <div>
+            <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">اسم ولي الأمر</label>
+            <input type="text" id="modalParentName" class="form-control" placeholder="اسم ولي الأمر..." style="font-size: 0.85rem;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">هاتف / واتساب ولي الأمر</label>
+            <input type="tel" id="modalParentPhone" class="form-control" placeholder="مثال: +966500000000" style="font-size: 0.85rem;">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+          <div>
+            <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">نوع التواصل *</label>
+            <select id="modalType" class="form-control" required style="font-size: 0.85rem;">
+              <option value="inquiry">استفسار عام</option>
+              <option value="renewal_followup">متابعة تجديد اشتراك (الحصص انتهت أو أوشكت)</option>
+              <option value="complaint">شكوى أولياء الأمور</option>
+              <option value="absence_followup">متابعة غياب متكرر</option>
+              <option value="progress_feedback">ملاحظات تقدم الحفظ والمستوى</option>
+              <option value="general">أخرى</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">قناة التواصل *</label>
+            <select id="modalChannel" class="form-control" required style="font-size: 0.85rem;">
+              <option value="whatsapp">واتساب (WhatsApp)</option>
+              <option value="call">اتصال هاتفي</option>
+              <option value="zoom">لقاء زوم / إشرافي</option>
+              <option value="email">بريد إلكتروني</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">عنوان الموضوع *</label>
+          <input type="text" id="modalSubject" class="form-control" required placeholder="مثال: استفسار حول مواعيد الحصص أو موعد التجديد" style="font-size: 0.85rem;">
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">تفاصيل ما دار في التواصل أو نص الشكوى *</label>
+          <textarea id="modalDetails" class="form-control" rows="3" required placeholder="اكتب تفاصيل المكالمة أو رسالة ولي الأمر وما تم الاتفاق عليه..." style="font-size: 0.85rem;"></textarea>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">الإجراء المتخذ من المشرف (اختياري)</label>
+          <input type="text" id="modalActionTaken" class="form-control" placeholder="مثال: تم التواصل مع المعلم لتعديل التوقيت / تم إرسال رابط التجديد" style="font-size: 0.85rem;">
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">حالة الطلب / المتابعة</label>
+          <select id="modalStatus" class="form-control" style="font-size: 0.85rem;">
+            <option value="open">مفتوح - قيد المتابعة ⏳</option>
+            <option value="pending_reply">بانتظار رد ولي الأمر 💬</option>
+            <option value="resolved">تم الحل والمعالجة بنجاح ✅</option>
+          </select>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+          <button type="button" id="btnCancelModal" class="btn btn-secondary" style="font-size: 0.85rem;">إلغاء</button>
+          <button type="submit" id="btnSaveInteraction" class="btn btn-primary" style="font-size: 0.85rem; font-weight: 700; gap: 0.4rem;">
+            <i data-lucide="check" style="width: 16px; height: 16px;"></i>
+            حفظ سجل التواصل
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { 
+      collection, 
+      onSnapshot, 
+      query, 
+      orderBy,
+      doc,
+      updateDoc
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+    import { logParentInteraction, updateParentInteraction } from '../assets/js/features/supervisor/supervisorService.js';
+
+    protectRoute('supervisor');
+    renderSidebar('parents', 'supervisor');
+    renderNavbar('متابعة أولياء الأمور', { name: 'المشرف التشغيلي' });
+
+    let interactions = [];
+    let studentsCache = [];
+    let currentUser = null;
+
+    const container = document.getElementById('interactionsContainer');
+    const searchInput = document.getElementById('parentSearchInput');
+    const typeFilter = document.getElementById('typeFilter');
+    const statusFilter = document.getElementById('statusFilter');
+
+    const modal = document.getElementById('newInteractionModal');
+    const openModalBtn = document.getElementById('btnOpenNewInteractionModal');
+    const closeModalBtn = document.getElementById('btnCloseInteractionModal');
+    const cancelModalBtn = document.getElementById('btnCancelModal');
+    const interactionForm = document.getElementById('interactionForm');
+    const studentSelect = document.getElementById('modalStudentSelect');
+
+    openModalBtn.addEventListener('click', () => {
+      interactionForm.reset();
+      modal.style.display = 'flex';
+      if (window.lucide) window.lucide.createIcons({ root: modal });
+    });
+
+    const closeModal = () => { modal.style.display = 'none'; };
+    closeModalBtn.addEventListener('click', closeModal);
+    cancelModalBtn.addEventListener('click', closeModal);
+
+    auth.onAuthStateChanged((user) => {
+      if (!user) return;
+      currentUser = user;
+
+      // Subscribe to interactions
+      const qInteractions = query(collection(db, "parentInteractions"), orderBy("createdAt", "desc"));
+      onSnapshot(qInteractions, (snap) => {
+        interactions = [];
+        snap.forEach(d => interactions.push({ id: d.id, ...d.data() }));
+        updateMetrics();
+        renderInteractions();
+      }, (err) => {
+        // Fallback without composite index
+        console.warn("Falling back for parentInteractions:", err);
+        onSnapshot(collection(db, "parentInteractions"), (snap) => {
+          interactions = [];
+          snap.forEach(d => interactions.push({ id: d.id, ...d.data() }));
+          interactions.sort((a,b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+          updateMetrics();
+          renderInteractions();
+        });
+      });
+
+      // Cache students for dropdown
+      onSnapshot(collection(db, "students"), (snap) => {
+        studentsCache = [];
+        snap.forEach(d => {
+          const s = { id: d.id, ...d.data() };
+          if (s.status !== 'archived' && s.status !== 'deleted') {
+            studentsCache.push(s);
+          }
+        });
+        populateStudentSelect();
+      });
+    });
+
+    function populateStudentSelect() {
+      studentSelect.innerHTML = '<option value="">-- اختر طالباً --</option>' + studentsCache.map(s => 
+        `<option value="${s.id}" data-name="${s.name || ''}" data-parent-name="${s.parentName || ''}" data-parent-phone="${s.parentPhone || s.phone || ''}">
+          ${s.name || 'طالب'} (المعلم: ${s.teacherName || 'غير معين'})
+        </option>`
+      ).join('');
+    }
+
+    studentSelect.addEventListener('change', () => {
+      const opt = studentSelect.options[studentSelect.selectedIndex];
+      if (opt && opt.value) {
+        document.getElementById('modalParentName').value = opt.dataset.parentName || '';
+        document.getElementById('modalParentPhone').value = opt.dataset.parentPhone || '';
+      }
+    });
+
+    function updateMetrics() {
+      const elTotal = document.getElementById('statTotalInteractions');
+      if (elTotal) elTotal.textContent = interactions.length;
+
+      const elOpen = document.getElementById('statOpenInteractions');
+      if (elOpen) elOpen.textContent = interactions.filter(i => i.status === 'open' || i.status === 'pending_reply').length;
+
+      const elComplaint = document.getElementById('statComplaintCount');
+      if (elComplaint) elComplaint.textContent = interactions.filter(i => i.type === 'complaint' && i.status !== 'resolved').length;
+
+      const elResolved = document.getElementById('statResolvedCount');
+      if (elResolved) elResolved.textContent = interactions.filter(i => i.status === 'resolved').length;
+    }
+
+    function getTypeBadge(type) {
+      switch (type) {
+        case 'complaint':
+          return '<span class="badge badge-danger">شكوى</span>';
+        case 'renewal_followup':
+          return '<span class="badge badge-warning">متابعة تجديد</span>';
+        case 'absence_followup':
+          return '<span class="badge badge-info">متابعة غياب</span>';
+        case 'inquiry':
+          return '<span class="badge badge-primary">استفسار</span>';
+        default:
+          return '<span class="badge badge-neutral">ملاحظة</span>';
+      }
+    }
+
+    function getChannelBadge(channel) {
+      if (channel === 'whatsapp') {
+        return '<span style="display: inline-flex; align-items: center; gap: 0.25rem; color: #16a34a; font-size: 0.76rem; font-weight: 600;"><i data-lucide="message-circle" style="width: 14px; height: 14px;"></i> واتساب</span>';
+      }
+      if (channel === 'call') {
+        return '<span style="display: inline-flex; align-items: center; gap: 0.25rem; color: #0284c7; font-size: 0.76rem; font-weight: 600;"><i data-lucide="phone" style="width: 14px; height: 14px;"></i> اتصال</span>';
+      }
+      return '<span style="color: var(--text-muted); font-size: 0.76rem;">' + (channel || 'تواصل') + '</span>';
+    }
+
+    function renderInteractions() {
+      if (!container) return;
+      const q = (searchInput.value || '').trim().toLowerCase();
+      const sType = typeFilter.value;
+      const sStatus = statusFilter.value;
+
+      const filtered = interactions.filter(item => {
+        if (sType !== 'all' && item.type !== sType) return false;
+        if (sStatus !== 'all' && item.status !== sStatus) return false;
+        if (q) {
+          const matchStudent = (item.studentName || '').toLowerCase().includes(q);
+          const matchParent = (item.parentName || '').toLowerCase().includes(q);
+          const matchPhone = (item.parentPhone || '').toLowerCase().includes(q);
+          const matchSubject = (item.subject || '').toLowerCase().includes(q);
+          const matchDetails = (item.details || '').toLowerCase().includes(q);
+          if (!matchStudent && !matchParent && !matchPhone && !matchSubject && !matchDetails) return false;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="card" style="padding: 3rem 1rem; text-align: center;">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; color: var(--text-muted);">
+              <i data-lucide="message-square" style="width: 32px; height: 32px; color: var(--primary-color); opacity: 0.6;"></i>
+              <strong style="font-size: 1rem; color: var(--text-primary);">لا توجد سجلات تواصل مسجلة</strong>
+              <span style="font-size: 0.8rem;">اضغط على "تسجيل تواصل / شكوى جديدة" لتوثيق تفاعل مع ولي أمر طالب.</span>
+            </div>
+          </div>
+        `;
+        if (window.lucide) window.lucide.createIcons({ root: container });
+        return;
+      }
+
+      container.innerHTML = filtered.map(item => {
+        const isResolved = item.status === 'resolved';
+        const cardClass = isResolved ? 'resolved' : (item.type === 'complaint' ? 'complaint' : (item.status === 'pending_reply' ? 'pending_reply' : 'open'));
+        
+        const cleanPhone = (item.parentPhone || '').replace(/[^0-9+]/g, '');
+        const waLink = cleanPhone ? `https://wa.me/${cleanPhone.replace('+', '')}` : null;
+        
+        let dateFormatted = '--';
+        if (item.createdAt) {
+          try {
+            const d = new Date(item.createdAt);
+            dateFormatted = `${d.toLocaleDateString('ar-EG')} - ${d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`;
+          } catch(e) {
+            dateFormatted = item.createdAt;
+          }
+        }
+
+        return `
+          <div class="interaction-card ${cardClass}">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem;">
+              <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+                ${getTypeBadge(item.type)}
+                ${getChannelBadge(item.channel)}
+                <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: var(--text-primary);">
+                  ${item.subject || 'تواصل إشرافي'}
+                </h3>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-size: 0.74rem; color: var(--text-muted);">${dateFormatted}</span>
+                ${isResolved ? 
+                  '<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #059669; font-size: 0.74rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">تم الحل ✅</span>' : 
+                  '<span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #d97706; font-size: 0.74rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">قيد المتابعة ⏳</span>'
+                }
+              </div>
+            </div>
+
+            <!-- Student & Parent Row -->
+            <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 0.65rem; font-size: 0.84rem; color: var(--text-secondary); background: rgba(0,0,0,0.02); padding: 0.4rem 0.65rem; border-radius: 6px;">
+              <div><strong>الطالب:</strong> <span style="color: var(--text-primary); font-weight: 700;">${item.studentName || 'غير محدد'}</span></div>
+              <div><strong>ولي الأمر:</strong> <span style="color: var(--text-primary);">${item.parentName || 'غير مسجل'}</span></div>
+              <div><strong>الهاتف:</strong> <span dir="ltr" style="font-weight: 600;">${item.parentPhone || 'غير مسجل'}</span></div>
+            </div>
+
+            <!-- Details -->
+            <div class="note-bubble">
+              ${item.details || 'لا توجد تفاصيل إضافية.'}
+            </div>
+
+            ${item.actionTaken ? `
+              <div class="action-bubble">
+                <strong>الإجراء المتخذ:</strong> ${item.actionTaken}
+              </div>
+            ` : ''}
+
+            <!-- Card Actions Footer -->
+            <div style="margin-top: 0.85rem; padding-top: 0.75rem; border-top: 1px dashed var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                ${waLink ? `
+                  <a href="${waLink}" target="_blank" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.35rem 0.65rem; color: #16a34a; gap: 0.3rem;">
+                    <i data-lucide="message-circle" style="width: 14px; height: 14px;"></i>
+                    محادثة واتساب
+                  </a>
+                ` : ''}
+                ${cleanPhone ? `
+                  <a href="tel:${cleanPhone}" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.35rem 0.65rem; gap: 0.3rem;">
+                    <i data-lucide="phone" style="width: 14px; height: 14px;"></i>
+                    اتصال
+                  </a>
+                ` : ''}
+              </div>
+
+              <div style="display: flex; gap: 0.5rem;">
+                ${!isResolved ? `
+                  <button class="btn btn-primary btn-resolve-interaction" data-id="${item.id}" style="font-size: 0.75rem; padding: 0.35rem 0.75rem; background: #059669; border-color: #059669; gap: 0.3rem;">
+                    <i data-lucide="check" style="width: 13px; height: 13px;"></i>
+                    تحديد كـ "تم الحل والمعالجة"
+                  </button>
+                ` : `
+                  <button class="btn btn-secondary btn-reopen-interaction" data-id="${item.id}" style="font-size: 0.75rem; padding: 0.35rem 0.65rem; gap: 0.3rem;">
+                    <i data-lucide="rotate-ccw" style="width: 13px; height: 13px;"></i>
+                    إعادة فتح المتابعة
+                  </button>
+                `}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (window.lucide) window.lucide.createIcons({ root: container });
+
+      // Attach event listeners for status buttons
+      container.querySelectorAll('.btn-resolve-interaction').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.dataset.id;
+          btn.disabled = true;
+          try {
+            await updateParentInteraction(id, { status: 'resolved', resolvedAt: new Date().toISOString() });
+            Toast.success("تم تحديث حالة المتابعة إلى: تم الحل والمعالجة.");
+          } catch(e) {
+            Toast.danger("فشل التحديث: " + e.message);
+            btn.disabled = false;
+          }
+        });
+      });
+
+      container.querySelectorAll('.btn-reopen-interaction').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.dataset.id;
+          btn.disabled = true;
+          try {
+            await updateParentInteraction(id, { status: 'open' });
+            Toast.info("تمت إعادة فتح المتابعة.");
+          } catch(e) {
+            Toast.danger("فشل التحديث: " + e.message);
+            btn.disabled = false;
+          }
+        });
+      });
+    }
+
+    searchInput.addEventListener('input', renderInteractions);
+    typeFilter.addEventListener('change', renderInteractions);
+    statusFilter.addEventListener('change', renderInteractions);
+
+    // Save interaction
+    interactionForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const saveBtn = document.getElementById('btnSaveInteraction');
+      saveBtn.disabled = true;
+
+      const selOpt = studentSelect.options[studentSelect.selectedIndex];
+      const studentId = studentSelect.value;
+      const studentName = selOpt ? selOpt.dataset.name : '';
+      const parentName = document.getElementById('modalParentName').value.trim();
+      const parentPhone = document.getElementById('modalParentPhone').value.trim();
+      const type = document.getElementById('modalType').value;
+      const channel = document.getElementById('modalChannel').value;
+      const subject = document.getElementById('modalSubject').value.trim();
+      const details = document.getElementById('modalDetails').value.trim();
+      const actionTaken = document.getElementById('modalActionTaken').value.trim();
+      const status = document.getElementById('modalStatus').value;
+
+      try {
+        await logParentInteraction({
+          studentId,
+          studentName,
+          parentName,
+          parentPhone,
+          type,
+          channel,
+          subject,
+          details,
+          actionTaken,
+          status
+        });
+
+        Toast.success("تم تسجيل التواصل مع ولي الأمر بنجاح.");
+        closeModal();
+      } catch (err) {
+        console.error("Error logging parent interaction:", err);
+        Toast.danger("فشل الحفظ: " + (err.message || ''));
+      } finally {
+        saveBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

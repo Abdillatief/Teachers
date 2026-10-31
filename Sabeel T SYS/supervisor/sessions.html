@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - مراجعة واعتماد الحصص التشغيلية</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0284c7">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+
+  <style>
+    .session-row:hover {
+      background: rgba(2, 132, 199, 0.03);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+              <span class="badge" style="background: rgba(2, 132, 199, 0.12); color: #0284c7; font-weight: 700; padding: 2px 9px; border-radius: 6px; font-size: 0.76rem;">
+                الرقابة الأكاديمية
+              </span>
+            </div>
+            <h1 style="font-size: 1.55rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="calendar" style="color: var(--primary-color); width: 26px; height: 26px;"></i>
+              سجل ومراجعة واعتماد الحصص 📋
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; margin: 0.35rem 0 0 0;">
+              تدقيق حضور الطلاب، مراجعة التسجيلات الصوتية والمرئية، واعتماد الحصص تشغيلياً.
+            </p>
+          </div>
+
+          <div style="display: flex; gap: 0.5rem;">
+            <a href="requests.html" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.55rem 1rem; gap: 0.4rem;">
+              <i data-lucide="send" style="width: 15px; height: 15px;"></i>
+              طلبات المشرف للمدير
+            </a>
+          </div>
+        </div>
+
+        <!-- Metrics Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="card" style="padding: 1.15rem;">
+            <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">إجمالي الحصص المسجلة</div>
+            <h3 id="statTotalSessions" style="font-size: 1.5rem; font-weight: 700; margin: 0.25rem 0 0 0; color: var(--text-primary);">0</h3>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">سجل الحصص الأكاديمية</span>
+          </div>
+
+          <div class="card" style="padding: 1.15rem;">
+            <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">حصص مكتملة بالحضور</div>
+            <h3 id="statCompletedSessions" style="font-size: 1.5rem; font-weight: 700; margin: 0.25rem 0 0 0; color: var(--success);">0</h3>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">حضور موثق بنجاح</span>
+          </div>
+
+          <div class="card" style="padding: 1.15rem;">
+            <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">حالات غياب الطلاب</div>
+            <h3 id="statAbsentSessions" style="font-size: 1.5rem; font-weight: 700; margin: 0.25rem 0 0 0; color: var(--danger);">0</h3>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">تتطلب متابعة ولي الأمر</span>
+          </div>
+
+          <div class="card" style="padding: 1.15rem;">
+            <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">حصص اليوم</div>
+            <h3 id="statTodaySessions" style="font-size: 1.5rem; font-weight: 700; margin: 0.25rem 0 0 0; color: var(--primary-color);">0</h3>
+            <span style="font-size: 0.72rem; color: var(--text-muted);" id="statTodayLabel">مجدولة ومنفذة اليوم</span>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="card" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem;">
+          <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+            <div style="flex: 1; min-width: 250px; position: relative;">
+              <input type="text" id="sessionSearchInput" class="form-control" placeholder="ابحث باسم الطالب، المعلم، التاريخ، أو السورة..." style="font-size: 0.85rem; padding-right: 2.2rem;">
+              <i data-lucide="search" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--text-muted);"></i>
+            </div>
+
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <select id="timeScopeFilter" class="form-control" style="width: auto; font-size: 0.85rem;">
+                <option value="all">كل الفترات</option>
+                <option value="today">حصص اليوم فقط</option>
+                <option value="current_month">حصص الشهر الحالي</option>
+              </select>
+
+              <select id="sessionStatusFilter" class="form-control" style="width: auto; font-size: 0.85rem;">
+                <option value="all">كافة الحالات</option>
+                <option value="completed">مكتملة بالحضور</option>
+                <option value="absent">غياب الطالب</option>
+                <option value="delayed">مؤجلة</option>
+              </select>
+
+              <select id="teacherFilterSelect" class="form-control" style="width: auto; font-size: 0.85rem;">
+                <option value="all">كل المعلمين</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sessions Table Card -->
+        <div class="card" style="padding: 0; overflow: hidden;">
+          <div style="overflow-x: auto;">
+            <table class="table" style="width: 100%; margin: 0; text-align: right; border-collapse: collapse;">
+              <thead>
+                <tr style="background: var(--bg-primary); border-bottom: 2px solid var(--border-color); font-size: 0.82rem; color: var(--text-secondary);">
+                  <th style="padding: 0.85rem 1rem;">الطالب</th>
+                  <th style="padding: 0.85rem 1rem;">المعلم</th>
+                  <th style="padding: 0.85rem 1rem;">التاريخ والوقت</th>
+                  <th style="padding: 0.85rem 1rem;">حالة الحضور</th>
+                  <th style="padding: 0.85rem 1rem;">الإنجاز القرآني</th>
+                  <th style="padding: 0.85rem 1rem;">التسجيل</th>
+                  <th style="padding: 0.85rem 1rem;">الاعتماد التشغيلي</th>
+                  <th style="padding: 0.85rem 1rem; text-align: left;">إجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="sessionsTableBody">
+                <tr>
+                  <td colspan="8" style="padding: 3rem 1rem; text-align: center; color: var(--text-muted);">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem;">
+                      <i data-lucide="loader" class="spin" style="width: 26px; height: 26px; color: var(--primary-color);"></i>
+                      <span>جارٍ تحميل سجلات الحصص...</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal: Session Recording & Details Review -->
+  <div id="sessionReviewModal" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div class="card" style="width: 100%; max-width: 580px; max-height: 90vh; overflow-y: auto; margin: 1.5rem; padding: 1.75rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+        <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="play-circle" style="width: 20px; height: 20px; color: var(--primary-color);"></i>
+          <span>مراجعة تفاصيل وتسجيل الحصة</span>
+        </h3>
+        <button id="btnCloseReviewModal" style="background: none; border: none; cursor: pointer; color: var(--text-muted);">
+          <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+        </button>
+      </div>
+
+      <div id="sessionReviewContent">
+        <!-- Injected -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Request Delete Session (Sends request to Admin) -->
+  <div id="deleteSessionReqModal" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div class="card" style="width: 100%; max-width: 520px; margin: 1.5rem; padding: 1.75rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+        <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem; color: #dc2626;">
+          <i data-lucide="trash-2" style="width: 20px; height: 20px;"></i>
+          <span>طلب حذف حصة مسجلة للمدير</span>
+        </h3>
+        <button id="btnCloseDelReqModal" style="background: none; border: none; cursor: pointer; color: var(--text-muted);">
+          <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+        </button>
+      </div>
+
+      <form id="delSessionReqForm">
+        <input type="hidden" id="delSessionId">
+        <input type="hidden" id="delSessionSummary">
+
+        <div style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.85rem;">
+          <strong>الحصة المستهدفة:</strong> <span id="delSessionDisplay">--</span>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">عنوان الطلب *</label>
+          <input type="text" id="delSessionTitle" class="form-control" required style="font-size: 0.85rem;">
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">سبب طلب الحذف بالتفصيل *</label>
+          <textarea id="delSessionReason" class="form-control" rows="3" required placeholder="مثال: تسجيل مكرر بالخطأ / عدم انعقاد الحصة بسبب انقطاع الكهرباء..." style="font-size: 0.85rem;"></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+          <button type="button" id="btnCancelDelReq" class="btn btn-secondary" style="font-size: 0.85rem;">إلغاء</button>
+          <button type="submit" id="btnSubmitDelReq" class="btn btn-primary" style="font-size: 0.85rem; font-weight: 700; background: #dc2626; border-color: #dc2626; gap: 0.4rem;">
+            <i data-lucide="send" style="width: 15px; height: 15px;"></i>
+            إرسال طلب الحذف للمدير
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { 
+      collection, 
+      onSnapshot, 
+      query, 
+      orderBy,
+      doc, 
+      updateDoc 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+    import { createSupervisorRequest } from '../assets/js/features/supervisor/supervisorService.js';
+
+    protectRoute('supervisor');
+    renderSidebar('sessions', 'supervisor');
+    renderNavbar('مراجعة الحصص', { name: 'المشرف التشغيلي' });
+
+    let sessions = [];
+    let teachersCache = [];
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    const tableBody = document.getElementById('sessionsTableBody');
+    const searchInput = document.getElementById('sessionSearchInput');
+    const timeScopeFilter = document.getElementById('timeScopeFilter');
+    const statusFilter = document.getElementById('sessionStatusFilter');
+    const teacherFilter = document.getElementById('teacherFilterSelect');
+
+    auth.onAuthStateChanged((user) => {
+      if (!user) return;
+
+      // 1. Sessions stream
+      const qSessions = query(collection(db, "sessions"), orderBy("date", "desc"));
+      onSnapshot(qSessions, (snap) => {
+        sessions = [];
+        snap.forEach(d => sessions.push({ id: d.id, ...d.data() }));
+        extractTeachers();
+        updateMetrics();
+        renderSessionsTable();
+      }, (err) => {
+        console.warn("Sessions fallback:", err);
+        onSnapshot(collection(db, "sessions"), (snap) => {
+          sessions = [];
+          snap.forEach(d => sessions.push({ id: d.id, ...d.data() }));
+          sessions.sort((a,b) => (b.date || '').localeCompare(a.date || ''));
+          extractTeachers();
+          updateMetrics();
+          renderSessionsTable();
+        });
+      });
+    });
+
+    function extractTeachers() {
+      const set = new Set();
+      sessions.forEach(s => {
+        if (s.teacherName) set.add(s.teacherName);
+      });
+      teachersCache = Array.from(set);
+
+      if (teacherFilter) {
+        teacherFilter.innerHTML = '<option value="all">كل المعلمين</option>' + 
+          teachersCache.map(name => `<option value="${name}">${name}</option>`).join('');
+      }
+    }
+
+    function updateMetrics() {
+      const completed = sessions.filter(s => s.status === 'completed' || s.attendanceStatus === 'attended').length;
+      const absent = sessions.filter(s => s.status === 'absent' || s.attendanceStatus === 'absent').length;
+      const todayCount = sessions.filter(s => s.date === todayStr).length;
+
+      const elTotal = document.getElementById('statTotalSessions');
+      if (elTotal) elTotal.textContent = sessions.length;
+
+      const elCompleted = document.getElementById('statCompletedSessions');
+      if (elCompleted) elCompleted.textContent = completed;
+
+      const elAbsent = document.getElementById('statAbsentSessions');
+      if (elAbsent) elAbsent.textContent = absent;
+
+      const elToday = document.getElementById('statTodaySessions');
+      if (elToday) elToday.textContent = todayCount;
+    }
+
+    function renderSessionsTable() {
+      if (!tableBody) return;
+
+      const q = (searchInput?.value || '').trim().toLowerCase();
+      const sTime = timeScopeFilter?.value || 'all';
+      const sStatus = statusFilter?.value || 'all';
+      const sTeacher = teacherFilter?.value || 'all';
+
+      const currentMonth = new Date().toISOString().substring(0, 7);
+
+      const filtered = sessions.filter(s => {
+        // Time filter
+        if (sTime === 'today' && s.date !== todayStr) return false;
+        if (sTime === 'current_month' && !(s.date || '').startsWith(currentMonth)) return false;
+
+        // Status filter
+        const isCompleted = s.status === 'completed' || s.attendanceStatus === 'attended';
+        const isAbsent = s.status === 'absent' || s.attendanceStatus === 'absent';
+        const isDelayed = s.status === 'delayed' || s.status === 'cancelled';
+
+        if (sStatus === 'completed' && !isCompleted) return false;
+        if (sStatus === 'absent' && !isAbsent) return false;
+        if (sStatus === 'delayed' && !isDelayed) return false;
+
+        // Teacher filter
+        if (sTeacher !== 'all' && (s.teacherName || '') !== sTeacher) return false;
+
+        // Text query
+        if (q) {
+          const mStudent = (s.studentName || '').toLowerCase().includes(q);
+          const mTeacher = (s.teacherName || '').toLowerCase().includes(q);
+          const mDate = (s.date || '').toLowerCase().includes(q);
+          const mSurah = (s.surah || s.notes || '').toLowerCase().includes(q);
+          if (!mStudent && !mTeacher && !mDate && !mSurah) return false;
+        }
+
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="8" style="padding: 3rem 1rem; text-align: center; color: var(--text-muted);">
+              <i data-lucide="calendar-x" style="width: 32px; height: 32px; opacity: 0.6; margin-bottom: 0.5rem;"></i>
+              <div>لا توجد حصص تطابق معايير البحث والفلترة.</div>
+            </td>
+          </tr>
+        `;
+        if (window.lucide) window.lucide.createIcons({ root: tableBody });
+        return;
+      }
+
+      tableBody.innerHTML = filtered.map(s => {
+        const isCompleted = s.status === 'completed' || s.attendanceStatus === 'attended';
+        const isAbsent = s.status === 'absent' || s.attendanceStatus === 'absent';
+        
+        let statusBadge = '<span class="badge badge-success">حضور مكتمل</span>';
+        if (isAbsent) {
+          statusBadge = '<span class="badge badge-danger">غياب</span>';
+        } else if (s.status === 'delayed') {
+          statusBadge = '<span class="badge badge-warning">مؤجلة</span>';
+        }
+
+        const isApproved = s.supervisorApproved === true;
+        let approvalBadge = `
+          <button class="btn btn-secondary btn-approve-session" data-id="${s.id}" style="padding: 0.25rem 0.55rem; font-size: 0.72rem; color: var(--primary-color); gap: 0.25rem;" title="اعتماد الحصة تشغيلياً">
+            <i data-lucide="check" style="width: 12px; height: 12px;"></i>
+            اعتماد الحصة
+          </button>
+        `;
+        if (isApproved) {
+          approvalBadge = `<span class="badge badge-success">معتمدة تشغيلياً</span>`;
+        }
+
+        const hasRecording = s.recordingUrl || s.meetingUrl || s.videoUrl;
+
+        return `
+          <tr class="session-row" style="border-bottom: 1px solid var(--border-color); font-size: 0.85rem;">
+            <td style="padding: 0.85rem 1rem; font-weight: 800; color: var(--text-primary);">
+              ${s.studentName || 'غير محدد'}
+            </td>
+
+            <td style="padding: 0.85rem 1rem; color: var(--text-secondary); font-weight: 600;">
+              ${s.teacherName || 'غير محدد'}
+            </td>
+
+            <td style="padding: 0.85rem 1rem;">
+              <div style="font-weight: 600;">${s.date || '--'}</div>
+              <div style="font-size: 0.74rem; color: var(--text-muted);">${s.time || s.startTime || ''}</div>
+            </td>
+
+            <td style="padding: 0.85rem 1rem;">
+              ${statusBadge}
+            </td>
+
+            <td style="padding: 0.85rem 1rem; font-size: 0.8rem; color: var(--text-secondary);">
+              ${s.surah || s.achievement || s.title || '--'}
+            </td>
+
+            <td style="padding: 0.85rem 1rem;">
+              ${hasRecording ? `
+                <a href="${hasRecording}" target="_blank" class="btn btn-secondary" style="padding: 0.25rem 0.55rem; font-size: 0.72rem; color: #0284c7; gap: 0.25rem;">
+                  <i data-lucide="play" style="width: 12px; height: 12px;"></i>
+                  التسجيل
+                </a>
+              ` : `
+                <span style="font-size: 0.74rem; color: var(--text-muted);">لا يوجد تسجيل</span>
+              `}
+            </td>
+
+            <td style="padding: 0.85rem 1rem;">
+              ${approvalBadge}
+            </td>
+
+            <td style="padding: 0.85rem 1rem; text-align: left;">
+              <div style="display: flex; gap: 0.35rem; justify-content: flex-end; align-items: center;">
+                <button class="btn btn-secondary btn-review-session" data-id="${s.id}" title="مراجعة الحصة بالتفصيل" style="padding: 0.3rem 0.55rem; font-size: 0.75rem;">
+                  <i data-lucide="eye" style="width: 14px; height: 14px;"></i>
+                </button>
+
+                <!-- Sensitive Action: Request Delete Session to Admin -->
+                <button class="btn btn-secondary btn-req-del-session" data-id="${s.id}" data-summary="${s.studentName} (${s.date || ''})" title="طلب إلغاء وحذف الحصة للمدير" style="padding: 0.3rem 0.55rem; font-size: 0.75rem; color: #dc2626;">
+                  <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      if (window.lucide) window.lucide.createIcons({ root: tableBody });
+      attachSessionEventListeners();
+    }
+
+    function attachSessionEventListeners() {
+      // 1. Approve Session
+      document.querySelectorAll('.btn-approve-session').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const sId = btn.dataset.id;
+          btn.disabled = true;
+          try {
+            await updateDoc(doc(db, "sessions", sId), {
+              supervisorApproved: true,
+              approvedBySupervisor: auth.currentUser ? auth.currentUser.uid : 'supervisor',
+              approvedAt: new Date().toISOString()
+            });
+            Toast.success("تم اعتماد الحصة تشغيلياً بنجاح.");
+          } catch(e) {
+            Toast.danger("فشل الاعتماد: " + e.message);
+            btn.disabled = false;
+          }
+        });
+      });
+
+      // 2. Review Session Modal
+      document.querySelectorAll('.btn-review-session').forEach(btn => {
+        btn.addEventListener('click', () => openSessionReviewModal(btn.dataset.id));
+      });
+
+      // 3. Request Delete Session Modal
+      document.querySelectorAll('.btn-req-del-session').forEach(btn => {
+        btn.addEventListener('click', () => openDelSessionReqModal(btn.dataset.id, btn.dataset.summary));
+      });
+    }
+
+    searchInput.addEventListener('input', renderSessionsTable);
+    timeScopeFilter.addEventListener('change', renderSessionsTable);
+    statusFilter.addEventListener('change', renderSessionsTable);
+    teacherFilter.addEventListener('change', renderSessionsTable);
+
+    // ================= MODALS ================= //
+
+    // Review Modal
+    const reviewModal = document.getElementById('sessionReviewModal');
+    function openSessionReviewModal(sessionId) {
+      const s = sessions.find(item => item.id === sessionId);
+      if (!s) return;
+
+      const hasRecording = s.recordingUrl || s.meetingUrl || s.videoUrl;
+
+      document.getElementById('sessionReviewContent').innerHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+          <div style="background: var(--bg-primary); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.72rem; color: var(--text-muted);">الطالب</div>
+            <div style="font-weight: 800; color: var(--text-primary); margin-top: 0.2rem;">${s.studentName || 'غير محدد'}</div>
+          </div>
+          <div style="background: var(--bg-primary); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.72rem; color: var(--text-muted);">المعلم</div>
+            <div style="font-weight: 800; color: var(--text-primary); margin-top: 0.2rem;">${s.teacherName || 'غير محدد'}</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+          <div style="background: var(--bg-primary); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.72rem; color: var(--text-muted);">التاريخ والوقت</div>
+            <div style="font-weight: 700; color: var(--text-primary); margin-top: 0.2rem;">${s.date || '--'} (${s.time || s.startTime || '--'})</div>
+          </div>
+          <div style="background: var(--bg-primary); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.72rem; color: var(--text-muted);">المدة</div>
+            <div style="font-weight: 700; color: var(--text-primary); margin-top: 0.2rem;">${s.duration || '30'} دقيقة</div>
+          </div>
+        </div>
+
+        <div style="background: rgba(2, 132, 199, 0.04); border: 1px solid rgba(2, 132, 199, 0.2); border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1rem; font-size: 0.85rem;">
+          <strong>الإنجاز والملاحظات:</strong>
+          <p style="margin: 0.4rem 0 0 0; color: var(--text-primary); line-height: 1.5;">${s.notes || s.achievement || s.surah || 'لا توجد ملاحظات تفصيلية مسجلة.'}</p>
+        </div>
+
+        ${hasRecording ? `
+          <div style="margin-bottom: 1rem;">
+            <a href="${hasRecording}" target="_blank" class="btn btn-primary" style="width: 100%; justify-content: center; gap: 0.4rem; font-size: 0.85rem;">
+              <i data-lucide="video" style="width: 16px; height: 16px;"></i>
+              فتح وتشغيل رابط التسجيل
+            </a>
+          </div>
+        ` : ''}
+
+        <div style="display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 0.85rem;">
+          <button type="button" id="btnCloseReviewBottom" class="btn btn-secondary" style="font-size: 0.82rem;">إغلاق</button>
+        </div>
+      `;
+
+      if (window.lucide) window.lucide.createIcons({ root: reviewModal });
+      reviewModal.style.display = 'flex';
+      document.getElementById('btnCloseReviewBottom').addEventListener('click', () => reviewModal.style.display = 'none');
+    }
+    document.getElementById('btnCloseReviewModal').addEventListener('click', () => reviewModal.style.display = 'none');
+
+    // Delete Session Request Modal
+    const delReqModal = document.getElementById('deleteSessionReqModal');
+    function openDelSessionReqModal(sessionId, summary) {
+      document.getElementById('delSessionReqForm').reset();
+      document.getElementById('delSessionId').value = sessionId;
+      document.getElementById('delSessionSummary').value = summary;
+      document.getElementById('delSessionDisplay').textContent = summary;
+      document.getElementById('delSessionTitle').value = `طلب حذف وإلغاء حصة: ${summary}`;
+
+      delReqModal.style.display = 'flex';
+      if (window.lucide) window.lucide.createIcons({ root: delReqModal });
+    }
+    document.getElementById('btnCloseDelReqModal').addEventListener('click', () => delReqModal.style.display = 'none');
+    document.getElementById('btnCancelDelReq').addEventListener('click', () => delReqModal.style.display = 'none');
+
+    document.getElementById('delSessionReqForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmitDelReq');
+      btn.disabled = true;
+
+      const targetId = document.getElementById('delSessionId').value;
+      const targetName = document.getElementById('delSessionSummary').value;
+      const title = document.getElementById('delSessionTitle').value.trim();
+      const reason = document.getElementById('delSessionReason').value.trim();
+
+      try {
+        await createSupervisorRequest({
+          type: 'delete_session',
+          title,
+          targetId,
+          targetName,
+          targetType: 'session',
+          details: {},
+          reason
+        });
+
+        Toast.success("تم إرسال طلب حذف الحصة بنجاح للمدير العام.");
+        delReqModal.style.display = 'none';
+      } catch (err) {
+        console.error("Error creating session delete request:", err);
+        Toast.danger("فشل إرسال الطلب: " + err.message);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

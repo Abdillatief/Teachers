@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - طلبات المشرف الإدارية</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0284c7">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+
+  <style>
+    .request-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s ease;
+    }
+    .request-card:hover {
+      border-color: var(--primary-color);
+      transform: translateY(-2px);
+    }
+    .request-card.pending {
+      border-right: 5px solid #f59e0b;
+    }
+    .request-card.approved {
+      border-right: 5px solid #10b981;
+    }
+    .request-card.rejected {
+      border-right: 5px solid #ef4444;
+    }
+    .reason-box {
+      background: var(--bg-primary);
+      border: 1px dashed var(--border-color);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 0.86rem;
+      color: var(--text-primary);
+      line-height: 1.6;
+      margin: 0.65rem 0;
+    }
+    .admin-note-box {
+      border-radius: 8px;
+      padding: 0.65rem 0.9rem;
+      font-size: 0.82rem;
+      margin-top: 0.65rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+    .admin-note-box.approved {
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      color: #065f46;
+    }
+    .admin-note-box.rejected {
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      color: #991b1b;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        
+        <!-- Header -->
+        <div style="margin-bottom: 1.75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+              <span class="badge" style="background: rgba(2, 132, 199, 0.12); color: #0284c7; font-weight: 700; padding: 2px 9px; border-radius: 6px; font-size: 0.76rem;">
+                القرارات الإدارية للمدير
+              </span>
+            </div>
+            <h1 style="font-size: 1.55rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="send" style="color: var(--primary-color); width: 26px; height: 26px;"></i>
+              طلبات المشرف للمدير العام 📤
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">
+              جميع العمليات الحساسة (حذف طالب، حذف أو إيقاف معلم، تعديل باقة، حذف حصة) تُرفع هنا كطلب معلل للمدير، وتُنفذ تلقائياً بمجرد الموافقة.
+            </p>
+          </div>
+          <div>
+            <button id="btnOpenNewRequestModal" class="btn btn-primary" style="font-weight: 700; padding: 0.65rem 1.25rem; gap: 0.45rem; font-size: 0.88rem;">
+              <i data-lucide="plus-circle" style="width: 18px; height: 18px;"></i>
+              <span>إنشاء طلب إداري جديد</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Metric Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="card" style="padding: 1.15rem; border-right: 4px solid #f59e0b;">
+            <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); display: flex; justify-content: space-between;">
+              <span>طلبات قيد مراجعة المدير</span>
+              <i data-lucide="clock" style="width: 16px; height: 16px; color: #f59e0b;"></i>
+            </div>
+            <h3 id="statMyPending" style="font-size: 1.7rem; font-weight: 800; margin: 0.35rem 0 0 0; color: #f59e0b;">0</h3>
+          </div>
+
+          <div class="card" style="padding: 1.15rem; border-right: 4px solid #10b981;">
+            <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); display: flex; justify-content: space-between;">
+              <span>تمت الموافقة والتنفيذ</span>
+              <i data-lucide="check-circle" style="width: 16px; height: 16px; color: #10b981;"></i>
+            </div>
+            <h3 id="statMyApproved" style="font-size: 1.7rem; font-weight: 800; margin: 0.35rem 0 0 0; color: #10b981;">0</h3>
+          </div>
+
+          <div class="card" style="padding: 1.15rem; border-right: 4px solid #ef4444;">
+            <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); display: flex; justify-content: space-between;">
+              <span>طلبات مرفوضة معللة</span>
+              <i data-lucide="x-circle" style="width: 16px; height: 16px; color: #ef4444;"></i>
+            </div>
+            <h3 id="statMyRejected" style="font-size: 1.7rem; font-weight: 800; margin: 0.35rem 0 0 0; color: #ef4444;">0</h3>
+          </div>
+
+          <div class="card" style="padding: 1.15rem; border-right: 4px solid var(--primary-color);">
+            <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); display: flex; justify-content: space-between;">
+              <span>إجمالي طلباتي المرفوعة</span>
+              <i data-lucide="inbox" style="width: 16px; height: 16px; color: var(--primary-color);"></i>
+            </div>
+            <h3 id="statMyTotal" style="font-size: 1.7rem; font-weight: 800; margin: 0.35rem 0 0 0; color: var(--primary-color);">0</h3>
+          </div>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="card" style="margin-bottom: 1.5rem; padding: 0.85rem 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div style="display: flex; gap: 0.5rem;">
+              <select id="statusFilterSelect" class="form-control" style="font-size: 0.85rem; font-weight: 600; min-width: 160px;">
+                <option value="all">كل الحالات</option>
+                <option value="pending" selected>قيد المراجعة ⏳</option>
+                <option value="approved">تمت الموافقة ✅</option>
+                <option value="rejected">مرفوضة ❌</option>
+              </select>
+              <select id="typeFilterSelect" class="form-control" style="font-size: 0.85rem; font-weight: 600; min-width: 180px;">
+                <option value="all">كل أنواع الطلبات</option>
+                <option value="delete_student">طلب حذف طالب</option>
+                <option value="change_package">طلب تغيير باقة</option>
+                <option value="suspend_teacher">طلب إيقاف معلم</option>
+                <option value="delete_teacher">طلب حذف معلم</option>
+                <option value="delete_session">طلب حذف حصة</option>
+                <option value="general_request">طلب عام</option>
+              </select>
+            </div>
+
+            <div style="position: relative; min-width: 240px; flex: 1; max-width: 360px;">
+              <input type="text" id="searchInput" class="form-control" placeholder="بحث بالاسم أو السبب..." style="font-size: 0.82rem; padding-right: 2.2rem;">
+              <i data-lucide="search" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: var(--text-muted);"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Requests List -->
+        <div id="requestsListContainer">
+          <div style="padding: 3rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+            جاري تحميل طلباتك...
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- MODAL: NEW SUPERVISOR REQUEST -->
+  <div id="newRequestModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 1rem;">
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; width: 100%; max-width: 540px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-lg);">
+      <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 0.45rem;">
+          <i data-lucide="send" style="color: var(--primary-color); width: 20px; height: 20px;"></i>
+          إنشاء طلب إداري معلل للمدير العام
+        </h3>
+        <button id="btnCloseModal" style="background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 1.3rem;">&times;</button>
+      </div>
+
+      <form id="newRequestForm" style="padding: 1.25rem 1.5rem;">
+        <div class="form-group">
+          <label style="font-size: 0.84rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.35rem; display: block;">
+            نوع العملية الإدارية المطلوبة:
+          </label>
+          <select id="requestTypeSelect" class="form-control" required style="font-weight: 600;">
+            <option value="delete_student">طلب حذف أو أرشفة طالب</option>
+            <option value="change_package">طلب تغيير باقة / خطة طالب</option>
+            <option value="suspend_teacher">طلب إيقاف معلم مؤقتاً</option>
+            <option value="delete_teacher">طلب حذف حساب معلم</option>
+            <option value="delete_session">طلب حذف أو إلغاء حصة</option>
+            <option value="edit_sensitive_data">طلب تعديل بيانات حساسة</option>
+            <option value="general_request">طلب أو مقترح إداري عام</option>
+          </select>
+        </div>
+
+        <!-- Dynamic Target Select: Student -->
+        <div class="form-group" id="groupTargetStudent">
+          <label style="font-size: 0.84rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.35rem; display: block;">
+            اختر الطالب المعني:
+          </label>
+          <select id="targetStudentSelect" class="form-control">
+            <option value="">جاري تحميل الطلاب...</option>
+          </select>
+        </div>
+
+        <!-- Dynamic Target Select: Teacher -->
+        <div class="form-group" id="groupTargetTeacher" style="display: none;">
+          <label style="font-size: 0.84rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.35rem; display: block;">
+            اختر المعلم المعني:
+          </label>
+          <select id="targetTeacherSelect" class="form-control">
+            <option value="">جاري تحميل المعلمين...</option>
+          </select>
+        </div>
+
+        <!-- Dynamic Field for Change Package -->
+        <div class="form-group" id="groupPackageDetails" style="display: none;">
+          <label style="font-size: 0.84rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.35rem; display: block;">
+            الباقة أو عدد الحصص المقترح تحويل الطالب إليها:
+          </label>
+          <select id="newPackageSelect" class="form-control">
+            <option value="باقة 8 حصص شهرياً">باقة 8 حصص شهرياً</option>
+            <option value="باقة 12 حصة شهرياً">باقة 12 حصة شهرياً</option>
+            <option value="باقة 16 حصة شهرياً">باقة 16 حصة شهرياً</option>
+            <option value="باقة مكثفة 20 حصة">باقة مكثفة 20 حصة</option>
+            <option value="تخصيص يدوي">تخصيص يدوي</option>
+          </select>
+        </div>
+
+        <!-- Request Title -->
+        <div class="form-group">
+          <label style="font-size: 0.84rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.35rem; display: block;">
+            عنوان الطلب أو ملخص الإجراء:
+          </label>
+          <input type="text" id="requestTitleInput" class="form-control" placeholder="مثال: طلب أرشفة الطالب لتعذر استمراره بعد التواصل مع ولي أمره" required>
+        </div>
+
+        <!-- Request Reason -->
+        <div class="form-group">
+          <label style="font-size: 0.84rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.35rem; display: block;">
+            السبب والمبرر التشغيلي التفصيلي (هام لاتخاذ قرار المدير):
+          </label>
+          <textarea id="requestReasonInput" class="form-control" rows="4" placeholder="وضح أسباب الطلب بالتفصيل وما تم عمله مسبقاً (مثال: تم التواصل مرتين مع ولي الأمر وأفاد بسفر الطالب ورغبته في إيقاف الاشتراك)..." required></textarea>
+        </div>
+
+        <div style="background: rgba(2, 132, 199, 0.08); border: 1px solid rgba(2, 132, 199, 0.2); border-radius: 8px; padding: 0.65rem 0.85rem; font-size: 0.78rem; color: #0369a1; line-height: 1.5; margin-bottom: 1rem;">
+          ℹ️ سيصل الطلب إلى لوحة المدير العام فوراً في قسم "طلبات المشرفين"، وبمجرد موافقته يقوم النظام بتنفيذ العملية تلقائياً دون الحاجة لأي تدخل يدوي.
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+          <button type="button" id="btnCancelModal" class="btn btn-secondary" style="font-size: 0.85rem;">إلغاء</button>
+          <button type="submit" id="btnSubmitRequest" class="btn btn-primary" style="font-size: 0.85rem; font-weight: 700; gap: 0.4rem;">
+            <i data-lucide="send" style="width: 15px; height: 15px;"></i>
+            إرسال الطلب للمدير
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { 
+      collection, 
+      onSnapshot, 
+      query, 
+      where, 
+      orderBy 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+    import { createSupervisorRequest, getRequestTypeLabel } from '../assets/js/features/supervisor/supervisorService.js';
+
+    protectRoute('supervisor');
+
+    renderSidebar('requests', 'supervisor');
+    renderNavbar('طلبات المشرف الإدارية', { name: 'المشرف التشغيلي' });
+
+    let myRequests = [];
+    let studentsCache = [];
+    let teachersCache = [];
+
+    const listContainer = document.getElementById('requestsListContainer');
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilterSelect');
+    const typeFilter = document.getElementById('typeFilterSelect');
+
+    const statPending = document.getElementById('statMyPending');
+    const statApproved = document.getElementById('statMyApproved');
+    const statRejected = document.getElementById('statMyRejected');
+    const statTotal = document.getElementById('statMyTotal');
+
+    auth.onAuthStateChanged((user) => {
+      if (!user) return;
+
+      // Subscribe to supervisor requests created by this supervisor
+      const qMyRequests = query(
+        collection(db, "supervisorRequests"),
+        where("supervisorId", "==", user.uid),
+        orderBy("createdAt", "desc")
+      );
+
+      onSnapshot(qMyRequests, (snapshot) => {
+        myRequests = [];
+        snapshot.forEach(docSnap => {
+          myRequests.push({ id: docSnap.id, ...docSnap.data() });
+        });
+
+        updateStats();
+        renderRequests();
+      }, (err) => {
+        console.warn("Requests snapshot fallback without composite index:", err);
+        // Fallback without orderBy
+        const fallbackQ = query(collection(db, "supervisorRequests"), where("supervisorId", "==", user.uid));
+        onSnapshot(fallbackQ, (snap) => {
+          myRequests = [];
+          snap.forEach(d => myRequests.push({ id: d.id, ...d.data() }));
+          myRequests.sort((a,b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+          updateStats();
+          renderRequests();
+        });
+      });
+
+      // Cache students for dropdowns
+      onSnapshot(collection(db, "students"), (snap) => {
+        studentsCache = [];
+        snap.forEach(d => {
+          const s = { id: d.id, ...d.data() };
+          if (s.status !== 'archived' && s.status !== 'deleted') {
+            studentsCache.push(s);
+          }
+        });
+        populateStudentSelect();
+      });
+
+      // Cache teachers for dropdowns
+      const qTeachers = query(collection(db, "users"), where("role", "==", "teacher"));
+      onSnapshot(qTeachers, (snap) => {
+        teachersCache = [];
+        snap.forEach(d => teachersCache.push({ uid: d.id, ...d.data() }));
+        populateTeacherSelect();
+      });
+    });
+
+    function populateStudentSelect() {
+      const select = document.getElementById('targetStudentSelect');
+      if (!select) return;
+      select.innerHTML = '<option value="">-- اختر طالباً --</option>' + studentsCache.map(s => 
+        `<option value="${s.id}" data-name="${s.name || ''}">${s.name || 'طالب'} (المعلم: ${s.teacherName || 'غير معين'})</option>`
+      ).join('');
+    }
+
+    function populateTeacherSelect() {
+      const select = document.getElementById('targetTeacherSelect');
+      if (!select) return;
+      select.innerHTML = '<option value="">-- اختر معلماً --</option>' + teachersCache.map(t => 
+        `<option value="${t.uid}" data-name="${t.name || ''}">${t.name || t.email} (${t.department || 'معلم'})</option>`
+      ).join('');
+    }
+
+    function updateStats() {
+      const pending = myRequests.filter(r => r.status === 'pending').length;
+      const approved = myRequests.filter(r => r.status === 'approved').length;
+      const rejected = myRequests.filter(r => r.status === 'rejected').length;
+
+      if (statPending) statPending.textContent = pending;
+      if (statApproved) statApproved.textContent = approved;
+      if (statRejected) statRejected.textContent = rejected;
+      if (statTotal) statTotal.textContent = myRequests.length;
+    }
+
+    function renderRequests() {
+      if (!listContainer) return;
+
+      const searchTerm = (searchInput?.value || '').trim().toLowerCase();
+      const selectedStatus = statusFilter?.value || 'all';
+      const selectedType = typeFilter?.value || 'all';
+
+      const filtered = myRequests.filter(r => {
+        if (selectedStatus !== 'all' && r.status !== selectedStatus) return false;
+        if (selectedType !== 'all' && r.type !== selectedType) return false;
+
+        if (searchTerm) {
+          const targetName = (r.targetName || '').toLowerCase();
+          const title = (r.title || '').toLowerCase();
+          const reason = (r.reason || '').toLowerCase();
+          if (!targetName.includes(searchTerm) && !title.includes(searchTerm) && !reason.includes(searchTerm)) {
+            return false;
+          }
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        listContainer.innerHTML = `
+          <div class="card" style="padding: 3rem 1rem; text-align: center;">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; color: var(--text-muted);">
+              <i data-lucide="inbox" style="width: 32px; height: 32px; color: var(--primary-color); opacity: 0.7;"></i>
+              <strong style="font-size: 1rem; color: var(--text-primary);">لا توجد طلبات مسجلة حالياً</strong>
+              <span style="font-size: 0.8rem;">يمكنك إنشاء طلب جديد للمدير بالضغط على زر "إنشاء طلب إداري جديد".</span>
+            </div>
+          </div>
+        `;
+        if (window.lucide) window.lucide.createIcons({ root: listContainer });
+        return;
+      }
+
+      listContainer.innerHTML = filtered.map(req => {
+        const isPending = req.status === 'pending';
+        const isApproved = req.status === 'approved';
+        const isRejected = req.status === 'rejected';
+
+        let statusBadge = '<span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #d97706; font-size: 0.74rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">قيد مراجعة المدير ⏳</span>';
+        if (isApproved) {
+          statusBadge = '<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #059669; font-size: 0.74rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">تمت الموافقة والتنفيذ بنجاح ✅</span>';
+        } else if (isRejected) {
+          statusBadge = '<span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #dc2626; font-size: 0.74rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">تم رفض الطلب من المدير ❌</span>';
+        }
+
+        let formattedDate = '--';
+        if (req.createdAt) {
+          try {
+            const d = new Date(req.createdAt);
+            formattedDate = `${d.toLocaleDateString('ar-EG')} - ${d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`;
+          } catch (e) {
+            formattedDate = req.createdAt;
+          }
+        }
+
+        return `
+          <div class="request-card ${req.status}">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.75rem;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.35rem;">
+                  <span class="badge" style="background: rgba(2, 132, 199, 0.1); color: #0284c7; font-size: 0.74rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">
+                    ${getRequestTypeLabel(req.type)}
+                  </span>
+                  ${statusBadge}
+                  <span style="font-size: 0.76rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.25rem;">
+                    <i data-lucide="clock" style="width: 12px; height: 12px;"></i>
+                    ${formattedDate}
+                  </span>
+                </div>
+                <h3 style="font-size: 1.05rem; font-weight: 800; color: var(--text-primary); margin: 0 0 0.3rem 0;">
+                  ${req.title}
+                </h3>
+                ${req.targetName ? `
+                  <div style="font-size: 0.8rem; color: var(--text-secondary);">
+                    <strong>الهدف المعني:</strong> <strong style="color: var(--text-primary);">${req.targetName}</strong>
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+
+            <div class="reason-box">
+              <span style="font-weight: 700; font-size: 0.76rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;">سبب ومبرر الطلب:</span>
+              <div>${req.reason || '--'}</div>
+            </div>
+
+            ${isApproved ? `
+              <div class="admin-note-box approved">
+                <span style="font-weight: 700;">✅ نتيجة التنفيذ الآلي:</span>
+                <div>${req.executionResult || req.adminResponse || 'تم تنفيذ العملية المطلوبة في قاعدة البيانات فور موافقة المدير.'}</div>
+                ${req.reviewedBy ? `<span style="font-size: 0.7rem; opacity: 0.85;">المعتمد: ${req.reviewedBy}</span>` : ''}
+              </div>
+            ` : ''}
+
+            ${isRejected ? `
+              <div class="admin-note-box rejected">
+                <span style="font-weight: 700;">❌ سبب الرفض الصادر من المدير العام:</span>
+                <div>${req.adminResponse || 'لم يتم استيفاء المتطلبات الإدارية للطلب.'}</div>
+                ${req.reviewedBy ? `<span style="font-size: 0.7rem; opacity: 0.85;">بواسطة: ${req.reviewedBy}</span>` : ''}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+
+      if (window.lucide) window.lucide.createIcons({ root: listContainer });
+    }
+
+    searchInput.addEventListener('input', renderRequests);
+    statusFilter.addEventListener('change', renderRequests);
+    typeFilter.addEventListener('change', renderRequests);
+
+    // Modal Handling
+    const modal = document.getElementById('newRequestModal');
+    const btnOpenModal = document.getElementById('btnOpenNewRequestModal');
+    const btnCloseModal = document.getElementById('btnCloseModal');
+    const btnCancelModal = document.getElementById('btnCancelModal');
+    const requestForm = document.getElementById('newRequestForm');
+    const requestTypeSelect = document.getElementById('requestTypeSelect');
+
+    const groupStudent = document.getElementById('groupTargetStudent');
+    const groupTeacher = document.getElementById('groupTargetTeacher');
+    const groupPackage = document.getElementById('groupPackageDetails');
+
+    const openModal = () => {
+      requestForm.reset();
+      updateDynamicFields();
+      modal.style.display = 'flex';
+      if (window.lucide) window.lucide.createIcons({ root: modal });
+    };
+
+    const closeModal = () => {
+      modal.style.display = 'none';
+    };
+
+    btnOpenModal.addEventListener('click', openModal);
+    btnCloseModal.addEventListener('click', closeModal);
+    btnCancelModal.addEventListener('click', closeModal);
+
+    requestTypeSelect.addEventListener('change', updateDynamicFields);
+
+    function updateDynamicFields() {
+      const type = requestTypeSelect.value;
+      const isStudentTarget = type === 'delete_student' || type === 'change_package';
+      const isTeacherTarget = type === 'delete_teacher' || type === 'suspend_teacher';
+      const isPackage = type === 'change_package';
+
+      groupStudent.style.display = isStudentTarget ? 'block' : 'none';
+      groupTeacher.style.display = isTeacherTarget ? 'block' : 'none';
+      groupPackage.style.display = isPackage ? 'block' : 'none';
+
+      // Auto set suggested titles
+      const titleInput = document.getElementById('requestTitleInput');
+      if (type === 'delete_student') {
+        titleInput.placeholder = 'طلب أرشفة وحذف طالب من القوائم النشطة';
+      } else if (type === 'change_package') {
+        titleInput.placeholder = 'طلب تعديل خطة أو باقة اشتراك طالب';
+      } else if (type === 'suspend_teacher') {
+        titleInput.placeholder = 'طلب إيقاف حساب معلم مؤقتاً';
+      } else if (type === 'delete_teacher') {
+        titleInput.placeholder = 'طلب إنهاء خدمة وحذف حساب معلم';
+      } else if (type === 'delete_session') {
+        titleInput.placeholder = 'طلب إلغاء وحذف حصة مسجلة بالخطأ';
+      } else {
+        titleInput.placeholder = 'موضوع الطلب الإداري...';
+      }
+    }
+
+    // Submit Request
+    requestForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = document.getElementById('btnSubmitRequest');
+      submitBtn.disabled = true;
+
+      const type = requestTypeSelect.value;
+      const title = document.getElementById('requestTitleInput').value.trim();
+      const reason = document.getElementById('requestReasonInput').value.trim();
+
+      let targetId = '';
+      let targetName = '';
+      let targetType = '';
+      let details = {};
+
+      if (type === 'delete_student' || type === 'change_package') {
+        const sel = document.getElementById('targetStudentSelect');
+        targetId = sel.value;
+        const opt = sel.options[sel.selectedIndex];
+        targetName = opt ? opt.dataset.name : '';
+        targetType = 'student';
+
+        if (!targetId) {
+          Toast.warning("يرجى اختيار الطالب المعني بالطلب.");
+          submitBtn.disabled = false;
+          return;
+        }
+
+        if (type === 'change_package') {
+          const pkgSel = document.getElementById('newPackageSelect');
+          details.newPackageName = pkgSel.value;
+          details.newTotalLessons = pkgSel.value.includes('12') ? 12 : (pkgSel.value.includes('16') ? 16 : (pkgSel.value.includes('20') ? 20 : 8));
+        }
+      } else if (type === 'delete_teacher' || type === 'suspend_teacher') {
+        const sel = document.getElementById('targetTeacherSelect');
+        targetId = sel.value;
+        const opt = sel.options[sel.selectedIndex];
+        targetName = opt ? opt.dataset.name : '';
+        targetType = 'teacher';
+
+        if (!targetId) {
+          Toast.warning("يرجى اختيار المعلم المعني بالطلب.");
+          submitBtn.disabled = false;
+          return;
+        }
+      }
+
+      try {
+        await createSupervisorRequest({
+          type,
+          title,
+          targetId,
+          targetName,
+          targetType,
+          details,
+          reason
+        });
+
+        Toast.success("تم إرسال طلبك بنجاح إلى المدير العام.");
+        closeModal();
+      } catch (err) {
+        console.error("Error creating supervisor request:", err);
+        Toast.danger(`فشل إرسال الطلب: ${err.message || ''}`);
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

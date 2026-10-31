@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - متابعة وإدارة كادر المعلمين</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0284c7">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+
+  <style>
+    .teacher-item-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.25rem 1.4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s ease;
+    }
+    .teacher-item-card:hover {
+      border-color: var(--primary-color);
+      transform: translateY(-2px);
+    }
+    .teacher-stat-pill {
+      background: var(--bg-primary);
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      text-align: center;
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+              <span class="badge" style="background: rgba(2, 132, 199, 0.12); color: #0284c7; font-weight: 700; padding: 2px 9px; border-radius: 6px; font-size: 0.76rem;">
+                الكادر التعليمي والتشغيلي
+              </span>
+            </div>
+            <h1 style="font-size: 1.35rem; font-weight: 700; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="users" style="color: var(--primary-color); width: 24px; height: 24px;"></i>
+              متابعة المعلمين وشؤون التدريس
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0.25rem 0 0 0;">
+              متابعة التزام المعلمين، الحصص المنجزة، الجداول، والتواصل المباشر (بيانات تشغيلية حصرية بدون رواتب).
+            </p>
+          </div>
+
+          <div style="display: flex; gap: 0.5rem;">
+            <a href="requests.html" class="btn btn-secondary">
+              <i data-lucide="send" style="width: 15px; height: 15px;"></i>
+              طلبات المشرف للمدير
+            </a>
+          </div>
+        </div>
+
+        <!-- Operational Metrics Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="card" style="padding: 1.15rem;">
+            <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">إجمالي المعلمين المعتمدين</div>
+            <h3 id="statTotalTeachers" style="font-size: 1.5rem; font-weight: 700; margin: 0.25rem 0 0 0; color: var(--text-primary);">0</h3>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">كادر تدريسي مسجل</span>
+          </div>
+
+          <div class="card" style="padding: 1.15rem;">
+            <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">المعلمون النشطون</div>
+            <h3 id="statActiveTeachers" style="font-size: 1.5rem; font-weight: 700; margin: 0.25rem 0 0 0; color: var(--success);">0</h3>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">حسابات مفعلة ودروس جارية</span>
+          </div>
+
+          <div class="card" style="padding: 1.15rem;">
+            <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">حصص منجزة هذا الشهر</div>
+            <h3 id="statMonthlyCompletedSessions" style="font-size: 1.5rem; font-weight: 700; margin: 0.25rem 0 0 0; color: var(--primary-color);">0</h3>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">حصة موثقة ومراجعة</span>
+          </div>
+
+          <div class="card" style="padding: 1.15rem;">
+            <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">متوسط التزام الحضور</div>
+            <h3 id="statAvgCommitment" style="font-size: 1.5rem; font-weight: 700; margin: 0.25rem 0 0 0; color: var(--secondary-color);">100%</h3>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">نسبة الحضور الموثق</span>
+          </div>
+        </div>
+
+        <!-- Search & Filter Bar -->
+        <div class="card" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem;">
+          <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; justify-content: space-between;">
+            <div style="flex: 1; min-width: 260px; position: relative;">
+              <input type="text" id="teacherSearchInput" class="form-control" placeholder="ابحث باسم المعلم، التخصص، أو الهاتف..." style="font-size: 0.85rem; padding-right: 2.2rem;">
+              <i data-lucide="search" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--text-muted);"></i>
+            </div>
+
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <select id="departmentFilter" class="form-control" style="width: auto; font-size: 0.85rem;">
+                <option value="all">كافة المسارات والتخصصات</option>
+                <option value="قرآن كريم">مسار القرآن الكريم</option>
+                <option value="تجويد">مسار التجويد والقراءات</option>
+                <option value="لغة عربية">مسار اللغة العربية</option>
+                <option value="دراسات إسلامية">الدراسات الإسلامية</option>
+              </select>
+
+              <select id="statusFilter" class="form-control" style="width: auto; font-size: 0.85rem;">
+                <option value="all">كافة الحالات</option>
+                <option value="active">نشط</option>
+                <option value="suspended">موقوف مؤقتاً</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Teachers Grid -->
+        <div id="teachersGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.25rem;">
+          <div style="grid-column: 1 / -1; padding: 3rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+            <i data-lucide="loader" class="spin" style="width: 28px; height: 28px; color: var(--primary-color);"></i>
+            <div style="margin-top: 0.5rem;">جارٍ تحميل بيانات كادر المعلمين...</div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal: Edit General Teacher Info -->
+  <div id="editTeacherModal" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div class="card" style="width: 100%; max-width: 540px; margin: 1.5rem; padding: 1.75rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+        <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="edit-3" style="width: 20px; height: 20px; color: var(--primary-color);"></i>
+          <span>تعديل البيانات العامة للمعلم</span>
+        </h3>
+        <button id="btnCloseEditTeacherModal" style="background: none; border: none; cursor: pointer; color: var(--text-muted);">
+          <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+        </button>
+      </div>
+
+      <form id="editTeacherForm">
+        <input type="hidden" id="editTeacherUid">
+        
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">اسم المعلم *</label>
+          <input type="text" id="editTeacherName" class="form-control" required style="font-size: 0.85rem;">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+          <div>
+            <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">رقم الهاتف</label>
+            <input type="tel" id="editTeacherPhone" class="form-control" style="font-size: 0.85rem;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">رقم الواتساب</label>
+            <input type="tel" id="editTeacherWhatsapp" class="form-control" style="font-size: 0.85rem;">
+          </div>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">التخصص / القسم</label>
+          <input type="text" id="editTeacherDept" class="form-control" placeholder="مثال: تحفيظ القرآن الكريم وتجويده" style="font-size: 0.85rem;">
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">نبذة أو تفضيلات المواعيد</label>
+          <textarea id="editTeacherBio" class="form-control" rows="2" style="font-size: 0.85rem;"></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+          <button type="button" id="btnCancelEditTeacher" class="btn btn-secondary" style="font-size: 0.85rem;">إلغاء</button>
+          <button type="submit" id="btnSaveTeacherEdit" class="btn btn-primary" style="font-size: 0.85rem; font-weight: 700; gap: 0.4rem;">
+            <i data-lucide="check" style="width: 16px; height: 16px;"></i>
+            حفظ البيانات
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Teacher Schedule & Operational Details -->
+  <div id="teacherDetailsModal" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div class="card" style="width: 100%; max-width: 620px; max-height: 90vh; overflow-y: auto; margin: 1.5rem; padding: 1.75rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+        <div>
+          <h3 id="tDetailsHeaderName" style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text-primary);">
+            جدول وطلاب المعلم
+          </h3>
+          <span id="tDetailsDept" style="font-size: 0.8rem; color: var(--text-muted);"></span>
+        </div>
+        <button id="btnCloseTDetailsModal" style="background: none; border: none; cursor: pointer; color: var(--text-muted);">
+          <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+        </button>
+      </div>
+
+      <div id="tDetailsContent">
+        <!-- Injected -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Teacher Admin Request (Suspend / Delete) -->
+  <div id="teacherAdminReqModal" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div class="card" style="width: 100%; max-width: 520px; margin: 1.5rem; padding: 1.75rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+        <h3 id="tReqModalHeader" style="margin: 0; font-size: 1.15rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="send" style="width: 20px; height: 20px; color: var(--primary-color);"></i>
+          <span>رفع طلب إداري للمدير</span>
+        </h3>
+        <button id="btnCloseTReqModal" style="background: none; border: none; cursor: pointer; color: var(--text-muted);">
+          <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+        </button>
+      </div>
+
+      <form id="teacherReqForm">
+        <input type="hidden" id="tReqTeacherUid">
+        <input type="hidden" id="tReqTeacherName">
+        <input type="hidden" id="tReqType">
+
+        <div style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.85rem;">
+          <strong>المعلم المعني:</strong> <span id="tReqDisplayTeacher">--</span>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">عنوان الطلب *</label>
+          <input type="text" id="tReqTitle" class="form-control" required style="font-size: 0.85rem;">
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">سبب رفع الطلب للمدير بالتفصيل *</label>
+          <textarea id="tReqReason" class="form-control" rows="3" required placeholder="يرجى توضيح سبب الإيقاف أو إنهاء الخدمة بالتفصيل..." style="font-size: 0.85rem;"></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+          <button type="button" id="btnCancelTReqModal" class="btn btn-secondary" style="font-size: 0.85rem;">إلغاء</button>
+          <button type="submit" id="btnSubmitTReq" class="btn btn-primary" style="font-size: 0.85rem; font-weight: 700; gap: 0.4rem;">
+            <i data-lucide="send" style="width: 15px; height: 15px;"></i>
+            إرسال الطلب للمدير
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { 
+      collection, 
+      onSnapshot, 
+      query, 
+      where, 
+      doc, 
+      updateDoc 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+    import { createSupervisorRequest } from '../assets/js/features/supervisor/supervisorService.js';
+
+    protectRoute('supervisor');
+    renderSidebar('teachers', 'supervisor');
+    renderNavbar('متابعة المعلمين', { name: 'المشرف التشغيلي' });
+
+    let teachers = [];
+    let students = [];
+    let sessions = [];
+
+    const grid = document.getElementById('teachersGrid');
+    const searchInput = document.getElementById('teacherSearchInput');
+    const deptFilter = document.getElementById('departmentFilter');
+    const statusFilter = document.getElementById('statusFilter');
+
+    auth.onAuthStateChanged((user) => {
+      if (!user) return;
+
+      // 1. Teachers
+      const qTeachers = query(collection(db, "users"), where("role", "==", "teacher"));
+      onSnapshot(qTeachers, (snap) => {
+        teachers = [];
+        snap.forEach(d => {
+          const t = d.data();
+          if (t.status !== 'archived' && t.status !== 'deleted') {
+            teachers.push({ uid: d.id, ...t });
+          }
+        });
+        updateMetrics();
+        renderTeachers();
+      });
+
+      // 2. Students
+      onSnapshot(collection(db, "students"), (snap) => {
+        students = [];
+        snap.forEach(d => {
+          const s = { id: d.id, ...d.data() };
+          if (s.status !== 'archived' && s.status !== 'deleted') {
+            students.push(s);
+          }
+        });
+        renderTeachers();
+      });
+
+      // 3. Sessions
+      onSnapshot(collection(db, "sessions"), (snap) => {
+        sessions = [];
+        snap.forEach(d => sessions.push({ id: d.id, ...d.data() }));
+        updateMetrics();
+        renderTeachers();
+      });
+    });
+
+    function updateMetrics() {
+      const activeCount = teachers.filter(t => t.status !== 'suspended').length;
+      
+      const elTotal = document.getElementById('statTotalTeachers');
+      if (elTotal) elTotal.textContent = teachers.length;
+
+      const elActive = document.getElementById('statActiveTeachers');
+      if (elActive) elActive.textContent = activeCount;
+
+      const currentMonth = new Date().toISOString().substring(0, 7);
+      const monthlySessions = sessions.filter(s => (s.date || '').startsWith(currentMonth) && (s.status === 'completed' || s.attendanceStatus === 'attended')).length;
+      
+      const elMonthly = document.getElementById('statMonthlyCompletedSessions');
+      if (elMonthly) elMonthly.textContent = monthlySessions;
+    }
+
+    function renderTeachers() {
+      if (!grid) return;
+
+      const q = (searchInput?.value || '').trim().toLowerCase();
+      const sDept = deptFilter?.value || 'all';
+      const sStatus = statusFilter?.value || 'all';
+
+      const filtered = teachers.filter(t => {
+        if (sStatus !== 'all') {
+          const isSuspended = t.status === 'suspended';
+          if (sStatus === 'active' && isSuspended) return false;
+          if (sStatus === 'suspended' && !isSuspended) return false;
+        }
+
+        if (sDept !== 'all' && !(t.department || '').includes(sDept)) return false;
+
+        if (q) {
+          const mName = (t.name || '').toLowerCase().includes(q);
+          const mEmail = (t.email || '').toLowerCase().includes(q);
+          const mPhone = (t.phone || '').toLowerCase().includes(q);
+          const mDept = (t.department || '').toLowerCase().includes(q);
+          if (!mName && !mEmail && !mPhone && !mDept) return false;
+        }
+
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div style="grid-column: 1 / -1; padding: 3.5rem 1rem; text-align: center; color: var(--text-muted);">
+            <i data-lucide="users" style="width: 32px; height: 32px; opacity: 0.6; margin-bottom: 0.5rem;"></i>
+            <div>لا يوجد معلمين يطابقون معايير البحث والفلترة.</div>
+          </div>
+        `;
+        if (window.lucide) window.lucide.createIcons({ root: grid });
+        return;
+      }
+
+      grid.innerHTML = filtered.map(t => {
+        const isSuspended = t.status === 'suspended';
+        const assignedStudents = students.filter(s => s.teacherId === t.uid || s.teacherName === t.name);
+        const teacherSessions = sessions.filter(s => s.teacherId === t.uid || s.teacherName === t.name);
+        const completedCount = teacherSessions.filter(s => s.status === 'completed' || s.attendanceStatus === 'attended').length;
+
+        const cleanPhone = (t.whatsapp || t.phone || '').replace(/[^0-9+]/g, '');
+        const waLink = cleanPhone ? `https://wa.me/${cleanPhone.replace('+', '')}` : null;
+
+        return `
+          <div class="teacher-item-card card">
+            
+            <!-- Top Row: Avatar & Status -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem;">
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div style="width: 44px; height: 44px; border-radius: 50%; background: var(--primary-light); color: var(--primary-color); font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color);">
+                  ${(t.name || 'م').charAt(0)}
+                </div>
+                <div>
+                  <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-primary);">
+                    ${t.name || t.email}
+                  </h3>
+                  <div style="font-size: 0.76rem; color: var(--text-muted);">${t.department || 'معلم قرآن وتجويد'}</div>
+                </div>
+              </div>
+
+              <div>
+                ${isSuspended ? 
+                  '<span class="badge badge-danger">موقوف مؤقتاً</span>' : 
+                  '<span class="badge badge-success">معتمد نشط</span>'
+                }
+              </div>
+            </div>
+
+            <!-- Stats Row (Non-Financial) -->
+            <div style="display: flex; gap: 0.5rem;">
+              <div class="teacher-stat-pill">
+                <div style="font-size: 0.72rem; color: var(--text-muted);">الطلاب المسندين</div>
+                <div style="font-size: 1.15rem; font-weight: 800; color: var(--text-primary);">${assignedStudents.length}</div>
+              </div>
+              <div class="teacher-stat-pill">
+                <div style="font-size: 0.72rem; color: var(--text-muted);">حصص مكتملة</div>
+                <div style="font-size: 1.15rem; font-weight: 800; color: #059669;">${completedCount}</div>
+              </div>
+            </div>
+
+            <!-- Actions Footer -->
+            <div style="border-top: 1px dashed var(--border-color); padding-top: 0.75rem; margin-top: auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem;">
+              <div style="display: flex; gap: 0.35rem;">
+                <button class="btn btn-secondary btn-teacher-details" data-uid="${t.uid}" title="عرض جدول وطلاب المعلم" style="padding: 0.35rem 0.65rem; font-size: 0.75rem;">
+                  <i data-lucide="calendar" style="width: 14px; height: 14px;"></i>
+                  الجدول
+                </button>
+
+                <button class="btn btn-secondary btn-teacher-edit" data-uid="${t.uid}" title="تعديل البيانات العامة" style="padding: 0.35rem 0.65rem; font-size: 0.75rem;">
+                  <i data-lucide="edit-3" style="width: 14px; height: 14px;"></i>
+                </button>
+
+                ${waLink ? `
+                  <a href="${waLink}" target="_blank" class="btn btn-secondary" title="مراسلة المعلم واتساب" style="padding: 0.35rem 0.65rem; color: #16a34a; font-size: 0.75rem;">
+                    <i data-lucide="message-circle" style="width: 14px; height: 14px;"></i>
+                  </a>
+                ` : ''}
+              </div>
+
+              <!-- Admin Requests for Teacher -->
+              <div style="display: flex; gap: 0.35rem;">
+                <button class="btn btn-secondary btn-req-suspend" data-uid="${t.uid}" data-name="${t.name || t.email}" title="طلب إيقاف مؤقت للمدير" style="padding: 0.35rem 0.6rem; font-size: 0.75rem; color: #d97706;">
+                  <i data-lucide="pause-circle" style="width: 14px; height: 14px;"></i>
+                </button>
+
+                <button class="btn btn-secondary btn-req-del-teacher" data-uid="${t.uid}" data-name="${t.name || t.email}" title="طلب إنهاء خدمة وحذف للمدير" style="padding: 0.35rem 0.6rem; font-size: 0.75rem; color: #dc2626;">
+                  <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        `;
+      }).join('');
+
+      if (window.lucide) window.lucide.createIcons({ root: grid });
+      attachTeacherEventListeners();
+    }
+
+    function attachTeacherEventListeners() {
+      // Details & Schedule
+      document.querySelectorAll('.btn-teacher-details').forEach(b => {
+        b.addEventListener('click', () => openTeacherDetailsModal(b.dataset.uid));
+      });
+
+      // Edit info
+      document.querySelectorAll('.btn-teacher-edit').forEach(b => {
+        b.addEventListener('click', () => openTeacherEditModal(b.dataset.uid));
+      });
+
+      // Request: Suspend Teacher
+      document.querySelectorAll('.btn-req-suspend').forEach(b => {
+        b.addEventListener('click', () => openTeacherReqModal('suspend_teacher', b.dataset.uid, b.dataset.name));
+      });
+
+      // Request: Delete Teacher
+      document.querySelectorAll('.btn-req-del-teacher').forEach(b => {
+        b.addEventListener('click', () => openTeacherReqModal('delete_teacher', b.dataset.uid, b.dataset.name));
+      });
+    }
+
+    searchInput.addEventListener('input', renderTeachers);
+    deptFilter.addEventListener('change', renderTeachers);
+    statusFilter.addEventListener('change', renderTeachers);
+
+    // ================= MODALS ================= //
+
+    // 1. Edit Teacher General Info
+    const editModal = document.getElementById('editTeacherModal');
+    function openTeacherEditModal(uid) {
+      const t = teachers.find(item => item.uid === uid);
+      if (!t) return;
+
+      document.getElementById('editTeacherUid').value = t.uid;
+      document.getElementById('editTeacherName').value = t.name || '';
+      document.getElementById('editTeacherPhone').value = t.phone || '';
+      document.getElementById('editTeacherWhatsapp').value = t.whatsapp || t.phone || '';
+      document.getElementById('editTeacherDept').value = t.department || '';
+      document.getElementById('editTeacherBio').value = t.bio || '';
+
+      editModal.style.display = 'flex';
+      if (window.lucide) window.lucide.createIcons({ root: editModal });
+    }
+    document.getElementById('btnCloseEditTeacherModal').addEventListener('click', () => editModal.style.display = 'none');
+    document.getElementById('btnCancelEditTeacher').addEventListener('click', () => editModal.style.display = 'none');
+
+    document.getElementById('editTeacherForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnSaveTeacherEdit');
+      btn.disabled = true;
+
+      const uid = document.getElementById('editTeacherUid').value;
+      const name = document.getElementById('editTeacherName').value.trim();
+      const phone = document.getElementById('editTeacherPhone').value.trim();
+      const whatsapp = document.getElementById('editTeacherWhatsapp').value.trim();
+      const department = document.getElementById('editTeacherDept').value.trim();
+      const bio = document.getElementById('editTeacherBio').value.trim();
+
+      try {
+        await updateDoc(doc(db, "users", uid), {
+          name,
+          phone,
+          whatsapp,
+          department,
+          bio,
+          updatedAt: new Date().toISOString()
+        });
+
+        Toast.success("تم حفظ بيانات المعلم العامة بنجاح.");
+        editModal.style.display = 'none';
+      } catch (err) {
+        console.error("Error updating teacher:", err);
+        Toast.danger("فشل الحفظ: " + err.message);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // 2. Schedule & Students Modal
+    const detailsModal = document.getElementById('teacherDetailsModal');
+    function openTeacherDetailsModal(uid) {
+      const t = teachers.find(item => item.uid === uid);
+      if (!t) return;
+
+      document.getElementById('tDetailsHeaderName').textContent = t.name || t.email;
+      document.getElementById('tDetailsDept').textContent = t.department || 'كادر التدريس';
+
+      const assignedStudents = students.filter(s => s.teacherId === t.uid || s.teacherName === t.name);
+
+      document.getElementById('tDetailsContent').innerHTML = `
+        <div style="margin-bottom: 1.25rem;">
+          <h4 style="margin: 0 0 0.5rem 0; font-size: 0.95rem; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 0.4rem;">
+            <i data-lucide="graduation-cap" style="width: 17px; height: 17px; color: var(--primary-color);"></i>
+            الطلاب المسندون للمعلم (${assignedStudents.length})
+          </h4>
+
+          ${assignedStudents.length === 0 ? `
+            <div style="padding: 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.82rem; background: var(--bg-primary); border-radius: 8px;">
+              لا يوجد طلاب مسندون لهذا المعلم حالياً.
+            </div>
+          ` : `
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 280px; overflow-y: auto;">
+              ${assignedStudents.map(s => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0.85rem; background: var(--bg-primary); border-radius: 6px; border: 1px solid var(--border-color); font-size: 0.84rem;">
+                  <div>
+                    <strong style="color: var(--text-primary);">${s.name}</strong>
+                    <div style="font-size: 0.74rem; color: var(--text-muted);">${s.currentSurah || 'مستوى الحفظ قيد المتابعة'}</div>
+                  </div>
+                  <div style="font-size: 0.76rem; color: var(--text-secondary);" dir="ltr">
+                    ${s.parentPhone || s.phone || '--'}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 0.85rem;">
+          <button type="button" id="btnCloseTDetailsBottom" class="btn btn-primary" style="font-size: 0.82rem;">إغلاق</button>
+        </div>
+      `;
+
+      if (window.lucide) window.lucide.createIcons({ root: detailsModal });
+      detailsModal.style.display = 'flex';
+      document.getElementById('btnCloseTDetailsBottom').addEventListener('click', () => detailsModal.style.display = 'none');
+    }
+    document.getElementById('btnCloseTDetailsModal').addEventListener('click', () => detailsModal.style.display = 'none');
+
+    // 3. Admin Request Modal for Teacher
+    const reqModal = document.getElementById('teacherAdminReqModal');
+    function openTeacherReqModal(type, uid, name) {
+      document.getElementById('teacherReqForm').reset();
+      document.getElementById('tReqTeacherUid').value = uid;
+      document.getElementById('tReqTeacherName').value = name;
+      document.getElementById('tReqType').value = type;
+      document.getElementById('tReqDisplayTeacher').textContent = name;
+
+      const titleInput = document.getElementById('tReqTitle');
+      if (type === 'suspend_teacher') {
+        document.getElementById('tReqModalHeader').querySelector('span').textContent = 'طلب إيقاف حساب معلم للمدير';
+        titleInput.value = `طلب إيقاف حساب المعلم: ${name}`;
+      } else if (type === 'delete_teacher') {
+        document.getElementById('tReqModalHeader').querySelector('span').textContent = 'طلب إنهاء خدمة وحذف معلم للمدير';
+        titleInput.value = `طلب إنهاء خدمة وحذف المعلم: ${name}`;
+      }
+
+      reqModal.style.display = 'flex';
+      if (window.lucide) window.lucide.createIcons({ root: reqModal });
+    }
+    document.getElementById('btnCloseTReqModal').addEventListener('click', () => reqModal.style.display = 'none');
+    document.getElementById('btnCancelTReqModal').addEventListener('click', () => reqModal.style.display = 'none');
+
+    document.getElementById('teacherReqForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmitTReq');
+      btn.disabled = true;
+
+      const type = document.getElementById('tReqType').value;
+      const targetId = document.getElementById('tReqTeacherUid').value;
+      const targetName = document.getElementById('tReqTeacherName').value;
+      const title = document.getElementById('tReqTitle').value.trim();
+      const reason = document.getElementById('tReqReason').value.trim();
+
+      try {
+        await createSupervisorRequest({
+          type,
+          title,
+          targetId,
+          targetName,
+          targetType: 'teacher',
+          details: {},
+          reason
+        });
+
+        Toast.success("تم إرسال طلبك بنجاح للمدير العام.");
+        reqModal.style.display = 'none';
+      } catch (err) {
+        console.error("Error creating teacher request:", err);
+        Toast.danger("فشل إرسال الطلب: " + err.message);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - متابعة وإدارة تشغيل الطلاب</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0284c7">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+
+  <style>
+    .student-row:hover {
+      background: rgba(2, 132, 199, 0.03);
+    }
+    .badge-sub-active {
+      background: rgba(16, 185, 129, 0.12);
+      color: #059669;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.74rem;
+    }
+    .badge-sub-expiring {
+      background: rgba(245, 158, 11, 0.15);
+      color: #d97706;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.74rem;
+    }
+    .badge-sub-expired {
+      background: rgba(239, 68, 68, 0.15);
+      color: #dc2626;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.74rem;
+    }
+    .badge-sub-renewal {
+      background: rgba(139, 92, 246, 0.15);
+      color: #7c3aed;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.74rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+              <span class="badge" style="background: rgba(2, 132, 199, 0.12); color: #0284c7; font-weight: 700; padding: 2px 9px; border-radius: 6px; font-size: 0.76rem;">
+                الدارسون والاشتراكات التشغيلية
+              </span>
+            </div>
+            <h1 style="font-size: 1.35rem; font-weight: 700; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="graduation-cap" style="color: var(--primary-color); width: 24px; height: 24px;"></i>
+              إدارة ومتابعة شؤون الطلاب
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0.25rem 0 0 0;">
+              متابعة الحصص المتبقية، استحقاقات التجديد، إنجاز الحفظ، وتقييمات المعلمين (بدون أي أرقام مالية).
+            </p>
+          </div>
+          
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button id="btnOpenAddStudentModal" class="btn btn-primary">
+              <i data-lucide="user-plus" style="width: 15px; height: 15px;"></i>
+              إضافة طالب جديد
+            </button>
+            <a href="requests.html" class="btn btn-secondary">
+              <i data-lucide="send" style="width: 15px; height: 15px;"></i>
+              طلبات المشرف
+            </a>
+          </div>
+        </div>
+
+        <!-- 4 Operational Metrics Grid (Non-Financial) -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="card" style="padding: 1.15rem;">
+            <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">إجمالي الطلاب النشطين</div>
+            <h3 id="statTotalStudents" style="font-size: 1.5rem; font-weight: 700; margin: 0.25rem 0 0 0; color: var(--text-primary);">0</h3>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">طالب مقيد بالبرامج الدراسية</span>
+          </div>
+
+          <div class="card" style="padding: 1.15rem;">
+            <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">اشتراكات نشطة</div>
+            <h3 id="statActiveSubs" style="font-size: 1.5rem; font-weight: 700; margin: 0.25rem 0 0 0; color: var(--success);">0</h3>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">رصيد الحصص كافٍ ومنتظم</span>
+          </div>
+
+          <div class="card" style="padding: 1.15rem;">
+            <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">أوشكت على الانتهاء</div>
+            <h3 id="statExpiringSubs" style="font-size: 1.5rem; font-weight: 700; margin: 0.25rem 0 0 0; color: var(--warning);">0</h3>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">متبقي حصة واحدة فقط</span>
+          </div>
+
+          <div class="card" style="padding: 1.15rem;">
+            <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">انتهى الاشتراك / مستحق للتجديد</div>
+            <h3 id="statExpiredSubs" style="font-size: 1.5rem; font-weight: 700; margin: 0.25rem 0 0 0; color: var(--danger);">0</h3>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">استهلك كامل الحصص المتاحة</span>
+          </div>
+        </div>
+
+        <!-- Filters Bar -->
+        <div class="card" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem;">
+          <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+            <div style="flex: 1; min-width: 250px; position: relative;">
+              <input type="text" id="studentSearchInput" class="form-control" placeholder="ابحث باسم الطالب، ولي الأمر، المعلم، أو الهاتف..." style="font-size: 0.85rem; padding-right: 2.2rem;">
+              <i data-lucide="search" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--text-muted);"></i>
+            </div>
+            
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <select id="teacherFilterSelect" class="form-control" style="width: auto; font-size: 0.85rem;">
+                <option value="all">كل المعلمين</option>
+              </select>
+
+              <select id="subStatusFilterSelect" class="form-control" style="width: auto; font-size: 0.85rem;">
+                <option value="all">كافة حالات الاشتراك</option>
+                <option value="active">الاشتراك نشط</option>
+                <option value="expiring">أوشك على الانتهاء (حصة متبقية)</option>
+                <option value="expired">انتهى الاشتراك (0 متبقي)</option>
+                <option value="needs_renewal">مستحق للتجديد فوراً</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Students Table Card -->
+        <div class="card" style="padding: 0; overflow: hidden;">
+          <div style="overflow-x: auto;">
+            <table class="table" style="width: 100%; margin: 0; text-align: right; border-collapse: collapse;">
+              <thead>
+                <tr style="background: var(--bg-primary); border-bottom: 2px solid var(--border-color); font-size: 0.82rem; color: var(--text-secondary);">
+                  <th style="padding: 0.85rem 1rem;">الطالب</th>
+                  <th style="padding: 0.85rem 1rem;">المعلم المعين</th>
+                  <th style="padding: 0.85rem 1rem;">حالة الاشتراك التشغيلي</th>
+                  <th style="padding: 0.85rem 1rem;">الحصص المنجزة / الإجمالي</th>
+                  <th style="padding: 0.85rem 1rem;">الحصص المتبقية</th>
+                  <th style="padding: 0.85rem 1rem;">تقدم الحفظ</th>
+                  <th style="padding: 0.85rem 1rem; text-align: left;">إجراءات تشغيلية</th>
+                </tr>
+              </thead>
+              <tbody id="studentsTableBody">
+                <tr>
+                  <td colspan="7" style="padding: 3rem 1rem; text-align: center; color: var(--text-muted);">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem;">
+                      <i data-lucide="loader" class="spin" style="width: 26px; height: 26px; color: var(--primary-color);"></i>
+                      <span>جارٍ تحميل قوائم الطلاب...</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal: Add Student -->
+  <div id="addStudentModal" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div class="card" style="width: 100%; max-width: 580px; max-height: 90vh; overflow-y: auto; margin: 1.5rem; padding: 1.75rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+        <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="user-plus" style="width: 20px; height: 20px; color: var(--primary-color);"></i>
+          <span>إضافة طالب جديد للمتابعة</span>
+        </h3>
+        <button id="btnCloseAddModal" style="background: none; border: none; cursor: pointer; color: var(--text-muted);">
+          <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+        </button>
+      </div>
+
+      <form id="addStudentForm">
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">اسم الطالب الرباعي *</label>
+          <input type="text" id="addName" class="form-control" required placeholder="اسم الطالب..." style="font-size: 0.85rem;">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+          <div>
+            <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">اسم ولي الأمر</label>
+            <input type="text" id="addParentName" class="form-control" placeholder="اسم ولي الأمر..." style="font-size: 0.85rem;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">هاتف ولي الأمر / واتساب *</label>
+            <input type="tel" id="addParentPhone" class="form-control" required placeholder="+966..." style="font-size: 0.85rem;">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+          <div>
+            <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">المعلم المسند إليه</label>
+            <select id="addTeacherSelect" class="form-control" style="font-size: 0.85rem;">
+              <option value="">-- تعيين لاحقاً --</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">باقة الحصص التشغيلية</label>
+            <select id="addPackageSelect" class="form-control" style="font-size: 0.85rem;">
+              <option value="8">باقة 8 حصص شهرياً</option>
+              <option value="12">باقة 12 حصة شهرياً</option>
+              <option value="16">باقة 16 حصة شهرياً</option>
+              <option value="20">باقة 20 حصة شهرياً</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">مستوى الحفظ الحالي أو سورة البدء</label>
+          <input type="text" id="addCurrentSurah" class="form-control" placeholder="مثال: سورة البقرة - الآية 1" style="font-size: 0.85rem;">
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">ملاحظات إشرافية أولية</label>
+          <textarea id="addNotes" class="form-control" rows="2" placeholder="ملاحظات حول المواعيد أو التفضيلات..." style="font-size: 0.85rem;"></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+          <button type="button" id="btnCancelAddModal" class="btn btn-secondary" style="font-size: 0.85rem;">إلغاء</button>
+          <button type="submit" id="btnSubmitAddStudent" class="btn btn-primary" style="font-size: 0.85rem; font-weight: 700; gap: 0.4rem;">
+            <i data-lucide="check" style="width: 16px; height: 16px;"></i>
+            إضافة الطالب
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Edit Student General Data -->
+  <div id="editStudentModal" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div class="card" style="width: 100%; max-width: 580px; max-height: 90vh; overflow-y: auto; margin: 1.5rem; padding: 1.75rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+        <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="edit-3" style="width: 20px; height: 20px; color: var(--primary-color);"></i>
+          <span>تعديل بيانات الطالب العامة</span>
+        </h3>
+        <button id="btnCloseEditModal" style="background: none; border: none; cursor: pointer; color: var(--text-muted);">
+          <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+        </button>
+      </div>
+
+      <form id="editStudentForm">
+        <input type="hidden" id="editStudentId">
+        
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">اسم الطالب *</label>
+          <input type="text" id="editName" class="form-control" required style="font-size: 0.85rem;">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+          <div>
+            <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">اسم ولي الأمر</label>
+            <input type="text" id="editParentName" class="form-control" style="font-size: 0.85rem;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">هاتف ولي الأمر / واتساب</label>
+            <input type="tel" id="editParentPhone" class="form-control" style="font-size: 0.85rem;">
+          </div>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">المعلم المسند إليه</label>
+          <select id="editTeacherSelect" class="form-control" style="font-size: 0.85rem;">
+            <option value="">-- غير معين --</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">سورة ومستوى الحفظ الحالي</label>
+          <input type="text" id="editCurrentSurah" class="form-control" style="font-size: 0.85rem;">
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">ملاحظات إشرافية</label>
+          <textarea id="editNotes" class="form-control" rows="2" style="font-size: 0.85rem;"></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+          <button type="button" id="btnCancelEditModal" class="btn btn-secondary" style="font-size: 0.85rem;">إلغاء</button>
+          <button type="submit" id="btnSubmitEditStudent" class="btn btn-primary" style="font-size: 0.85rem; font-weight: 700; gap: 0.4rem;">
+            <i data-lucide="check" style="width: 16px; height: 16px;"></i>
+            حفظ التعديلات
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Student Operational Details & Progress -->
+  <div id="studentDetailsModal" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div class="card" style="width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto; margin: 1.5rem; padding: 1.75rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+        <div>
+          <h3 id="detailsModalStudentName" style="margin: 0; font-size: 1.2rem; font-weight: 800; color: var(--text-primary);">
+            تفاصيل الطالب
+          </h3>
+          <span id="detailsModalSubBadge" style="margin-top: 0.25rem; display: inline-block;"></span>
+        </div>
+        <button id="btnCloseDetailsModal" style="background: none; border: none; cursor: pointer; color: var(--text-muted);">
+          <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+        </button>
+      </div>
+
+      <div id="detailsModalContent">
+        <!-- Injected dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Create Admin Request for this Student (Delete / Change Package) -->
+  <div id="studentAdminRequestModal" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div class="card" style="width: 100%; max-width: 540px; margin: 1.5rem; padding: 1.75rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+        <h3 id="reqModalHeader" style="margin: 0; font-size: 1.15rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="send" style="width: 20px; height: 20px; color: var(--primary-color);"></i>
+          <span>رفع طلب إداري للمدير</span>
+        </h3>
+        <button id="btnCloseReqModal" style="background: none; border: none; cursor: pointer; color: var(--text-muted);">
+          <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+        </button>
+      </div>
+
+      <form id="studentReqForm">
+        <input type="hidden" id="reqStudentId">
+        <input type="hidden" id="reqStudentName">
+        <input type="hidden" id="reqType">
+
+        <div style="background: rgba(2, 132, 199, 0.05); border: 1px solid rgba(2, 132, 199, 0.2); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.85rem;">
+          <strong>الطالب المعني:</strong> <span id="reqStudentDisplay">--</span>
+        </div>
+
+        <div id="reqPackageSelectContainer" style="display: none; margin-bottom: 1rem;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">الباقة الجديدة المقترحة *</label>
+          <select id="reqNewPackage" class="form-control" style="font-size: 0.85rem;">
+            <option value="باقة 8 حصص شهرياً">باقة 8 حصص شهرياً</option>
+            <option value="باقة 12 حصة شهرياً">باقة 12 حصة شهرياً</option>
+            <option value="باقة 16 حصة شهرياً">باقة 16 حصة شهرياً</option>
+            <option value="باقة 20 حصة شهرياً">باقة 20 حصة شهرياً</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">عنوان / موضوع الطلب *</label>
+          <input type="text" id="reqTitle" class="form-control" required style="font-size: 0.85rem;">
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">سبب رفع الطلب للمدير بالتفصيل *</label>
+          <textarea id="reqReason" class="form-control" rows="3" required placeholder="اذكر سبب الحذف أو تغيير الباقة لتسهيل اعتماد المدير..." style="font-size: 0.85rem;"></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+          <button type="button" id="btnCancelReqModal" class="btn btn-secondary" style="font-size: 0.85rem;">إلغاء</button>
+          <button type="submit" id="btnSubmitStudentReq" class="btn btn-primary" style="font-size: 0.85rem; font-weight: 700; gap: 0.4rem;">
+            <i data-lucide="send" style="width: 15px; height: 15px;"></i>
+            إرسال الطلب للمدير
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { 
+      collection, 
+      onSnapshot, 
+      query, 
+      where, 
+      addDoc, 
+      doc, 
+      updateDoc 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+    import { calculateStudentSubscriptionStatus, createSupervisorRequest } from '../assets/js/features/supervisor/supervisorService.js';
+
+    protectRoute('supervisor');
+    renderSidebar('students', 'supervisor');
+    renderNavbar('متابعة الطلاب', { name: 'المشرف التشغيلي' });
+
+    let students = [];
+    let teachers = [];
+    let sessions = [];
+
+    const tableBody = document.getElementById('studentsTableBody');
+    const searchInput = document.getElementById('studentSearchInput');
+    const teacherFilter = document.getElementById('teacherFilterSelect');
+    const subStatusFilter = document.getElementById('subStatusFilterSelect');
+
+    // Parse URL params for direct action
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('action') === 'new') {
+      setTimeout(() => openAddModal(), 300);
+    }
+    if (urlParams.get('filter') === 'renewal') {
+      subStatusFilter.value = 'needs_renewal';
+    }
+
+    auth.onAuthStateChanged((user) => {
+      if (!user) return;
+
+      // 1. Teachers list for dropdowns
+      const qTeachers = query(collection(db, "users"), where("role", "==", "teacher"));
+      onSnapshot(qTeachers, (snap) => {
+        teachers = [];
+        snap.forEach(d => teachers.push({ uid: d.id, ...d.data() }));
+        populateTeacherSelects();
+      });
+
+      // 2. Sessions list for attendance & evaluation metrics
+      onSnapshot(collection(db, "sessions"), (snap) => {
+        sessions = [];
+        snap.forEach(d => sessions.push({ id: d.id, ...d.data() }));
+        renderStudentsTable();
+      });
+
+      // 3. Students collection
+      onSnapshot(collection(db, "students"), (snap) => {
+        students = [];
+        snap.forEach(d => {
+          const s = { id: d.id, ...d.data() };
+          if (s.status !== 'archived' && s.status !== 'deleted') {
+            students.push(s);
+          }
+        });
+        updateMetrics();
+        renderStudentsTable();
+      });
+    });
+
+    function populateTeacherSelects() {
+      const opts = teachers.map(t => `<option value="${t.uid}">${t.name || t.email}</option>`).join('');
+      
+      if (teacherFilter) {
+        teacherFilter.innerHTML = '<option value="all">كل المعلمين</option>' + 
+          teachers.map(t => `<option value="${t.name || t.email}">${t.name || t.email}</option>`).join('');
+      }
+
+      const addSel = document.getElementById('addTeacherSelect');
+      if (addSel) addSel.innerHTML = '<option value="">-- تعيين لاحقاً --</option>' + opts;
+
+      const editSel = document.getElementById('editTeacherSelect');
+      if (editSel) editSel.innerHTML = '<option value="">-- غير معين --</option>' + opts;
+    }
+
+    function updateMetrics() {
+      let active = 0;
+      let expiring = 0;
+      let expired = 0;
+
+      students.forEach(s => {
+        const sub = calculateStudentSubscriptionStatus(s);
+        if (sub.statusCode === 'active') active++;
+        else if (sub.statusCode === 'expiring') expiring++;
+        else if (sub.statusCode === 'expired') expired++;
+      });
+
+      const elTotal = document.getElementById('statTotalStudents');
+      if (elTotal) elTotal.textContent = students.length;
+
+      const elActive = document.getElementById('statActiveSubs');
+      if (elActive) elActive.textContent = active;
+
+      const elExpiring = document.getElementById('statExpiringSubs');
+      if (elExpiring) elExpiring.textContent = expiring;
+
+      const elExpired = document.getElementById('statExpiredSubs');
+      if (elExpired) elExpired.textContent = expired;
+    }
+
+    function renderStudentsTable() {
+      if (!tableBody) return;
+
+      const q = (searchInput?.value || '').trim().toLowerCase();
+      const sTeacher = teacherFilter?.value || 'all';
+      const sSubStatus = subStatusFilter?.value || 'all';
+
+      const filtered = students.filter(s => {
+        const sub = calculateStudentSubscriptionStatus(s);
+
+        if (sTeacher !== 'all' && (s.teacherName || '') !== sTeacher) return false;
+        
+        if (sSubStatus === 'needs_renewal' && !sub.needsRenewal) return false;
+        if (sSubStatus !== 'all' && sSubStatus !== 'needs_renewal' && sub.statusCode !== sSubStatus) return false;
+
+        if (q) {
+          const mName = (s.name || '').toLowerCase().includes(q);
+          const mParent = (s.parentName || '').toLowerCase().includes(q);
+          const mPhone = (s.parentPhone || s.phone || '').toLowerCase().includes(q);
+          const mTeacher = (s.teacherName || '').toLowerCase().includes(q);
+          if (!mName && !mParent && !mPhone && !mTeacher) return false;
+        }
+
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="7" style="padding: 3rem 1rem; text-align: center; color: var(--text-muted);">
+              <i data-lucide="users" style="width: 32px; height: 32px; opacity: 0.6; margin-bottom: 0.5rem;"></i>
+              <div>لا يوجد طلاب يطابقون معايير البحث والفلترة.</div>
+            </td>
+          </tr>
+        `;
+        if (window.lucide) window.lucide.createIcons({ root: tableBody });
+        return;
+      }
+
+      tableBody.innerHTML = filtered.map(s => {
+        const sub = calculateStudentSubscriptionStatus(s);
+        
+        let subBadge = `<span class="badge-sub-active">الاشتراك نشط</span>`;
+        if (sub.statusCode === 'expiring') {
+          subBadge = `<span class="badge-sub-expiring">أوشك على الانتهاء (متبقي 1)</span>`;
+        } else if (sub.statusCode === 'expired') {
+          subBadge = `<span class="badge-sub-expired">انتهى الاشتراك (0 متبقي)</span>`;
+        } else if (sub.statusCode === 'needs_renewal') {
+          subBadge = `<span class="badge-sub-renewal">يحتاج إلى تجديد</span>`;
+        }
+
+        const cleanPhone = (s.parentPhone || s.phone || '').replace(/[^0-9+]/g, '');
+        const waLink = cleanPhone ? `https://wa.me/${cleanPhone.replace('+', '')}` : null;
+
+        return `
+          <tr class="student-row" style="border-bottom: 1px solid var(--border-color); font-size: 0.85rem;">
+            <td style="padding: 0.85rem 1rem;">
+              <div style="font-weight: 700; color: var(--text-primary);">${s.name}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">ولي الأمر: ${s.parentName || 'غير مسجل'} | ${s.parentPhone || s.phone || '--'}</div>
+            </td>
+            
+            <td style="padding: 0.85rem 1rem;">
+              <span style="font-weight: 600; color: var(--text-primary);">${s.teacherName || '<span style="color: var(--danger);">غير معين</span>'}</span>
+            </td>
+
+            <td style="padding: 0.85rem 1rem;">
+              ${subBadge}
+            </td>
+
+            <td style="padding: 0.85rem 1rem; font-weight: 600;">
+              ${sub.completedLessons} / ${sub.totalLessons} حصة
+            </td>
+
+            <td style="padding: 0.85rem 1rem;">
+              <span style="font-weight: 800; color: ${sub.remainingLessons <= 1 ? '#dc2626' : 'var(--text-primary)'};">
+                ${sub.remainingLessons} حصص
+              </span>
+            </td>
+
+            <td style="padding: 0.85rem 1rem; font-size: 0.8rem; color: var(--text-secondary);">
+              ${s.currentSurah || s.memorizationLevel || 'غير محدد'}
+            </td>
+
+            <td style="padding: 0.85rem 1rem; text-align: left;">
+              <div style="display: flex; gap: 0.35rem; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
+                
+                <!-- Progress & Details -->
+                <button class="btn btn-secondary btn-student-details" data-id="${s.id}" title="عرض تفاصيل التقدم وسجل الحفظ" style="padding: 0.3rem 0.55rem; font-size: 0.75rem;">
+                  <i data-lucide="eye" style="width: 14px; height: 14px;"></i>
+                </button>
+
+                <!-- Edit Info -->
+                <button class="btn btn-secondary btn-student-edit" data-id="${s.id}" title="تعديل البيانات العامة" style="padding: 0.3rem 0.55rem; font-size: 0.75rem;">
+                  <i data-lucide="edit-3" style="width: 14px; height: 14px;"></i>
+                </button>
+
+                <!-- WhatsApp parent -->
+                ${waLink ? `
+                  <a href="${waLink}" target="_blank" class="btn btn-secondary" title="محادثة ولي الأمر واتساب" style="padding: 0.3rem 0.55rem; color: #16a34a; font-size: 0.75rem;">
+                    <i data-lucide="message-circle" style="width: 14px; height: 14px;"></i>
+                  </a>
+                ` : ''}
+
+                <!-- Request: Change Package -->
+                <button class="btn btn-secondary btn-req-pkg" data-id="${s.id}" data-name="${s.name}" title="طلب تغيير باقة للمدير" style="padding: 0.3rem 0.55rem; font-size: 0.75rem; color: #7c3aed;">
+                  <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
+                </button>
+
+                <!-- Request: Delete Student -->
+                <button class="btn btn-secondary btn-req-del" data-id="${s.id}" data-name="${s.name}" title="طلب حذف طالب للمدير" style="padding: 0.3rem 0.55rem; font-size: 0.75rem; color: #dc2626;">
+                  <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      if (window.lucide) window.lucide.createIcons({ root: tableBody });
+      attachTableEventListeners();
+    }
+
+    function attachTableEventListeners() {
+      // 1. Details
+      document.querySelectorAll('.btn-student-details').forEach(b => {
+        b.addEventListener('click', () => openDetailsModal(b.dataset.id));
+      });
+
+      // 2. Edit
+      document.querySelectorAll('.btn-student-edit').forEach(b => {
+        b.addEventListener('click', () => openEditModal(b.dataset.id));
+      });
+
+      // 3. Request Package Change
+      document.querySelectorAll('.btn-req-pkg').forEach(b => {
+        b.addEventListener('click', () => openReqModal('change_package', b.dataset.id, b.dataset.name));
+      });
+
+      // 4. Request Delete Student
+      document.querySelectorAll('.btn-req-del').forEach(b => {
+        b.addEventListener('click', () => openReqModal('delete_student', b.dataset.id, b.dataset.name));
+      });
+    }
+
+    searchInput.addEventListener('input', renderStudentsTable);
+    teacherFilter.addEventListener('change', renderStudentsTable);
+    subStatusFilter.addEventListener('change', renderStudentsTable);
+
+    // ================= MODAL LOGIC ================= //
+
+    // ADD STUDENT
+    const addModal = document.getElementById('addStudentModal');
+    function openAddModal() {
+      document.getElementById('addStudentForm').reset();
+      addModal.style.display = 'flex';
+      if (window.lucide) window.lucide.createIcons({ root: addModal });
+    }
+    document.getElementById('btnOpenAddStudentModal').addEventListener('click', openAddModal);
+    document.getElementById('btnCloseAddModal').addEventListener('click', () => addModal.style.display = 'none');
+    document.getElementById('btnCancelAddModal').addEventListener('click', () => addModal.style.display = 'none');
+
+    document.getElementById('addStudentForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmitAddStudent');
+      btn.disabled = true;
+
+      const name = document.getElementById('addName').value.trim();
+      const parentName = document.getElementById('addParentName').value.trim();
+      const parentPhone = document.getElementById('addParentPhone').value.trim();
+      const teacherSelect = document.getElementById('addTeacherSelect');
+      const teacherId = teacherSelect.value;
+      const teacherName = teacherSelect.selectedIndex > 0 ? teacherSelect.options[teacherSelect.selectedIndex].text : '';
+      const totalLessons = parseInt(document.getElementById('addPackageSelect').value, 10);
+      const currentSurah = document.getElementById('addCurrentSurah').value.trim();
+      const notes = document.getElementById('addNotes').value.trim();
+
+      try {
+        await addDoc(collection(db, "students"), {
+          name,
+          parentName,
+          parentPhone,
+          phone: parentPhone,
+          teacherId: teacherId || null,
+          teacherName: teacherName || null,
+          totalLessons,
+          completedLessons: 0,
+          currentSurah,
+          notes,
+          status: 'active',
+          type: 'individual',
+          createdAt: new Date().toISOString(),
+          addedBySupervisor: auth.currentUser ? auth.currentUser.uid : 'supervisor'
+        });
+
+        Toast.success("تمت إضافة الطالب بنجاح.");
+        addModal.style.display = 'none';
+      } catch (err) {
+        console.error("Error adding student:", err);
+        Toast.danger("فشل إضافة الطالب: " + err.message);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // EDIT STUDENT
+    const editModal = document.getElementById('editStudentModal');
+    function openEditModal(studentId) {
+      const s = students.find(item => item.id === studentId);
+      if (!s) return;
+
+      document.getElementById('editStudentId').value = s.id;
+      document.getElementById('editName').value = s.name || '';
+      document.getElementById('editParentName').value = s.parentName || '';
+      document.getElementById('editParentPhone').value = s.parentPhone || s.phone || '';
+      document.getElementById('editTeacherSelect').value = s.teacherId || '';
+      document.getElementById('editCurrentSurah').value = s.currentSurah || s.memorizationLevel || '';
+      document.getElementById('editNotes').value = s.notes || '';
+
+      editModal.style.display = 'flex';
+      if (window.lucide) window.lucide.createIcons({ root: editModal });
+    }
+    document.getElementById('btnCloseEditModal').addEventListener('click', () => editModal.style.display = 'none');
+    document.getElementById('btnCancelEditModal').addEventListener('click', () => editModal.style.display = 'none');
+
+    document.getElementById('editStudentForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmitEditStudent');
+      btn.disabled = true;
+
+      const sId = document.getElementById('editStudentId').value;
+      const name = document.getElementById('editName').value.trim();
+      const parentName = document.getElementById('editParentName').value.trim();
+      const parentPhone = document.getElementById('editParentPhone').value.trim();
+      const teacherSelect = document.getElementById('editTeacherSelect');
+      const teacherId = teacherSelect.value;
+      const teacherName = teacherSelect.selectedIndex > 0 ? teacherSelect.options[teacherSelect.selectedIndex].text : '';
+      const currentSurah = document.getElementById('editCurrentSurah').value.trim();
+      const notes = document.getElementById('editNotes').value.trim();
+
+      try {
+        await updateDoc(doc(db, "students", sId), {
+          name,
+          parentName,
+          parentPhone,
+          phone: parentPhone,
+          teacherId: teacherId || null,
+          teacherName: teacherName || null,
+          currentSurah,
+          notes,
+          updatedAt: new Date().toISOString()
+        });
+
+        Toast.success("تم تحديث بيانات الطالب بنجاح.");
+        editModal.style.display = 'none';
+      } catch (err) {
+        console.error("Error editing student:", err);
+        Toast.danger("فشل التحديث: " + err.message);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // DETAILS MODAL
+    const detailsModal = document.getElementById('studentDetailsModal');
+    function openDetailsModal(studentId) {
+      const s = students.find(item => item.id === studentId);
+      if (!s) return;
+
+      const sub = calculateStudentSubscriptionStatus(s);
+      const studentSessions = sessions.filter(sess => sess.studentId === s.id);
+      const attendedCount = studentSessions.filter(sess => sess.status === 'completed' || sess.attendanceStatus === 'attended').length;
+      const absentCount = studentSessions.filter(sess => sess.status === 'absent' || sess.attendanceStatus === 'absent').length;
+
+      document.getElementById('detailsModalStudentName').textContent = s.name;
+      document.getElementById('detailsModalSubBadge').innerHTML = `
+        <span class="badge" style="background: rgba(2, 132, 199, 0.12); color: #0284c7; font-weight: 700; font-size: 0.76rem;">
+          حالة الاشتراك: ${sub.statusLabel}
+        </span>
+      `;
+
+      const cleanPhone = (s.parentPhone || s.phone || '').replace(/[^0-9+]/g, '');
+      const waLink = cleanPhone ? `https://wa.me/${cleanPhone.replace('+', '')}` : null;
+
+      document.getElementById('detailsModalContent').innerHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.25rem;">
+          <div style="background: var(--bg-primary); padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.75rem; color: var(--text-muted);">المعلم المسند</div>
+            <div style="font-weight: 700; color: var(--text-primary); margin-top: 0.2rem;">${s.teacherName || 'غير معين'}</div>
+          </div>
+          <div style="background: var(--bg-primary); padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.75rem; color: var(--text-muted);">ولي الأمر والهاتف</div>
+            <div style="font-weight: 700; color: var(--text-primary); margin-top: 0.2rem;" dir="ltr">${s.parentPhone || s.phone || '--'}</div>
+          </div>
+        </div>
+
+        <!-- Progress Box -->
+        <div style="background: rgba(2, 132, 199, 0.04); border: 1px solid rgba(2, 132, 199, 0.2); border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem;">
+          <h4 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 0.4rem;">
+            <i data-lucide="book-open" style="width: 16px; height: 16px; color: var(--primary-color);"></i>
+            مستوى وتقدم الحفظ القرآني
+          </h4>
+          <div style="font-size: 0.85rem; color: var(--text-primary);">
+            <strong>السورة / الآية الحالية:</strong> ${s.currentSurah || s.memorizationLevel || 'لم يتم تسجيل تقدم بعد'}
+          </div>
+        </div>
+
+        <!-- Attendance & Lessons Stats -->
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1.25rem;">
+          <div style="background: var(--bg-primary); padding: 0.75rem; border-radius: 8px; text-align: center; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.72rem; color: var(--text-muted);">الحصص المتبقية</div>
+            <div style="font-size: 1.3rem; font-weight: 800; color: ${sub.remainingLessons <= 1 ? '#dc2626' : 'var(--text-primary)'};">${sub.remainingLessons}</div>
+          </div>
+          <div style="background: var(--bg-primary); padding: 0.75rem; border-radius: 8px; text-align: center; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.72rem; color: var(--text-muted);">مرات الحضور</div>
+            <div style="font-size: 1.3rem; font-weight: 800; color: #059669;">${attendedCount}</div>
+          </div>
+          <div style="background: var(--bg-primary); padding: 0.75rem; border-radius: 8px; text-align: center; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.72rem; color: var(--text-muted);">مرات الغياب</div>
+            <div style="font-size: 1.3rem; font-weight: 800; color: ${absentCount > 2 ? '#dc2626' : '#d97706'};">${absentCount}</div>
+          </div>
+        </div>
+
+        ${s.notes ? `
+          <div style="margin-bottom: 1.25rem;">
+            <h5 style="margin: 0 0 0.35rem 0; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">ملاحظات إشرافية:</h5>
+            <div style="background: var(--bg-primary); padding: 0.65rem 0.85rem; border-radius: 6px; font-size: 0.82rem; color: var(--text-primary); border: 1px solid var(--border-color);">
+              ${s.notes}
+            </div>
+          </div>
+        ` : ''}
+
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1rem;">
+          <div>
+            ${waLink ? `
+              <a href="${waLink}" target="_blank" class="btn btn-secondary" style="font-size: 0.8rem; color: #16a34a; gap: 0.3rem;">
+                <i data-lucide="message-circle" style="width: 15px; height: 15px;"></i>
+                مراسلة ولي الأمر
+              </a>
+            ` : ''}
+          </div>
+          <button type="button" id="btnCloseDetailsBottom" class="btn btn-primary" style="font-size: 0.82rem;">إغلاق</button>
+        </div>
+      `;
+
+      if (window.lucide) window.lucide.createIcons({ root: detailsModal });
+      detailsModal.style.display = 'flex';
+      document.getElementById('btnCloseDetailsBottom').addEventListener('click', () => detailsModal.style.display = 'none');
+    }
+    document.getElementById('btnCloseDetailsModal').addEventListener('click', () => detailsModal.style.display = 'none');
+
+    // ADMIN REQUEST MODAL (Delete / Change Package)
+    const reqModal = document.getElementById('studentAdminRequestModal');
+    function openReqModal(type, studentId, studentName) {
+      document.getElementById('studentReqForm').reset();
+      document.getElementById('reqStudentId').value = studentId;
+      document.getElementById('reqStudentName').value = studentName;
+      document.getElementById('reqType').value = type;
+      document.getElementById('reqStudentDisplay').textContent = studentName;
+
+      const titleInput = document.getElementById('reqTitle');
+      const pkgContainer = document.getElementById('reqPackageSelectContainer');
+
+      if (type === 'delete_student') {
+        document.getElementById('reqModalHeader').querySelector('span').textContent = 'رفع طلب حذف طالب للمدير';
+        titleInput.value = `طلب حذف الطالب: ${studentName}`;
+        pkgContainer.style.display = 'none';
+      } else if (type === 'change_package') {
+        document.getElementById('reqModalHeader').querySelector('span').textContent = 'رفع طلب تعديل باقة طالب للمدير';
+        titleInput.value = `طلب تعديل باقة الطالب: ${studentName}`;
+        pkgContainer.style.display = 'block';
+      }
+
+      reqModal.style.display = 'flex';
+      if (window.lucide) window.lucide.createIcons({ root: reqModal });
+    }
+    document.getElementById('btnCloseReqModal').addEventListener('click', () => reqModal.style.display = 'none');
+    document.getElementById('btnCancelReqModal').addEventListener('click', () => reqModal.style.display = 'none');
+
+    document.getElementById('studentReqForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmitStudentReq');
+      btn.disabled = true;
+
+      const type = document.getElementById('reqType').value;
+      const targetId = document.getElementById('reqStudentId').value;
+      const targetName = document.getElementById('reqStudentName').value;
+      const title = document.getElementById('reqTitle').value.trim();
+      const reason = document.getElementById('reqReason').value.trim();
+
+      const details = {};
+      if (type === 'change_package') {
+        const pkgVal = document.getElementById('reqNewPackage').value;
+        details.newPackageName = pkgVal;
+        details.newTotalLessons = pkgVal.includes('12') ? 12 : (pkgVal.includes('16') ? 16 : (pkgVal.includes('20') ? 20 : 8));
+      }
+
+      try {
+        await createSupervisorRequest({
+          type,
+          title,
+          targetId,
+          targetName,
+          targetType: 'student',
+          details,
+          reason
+        });
+
+        Toast.success("تم إرسال طلبك بنجاح للمدير العام.");
+        reqModal.style.display = 'none';
+      } catch(err) {
+        console.error("Error creating student request:", err);
+        Toast.danger("فشل إرسال الطلب: " + err.message);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

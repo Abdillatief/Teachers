@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - الحصص الجارية اليوم (المشرف)</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0284c7">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+
+  <style>
+    .session-item-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+      box-shadow: var(--shadow-sm);
+    }
+    .session-item-card:hover {
+      border-color: var(--primary-color);
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        
+        <!-- Header -->
+        <div style="margin-bottom: 1.75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.45rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="play-circle" style="color: var(--primary-color); width: 26px; height: 26px;"></i>
+              الحصص الجارية اليوم
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; margin-top: 0.25rem;">
+              متابعة حية وفورية للحصص المجدولة والمنجزة لهذا اليوم من قبل المعلمين.
+            </p>
+          </div>
+          <div style="font-size: 0.85rem; padding: 0.5rem 1rem; border-radius: 30px; background-color: rgba(2, 132, 199, 0.1); color: var(--primary-color); font-weight: 700;" id="todaySupervisorDateLabel">
+            اليوم: ...
+          </div>
+        </div>
+
+        <!-- Metric Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="card" style="border-right: 4px solid var(--primary-color); padding: 1.1rem;">
+            <div style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600;">إجمالي حصص اليوم</div>
+            <h3 id="statTodayTotal" style="font-size: 1.6rem; font-weight: 800; margin-top: 0.25rem;">0</h3>
+          </div>
+          <div class="card" style="border-right: 4px solid var(--success); padding: 1.1rem;">
+            <div style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600;">تمت بنجاح</div>
+            <h3 id="statTodayCompleted" style="font-size: 1.6rem; font-weight: 800; margin-top: 0.25rem; color: var(--success);">0</h3>
+          </div>
+          <div class="card" style="border-right: 4px solid #6366f1; padding: 1.1rem;">
+            <div style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600;">بانتظار البدء</div>
+            <h3 id="statTodayPending" style="font-size: 1.6rem; font-weight: 800; margin-top: 0.25rem; color: #6366f1;">0</h3>
+          </div>
+          <div class="card" style="border-right: 4px solid #d97706; padding: 1.1rem;">
+            <div style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600;">مؤجلة</div>
+            <h3 id="statTodayDelayed" style="font-size: 1.6rem; font-weight: 800; margin-top: 0.25rem; color: #d97706;">0</h3>
+          </div>
+        </div>
+
+        <!-- Filter -->
+        <div class="card" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem;">
+          <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+            <div style="flex: 1; min-width: 220px;">
+              <input type="text" id="todaySearchInput" class="form-control" placeholder="بحث باسم الطالب أو المعلم..." style="font-size: 0.85rem;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Grid Container -->
+        <div id="todaySessionsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
+          <div style="grid-column: 1 / -1; padding: 3rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+            جاري تحميل حصص اليوم...
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { 
+      collection, 
+      onSnapshot, 
+      query, 
+      where 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    protectRoute('supervisor', 'manageSessions');
+
+    renderSidebar('today-sessions', 'supervisor');
+    renderNavbar('الحصص الجارية اليوم', { name: 'المشرف الأكاديمي' });
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const arabicDays = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    const todayArabic = arabicDays[new Date().getDay()];
+    document.getElementById('todaySupervisorDateLabel').textContent = `اليوم: ${todayArabic} (${todayStr})`;
+
+    let todaySessions = [];
+    const gridContainer = document.getElementById('todaySessionsGrid');
+    const searchInput = document.getElementById('todaySearchInput');
+
+    const statTotal = document.getElementById('statTodayTotal');
+    const statCompleted = document.getElementById('statTodayCompleted');
+    const statPending = document.getElementById('statTodayPending');
+    const statDelayed = document.getElementById('statTodayDelayed');
+
+    const qToday = query(collection(db, "sessions"), where("date", "==", todayStr));
+    onSnapshot(qToday, (snapshot) => {
+      todaySessions = [];
+      snapshot.forEach(docSnap => {
+        todaySessions.push({ id: docSnap.id, ...docSnap.data() });
+      });
+
+      updateStats();
+      renderTodaySessions();
+    }, (err) => {
+      console.error("Error loading today sessions:", err);
+      gridContainer.innerHTML = `
+        <div style="grid-column: 1 / -1; padding: 2rem; text-align: center; color: var(--danger); font-size: 0.88rem;">
+          تعذر تحميل حصص اليوم.
+        </div>
+      `;
+    });
+
+    function updateStats() {
+      statTotal.textContent = todaySessions.length;
+      statCompleted.textContent = todaySessions.filter(s => s.status === 'completed').length;
+      statPending.textContent = todaySessions.filter(s => s.status !== 'completed' && s.status !== 'delayed' && s.status !== 'student_absent').length;
+      statDelayed.textContent = todaySessions.filter(s => s.status === 'delayed').length;
+    }
+
+    function renderTodaySessions() {
+      const searchTerm = (searchInput.value || '').trim().toLowerCase();
+
+      const filtered = todaySessions.filter(s => {
+        if (searchTerm) {
+          const sName = (s.studentName || '').toLowerCase();
+          const tName = (s.teacherName || '').toLowerCase();
+          if (!sName.includes(searchTerm) && !tName.includes(searchTerm)) {
+            return false;
+          }
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        gridContainer.innerHTML = `
+          <div style="grid-column: 1 / -1; padding: 3rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.88rem;">
+            لا توجد حصص مسجلة لليوم تطابق معايير البحث.
+          </div>
+        `;
+        return;
+      }
+
+      gridContainer.innerHTML = filtered.map(s => {
+        let statusBadge = '<span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; font-size: 0.72rem; padding: 2px 7px;">مكتملة</span>';
+        if (s.status === 'delayed') {
+          statusBadge = '<span class="badge" style="background: rgba(245, 158, 11, 0.12); color: #d97706; font-size: 0.72rem; padding: 2px 7px;">مؤجلة</span>';
+        } else if (s.status === 'student_absent') {
+          statusBadge = '<span class="badge" style="background: rgba(239, 68, 68, 0.12); color: #dc2626; font-size: 0.72rem; padding: 2px 7px;">غياب</span>';
+        }
+
+        return `
+          <div class="session-item-card">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <strong style="font-size: 0.95rem; color: var(--text-primary); display: block;">${s.studentName || 'غير محدد'}</strong>
+                <span style="font-size: 0.76rem; color: var(--text-muted);">المعلم: ${s.teacherName || 'غير محدد'}</span>
+              </div>
+              ${statusBadge}
+            </div>
+
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-secondary); background: var(--bg-primary); padding: 0.5rem 0.75rem; border-radius: 6px;">
+              <span>الوقت: ${s.time || '--:--'}</span>
+              <span>المدة: ${s.duration || 30} د</span>
+            </div>
+
+            ${s.notes || s.surahName ? `
+              <div style="font-size: 0.76rem; color: var(--text-muted); line-height: 1.4;">
+                ${s.notes || s.surahName}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    searchInput.addEventListener('input', renderTodaySessions);
+  </script>
+</body>
+</html>
