@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - متابعة الطلاب والدارسين (المشرف)</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0284c7">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+
+  <style>
+    .supervisor-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-sm);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.45rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="graduation-cap" style="color: var(--primary-color); width: 26px; height: 26px;"></i>
+              متابعة الطلاب والدارسين
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; margin-top: 0.25rem;">
+              الاطلاع على قوائم الطلاب، المعلمين المعينين، ومتابعة إنجاز الحصص ومستويات الحفظ.
+            </p>
+          </div>
+          <div>
+            <a href="groups.html" class="btn btn-secondary" style="font-size: 0.82rem; padding: 0.45rem 0.95rem;">
+              <i data-lucide="users-round" style="width: 15px; height: 15px;"></i>
+              الحلقات الجماعية
+            </a>
+          </div>
+        </div>
+
+        <!-- Metrics -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="card" style="padding: 1.15rem; border-right: 4px solid var(--primary-color);">
+            <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">إجمالي الطلاب النشطين</div>
+            <h3 id="statTotalStudents" style="font-size: 1.6rem; font-weight: 800; margin: 0.35rem 0 0 0; color: var(--text-primary);">0</h3>
+          </div>
+          <div class="card" style="padding: 1.15rem; border-right: 4px solid #10b981;">
+            <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">الطلاب الفرديون</div>
+            <h3 id="statIndividualStudents" style="font-size: 1.6rem; font-weight: 800; margin: 0.35rem 0 0 0; color: #10b981;">0</h3>
+          </div>
+          <div class="card" style="padding: 1.15rem; border-right: 4px solid #8b5cf6;">
+            <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">طلاب الحلقات الجماعية</div>
+            <h3 id="statGroupStudents" style="font-size: 1.6rem; font-weight: 800; margin: 0.35rem 0 0 0; color: #8b5cf6;">0</h3>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem;">
+          <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+            <div style="flex: 1; min-width: 240px; position: relative;">
+              <input type="text" id="studentSearchInput" class="form-control" placeholder="بحث باسم الطالب أو المعلم..." style="font-size: 0.85rem; padding-right: 2.2rem;">
+              <i data-lucide="search" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--text-muted);"></i>
+            </div>
+            <div style="min-width: 180px;">
+              <select id="teacherFilterSelect" class="form-control" style="font-size: 0.85rem; font-weight: 600;">
+                <option value="all">كل المعلمين</option>
+              </select>
+            </div>
+            <div style="min-width: 160px;">
+              <select id="typeFilterSelect" class="form-control" style="font-size: 0.85rem; font-weight: 600;">
+                <option value="all">كل أنواع الدروس</option>
+                <option value="individual">دروس فردية</option>
+                <option value="group">حلقات جماعية</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Students Table -->
+        <div class="supervisor-card" style="overflow: hidden;">
+          <div style="overflow-x: auto;">
+            <table class="table" style="width: 100%; margin: 0; text-align: right;">
+              <thead>
+                <tr style="background: var(--bg-primary); border-bottom: 1px solid var(--border-color);">
+                  <th style="padding: 0.85rem 1rem; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">اسم الدارس</th>
+                  <th style="padding: 0.85rem 1rem; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">المعلم المسند</th>
+                  <th style="padding: 0.85rem 1rem; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">نوع الدرس</th>
+                  <th style="padding: 0.85rem 1rem; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">الحصص المنجزة</th>
+                  <th style="padding: 0.85rem 1rem; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">آخر حفظ / سورة</th>
+                  <th style="padding: 0.85rem 1rem; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">تاريخ آخر حصة</th>
+                </tr>
+              </thead>
+              <tbody id="studentsTableBody">
+                <tr>
+                  <td colspan="6" style="padding: 2.5rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+                    جاري تحميل بيانات الطلاب...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { 
+      collection, 
+      onSnapshot, 
+      query, 
+      where 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    protectRoute('supervisor', 'viewStudents');
+
+    renderSidebar('students', 'supervisor');
+    renderNavbar('متابعة الطلاب والدارسين', { name: 'المشرف الأكاديمي' });
+
+    let allStudents = [];
+    let allTeachers = [];
+
+    const tableBody = document.getElementById('studentsTableBody');
+    const searchInput = document.getElementById('studentSearchInput');
+    const teacherFilter = document.getElementById('teacherFilterSelect');
+    const typeFilter = document.getElementById('typeFilterSelect');
+    const statTotal = document.getElementById('statTotalStudents');
+    const statIndividual = document.getElementById('statIndividualStudents');
+    const statGroup = document.getElementById('statGroupStudents');
+
+    // Subscribe to teachers for filter dropdown
+    const qTeachers = query(collection(db, "users"), where("role", "==", "teacher"));
+    onSnapshot(qTeachers, (snapshot) => {
+      allTeachers = [];
+      snapshot.forEach(docSnap => {
+        allTeachers.push({ uid: docSnap.id, ...docSnap.data() });
+      });
+
+      let opts = '<option value="all">كل المعلمين</option>';
+      allTeachers.forEach(t => {
+        opts += `<option value="${t.uid}">${t.name || t.email}</option>`;
+      });
+      teacherFilter.innerHTML = opts;
+    });
+
+    // Subscribe to students
+    onSnapshot(collection(db, "students"), (snapshot) => {
+      allStudents = [];
+      snapshot.forEach(docSnap => {
+        const s = { id: docSnap.id, ...docSnap.data() };
+        if (s.status !== 'archived' && s.status !== 'deleted') {
+          allStudents.push(s);
+        }
+      });
+
+      updateStats();
+      renderStudents();
+    }, (err) => {
+      console.error("Error loading students:", err);
+      tableBody.innerHTML = `
+        <tr>
+          <td colspan="6" style="padding: 2rem; text-align: center; color: var(--danger); font-size: 0.88rem;">
+            تعذر تحميل بيانات الطلاب.
+          </td>
+        </tr>
+      `;
+    });
+
+    function updateStats() {
+      statTotal.textContent = allStudents.length;
+      const groupCount = allStudents.filter(s => s.sessionType === 'group' || s.isGroupStudent).length;
+      statGroup.textContent = groupCount;
+      statIndividual.textContent = allStudents.length - groupCount;
+    }
+
+    function renderStudents() {
+      const searchTerm = (searchInput.value || '').trim().toLowerCase();
+      const selectedTeacher = teacherFilter.value;
+      const selectedType = typeFilter.value;
+
+      const filtered = allStudents.filter(s => {
+        // Teacher filter
+        if (selectedTeacher !== 'all' && s.teacherId !== selectedTeacher) return false;
+
+        // Type filter
+        const isGroup = s.sessionType === 'group' || s.isGroupStudent;
+        if (selectedType === 'individual' && isGroup) return false;
+        if (selectedType === 'group' && !isGroup) return false;
+
+        // Search term
+        if (searchTerm) {
+          const name = (s.name || '').toLowerCase();
+          const tName = (s.teacherName || '').toLowerCase();
+          const phone = (s.phone || '').toLowerCase();
+          if (!name.includes(searchTerm) && !tName.includes(searchTerm) && !phone.includes(searchTerm)) {
+            return false;
+          }
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="6" style="padding: 3rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.88rem;">
+              لا توجد نتائج تطابق معايير البحث والفلترة.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tableBody.innerHTML = filtered.map(s => {
+        const isGroup = s.sessionType === 'group' || s.isGroupStudent;
+        const typeBadge = isGroup
+          ? `<span class="badge" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6; font-size: 0.72rem; padding: 2px 7px;">حلقة جماعية</span>`
+          : `<span class="badge" style="background: rgba(2, 132, 199, 0.1); color: #0284c7; font-size: 0.72rem; padding: 2px 7px;">حصة فردية</span>`;
+
+        return `
+          <tr style="border-bottom: 1px solid var(--border-color);">
+            <td style="padding: 0.85rem 1rem; font-size: 0.88rem; font-weight: 700; color: var(--text-primary);">
+              ${s.name || 'بدون اسم'}
+            </td>
+            <td style="padding: 0.85rem 1rem; font-size: 0.85rem; color: var(--text-secondary);">
+              ${s.teacherName || 'غير مسند'}
+            </td>
+            <td style="padding: 0.85rem 1rem;">
+              ${typeBadge}
+            </td>
+            <td style="padding: 0.85rem 1rem; font-size: 0.85rem; font-weight: 700; color: var(--primary-color);">
+              ${s.sessionsCount || 0} حصة
+            </td>
+            <td style="padding: 0.85rem 1rem; font-size: 0.82rem; color: var(--text-secondary);">
+              ${s.lastMemorizedSurahName ? `${s.lastMemorizedSurahName} (آية ${s.lastMemorizedVerse || 1})` : 'لم يسجل بعد'}
+            </td>
+            <td style="padding: 0.85rem 1rem; font-size: 0.82rem; color: var(--text-muted);">
+              ${s.lastSessionDate || '--'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    searchInput.addEventListener('input', renderStudents);
+    teacherFilter.addEventListener('change', renderStudents);
+    typeFilter.addEventListener('change', renderStudents);
+  </script>
+</body>
+</html>

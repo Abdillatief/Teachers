@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - بوابة الإشراف والمتابعة</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0284c7">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+
+  <style>
+    .supervisor-metric-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+    .supervisor-metric-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary-color);
+    }
+    .quick-link-tile {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      text-decoration: none;
+      color: var(--text-primary);
+      transition: all 0.2s ease;
+    }
+    .quick-link-tile:hover {
+      border-color: var(--primary-color);
+      background: var(--bg-primary);
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+
+        <!-- Welcome Banner -->
+        <div style="margin-bottom: 2rem; background: linear-gradient(135deg, rgba(2, 132, 199, 0.08), rgba(2, 132, 199, 0.02)); border: 1px solid rgba(2, 132, 199, 0.2); border-radius: 12px; padding: 1.5rem 1.75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+              <span class="badge" style="background: rgba(2, 132, 199, 0.15); color: #0284c7; font-weight: 700; padding: 2px 10px; border-radius: 6px; font-size: 0.76rem;">
+                بوابة المشرفين الأكاديميين
+              </span>
+              <span style="color: var(--text-muted); font-size: 0.8rem;" id="supervisorTodayDate"></span>
+            </div>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0;">
+              مرحباً بك، <span id="supervisorWelcomeName">أ. المشرف</span>
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; margin: 0.35rem 0 0 0;">
+              لوحة التحكم والمتابعة المباشرة للطلاب، والمعلمين، والحصص الأكاديمية وفق الصلاحيات الممنوحة لك.
+            </p>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <a href="today-sessions.html" id="headerTodayBtn" class="btn btn-primary" style="font-size: 0.85rem; padding: 0.55rem 1.15rem; gap: 0.4rem; font-weight: 700;">
+              <i data-lucide="play-circle" style="width: 16px; height: 16px;"></i>
+              حصص اليوم الجارية
+            </a>
+          </div>
+        </div>
+
+        <!-- Metrics Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+          <div class="supervisor-metric-card" id="cardMetricStudents" style="border-right: 4px solid var(--primary-color);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-secondary);">الطلاب المسجلون</span>
+              <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(2, 132, 199, 0.1); color: var(--primary-color); display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="graduation-cap" style="width: 18px; height: 18px;"></i>
+              </div>
+            </div>
+            <h3 id="statStudentsCount" style="font-size: 1.8rem; font-weight: 800; margin: 0; color: var(--text-primary);">0</h3>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">إجمالي الدارسين المقيدين</span>
+          </div>
+
+          <div class="supervisor-metric-card" id="cardMetricTeachers" style="border-right: 4px solid #10b981;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-secondary);">المعلمون النشطون</span>
+              <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(16, 185, 129, 0.1); color: #10b981; display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="users" style="width: 18px; height: 18px;"></i>
+              </div>
+            </div>
+            <h3 id="statTeachersCount" style="font-size: 1.8rem; font-weight: 800; margin: 0; color: #10b981;">0</h3>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">معلمون معتمدون في الأكاديمية</span>
+          </div>
+
+          <div class="supervisor-metric-card" id="cardMetricTodaySessions" style="border-right: 4px solid #f59e0b;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-secondary);">حصص اليوم</span>
+              <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(245, 158, 11, 0.1); color: #f59e0b; display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="calendar" style="width: 18px; height: 18px;"></i>
+              </div>
+            </div>
+            <h3 id="statTodaySessionsCount" style="font-size: 1.8rem; font-weight: 800; margin: 0; color: #f59e0b;">0</h3>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">إجمالي حصص اليوم المجدولة والمنجزة</span>
+          </div>
+
+          <div class="supervisor-metric-card" id="cardMetricGroups" style="border-right: 4px solid #8b5cf6;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-secondary);">الحلقات والمجموعات</span>
+              <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(139, 92, 246, 0.1); color: #8b5cf6; display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="users-round" style="width: 18px; height: 18px;"></i>
+              </div>
+            </div>
+            <h3 id="statGroupsCount" style="font-size: 1.8rem; font-weight: 800; margin: 0; color: #8b5cf6;">0</h3>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">حلقات التحفيظ والدروس الجماعية</span>
+          </div>
+        </div>
+
+        <!-- Quick Links Grid -->
+        <div style="margin-bottom: 2rem;">
+          <h2 style="font-size: 1.05rem; font-weight: 800; color: var(--text-primary); margin: 0 0 1rem 0;">
+            الوصول السريع
+          </h2>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
+            <a href="students.html" class="quick-link-tile" id="tileStudents">
+              <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(2, 132, 199, 0.12); color: #0284c7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i data-lucide="graduation-cap" style="width: 22px; height: 22px;"></i>
+              </div>
+              <div>
+                <strong style="display: block; font-size: 0.95rem; margin-bottom: 0.15rem;">متابعة الطلاب</strong>
+                <span style="font-size: 0.78rem; color: var(--text-muted);">قوائم الطلاب، ومستويات الحفظ، والجداول</span>
+              </div>
+            </a>
+
+            <a href="teachers.html" class="quick-link-tile" id="tileTeachers">
+              <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(16, 185, 129, 0.12); color: #10b981; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i data-lucide="users" style="width: 22px; height: 22px;"></i>
+              </div>
+              <div>
+                <strong style="display: block; font-size: 0.95rem; margin-bottom: 0.15rem;">متابعة المعلمين</strong>
+                <span style="font-size: 0.78rem; color: var(--text-muted);">جداول المعلمين، الشواغر، وتوزيع الحصص</span>
+              </div>
+            </a>
+
+            <a href="today-sessions.html" class="quick-link-tile" id="tileTodaySessions">
+              <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(245, 158, 11, 0.12); color: #f59e0b; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i data-lucide="play-circle" style="width: 22px; height: 22px;"></i>
+              </div>
+              <div>
+                <strong style="display: block; font-size: 0.95rem; margin-bottom: 0.15rem;">حصص اليوم الجارية</strong>
+                <span style="font-size: 0.78rem; color: var(--text-muted);">متابعة بث وتسجيل حصص اليوم مباشرة</span>
+              </div>
+            </a>
+
+            <a href="sessions.html" class="quick-link-tile" id="tileSessions">
+              <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(139, 92, 246, 0.12); color: #8b5cf6; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i data-lucide="calendar" style="width: 22px; height: 22px;"></i>
+              </div>
+              <div>
+                <strong style="display: block; font-size: 0.95rem; margin-bottom: 0.15rem;">سجل ومراجعة الحصص</strong>
+                <span style="font-size: 0.78rem; color: var(--text-muted);">أرشيف الحصص التاريخي والتدقيق</span>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <!-- Recent Recorded Sessions Today Table -->
+        <div class="card" id="recentSessionsTableCard" style="padding: 1.25rem 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.85rem;">
+            <h3 style="font-size: 1.05rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.4rem;">
+              <i data-lucide="clock" style="width: 18px; height: 18px; color: var(--primary-color);"></i>
+              أحدث الحصص المسجلة اليوم
+            </h3>
+            <a href="sessions.html" style="font-size: 0.82rem; font-weight: 700; color: var(--primary-color); text-decoration: none;">
+              عرض كل الحصص
+            </a>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table class="table" style="width: 100%; margin: 0; text-align: right;">
+              <thead>
+                <tr style="background: var(--bg-primary); border-bottom: 1px solid var(--border-color);">
+                  <th style="padding: 0.75rem 1rem; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">الطالب</th>
+                  <th style="padding: 0.75rem 1rem; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">المعلم</th>
+                  <th style="padding: 0.75rem 1rem; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">الوقت</th>
+                  <th style="padding: 0.75rem 1rem; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">النوع</th>
+                  <th style="padding: 0.75rem 1rem; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">الحالة</th>
+                  <th style="padding: 0.75rem 1rem; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">الإنجاز</th>
+                </tr>
+              </thead>
+              <tbody id="recentSessionsTableBody">
+                <tr>
+                  <td colspan="6" style="padding: 2rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+                    جاري تحميل الحصص الجارية...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+    import { 
+      collection, 
+      onSnapshot, 
+      query, 
+      where, 
+      orderBy, 
+      limit, 
+      doc, 
+      getDoc 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // Enforce supervisor role protection
+    protectRoute('supervisor');
+
+    // Check if supervisor was ejected from a revoked page
+    const kickReason = sessionStorage.getItem('sabeel_kick_reason');
+    if (kickReason) {
+      sessionStorage.removeItem('sabeel_kick_reason');
+      setTimeout(() => Toast.warning(kickReason), 300);
+    }
+
+    let currentSupervisor = null;
+    const arabicDays = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    document.getElementById('supervisorTodayDate').textContent = `${arabicDays[today.getDay()]}، ${today.toLocaleDateString('ar-EG')}`;
+
+    function applyPermissionsToDashboardUI(perms = {}) {
+      const canStudents = perms.viewStudents === true;
+      const tileStudents = document.getElementById('tileStudents');
+      if (tileStudents) tileStudents.style.display = canStudents ? 'flex' : 'none';
+      const cardStudents = document.getElementById('cardMetricStudents');
+      if (cardStudents) cardStudents.style.display = canStudents ? 'flex' : 'none';
+
+      const canTeachers = perms.viewTeachers === true;
+      const tileTeachers = document.getElementById('tileTeachers');
+      if (tileTeachers) tileTeachers.style.display = canTeachers ? 'flex' : 'none';
+      const cardTeachers = document.getElementById('cardMetricTeachers');
+      if (cardTeachers) cardTeachers.style.display = canTeachers ? 'flex' : 'none';
+
+      const canSessions = perms.manageSessions === true;
+      const tileToday = document.getElementById('tileTodaySessions');
+      if (tileToday) tileToday.style.display = canSessions ? 'flex' : 'none';
+      const tileSessions = document.getElementById('tileSessions');
+      if (tileSessions) tileSessions.style.display = canSessions ? 'flex' : 'none';
+      const cardTodaySessions = document.getElementById('cardMetricTodaySessions');
+      if (cardTodaySessions) cardTodaySessions.style.display = canSessions ? 'flex' : 'none';
+      const sessionsTableCard = document.getElementById('recentSessionsTableCard');
+      if (sessionsTableCard) sessionsTableCard.style.display = canSessions ? 'block' : 'none';
+      const headerTodayBtn = document.getElementById('headerTodayBtn');
+      if (headerTodayBtn) headerTodayBtn.style.display = canSessions ? 'inline-flex' : 'none';
+
+      const canGroups = perms.manageGroups === true;
+      const cardGroups = document.getElementById('cardMetricGroups');
+      if (cardGroups) cardGroups.style.display = canGroups ? 'flex' : 'none';
+    }
+
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        try {
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          if (userDoc.exists()) {
+            currentSupervisor = { uid: user.uid, ...userDoc.data() };
+            document.getElementById('supervisorWelcomeName').textContent = currentSupervisor.name || 'المشرف الأكاديمي';
+            renderNavbar('لوحة الإشراف والمتابعة', { name: currentSupervisor.name || 'المشرف', roleName: 'مشرف أكاديمي' });
+            applyPermissionsToDashboardUI(currentSupervisor.permissions || {});
+          }
+        } catch (e) {
+          console.warn("Error reading supervisor profile:", e);
+        }
+
+        renderSidebar('dashboard', 'supervisor');
+        initSupervisorDataListeners();
+      }
+    });
+
+    window.addEventListener('sabeel-permissions-updated', (e) => {
+      const livePerms = (e.detail && e.detail.permissions) || {};
+      applyPermissionsToDashboardUI(livePerms);
+    });
+
+    function initSupervisorDataListeners() {
+      // 1. Students count
+      onSnapshot(collection(db, "students"), (snapshot) => {
+        let activeCount = 0;
+        snapshot.forEach(docSnap => {
+          const s = docSnap.data();
+          if (s.status !== 'archived' && s.status !== 'deleted') activeCount++;
+        });
+        document.getElementById('statStudentsCount').textContent = activeCount;
+      });
+
+      // 2. Teachers count
+      const qTeachers = query(collection(db, "users"), where("role", "==", "teacher"));
+      onSnapshot(qTeachers, (snapshot) => {
+        let activeCount = 0;
+        snapshot.forEach(docSnap => {
+          const t = docSnap.data();
+          if (t.status === 'approved' || t.status === 'active' || t.approved === true) activeCount++;
+        });
+        document.getElementById('statTeachersCount').textContent = activeCount;
+      });
+
+      // 3. Groups count
+      onSnapshot(collection(db, "groups"), (snapshot) => {
+        document.getElementById('statGroupsCount').textContent = snapshot.size;
+      });
+
+      // 4. Today's sessions & recent table
+      const qSessionsToday = query(
+        collection(db, "sessions"),
+        where("date", "==", todayStr)
+      );
+
+      onSnapshot(qSessionsToday, (snapshot) => {
+        const todaySessions = [];
+        snapshot.forEach(docSnap => {
+          todaySessions.push({ id: docSnap.id, ...docSnap.data() });
+        });
+
+        document.getElementById('statTodaySessionsCount').textContent = todaySessions.length;
+
+        // Render recent table
+        const tbody = document.getElementById('recentSessionsTableBody');
+        if (todaySessions.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="6" style="padding: 2.5rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+                لم يتم تسجيل حصص لهذا اليوم حتى الآن.
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        tbody.innerHTML = todaySessions.slice(0, 10).map(s => {
+          const statusBadge = s.status === 'completed'
+            ? `<span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; font-size: 0.72rem; font-weight: 700; padding: 2px 7px; border-radius: 6px;">مكتملة</span>`
+            : (s.status === 'student_absent'
+              ? `<span class="badge" style="background: rgba(239, 68, 68, 0.12); color: #dc2626; font-size: 0.72rem; font-weight: 700; padding: 2px 7px; border-radius: 6px;">غياب</span>`
+              : `<span class="badge" style="background: rgba(245, 158, 11, 0.12); color: #d97706; font-size: 0.72rem; font-weight: 700; padding: 2px 7px; border-radius: 6px;">مؤجلة / جارية</span>`);
+
+          const typeBadge = s.type === 'group'
+            ? `<span class="badge" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6; font-size: 0.72rem; padding: 2px 6px;">جماعية</span>`
+            : `<span class="badge" style="background: rgba(2, 132, 199, 0.1); color: #0284c7; font-size: 0.72rem; padding: 2px 6px;">فردية</span>`;
+
+          return `
+            <tr style="border-bottom: 1px solid var(--border-color);">
+              <td style="padding: 0.75rem 1rem; font-size: 0.85rem; font-weight: 700; color: var(--text-primary);">${s.studentName || 'غير محدد'}</td>
+              <td style="padding: 0.75rem 1rem; font-size: 0.85rem; color: var(--text-secondary);">${s.teacherName || 'غير محدد'}</td>
+              <td style="padding: 0.75rem 1rem; font-size: 0.82rem; color: var(--text-muted);">${s.time || '--:--'}</td>
+              <td style="padding: 0.75rem 1rem;">${typeBadge}</td>
+              <td style="padding: 0.75rem 1rem;">${statusBadge}</td>
+              <td style="padding: 0.75rem 1rem; font-size: 0.82rem; color: var(--text-secondary);">${s.notes || s.surahName || 'لا توجد ملاحظات'}</td>
+            </tr>
+          `;
+        }).join('');
+
+        if (window.lucide) window.lucide.createIcons({ root: tbody });
+      });
+    }
+  </script>
+</body>
+</html>

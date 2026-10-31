@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - متابعة المعلمين (المشرف)</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0284c7">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+
+  <style>
+    .teacher-item-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s ease;
+    }
+    .teacher-item-card:hover {
+      border-color: var(--primary-color);
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.45rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="users" style="color: var(--primary-color); width: 26px; height: 26px;"></i>
+              متابعة المعلمين وشؤون التدريس
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; margin-top: 0.25rem;">
+              الاطلاع على كادر المعلمين المعتمد، وعدد الطلاب المسندين لكل معلم، ومتابعة الجداول.
+            </p>
+          </div>
+          <div>
+            <a href="today-sessions.html" class="btn btn-secondary" style="font-size: 0.82rem; padding: 0.45rem 0.95rem;">
+              <i data-lucide="play-circle" style="width: 15px; height: 15px;"></i>
+              حصص اليوم الجارية
+            </a>
+          </div>
+        </div>
+
+        <!-- Search & Filter -->
+        <div class="card" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem;">
+          <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 260px; position: relative;">
+              <input type="text" id="teacherSearchInput" class="form-control" placeholder="بحث باسم المعلم أو التخصص..." style="font-size: 0.85rem; padding-right: 2.2rem;">
+              <i data-lucide="search" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--text-muted);"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Teachers Grid -->
+        <div id="teachersGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
+          <div style="grid-column: 1 / -1; padding: 3rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+            جاري تحميل بيانات المعلمين...
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { 
+      collection, 
+      onSnapshot, 
+      query, 
+      where 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    protectRoute('supervisor', 'viewTeachers');
+
+    renderSidebar('teachers', 'supervisor');
+    renderNavbar('متابعة المعلمين', { name: 'المشرف الأكاديمي' });
+
+    let allTeachers = [];
+    let studentsCountMap = {};
+
+    const teachersGrid = document.getElementById('teachersGrid');
+    const searchInput = document.getElementById('teacherSearchInput');
+
+    // Subscribe to students to count students per teacher
+    onSnapshot(collection(db, "students"), (snapshot) => {
+      studentsCountMap = {};
+      snapshot.forEach(docSnap => {
+        const s = docSnap.data();
+        if (s.teacherId && s.status !== 'archived') {
+          studentsCountMap[s.teacherId] = (studentsCountMap[s.teacherId] || 0) + 1;
+        }
+      });
+      renderTeachers();
+    });
+
+    // Subscribe to teachers
+    const qTeachers = query(collection(db, "users"), where("role", "==", "teacher"));
+    onSnapshot(qTeachers, (snapshot) => {
+      allTeachers = [];
+      snapshot.forEach(docSnap => {
+        const t = { uid: docSnap.id, ...docSnap.data() };
+        if (t.status === 'approved' || t.status === 'active' || t.approved === true) {
+          allTeachers.push(t);
+        }
+      });
+      renderTeachers();
+    }, (err) => {
+      console.error("Error loading teachers:", err);
+      teachersGrid.innerHTML = `
+        <div style="grid-column: 1 / -1; padding: 2rem; text-align: center; color: var(--danger); font-size: 0.88rem;">
+          تعذر تحميل بيانات المعلمين.
+        </div>
+      `;
+    });
+
+    function renderTeachers() {
+      const searchTerm = (searchInput.value || '').trim().toLowerCase();
+
+      const filtered = allTeachers.filter(t => {
+        if (searchTerm) {
+          const name = (t.name || '').toLowerCase();
+          const email = (t.email || '').toLowerCase();
+          const dept = (t.department || '').toLowerCase();
+          if (!name.includes(searchTerm) && !email.includes(searchTerm) && !dept.includes(searchTerm)) {
+            return false;
+          }
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        teachersGrid.innerHTML = `
+          <div style="grid-column: 1 / -1; padding: 3rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.88rem;">
+            لا يوجد معلمون يطابقون معايير البحث.
+          </div>
+        `;
+        return;
+      }
+
+      teachersGrid.innerHTML = filtered.map(t => {
+        const studentCount = studentsCountMap[t.uid] || 0;
+        return `
+          <div class="teacher-item-card">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem;">
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(16, 185, 129, 0.12); color: #10b981; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; font-weight: 800; flex-shrink: 0;">
+                  ${(t.name || 'م').trim().charAt(0)}
+                </div>
+                <div>
+                  <strong style="font-size: 0.95rem; color: var(--text-primary); display: block;">${t.name || 'معلم معتمد'}</strong>
+                  <span style="font-size: 0.76rem; color: var(--text-muted);">${t.department || 'معلم قرآن كريم ولغة عربية'}</span>
+                </div>
+              </div>
+              <span class="badge" style="background: rgba(16, 185, 129, 0.1); color: #059669; font-size: 0.72rem; padding: 2px 7px;">معتمد</span>
+            </div>
+
+            <div style="background: var(--bg-primary); border-radius: 8px; padding: 0.75rem; display: flex; justify-content: space-around; text-align: center;">
+              <div>
+                <span style="font-size: 0.72rem; color: var(--text-muted); display: block;">الطلاب المسندون</span>
+                <strong style="font-size: 1.1rem; color: var(--primary-color);">${studentCount}</strong>
+              </div>
+              <div style="border-right: 1px solid var(--border-color);"></div>
+              <div>
+                <span style="font-size: 0.72rem; color: var(--text-muted); display: block;">حالة الحساب</span>
+                <strong style="font-size: 0.85rem; color: var(--success); font-weight: 700;">نشط</strong>
+              </div>
+            </div>
+
+            <div style="font-size: 0.78rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 0.25rem;">
+              <div><strong>البريد:</strong> ${t.email || 'غير مسجل'}</div>
+              ${t.phone ? `<div><strong>الهاتف:</strong> <span style="direction: ltr; display: inline-block;">${t.phone}</span></div>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (window.lucide) window.lucide.createIcons({ root: teachersGrid });
+    }
+
+    searchInput.addEventListener('input', renderTeachers);
+  </script>
+</body>
+</html>
