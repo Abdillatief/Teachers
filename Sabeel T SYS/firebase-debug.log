@@ -1,0 +1,81 @@
+[debug] [2026-08-25T19:23:43.301Z] ----------------------------------------------------------------------
+[debug] [2026-08-25T19:23:43.306Z] Command:       /usr/local/bin/node /usr/local/bin/firebase deploy --only functions --project sabeelteacher --debug
+[debug] [2026-08-25T19:23:43.306Z] CLI Version:   15.24.0
+[debug] [2026-08-25T19:23:43.307Z] Platform:      linux
+[debug] [2026-08-25T19:23:43.307Z] Node Version:  v22.23.1
+[debug] [2026-08-25T19:23:43.307Z] Detected Agent: unknown
+[debug] [2026-08-25T19:23:43.308Z] Time:          Tue Aug 25 2026 19:23:43 GMT+0000 (Coordinated Universal Time)
+[debug] [2026-08-25T19:23:43.308Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-08-25T19:23:45.744Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-08-25T19:23:45.766Z] Running auto auth
+[debug] [2026-08-25T19:23:45.770Z] [iam] checking project sabeelteacher for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]
+[debug] [2026-08-25T19:23:45.810Z] No OAuth tokens found
+[debug] [2026-08-25T19:23:45.812Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/sabeelteacher:testIamPermissions [none]
+[debug] [2026-08-25T19:23:45.812Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/sabeelteacher:testIamPermissions  x-goog-user-project=sabeelteacher
+[debug] [2026-08-25T19:23:45.812Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/sabeelteacher:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2026-08-25T19:23:46.519Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/sabeelteacher:testIamPermissions 403
+[debug] [2026-08-25T19:23:46.519Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/sabeelteacher:testIamPermissions {"error":{"code":403,"message":"Caller does not have required permission to use project sabeelteacher. Grant the caller the roles/serviceusage.serviceUsageConsumer role, or a custom role with the serviceusage.services.use permission, by visiting https://console.developers.google.com/iam-admin/iam?project=sabeelteacher and then retry. Propagation of the new permission may take a few minutes.","status":"PERMISSION_DENIED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"USER_PROJECT_DENIED","domain":"googleapis.com","metadata":{"containerInfo":"sabeelteacher","consoleUrl":"https://console.developers.google.com/iam-admin/iam?project=sabeelteacher","consumer":"projects/sabeelteacher","service":"cloudresourcemanager.googleapis.com"}},{"@type":"type.googleapis.com/google.rpc.LocalizedMessage","locale":"en-US","message":"Caller does not have required permission to use project sabeelteacher. Grant the caller the roles/serviceusage.serviceUsageConsumer role, or a custom role with the serviceusage.services.use permission, by visiting https://console.developers.google.com/iam-admin/iam?project=sabeelteacher and then retry. Propagation of the new permission may take a few minutes."},{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Google developer console IAM admin","url":"https://console.developers.google.com/iam-admin/iam?project=sabeelteacher"}]}]}}
+[debug] [2026-08-25T19:23:46.520Z] [iam] error while checking permissions, command may fail: Request to https://cloudresourcemanager.googleapis.com/v1/projects/sabeelteacher:testIamPermissions had HTTP Error: 403, Caller does not have required permission to use project sabeelteacher. Grant the caller the roles/serviceusage.serviceUsageConsumer role, or a custom role with the serviceusage.services.use permission, by visiting https://console.developers.google.com/iam-admin/iam?project=sabeelteacher and then retry. Propagation of the new permission may take a few minutes.
+[debug] [2026-08-25T19:23:46.521Z] No OAuth tokens found
+[debug] [2026-08-25T19:23:46.521Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/sabeelteacher/serviceAccounts/sabeelteacher@appspot.gserviceaccount.com:testIamPermissions [none]
+[debug] [2026-08-25T19:23:46.521Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/sabeelteacher/serviceAccounts/sabeelteacher@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2026-08-25T19:23:47.083Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/sabeelteacher/serviceAccounts/sabeelteacher@appspot.gserviceaccount.com:testIamPermissions 403
+[debug] [2026-08-25T19:23:47.083Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/sabeelteacher/serviceAccounts/sabeelteacher@appspot.gserviceaccount.com:testIamPermissions {"error":{"code":403,"message":"Identity and Access Management (IAM) API has not been used in project 286134679826 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/iam.googleapis.com/overview?project=286134679826 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.","status":"PERMISSION_DENIED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"SERVICE_DISABLED","domain":"googleapis.com","metadata":{"service":"iam.googleapis.com","containerInfo":"286134679826","activationUrl":"https://console.developers.google.com/apis/api/iam.googleapis.com/overview?project=286134679826","consumer":"projects/286134679826","serviceTitle":"Identity and Access Management (IAM) API"}},{"@type":"type.googleapis.com/google.rpc.LocalizedMessage","locale":"en-US","message":"Identity and Access Management (IAM) API has not been used in project 286134679826 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/iam.googleapis.com/overview?project=286134679826 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry."},{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Google developers console API activation","url":"https://console.developers.google.com/apis/api/iam.googleapis.com/overview?project=286134679826"}]}]}}
+[debug] [2026-08-25T19:23:47.083Z] [functions] service account IAM check errored, deploy may fail: Request to https://iam.googleapis.com/v1/projects/sabeelteacher/serviceAccounts/sabeelteacher@appspot.gserviceaccount.com:testIamPermissions had HTTP Error: 403, Identity and Access Management (IAM) API has not been used in project 286134679826 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/iam.googleapis.com/overview?project=286134679826 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry. {"name":"FirebaseError","children":[],"context":{"body":{"error":{"code":403,"message":"Identity and Access Management (IAM) API has not been used in project 286134679826 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/iam.googleapis.com/overview?project=286134679826 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.","status":"PERMISSION_DENIED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"SERVICE_DISABLED","domain":"googleapis.com","metadata":{"service":"iam.googleapis.com","containerInfo":"286134679826","activationUrl":"https://console.developers.google.com/apis/api/iam.googleapis.com/overview?project=286134679826","consumer":"projects/286134679826","serviceTitle":"Identity and Access Management (IAM) API"}},{"@type":"type.googleapis.com/google.rpc.LocalizedMessage","locale":"en-US","message":"Identity and Access Management (IAM) API has not been used in project 286134679826 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/iam.googleapis.com/overview?project=286134679826 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry."},{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Google developers console API activation","url":"https://console.developers.google.com/apis/api/iam.googleapis.com/overview?project=286134679826"}]}]}},"response":{"statusCode":403}},"exit":1,"message":"Request to https://iam.googleapis.com/v1/projects/sabeelteacher/serviceAccounts/sabeelteacher@appspot.gserviceaccount.com:testIamPermissions had HTTP Error: 403, Identity and Access Management (IAM) API has not been used in project 286134679826 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/iam.googleapis.com/overview?project=286134679826 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.","status":403}
+[info] 
+[info] === Deploying to 'sabeelteacher'...
+[info] 
+[info] i  deploying functions 
+[debug] [2026-08-25T19:23:47.088Z] No OAuth tokens found
+[debug] [2026-08-25T19:23:47.088Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/sabeelteacher/services/cloudresourcemanager.googleapis.com [none]
+[debug] [2026-08-25T19:23:47.088Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/sabeelteacher/services/cloudresourcemanager.googleapis.com  x-goog-user-project=sabeelteacher
+[debug] [2026-08-25T19:23:47.700Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/sabeelteacher/services/cloudresourcemanager.googleapis.com 403
+[debug] [2026-08-25T19:23:47.701Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/sabeelteacher/services/cloudresourcemanager.googleapis.com [omitted]
+[debug] [2026-08-25T19:23:47.701Z] Unable to check that https://cloudresourcemanager.googleapis.com is enabled on sabeelteacher. Calls to it will fail if it is not enabled
+[debug] [2026-08-25T19:23:47.701Z] No OAuth tokens found
+[debug] [2026-08-25T19:23:47.701Z] >>> [apiv2][query] GET https://cloudresourcemanager.googleapis.com/v1/projects/sabeelteacher [none]
+[debug] [2026-08-25T19:23:47.813Z] <<< [apiv2][status] GET https://cloudresourcemanager.googleapis.com/v1/projects/sabeelteacher 403
+[debug] [2026-08-25T19:23:47.814Z] <<< [apiv2][body] GET https://cloudresourcemanager.googleapis.com/v1/projects/sabeelteacher {"error":{"code":403,"message":"Cloud Resource Manager API has not been used in project 286134679826 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudresourcemanager.googleapis.com/overview?project=286134679826 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.","status":"PERMISSION_DENIED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"SERVICE_DISABLED","domain":"googleapis.com","metadata":{"activationUrl":"https://console.developers.google.com/apis/api/cloudresourcemanager.googleapis.com/overview?project=286134679826","containerInfo":"286134679826","service":"cloudresourcemanager.googleapis.com","serviceTitle":"Cloud Resource Manager API","consumer":"projects/286134679826"}},{"@type":"type.googleapis.com/google.rpc.LocalizedMessage","locale":"en-US","message":"Cloud Resource Manager API has not been used in project 286134679826 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudresourcemanager.googleapis.com/overview?project=286134679826 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry."},{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Google developers console API activation","url":"https://console.developers.google.com/apis/api/cloudresourcemanager.googleapis.com/overview?project=286134679826"}]}]}}
+[error] 
+[error] Error: Request to https://cloudresourcemanager.googleapis.com/v1/projects/sabeelteacher had HTTP Error: 403, Cloud Resource Manager API has not been used in project 286134679826 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudresourcemanager.googleapis.com/overview?project=286134679826 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.
+[debug] [2026-08-25T19:23:47.815Z] Error Context: {
+  "body": {
+    "error": {
+      "code": 403,
+      "message": "Cloud Resource Manager API has not been used in project 286134679826 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudresourcemanager.googleapis.com/overview?project=286134679826 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.",
+      "status": "PERMISSION_DENIED",
+      "details": [
+        {
+          "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+          "reason": "SERVICE_DISABLED",
+          "domain": "googleapis.com",
+          "metadata": {
+            "activationUrl": "https://console.developers.google.com/apis/api/cloudresourcemanager.googleapis.com/overview?project=286134679826",
+            "containerInfo": "286134679826",
+            "service": "cloudresourcemanager.googleapis.com",
+            "serviceTitle": "Cloud Resource Manager API",
+            "consumer": "projects/286134679826"
+          }
+        },
+        {
+          "@type": "type.googleapis.com/google.rpc.LocalizedMessage",
+          "locale": "en-US",
+          "message": "Cloud Resource Manager API has not been used in project 286134679826 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudresourcemanager.googleapis.com/overview?project=286134679826 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry."
+        },
+        {
+          "@type": "type.googleapis.com/google.rpc.Help",
+          "links": [
+            {
+              "description": "Google developers console API activation",
+              "url": "https://console.developers.google.com/apis/api/cloudresourcemanager.googleapis.com/overview?project=286134679826"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "response": {
+    "statusCode": 403
+  }
+}
