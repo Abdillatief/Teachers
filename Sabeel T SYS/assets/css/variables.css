@@ -1,0 +1,285 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Sabeel Academy Design System - SaaS Theme */
+  /* Primary: Sabeel Baby Blue (#4FA3D1) & Secondary: Deep (#1E6F9F) */
+  --primary-color: #4FA3D1;
+  --primary-hover: #1E6F9F;
+  --primary-active: #15557c;
+  --primary-light: rgba(79, 163, 209, 0.12);
+  --primary-subtle: rgba(79, 163, 209, 0.08);
+  --primary-border: rgba(79, 163, 209, 0.32);
+  
+  --secondary-color: #1E6F9F;
+  --secondary-hover: #15557c;
+  --secondary-light: rgba(30, 111, 159, 0.12);
+  
+  --accent-color: #4FA3D1;
+  --accent-light: rgba(79, 163, 209, 0.12);
+  
+  /* Semantic Status Colors */
+  --success: #10B981;
+  --success-hover: #059669;
+  --success-light: rgba(16, 185, 129, 0.12);
+  --success-border: rgba(16, 185, 129, 0.28);
+  
+  --warning: #F59E0B;
+  --warning-hover: #D97706;
+  --warning-light: rgba(245, 158, 11, 0.12);
+  --warning-border: rgba(245, 158, 11, 0.28);
+  
+  --danger: #EF4444;
+  --danger-hover: #DC2626;
+  --danger-light: rgba(239, 68, 68, 0.12);
+  --danger-border: rgba(239, 68, 68, 0.28);
+
+  --info: #4FA3D1;
+  --info-light: rgba(79, 163, 209, 0.12);
+  --info-border: rgba(79, 163, 209, 0.28);
+  
+  /* Light Mode Palette */
+  --bg-primary: #F8FAFC;
+  --bg-secondary: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --card-bg: #FFFFFF;
+  --bg-sidebar: #FFFFFF;
+  --bg-surface: #FFFFFF;
+  --bg-hover: #F1F5F9;
+  --bg-active: #E2E8F0;
+  --input-bg: #FFFFFF;
+  
+  /* Light Mode Typography */
+  --text-primary: #0F172A;
+  --text-secondary: #64748B;
+  --text-muted: #94A3B8;
+  --text-subtle: #CBD5E1;
+  
+  /* Light Mode Structural Borders & Radii */
+  --border-color: #E2E8F0;
+  --border-color-strong: #CBD5E1;
+  --border-radius: 8px;
+  --border-radius-sm: 6px;
+  --border-radius-lg: 12px;
+  --border-radius-pill: 9999px;
+  
+  /* Modern Elevation Shadows (Quiet & Subtle) */
+  --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.03);
+  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.03);
+  --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+  
+  /* Transitions */
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ==========================================================================
+   True Dark Mode (Pure Matte Black - Linear / VS Code / Notion style)
+   ========================================================================== */
+.dark-theme, body.dark-theme, html.dark-theme, [data-theme="dark"] {
+  --primary-color: #4FA3D1;
+  --primary-hover: #6cb3db;
+  --primary-active: #1E6F9F;
+  --primary-light: rgba(79, 163, 209, 0.15);
+  --primary-subtle: rgba(79, 163, 209, 0.1);
+  --primary-border: rgba(79, 163, 209, 0.35);
+
+  --secondary-color: #94A3B8;
+  --secondary-hover: #CBD5E1;
+  --secondary-light: #161616;
+
+  --accent-color: #4FA3D1;
+  --accent-light: rgba(79, 163, 209, 0.15);
+
+  /* Deep Matte Black Surfaces */
+  --bg-primary: #030303;    /* Base Body Canvas */
+  --bg-sidebar: #070707;    /* Sleek Sidebar */
+  --bg-secondary: #0D0D0D;  /* Standard Cards & Surfaces */
+  --bg-card: #0D0D0D;       /* Card Backgrounds */
+  --card-bg: #0D0D0D;
+  --bg-surface: #0D0D0D;    /* Elevated Panels */
+  --bg-hover: #161616;      /* Subtle Hover */
+  --bg-active: #1F2937;     /* Active Selection */
+  --input-bg: #111111;      /* Inputs */
+
+  /* High-Contrast Typography */
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --text-subtle: #475569;
+
+  /* Crisp Dark Borders */
+  --border-color: #1F2937;
+  --border-color-strong: #2E3A4B;
+
+  /* Status Colors in Dark Mode */
+  --success: #10B981;
+  --success-hover: #059669;
+  --success-light: rgba(16, 185, 129, 0.15);
+  --success-border: rgba(16, 185, 129, 0.35);
+
+  --warning: #F59E0B;
+  --warning-hover: #D97706;
+  --warning-light: rgba(245, 158, 11, 0.15);
+  --warning-border: rgba(245, 158, 11, 0.35);
+
+  --danger: #EF4444;
+  --danger-hover: #DC2626;
+  --danger-light: rgba(239, 68, 68, 0.15);
+  --danger-border: rgba(239, 68, 68, 0.35);
+
+  --info: #4FA3D1;
+  --info-light: rgba(79, 163, 209, 0.15);
+  --info-border: rgba(79, 163, 209, 0.35);
+
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.7);
+  --shadow-sm: 0 2px 4px 0 rgba(0, 0, 0, 0.8);
+  --shadow-md: 0 4px 8px -1px rgba(0, 0, 0, 0.85);
+  --shadow-lg: 0 8px 16px -2px rgba(0, 0, 0, 0.9);
+  --shadow-xl: 0 16px 24px -4px rgba(0, 0, 0, 0.95);
+}
+
+/* Base Body Application */
+body {
+  font-family: 'IBM Plex Sans Arabic', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* Button & Interactive Transition Standards */
+.btn {
+  font-family: inherit;
+  font-weight: 600;
+  transition: all var(--transition-fast) !important;
+}
+
+.btn:active {
+  transform: scale(0.985);
+}
+
+/* Dark Mode Universal Overrides */
+.dark-theme body {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark-theme .app-container {
+  background-color: var(--bg-primary) !important;
+}
+
+.dark-theme .sidebar {
+  background-color: var(--bg-sidebar) !important;
+  border-left-color: var(--border-color) !important;
+}
+
+.dark-theme .navbar {
+  background-color: var(--bg-sidebar) !important;
+  border-bottom-color: var(--border-color) !important;
+}
+
+.dark-theme .card,
+.dark-theme .modal-card,
+.dark-theme .metric-card,
+.dark-theme .op-metric-card,
+.dark-theme .op-quick-action,
+.dark-theme .table-container {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark-theme .form-control,
+.dark-theme input.form-control,
+.dark-theme select.form-control,
+.dark-theme textarea.form-control,
+.dark-theme input[type="text"],
+.dark-theme input[type="search"],
+.dark-theme input[type="date"],
+.dark-theme input[type="number"],
+.dark-theme input[type="password"],
+.dark-theme input[type="email"] {
+  background-color: var(--input-bg) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark-theme .form-control:focus,
+.dark-theme input:focus,
+.dark-theme select:focus,
+.dark-theme textarea:focus {
+  background-color: var(--input-bg) !important;
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 3px rgba(79, 163, 209, 0.25) !important;
+}
+
+.dark-theme select.form-control option {
+  background-color: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark-theme table th,
+.dark-theme .table th {
+  background-color: var(--bg-sidebar) !important;
+  color: var(--text-secondary) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+.dark-theme table td,
+.dark-theme .table td {
+  border-bottom: 1px solid var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark-theme tr:hover td,
+.dark-theme .table tbody tr:hover {
+  background-color: var(--bg-hover) !important;
+}
+
+.dark-theme .btn-secondary {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark-theme .btn-secondary:hover {
+  background-color: var(--bg-hover) !important;
+  border-color: var(--border-color-strong) !important;
+}
+
+/* Light leaks protection */
+.dark-theme [style*="background: #ffffff"],
+.dark-theme [style*="background:#ffffff"],
+.dark-theme [style*="background: #fff"],
+.dark-theme [style*="background:#fff"],
+.dark-theme [style*="background-color: #ffffff"],
+.dark-theme [style*="background-color:#ffffff"],
+.dark-theme [style*="background-color: #fff"],
+.dark-theme [style*="background-color:#fff"],
+.dark-theme [style*="background: white"],
+.dark-theme [style*="background-color: white"] {
+  background-color: var(--bg-card) !important;
+}
+
+.dark-theme [style*="background: #f8fafc"],
+.dark-theme [style*="background: #f1f5f9"],
+.dark-theme [style*="background: #e2e8f0"],
+.dark-theme [style*="background-color: #f8fafc"],
+.dark-theme [style*="background-color: #f1f5f9"],
+.dark-theme [style*="background-color: #e2e8f0"] {
+  background-color: var(--bg-primary) !important;
+}
+
+.dark-theme [style*="color: #0f172a"],
+.dark-theme [style*="color: #1e293b"],
+.dark-theme [style*="color: #334155"],
+.dark-theme [style*="color: #000000"],
+.dark-theme [style*="color: #000"],
+.dark-theme [style*="color: black"] {
+  color: var(--text-primary) !important;
+}
+
+[dir="rtl"] {
+  font-family: 'IBM Plex Sans Arabic', 'Inter', -apple-system, system-ui, sans-serif;
+}
