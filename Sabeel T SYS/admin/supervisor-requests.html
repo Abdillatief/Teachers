@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - مركز طلبات المشرفين</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+
+  <style>
+    .request-item-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-sm);
+    }
+    .request-item-card:hover {
+      border-color: var(--primary-color);
+      box-shadow: var(--shadow-md);
+    }
+    .request-item-card.pending {
+      border-right: 5px solid #f59e0b;
+    }
+    .request-item-card.approved {
+      border-right: 5px solid #10b981;
+    }
+    .request-item-card.rejected {
+      border-right: 5px solid #ef4444;
+    }
+    .tab-pill-btn {
+      padding: 0.55rem 1.25rem;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      transition: all 0.2s ease;
+    }
+    .tab-pill-btn.active {
+      background: var(--bg-card);
+      color: var(--primary-color);
+      border-color: var(--border-color);
+      box-shadow: var(--shadow-sm);
+    }
+    .stat-metric-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .reason-box {
+      background: var(--bg-primary);
+      border: 1px dashed var(--border-color);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 0.86rem;
+      color: var(--text-primary);
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    .response-box-approved {
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      border-radius: 8px;
+      padding: 0.65rem 0.9rem;
+      font-size: 0.82rem;
+      color: #065f46;
+      margin-top: 0.5rem;
+    }
+    .response-box-rejected {
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      border-radius: 8px;
+      padding: 0.65rem 0.9rem;
+      font-size: 0.82rem;
+      color: #991b1b;
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        
+        <!-- Header -->
+        <div style="margin-bottom: 1.75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+              <span class="badge" style="background: rgba(13, 148, 136, 0.15); color: var(--primary-color); font-weight: 700; padding: 2px 9px; border-radius: 6px; font-size: 0.76rem;">
+                القرارات الإدارية والتشغيلية
+              </span>
+            </div>
+            <h1 style="font-size: 1.55rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="inbox" style="color: var(--primary-color); width: 28px; height: 28px;"></i>
+              مركز طلبات المشرفين 📋
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">
+              مراجعة كافة العمليات والقرارات الإدارية المرفوعة من مديري التشغيل، مع ميزة الموافقة والتنفيذ الآلي الفوري أو الرفض المعلل.
+            </p>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <button id="btnRefresh" class="btn btn-secondary" style="font-size: 0.82rem; padding: 0.45rem 0.95rem; gap: 0.35rem;">
+              <i data-lucide="refresh-cw" style="width: 15px; height: 15px;"></i>
+              تحديث
+            </button>
+          </div>
+        </div>
+
+        <!-- Metrics Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1.75rem;">
+          <div class="stat-metric-card" style="border-right: 4px solid #f59e0b;">
+            <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center;">
+              <span>طلبات معلقة بانتظار قرارك</span>
+              <i data-lucide="clock" style="width: 17px; height: 17px; color: #f59e0b;"></i>
+            </div>
+            <h3 id="statPendingCount" style="font-size: 1.8rem; font-weight: 800; margin: 0; color: #f59e0b;">0</h3>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">تحتاج اتخاذ قرار بالموافقة أو الرفض</span>
+          </div>
+
+          <div class="stat-metric-card" style="border-right: 4px solid #10b981;">
+            <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center;">
+              <span>طلبات تمت الموافقة عليها</span>
+              <i data-lucide="check-circle" style="width: 17px; height: 17px; color: #10b981;"></i>
+            </div>
+            <h3 id="statApprovedCount" style="font-size: 1.8rem; font-weight: 800; margin: 0; color: #10b981;">0</h3>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">نُفذت في النظام تلقائياً بنجاح</span>
+          </div>
+
+          <div class="stat-metric-card" style="border-right: 4px solid #ef4444;">
+            <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center;">
+              <span>طلبات مرفوضة معللة</span>
+              <i data-lucide="x-circle" style="width: 17px; height: 17px; color: #ef4444;"></i>
+            </div>
+            <h3 id="statRejectedCount" style="font-size: 1.8rem; font-weight: 800; margin: 0; color: #ef4444;">0</h3>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">تم إرسال سبب الرفض للمشرف</span>
+          </div>
+
+          <div class="stat-metric-card" style="border-right: 4px solid var(--primary-color);">
+            <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center;">
+              <span>إجمالي سجل الطلبات</span>
+              <i data-lucide="files" style="width: 17px; height: 17px; color: var(--primary-color);"></i>
+            </div>
+            <h3 id="statTotalCount" style="font-size: 1.8rem; font-weight: 800; margin: 0; color: var(--text-primary);">0</h3>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">سجل الرقابة الإدارية المتكامل</span>
+          </div>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="card" style="margin-bottom: 1.5rem; padding: 0.85rem 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <!-- Tabs -->
+            <div style="display: flex; gap: 0.5rem; background: var(--bg-primary); padding: 0.25rem; border-radius: 10px; border: 1px solid var(--border-color);">
+              <button class="tab-pill-btn active" id="tabPendingBtn" data-status="pending">
+                <i data-lucide="clock" style="width: 14px; height: 14px;"></i>
+                طلبات معلقة
+                <span id="tabBadgePending" class="badge" style="background: rgba(245, 158, 11, 0.2); color: #d97706; padding: 1px 7px; font-size: 0.7rem; border-radius: 10px;">0</span>
+              </button>
+              <button class="tab-pill-btn" id="tabApprovedBtn" data-status="approved">
+                <i data-lucide="check" style="width: 14px; height: 14px;"></i>
+                معتمدة ومنفذة
+              </button>
+              <button class="tab-pill-btn" id="tabRejectedBtn" data-status="rejected">
+                <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+                مرفوضة
+              </button>
+              <button class="tab-pill-btn" id="tabAllBtn" data-status="all">
+                كافة الطلبات
+              </button>
+            </div>
+
+            <!-- Search -->
+            <div style="position: relative; min-width: 260px;">
+              <input type="text" id="requestsSearchInput" class="form-control" placeholder="بحث باسم المشرف أو الطالب أو سبب الطلب..." style="font-size: 0.82rem; padding-right: 2.2rem;">
+              <i data-lucide="search" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--text-muted);"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Requests List Container -->
+        <div id="requestsListContainer">
+          <div style="padding: 3rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.88rem;">
+            جاري تحميل طلبات المشرفين...
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Rejection Modal -->
+  <div id="rejectionModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 1rem;">
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; width: 100%; max-width: 480px; overflow: hidden; box-shadow: var(--shadow-lg);">
+      <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: var(--danger); display: flex; align-items: center; gap: 0.45rem;">
+          <i data-lucide="x-circle" style="width: 20px; height: 20px;"></i>
+          رفض طلب المشرف وتوضيح السبب
+        </h3>
+        <button id="btnCloseRejectModal" style="background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 1.2rem;">&times;</button>
+      </div>
+
+      <div style="padding: 1.25rem 1.5rem;">
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0 0 1rem 0;">
+          يرجى كتابة سبب رفض الطلب. سيتم إرسال هذا السبب إلى المشرف مباشرة في إشعار رسمي:
+        </p>
+
+        <div class="form-group" style="margin: 0;">
+          <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.4rem; display: block;">
+            سبب الرفض والملاحظات الإدارية:
+          </label>
+          <textarea id="rejectionReasonInput" class="form-control" rows="4" placeholder="مثال: يرجى التواصل أولاً مع ولي الأمر ومحاولة تعديل المواعيد قبل اتخاذ قرار الحذف..." style="font-size: 0.85rem; line-height: 1.5;"></textarea>
+        </div>
+      </div>
+
+      <div style="padding: 1rem 1.5rem; background: var(--bg-primary); border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 0.75rem;">
+        <button id="btnCancelRejectModal" class="btn btn-secondary" style="font-size: 0.82rem;">إلغاء</button>
+        <button id="btnConfirmRejection" class="btn btn-secondary" style="background: #dc2626; color: white; border-color: #dc2626; font-size: 0.82rem; font-weight: 700; gap: 0.35rem;">
+          <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+          تأكيد الرفض وإخطار المشرف
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { 
+      collection, 
+      onSnapshot, 
+      query, 
+      orderBy 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+    import { showCustomConfirm } from '../assets/js/shared/utils/helpers.js';
+    import { executeApprovedRequest, rejectSupervisorRequest } from '../assets/js/features/supervisor/supervisorRequestsExecutor.js';
+    import { getRequestTypeLabel } from '../assets/js/features/supervisor/supervisorService.js';
+
+    protectRoute('admin');
+
+    renderSidebar('supervisor-requests', 'admin');
+    renderNavbar('مركز طلبات المشرفين', { name: 'الإدارة المركزية' });
+
+    let allRequests = [];
+    let currentFilter = 'pending'; // 'pending' | 'approved' | 'rejected' | 'all'
+    let selectedRequestForReject = null;
+
+    const listContainer = document.getElementById('requestsListContainer');
+    const searchInput = document.getElementById('requestsSearchInput');
+    const statPending = document.getElementById('statPendingCount');
+    const statApproved = document.getElementById('statApprovedCount');
+    const statRejected = document.getElementById('statRejectedCount');
+    const statTotal = document.getElementById('statTotalCount');
+    const tabBadgePending = document.getElementById('tabBadgePending');
+
+    const tabPendingBtn = document.getElementById('tabPendingBtn');
+    const tabApprovedBtn = document.getElementById('tabApprovedBtn');
+    const tabRejectedBtn = document.getElementById('tabRejectedBtn');
+    const tabAllBtn = document.getElementById('tabAllBtn');
+
+    // Subscribe in real-time to supervisor requests collection
+    const qRequests = query(collection(db, "supervisorRequests"), orderBy("createdAt", "desc"));
+    onSnapshot(qRequests, (snapshot) => {
+      allRequests = [];
+      snapshot.forEach(docSnap => {
+        allRequests.push({ id: docSnap.id, ...docSnap.data() });
+      });
+
+      updateStats();
+      renderRequests();
+    }, (err) => {
+      console.error("Error fetching supervisor requests:", err);
+      listContainer.innerHTML = `
+        <div class="card" style="padding: 2.5rem; text-align: center; color: var(--danger); font-size: 0.9rem;">
+          تعذر تحميل طلبات المشرفين. يرجى التأكد من اتصال الإنترنت.
+        </div>
+      `;
+    });
+
+    function updateStats() {
+      const pending = allRequests.filter(r => r.status === 'pending').length;
+      const approved = allRequests.filter(r => r.status === 'approved').length;
+      const rejected = allRequests.filter(r => r.status === 'rejected').length;
+
+      if (statPending) statPending.textContent = pending;
+      if (statApproved) statApproved.textContent = approved;
+      if (statRejected) statRejected.textContent = rejected;
+      if (statTotal) statTotal.textContent = allRequests.length;
+      if (tabBadgePending) tabBadgePending.textContent = pending;
+    }
+
+    function renderRequests() {
+      if (!listContainer) return;
+
+      const searchTerm = (searchInput?.value || '').trim().toLowerCase();
+
+      const filtered = allRequests.filter(r => {
+        if (currentFilter !== 'all' && r.status !== currentFilter) {
+          return false;
+        }
+
+        if (searchTerm) {
+          const supName = (r.supervisorName || '').toLowerCase();
+          const targetName = (r.targetName || '').toLowerCase();
+          const title = (r.title || '').toLowerCase();
+          const reason = (r.reason || '').toLowerCase();
+          if (!supName.includes(searchTerm) && !targetName.includes(searchTerm) && !title.includes(searchTerm) && !reason.includes(searchTerm)) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        listContainer.innerHTML = `
+          <div class="card" style="padding: 3.5rem 1rem; text-align: center;">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.6rem; color: var(--text-muted);">
+              <i data-lucide="check-check" style="width: 36px; height: 36px; color: var(--primary-color); opacity: 0.7;"></i>
+              <strong style="font-size: 1.05rem; color: var(--text-primary);">لا توجد طلبات في هذا القسم</strong>
+              <span style="font-size: 0.82rem;">${currentFilter === 'pending' ? 'تم اتخاذ القرار في جميع طلبات المشرفين، ولا توجد طلبات معلقة حالياً.' : 'لا توجد طلبات تطابق الفلتر والبحث المطبق.'}</span>
+            </div>
+          </div>
+        `;
+        if (window.lucide) window.lucide.createIcons({ root: listContainer });
+        return;
+      }
+
+      listContainer.innerHTML = filtered.map(req => {
+        const isPending = req.status === 'pending';
+        const isApproved = req.status === 'approved';
+        const isRejected = req.status === 'rejected';
+
+        let statusBadge = '<span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #d97706; font-size: 0.76rem; font-weight: 700; padding: 3px 9px; border-radius: 6px;">قيد المراجعة ⏳</span>';
+        if (isApproved) {
+          statusBadge = '<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #059669; font-size: 0.76rem; font-weight: 700; padding: 3px 9px; border-radius: 6px;">تمت الموافقة والتنفيذ الآلي ✅</span>';
+        } else if (isRejected) {
+          statusBadge = '<span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #dc2626; font-size: 0.76rem; font-weight: 700; padding: 3px 9px; border-radius: 6px;">مرفوض ❌</span>';
+        }
+
+        let typeBadgeColor = 'background: rgba(2, 132, 199, 0.12); color: #0284c7;';
+        if (req.type === 'delete_student' || req.type === 'delete_teacher' || req.type === 'delete_session') {
+          typeBadgeColor = 'background: rgba(239, 68, 68, 0.12); color: #dc2626;';
+        } else if (req.type === 'suspend_teacher') {
+          typeBadgeColor = 'background: rgba(245, 158, 11, 0.12); color: #d97706;';
+        } else if (req.type === 'change_package') {
+          typeBadgeColor = 'background: rgba(139, 92, 246, 0.12); color: #8b5cf6;';
+        }
+
+        let formattedDate = '--';
+        if (req.createdAt) {
+          try {
+            const d = new Date(req.createdAt);
+            formattedDate = `${d.toLocaleDateString('ar-EG')} - ${d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`;
+          } catch (e) {
+            formattedDate = req.createdAt;
+          }
+        }
+
+        return `
+          <div class="request-item-card ${req.status}">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.75rem;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.4rem;">
+                  <span class="badge" style="${typeBadgeColor} font-size: 0.76rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">
+                    ${getRequestTypeLabel(req.type)}
+                  </span>
+                  ${statusBadge}
+                  <span style="font-size: 0.78rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.25rem;">
+                    <i data-lucide="clock" style="width: 13px; height: 13px;"></i>
+                    ${formattedDate}
+                  </span>
+                </div>
+                <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--text-primary); margin: 0 0 0.35rem 0;">
+                  ${req.title || 'طلب إداري'}
+                </h3>
+                <div style="font-size: 0.82rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap;">
+                  <span><strong>المشرف مقدم الطلب:</strong> <span style="color: var(--primary-color); font-weight: 700;">${req.supervisorName || 'مشرف'}</span></span>
+                  ${req.targetName ? `<span><strong>الهدف / المعني:</strong> <strong style="color: var(--text-primary);">${req.targetName}</strong></span>` : ''}
+                </div>
+              </div>
+
+              ${isPending ? `
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                  <button class="btn btn-primary btn-approve-request" data-id="${req.id}" style="font-size: 0.82rem; padding: 0.45rem 1rem; font-weight: 700; gap: 0.35rem; display: inline-flex; align-items: center;">
+                    <i data-lucide="check-check" style="width: 15px; height: 15px;"></i>
+                    موافقة وتنفيذ آلي
+                  </button>
+                  <button class="btn btn-secondary btn-reject-request" data-id="${req.id}" style="font-size: 0.82rem; padding: 0.45rem 0.9rem; font-weight: 700; color: var(--danger); border-color: rgba(239, 68, 68, 0.3); gap: 0.35rem; display: inline-flex; align-items: center;">
+                    <i data-lucide="x" style="width: 15px; height: 15px;"></i>
+                    رفض الطلب
+                  </button>
+                </div>
+              ` : ''}
+            </div>
+
+            <!-- Reason Box -->
+            <div class="reason-box">
+              <div style="font-size: 0.76rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.25rem;">
+                السبب والمبرر المرفوع من المشرف:
+              </div>
+              <div>${req.reason || 'لا يوجد تفصيل إضافي.'}</div>
+            </div>
+
+            <!-- Execution or Rejection Result Box -->
+            ${isApproved ? `
+              <div class="response-box-approved">
+                <div style="display: flex; align-items: center; gap: 0.4rem; font-weight: 700; margin-bottom: 0.15rem;">
+                  <i data-lucide="check-circle" style="width: 14px; height: 14px;"></i>
+                  <span>تم التنفيذ الآلي بنجاح بواسطة الإدارة العامة</span>
+                </div>
+                <div>${req.executionResult || req.adminResponse || 'تم اعتماد وتطبيق الطلب.'}</div>
+                ${req.reviewedBy ? `<div style="font-size: 0.72rem; opacity: 0.85; margin-top: 0.2rem;">المعتمد: ${req.reviewedBy}</div>` : ''}
+              </div>
+            ` : ''}
+
+            ${isRejected ? `
+              <div class="response-box-rejected">
+                <div style="display: flex; align-items: center; gap: 0.4rem; font-weight: 700; margin-bottom: 0.15rem;">
+                  <i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i>
+                  <span>سبب رفض الطلب الموجه للمشرف:</span>
+                </div>
+                <div>${req.adminResponse || 'لم يتم استيفاء المسوغات الإدارية.'}</div>
+                ${req.reviewedBy ? `<div style="font-size: 0.72rem; opacity: 0.85; margin-top: 0.2rem;">بواسطة: ${req.reviewedBy}</div>` : ''}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+
+      if (window.lucide) window.lucide.createIcons({ root: listContainer });
+
+      // Bind Approve Buttons
+      listContainer.querySelectorAll('.btn-approve-request').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const reqId = btn.dataset.id;
+          const reqObj = allRequests.find(r => r.id === reqId);
+          if (!reqObj) return;
+
+          showCustomConfirm(
+            `هل أنت متأكد من الموافقة على (${reqObj.title})؟ سيقوم النظام بتنفيذ العملية المطلوبة تلقائياً في قاعدة البيانات وتحديث السجلات فوراً.`,
+            async () => {
+              btn.disabled = true;
+              btn.innerHTML = `<i class="animate-spin" data-lucide="loader-2"></i> جاري التنفيذ...`;
+              if (window.lucide) window.lucide.createIcons({ root: btn });
+
+              try {
+                const res = await executeApprovedRequest(reqObj);
+                Toast.success(`تمت الموافقة بنجاح: ${res.message}`);
+              } catch (err) {
+                console.error("Error executing approved request:", err);
+                Toast.danger(`حدث خطأ أثناء تنفيذ الطلب: ${err.message || ''}`);
+                btn.disabled = false;
+                btn.textContent = 'موافقة وتنفيذ آلي';
+              }
+            }
+          );
+        });
+      });
+
+      // Bind Reject Buttons
+      listContainer.querySelectorAll('.btn-reject-request').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const reqId = btn.dataset.id;
+          const reqObj = allRequests.find(r => r.id === reqId);
+          if (!reqObj) return;
+
+          selectedRequestForReject = reqObj;
+          document.getElementById('rejectionReasonInput').value = '';
+          document.getElementById('rejectionModal').style.display = 'flex';
+        });
+      });
+    }
+
+    // Tabs control
+    tabPendingBtn.addEventListener('click', () => setTab('pending'));
+    tabApprovedBtn.addEventListener('click', () => setTab('approved'));
+    tabRejectedBtn.addEventListener('click', () => setTab('rejected'));
+    tabAllBtn.addEventListener('click', () => setTab('all'));
+
+    function setTab(status) {
+      currentFilter = status;
+      [tabPendingBtn, tabApprovedBtn, tabRejectedBtn, tabAllBtn].forEach(b => b.classList.remove('active'));
+      if (status === 'pending') tabPendingBtn.classList.add('active');
+      else if (status === 'approved') tabApprovedBtn.classList.add('active');
+      else if (status === 'rejected') tabRejectedBtn.classList.add('active');
+      else tabAllBtn.classList.add('active');
+      renderRequests();
+    }
+
+    searchInput.addEventListener('input', renderRequests);
+    document.getElementById('btnRefresh').addEventListener('click', () => {
+      renderRequests();
+      Toast.info("تم تحديث القائمة.");
+    });
+
+    // Rejection Modal Logic
+    const rejectionModal = document.getElementById('rejectionModal');
+    const closeRejectModal = () => {
+      rejectionModal.style.display = 'none';
+      selectedRequestForReject = null;
+    };
+
+    document.getElementById('btnCloseRejectModal').addEventListener('click', closeRejectModal);
+    document.getElementById('btnCancelRejectModal').addEventListener('click', closeRejectModal);
+
+    document.getElementById('btnConfirmRejection').addEventListener('click', async () => {
+      if (!selectedRequestForReject) return;
+      const reason = document.getElementById('rejectionReasonInput').value.trim();
+      if (!reason) {
+        Toast.warning("يرجى كتابة سبب الرفض لإبلاغ المشرف.");
+        return;
+      }
+
+      const confirmBtn = document.getElementById('btnConfirmRejection');
+      confirmBtn.disabled = true;
+
+      try {
+        await rejectSupervisorRequest(selectedRequestForReject.id, selectedRequestForReject, reason);
+        Toast.info("تم رفض الطلب بنجاح وإرسال السبب للمشرف.");
+        closeRejectModal();
+      } catch (err) {
+        console.error("Error rejecting request:", err);
+        Toast.danger("حدث خطأ أثناء رفض الطلب.");
+      } finally {
+        confirmBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

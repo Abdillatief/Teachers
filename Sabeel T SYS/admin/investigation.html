@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - مركز التحقيق وإدارة العمليات (Investigation Center)</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* Linear / Stripe / Notion Inspired Aesthetics for Investigation Center */
+    .investigation-header-card {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #334155 100%);
+      color: #ffffff;
+      border-radius: 16px;
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 12px 30px -8px rgba(15, 23, 42, 0.4);
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .investigation-header-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(14, 165, 233, 0.12) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    /* Top Metrics Stats Grid */
+    .investigation-metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .inv-metric-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .inv-metric-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.06);
+    }
+    .inv-metric-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* Tabs Navigation Bar */
+    .investigation-tabs-nav {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 2px solid var(--border-color);
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.25rem;
+      overflow-x: auto;
+    }
+    .investigation-tab-btn {
+      padding: 0.75rem 1.25rem;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-weight: 700;
+      font-size: 0.95rem;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .investigation-tab-btn:hover {
+      color: var(--text-primary);
+      background: var(--bg-hover, rgba(14, 165, 233, 0.05));
+    }
+    .investigation-tab-btn.active {
+      color: var(--primary-color);
+      background: var(--bg-card);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      border-bottom: 3px solid var(--primary-color);
+    }
+
+    /* Tab Panes */
+    .investigation-tab-pane {
+      display: none;
+    }
+    .investigation-tab-pane.active {
+      display: block;
+    }
+
+    /* Tables */
+    .inv-table-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+    .inv-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: right;
+      font-size: 0.88rem;
+    }
+    .inv-table th {
+      background: var(--bg-secondary, rgba(0,0,0,0.02));
+      color: var(--text-muted);
+      font-weight: 700;
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--border-color);
+      white-space: nowrap;
+    }
+    .inv-table td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--border-color);
+      vertical-align: middle;
+    }
+    .inv-table tr.inv-table-row {
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+    .inv-table tr.inv-table-row:hover {
+      background-color: var(--bg-hover, rgba(14, 165, 233, 0.04));
+    }
+
+    /* Badges */
+    .badge {
+      padding: 0.25rem 0.6rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .badge-success { background: rgba(34, 197, 94, 0.12); color: #16a34a; }
+    .badge-warning { background: rgba(234, 179, 8, 0.12); color: #ca8a04; }
+    .badge-danger { background: rgba(239, 68, 68, 0.12); color: #dc2626; }
+    .badge-info { background: rgba(14, 165, 233, 0.12); color: #0284c7; }
+    .badge-secondary { background: rgba(148, 163, 184, 0.15); color: #64748b; }
+
+    /* Drawers */
+    .inv-drawer-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(3px);
+      z-index: 9998;
+    }
+    .inv-drawer-overlay.active {
+      display: block;
+    }
+
+    .inv-side-drawer {
+      position: fixed;
+      top: 0;
+      left: -600px;
+      width: 580px;
+      max-width: 90vw;
+      height: 100vh;
+      background: var(--bg-card);
+      box-shadow: 10px 0 30px rgba(0,0,0,0.2);
+      z-index: 9999;
+      transition: left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      direction: rtl;
+    }
+    .inv-side-drawer.open {
+      left: 0;
+    }
+
+    .inv-drawer-header {
+      padding: 1.25rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-secondary, rgba(0,0,0,0.02));
+    }
+    .inv-drawer-body {
+      padding: 1.25rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    /* Inspector Diagnostic Panel inside Drawer */
+    .inspector-panel {
+      background: rgba(14, 165, 233, 0.05);
+      border: 1px solid rgba(14, 165, 233, 0.2);
+      border-radius: 12px;
+      padding: 1rem;
+    }
+    .inspector-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px dashed var(--border-color);
+    }
+    .inspector-checks-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    .check-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+    }
+    .check-item.pass i { color: #16a34a; }
+    .check-item.fail i { color: #dc2626; }
+
+    .drawer-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 1rem;
+    }
+    .drawer-section-title {
+      font-size: 0.92rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+      font-size: 0.83rem;
+    }
+    .detail-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+    .detail-label {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .detail-val {
+      color: var(--text-primary);
+    }
+
+    .drawer-actions-toolbar {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-color);
+    }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.6);
+      z-index: 10000;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      backdrop-filter: blur(4px);
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 550px;
+      padding: 1.5rem;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    }
+  </style>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+
+</head>
+<body class="bg-primary text-primary">
+
+  <div id="appSidebar" class="sidebar"></div>
+
+  <main class="main-wrapper" id="mainWrapper">
+    <header id="appNavbar" class="navbar"></header>
+
+    <div class="content-container">
+
+      <!-- PAGE HEADER CARD -->
+      <div class="investigation-header-card">
+        <div style="position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.35rem;">
+              <span class="badge badge-info" style="background: rgba(255,255,255,0.2); color: white;">المحرك الرقابي والتحقيقي 🔎</span>
+              <span style="color: rgba(255,255,255,0.7); font-size: 0.8rem; font-family: monospace;">Investigation Center</span>
+            </div>
+            <h1 style="font-size: 1.75rem; font-weight: 800; margin: 0 0 0.4rem 0; color: #ffffff;">
+              مركز التحقيق وإدارة العمليات
+            </h1>
+            <p style="margin: 0; color: rgba(255,255,255,0.8); font-size: 0.9rem; max-width: 650px; line-height: 1.5;">
+              المرجع القيادي الموحد للأدمن لمراجعة أي حصة أو معاملة مالية، معرفة (ماذا حدث؟ ولماذا؟ ومن قام به؟) وإصلاح وتعديل البيانات فوراً من نفس المكان.
+            </p>
+          </div>
+          <div>
+            <button id="btnRefreshAllInvData" class="btn btn-secondary" style="background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3);">
+              <i data-lucide="refresh-cw"></i>
+              <span>تحديث البيانات المباشرة</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TOP METRICS STATS BAR -->
+      <div class="investigation-metrics-grid">
+        <div class="inv-metric-card">
+          <div class="inv-metric-icon" style="background: rgba(14, 165, 233, 0.1); color: #0284c7;">
+            <i data-lucide="book-open"></i>
+          </div>
+          <div>
+            <div class="text-xs text-muted font-semibold">إجمالي الحصص</div>
+            <div class="text-xl font-bold text-primary font-mono" id="statTotalLessons">0</div>
+          </div>
+        </div>
+
+        <div class="inv-metric-card">
+          <div class="inv-metric-icon" style="background: rgba(34, 197, 94, 0.1); color: #16a34a;">
+            <i data-lucide="wallet"></i>
+          </div>
+          <div>
+            <div class="text-xs text-muted font-semibold">المعاملات المالية</div>
+            <div class="text-xl font-bold text-primary font-mono" id="statTotalFinancial">0</div>
+          </div>
+        </div>
+
+        <div class="inv-metric-card">
+          <div class="inv-metric-icon" style="background: rgba(168, 85, 247, 0.1); color: #9333ea;">
+            <i data-lucide="history"></i>
+          </div>
+          <div>
+            <div class="text-xs text-muted font-semibold">سجلات الأنشطة</div>
+            <div class="text-xl font-bold text-primary font-mono" id="statTotalLogs">0</div>
+          </div>
+        </div>
+
+        <div class="inv-metric-card">
+          <div class="inv-metric-icon" style="background: rgba(245, 158, 11, 0.1); color: #d97706;">
+            <i data-lucide="users"></i>
+          </div>
+          <div>
+            <div class="text-xs text-muted font-semibold">الطلاب بالمنظومة</div>
+            <div class="text-xl font-bold text-primary font-mono" id="statTotalStudents">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN TABS NAVIGATION (4 TABS ONLY) -->
+      <div class="investigation-tabs-nav">
+        <button class="investigation-tab-btn active" data-tab="lessons">
+          <i data-lucide="calendar"></i>
+          <span>1️⃣ Lessons (سجل الحصص الشامل)</span>
+        </button>
+        <button class="investigation-tab-btn" data-tab="financial">
+          <i data-lucide="banknote"></i>
+          <span>2️⃣ Financial Records (الحركات المالية)</span>
+        </button>
+        <button class="investigation-tab-btn" data-tab="activity">
+          <i data-lucide="shield-alert"></i>
+          <span>3️⃣ Activity (الصندوق الأسود والسجل)</span>
+        </button>
+        <button class="investigation-tab-btn" data-tab="explorer">
+          <i data-lucide="search"></i>
+          <span>4️⃣ Explorer (المستكشف الشامل)</span>
+        </button>
+      </div>
+
+      <!-- LOADER INDICATOR -->
+      <div id="investigationLoader" style="display: none; justify-content: center; align-items: center; padding: 3rem;">
+        <div class="spinner" style="width: 32px; height: 32px; border: 3px solid var(--border-color); border-top-color: var(--primary-color); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+        <span style="margin-right: 0.75rem; font-weight: 700; color: var(--text-muted);">جاري فحص وتحديث بيانات المنظومة...</span>
+      </div>
+
+      <!-- TAB 1: LESSONS PANE -->
+      <div id="pane-lessons" class="investigation-tab-pane active">
+        <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; flex-wrap: wrap;">
+          <div style="flex: 1; min-width: 250px;">
+            <input type="text" id="lessonsSearchInput" class="form-control" placeholder="ابحث باسم الطالب، المعلم، التاريخ، أو رقم الحصة...">
+          </div>
+          <div style="width: 200px;">
+            <select id="lessonsFilterStatus" class="form-control">
+              <option value="all">جميع الحصص</option>
+              <option value="trials">حصص تجريبية 🎯</option>
+              <option value="uncalculated">بها مشكلة في الاحتساب ⚠️</option>
+              <option value="missing_report">تقرير غير موجود 📝</option>
+              <option value="edited">بها تعديلات إدارية ⚙️</option>
+              <option value="completed">حصص مكتملة ✔</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="inv-table-container">
+          <table class="inv-table">
+            <thead>
+              <tr>
+                <th>اسم الطالب</th>
+                <th>اسم المعلم</th>
+                <th>التاريخ</th>
+                <th>الوقت والمدة</th>
+                <th>وقت التسجيل</th>
+                <th>سُجلت بواسطة</th>
+                <th>آخر تعديل</th>
+                <th style="text-align: left;">إجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="lessonsTableBody">
+              <!-- Loaded via investigationController.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 2: FINANCIAL RECORDS PANE -->
+      <div id="pane-financial" class="investigation-tab-pane">
+        <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; flex-wrap: wrap;">
+          <div style="flex: 1; min-width: 250px;">
+            <input type="text" id="finSearchInput" class="form-control" placeholder="ابحث باسم المعلم أو السبب...">
+          </div>
+          <div style="width: 200px;">
+            <select id="finFilterType" class="form-control">
+              <option value="all">جميع الحركات المالية</option>
+              <option value="session_earnings">مستحقات حصة</option>
+              <option value="bonus">مكافآت 🎁</option>
+              <option value="deduction">خصومات ⚠️</option>
+              <option value="manual_adjustment">تعديل يدوي ⚙️</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="inv-table-container">
+          <table class="inv-table">
+            <thead>
+              <tr>
+                <th>اسم المعلم</th>
+                <th>نوع الحركة</th>
+                <th>القيمة</th>
+                <th>الرصيد قبل</th>
+                <th>الرصيد بعد</th>
+                <th>سبب الحركة وأصلها</th>
+                <th>التاريخ والوقت</th>
+                <th>أنشئت بواسطة</th>
+              </tr>
+            </thead>
+            <tbody id="financialTableBody">
+              <!-- Loaded via investigationController.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 3: ACTIVITY PANE -->
+      <div id="pane-activity" class="investigation-tab-pane">
+        <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; flex-wrap: wrap;">
+          <div style="flex: 1; min-width: 250px;">
+            <input type="text" id="actSearchInput" class="form-control" placeholder="ابحث باسم المستخدم أو نوع الحركة...">
+          </div>
+          <div style="width: 200px;">
+            <select id="actFilterCategory" class="form-control">
+              <option value="all">جميع الأنشطة والسجلات</option>
+              <option value="session">الحصص والتسجيل</option>
+              <option value="auth">تسجيل الدخول/الخروج</option>
+              <option value="report">التقارير</option>
+              <option value="salary">الرواتب والمالية</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="inv-table-container">
+          <table class="inv-table">
+            <thead>
+              <tr>
+                <th>الوقت والتاريخ</th>
+                <th>المستخدم</th>
+                <th>المصدر</th>
+                <th>نوع العملية والتفاصيل</th>
+                <th>الكيان</th>
+                <th style="text-align: left;">إجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="activityTableBody">
+              <!-- Loaded via investigationController.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 4: EXPLORER PANE -->
+      <div id="pane-explorer" class="investigation-tab-pane">
+        <div style="margin-bottom: 1.5rem;">
+          <div style="position: relative;">
+            <input type="text" id="explorerSearchInput" class="form-control" style="padding-right: 2.8rem; font-size: 1.05rem; height: 48px; border-radius: 12px;" placeholder="اكتب اسم طالب، اسم معلم، ولي أمر، رقم حصة، أو رقم معلم لفتح الشجرة الشاملة...">
+            <i data-lucide="search" style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); width: 20px; height: 20px;"></i>
+          </div>
+        </div>
+
+        <div id="explorerResultsContainer">
+          <!-- Dynamically populated via Explorer renderer -->
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- OVERLAY BACKDROP -->
+  <div id="investigationDrawerOverlay" class="inv-drawer-overlay"></div>
+
+  <!-- MAIN INVESTIGATION SIDE DRAWER -->
+  <div id="investigationSideDrawer" class="inv-side-drawer">
+    <div class="inv-drawer-header">
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <i data-lucide="inspect" style="color: var(--primary-color);"></i>
+        <h3 id="drawerTitleText" style="margin: 0; font-size: 1.1rem; font-weight: 800; color: var(--text-primary);">فحص وحجم التفاصيل</h3>
+      </div>
+      <button class="btn btn-secondary close-drawer-btn" style="padding: 0.35rem; border-radius: 50%;">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <div class="inv-drawer-body" id="drawerBodyContent">
+      <!-- Dynamic Drawer Content -->
+    </div>
+  </div>
+
+  <!-- RELATED DATA SIDE DRAWER -->
+  <div id="relatedDataDrawer" class="inv-side-drawer" style="z-index: 10001; width: 520px;">
+    <div class="inv-drawer-header" style="background: rgba(14, 165, 233, 0.08);">
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <i data-lucide="network" style="color: var(--primary-color);"></i>
+        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: var(--text-primary);">البيانات المرتبطة (Related Data Graph)</h3>
+      </div>
+      <button class="btn btn-secondary close-drawer-btn" style="padding: 0.35rem; border-radius: 50%;">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <div class="inv-drawer-body" id="relatedDataBodyContent">
+      <!-- Dynamic Related Data Tree -->
+    </div>
+  </div>
+
+  <!-- EDIT SESSION MODAL -->
+  <div id="editSessionModal" class="modal-overlay">
+    <div class="modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+        <h3 style="margin: 0; font-weight: 800; font-size: 1.1rem;">تعديل بيانات الحصة (Edit Session)</h3>
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('editSessionModal').classList.remove('active')" style="padding: 0.35rem; border-radius: 50%;">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <form id="editSessionForm">
+        <input type="hidden" id="editSessionId">
+        
+        <div class="form-group mb-3">
+          <label class="form-label font-semibold text-xs">تاريخ الحصة:</label>
+          <input type="date" id="editSessionDate" class="form-control" required>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div>
+            <label class="form-label font-semibold text-xs">وقت البداية:</label>
+            <input type="text" id="editSessionStartTime" class="form-control" placeholder="مثال: 05:30 مساءً">
+          </div>
+          <div>
+            <label class="form-label font-semibold text-xs">المدة (بالدقائق):</label>
+            <input type="number" id="editSessionDuration" class="form-control" value="60">
+          </div>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="form-label font-semibold text-xs">قيمة الحصة (ج.م):</label>
+          <input type="number" id="editSessionPrice" class="form-control" step="0.5">
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="form-label font-semibold text-xs">السورة / المفاهيم:</label>
+          <input type="text" id="editSessionSurah" class="form-control">
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="form-label font-semibold text-xs">ملاحظات التقرير:</label>
+          <textarea id="editSessionNotes" class="form-control" rows="2"></textarea>
+        </div>
+
+        <div class="form-group mb-4" style="display: flex; align-items: center; gap: 0.5rem;">
+          <input type="checkbox" id="editSessionCalculated" style="width: 18px; height: 18px;">
+          <label for="editSessionCalculated" class="font-semibold text-xs" style="cursor: pointer;">
+            محتسبة في المرتب الحالي للمعلم
+          </label>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('editSessionModal').classList.remove('active')">إلغاء</button>
+          <button type="submit" class="btn btn-primary">حفظ التغييرات 💾</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- PAGE INVOCATION SCRIPT -->
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { initInvestigationCenter, loadAllSystemData, handleSaveSessionEdit } from '../assets/js/features/audit/investigationController.js';
+
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        window.location.href = '../index.html';
+        return;
+      }
+
+      try {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        const userData = userDoc.exists() ? userDoc.data() : {};
+
+        if (userData.role !== 'admin' && userData.roleName !== 'أدمن' && userData.roleName !== 'مشرف') {
+          window.location.href = '../teacher/dashboard.html';
+          return;
+        }
+
+        renderNavbar('مركز التحقيق وإدارة العمليات', { name: userData.name || user.displayName, roleName: 'مدير النظام' });
+        renderSidebar('investigation', 'admin');
+
+        // Initialize investigation controller
+        await initInvestigationCenter();
+
+        // Refresh button
+        document.getElementById('btnRefreshAllInvData')?.addEventListener('click', async () => {
+          await loadAllSystemData();
+          if (window.lucide) window.lucide.createIcons();
+        });
+
+        // Form save listener
+        document.getElementById('editSessionForm')?.addEventListener('submit', handleSaveSessionEdit);
+
+        // Filter event listeners
+        ['lessonsSearchInput', 'lessonsFilterStatus', 'finSearchInput', 'finFilterType', 'actSearchInput', 'actFilterCategory'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) {
+            const trigger = () => window.dispatchEvent(new CustomEvent('invFilterChanged'));
+            el.addEventListener('input', trigger);
+            el.addEventListener('change', trigger);
+          }
+        });
+
+        if (window.lucide) window.lucide.createIcons();
+      } catch (err) {
+        console.error("Auth check error in Investigation Center:", err);
+      }
+    });
+  </script>
+</body>
+</html>
