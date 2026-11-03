@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - الحلقات والمجموعات الجماعية (المشرف)</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0284c7">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+
+  <style>
+    .group-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s ease;
+    }
+    .group-card:hover {
+      border-color: var(--primary-color);
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.45rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="users-round" style="color: var(--primary-color); width: 26px; height: 26px;"></i>
+              الحلقات والمجموعات الجماعية
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; margin-top: 0.25rem;">
+              متابعة الحلقات القرآنية الجماعية، المعلمين المسؤولين، ومواعيد انعقاد الحلقات.
+            </p>
+          </div>
+        </div>
+
+        <!-- Metric Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="card" style="padding: 1.15rem; border-right: 4px solid var(--primary-color);">
+            <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">إجمالي الحلقات النشطة</div>
+            <h3 id="statTotalGroups" style="font-size: 1.6rem; font-weight: 800; margin: 0.35rem 0 0 0; color: var(--text-primary);">0</h3>
+          </div>
+          <div class="card" style="padding: 1.15rem; border-right: 4px solid #8b5cf6;">
+            <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">إجمالي طلاب الحلقات</div>
+            <h3 id="statTotalGroupStudents" style="font-size: 1.6rem; font-weight: 800; margin: 0.35rem 0 0 0; color: #8b5cf6;">0</h3>
+          </div>
+        </div>
+
+        <!-- Groups Grid -->
+        <div id="groupsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
+          <div style="grid-column: 1 / -1; padding: 3rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+            جاري تحميل الحلقات الجماعية...
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { 
+      collection, 
+      onSnapshot 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    protectRoute('supervisor', 'manageGroups');
+
+    renderSidebar('groups', 'supervisor');
+    renderNavbar('المجموعات الجماعية', { name: 'المشرف الأكاديمي' });
+
+    let allGroups = [];
+    let groupStudentsCount = {};
+
+    const groupsGrid = document.getElementById('groupsGrid');
+    const statTotalGroups = document.getElementById('statTotalGroups');
+    const statTotalStudents = document.getElementById('statTotalGroupStudents');
+
+    // Count students per group
+    onSnapshot(collection(db, "students"), (snapshot) => {
+      groupStudentsCount = {};
+      let totalGroupStudents = 0;
+      snapshot.forEach(docSnap => {
+        const s = docSnap.data();
+        if (s.groupId) {
+          groupStudentsCount[s.groupId] = (groupStudentsCount[s.groupId] || 0) + 1;
+          totalGroupStudents++;
+        }
+      });
+      statTotalStudents.textContent = totalGroupStudents;
+      renderGroups();
+    });
+
+    // Subscribe to groups
+    onSnapshot(collection(db, "groups"), (snapshot) => {
+      allGroups = [];
+      snapshot.forEach(docSnap => {
+        allGroups.push({ id: docSnap.id, ...docSnap.data() });
+      });
+
+      statTotalGroups.textContent = allGroups.length;
+      renderGroups();
+    }, (err) => {
+      console.error("Error loading groups:", err);
+      groupsGrid.innerHTML = `
+        <div style="grid-column: 1 / -1; padding: 2rem; text-align: center; color: var(--danger); font-size: 0.88rem;">
+          تعذر تحميل الحلقات الجماعية.
+        </div>
+      `;
+    });
+
+    function renderGroups() {
+      if (allGroups.length === 0) {
+        groupsGrid.innerHTML = `
+          <div style="grid-column: 1 / -1; padding: 3rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.88rem;">
+            لا توجد حلقات أو مجموعات جماعية مسجلة حالياً.
+          </div>
+        `;
+        return;
+      }
+
+      groupsGrid.innerHTML = allGroups.map(g => {
+        const studentCount = groupStudentsCount[g.id] || (g.studentIds ? g.studentIds.length : 0);
+        const days = g.days ? (Array.isArray(g.days) ? g.days.join('، ') : g.days) : (g.day || 'غير محدد');
+
+        return `
+          <div class="group-card">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <strong style="font-size: 1rem; color: var(--text-primary); display: block;">${g.name || 'حلقة جماعية'}</strong>
+                <span style="font-size: 0.78rem; color: var(--text-muted);">المعلم: ${g.teacherName || 'غير مسند'}</span>
+              </div>
+              <span class="badge" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6; font-size: 0.72rem; padding: 2px 7px;">حلقة</span>
+            </div>
+
+            <div style="background: var(--bg-primary); border-radius: 8px; padding: 0.65rem 0.85rem; font-size: 0.8rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 0.35rem;">
+              <div><strong>أيام الانعقاد:</strong> ${days}</div>
+              <div><strong>الموعد:</strong> ${g.time || '--:--'}</div>
+              <div><strong>الطلاب المسجلون:</strong> <span style="font-weight: 700; color: var(--primary-color);">${studentCount} طالب</span></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+  </script>
+</body>
+</html>
