@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - المجموعات والجماعي</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(0,0,0,0.6); z-index: 10000; align-items: center; justify-content: center; padding: 1rem;
+      backdrop-filter: blur(4px);
+    }
+    .modal-card {
+      background-color: var(--bg-secondary); border-radius: var(--border-radius);
+      border: 1px solid var(--border-color); width: 100%; max-width: 580px; padding: 1.75rem;
+      max-height: 90vh; overflow-y: auto; box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+    }
+    .group-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 1rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .group-card:hover {
+      border-color: var(--primary-color);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    .student-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .edit-modal-section {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 1.1rem;
+      margin-bottom: 1.25rem;
+    }
+    .edit-modal-section-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin: 0 0 0.85rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .student-manage-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.6rem 0.85rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.85rem;
+    }
+  </style>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        
+        <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="users-round" style="color: var(--primary-color);"></i>
+              المجموعات الجماعية الخاصة بي
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">
+              استعراض المجموعات المخصصة لك، تعديل مواعيد الحصص، وإرسال طلبات إضافة أو إزالة الطلاب للإدارة.
+            </p>
+          </div>
+        </div>
+
+        <!-- Pending Requests Banner -->
+        <div id="teacherPendingGroupRequestsContainer" style="margin-bottom: 1.5rem; display: none;"></div>
+
+        <!-- Groups Grid -->
+        <div id="teacherGroupsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.25rem;">
+          <p style="text-align: center; color: var(--text-muted); padding: 2rem; grid-column: 1 / -1;">جاري تحميل المجموعات الخاصة بك...</p>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal: Edit Group (Schedule & Student Requests) -->
+  <div id="editGroupModal" class="modal-overlay">
+    <div class="modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+        <div>
+          <h3 style="font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;" id="editGroupModalTitle">
+            <i data-lucide="edit-3" style="color: var(--primary-color);"></i> تعديل المجموعة
+          </h3>
+          <span style="font-size: 0.8rem; color: var(--text-secondary);" id="editGroupModalSubtitle">تعديل موعد الحصة وإرسال طلبات إضافة وإزالة الطلاب</span>
+        </div>
+        <span class="btn-close-modal" id="btnCloseEditGroupModal" style="cursor: pointer; padding: 0.25rem;"><i data-lucide="x"></i></span>
+      </div>
+
+      <input type="hidden" id="editingGroupId">
+
+      <!-- Section 1: Schedule & Notes Modification -->
+      <form id="editScheduleForm" class="edit-modal-section">
+        <div class="edit-modal-section-title">
+          <i data-lucide="calendar-clock" style="color: var(--primary-color); width: 18px; height: 18px;"></i>
+          <span>1. تعديل موعد الحصة والملاحظات</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-bottom: 0.85rem;">
+          <div class="form-group" style="margin: 0;">
+            <label for="inputEditGroupDay" style="font-weight: 700; font-size: 0.82rem; margin-bottom: 0.35rem; display: block;">يوم الحصة</label>
+            <select id="inputEditGroupDay" class="form-control" required style="font-weight: 600;">
+              <option value="السبت">السبت</option>
+              <option value="الأحد">الأحد</option>
+              <option value="الاثنين">الاثنين</option>
+              <option value="الثلاثاء">الثلاثاء</option>
+              <option value="الأربعاء">الأربعاء</option>
+              <option value="الخميس">الخميس</option>
+              <option value="الجمعة">الجمعة</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="margin: 0;">
+            <label for="inputEditGroupTime" style="font-weight: 700; font-size: 0.82rem; margin-bottom: 0.35rem; display: block;">توقيت الحصة</label>
+            <select id="inputEditGroupTime" class="form-control" required style="font-weight: 600;">
+              <option value="08:00 صباحاً">08:00 صباحاً</option>
+              <option value="08:30 صباحاً">08:30 صباحاً</option>
+              <option value="09:00 صباحاً">09:00 صباحاً</option>
+              <option value="09:30 صباحاً">09:30 صباحاً</option>
+              <option value="10:00 صباحاً">10:00 صباحاً</option>
+              <option value="10:30 صباحاً">10:30 صباحاً</option>
+              <option value="11:00 صباحاً">11:00 صباحاً</option>
+              <option value="11:30 صباحاً">11:30 صباحاً</option>
+              <option value="12:00 مساءً">12:00 مساءً</option>
+              <option value="12:30 مساءً">12:30 مساءً</option>
+              <option value="01:00 مساءً">01:00 مساءً</option>
+              <option value="01:30 مساءً">01:30 مساءً</option>
+              <option value="02:00 مساءً">02:00 مساءً</option>
+              <option value="02:30 مساءً">02:30 مساءً</option>
+              <option value="03:00 مساءً">03:00 مساءً</option>
+              <option value="03:30 مساءً">03:30 مساءً</option>
+              <option value="04:00 مساءً">04:00 مساءً</option>
+              <option value="04:30 مساءً">04:30 مساءً</option>
+              <option value="05:00 مساءً">05:00 مساءً</option>
+              <option value="05:30 مساءً">05:30 مساءً</option>
+              <option value="06:00 مساءً">06:00 مساءً</option>
+              <option value="06:30 مساءً">06:30 مساءً</option>
+              <option value="07:00 مساءً">07:00 مساءً</option>
+              <option value="07:30 مساءً">07:30 مساءً</option>
+              <option value="08:00 مساءً">08:00 مساءً</option>
+              <option value="08:30 مساءً">08:30 مساءً</option>
+              <option value="09:00 مساءً">09:00 مساءً</option>
+              <option value="09:30 مساءً">09:30 مساءً</option>
+              <option value="10:00 مساءً">10:00 مساءً</option>
+              <option value="10:30 مساءً">10:30 مساءً</option>
+              <option value="11:00 مساءً">11:00 مساءً</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 0.85rem;">
+          <label for="inputEditGroupNotes" style="font-weight: 700; font-size: 0.82rem; margin-bottom: 0.35rem; display: block;">ملاحظات المجموعة (اختياري)</label>
+          <textarea id="inputEditGroupNotes" class="form-control" rows="2" placeholder="المستوى أو ملاحظات الموعد..."></textarea>
+        </div>
+
+        <button type="submit" id="btnSaveSchedule" class="btn btn-primary" style="width: 100%; font-weight: 700; gap: 0.5rem; font-size: 0.85rem;">
+          <i data-lucide="check"></i> حفظ تعديل الموعد والملاحظات
+        </button>
+      </form>
+
+      <!-- Section 2: Current Students & Removal Requests -->
+      <div class="edit-modal-section">
+        <div class="edit-modal-section-title">
+          <i data-lucide="users" style="color: var(--primary-color); width: 18px; height: 18px;"></i>
+          <span>2. طلاب المجموعة الحاليين (طلب إزالة طالب)</span>
+        </div>
+        <div id="modalCurrentStudentsList" style="max-height: 180px; overflow-y: auto;">
+          <p style="font-size: 0.82rem; color: var(--text-muted); text-align: center; margin: 0.5rem 0;">جاري تحميل الطلاب...</p>
+        </div>
+      </div>
+
+      <!-- Section 3: Request Adding a Student -->
+      <div class="edit-modal-section">
+        <div class="edit-modal-section-title">
+          <i data-lucide="user-plus" style="color: var(--primary-color); width: 18px; height: 18px;"></i>
+          <span>3. طلب إضافة طالب جديد للمجموعة</span>
+        </div>
+        <form id="modalAddStudentRequestForm" style="display: flex; flex-direction: column; gap: 0.75rem;">
+          <div class="form-group" style="margin: 0;">
+            <label for="modalSelectStudentToAdd" style="font-weight: 700; font-size: 0.82rem; margin-bottom: 0.35rem; display: block;">اختر الطالب من طلاب الأكاديمية</label>
+            <select id="modalSelectStudentToAdd" class="form-control" required style="font-weight: 600;">
+              <option value="">-- اختر الطالب المراد إضافته --</option>
+            </select>
+          </div>
+          <button type="submit" id="btnSubmitAddStudentReq" class="btn btn-secondary" style="font-weight: 700; gap: 0.5rem; font-size: 0.85rem; color: var(--primary-color); border-color: var(--primary-color);">
+            <i data-lucide="send"></i> إرسال طلب إضافة الطالب للإدارة ➕
+          </button>
+        </form>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+        <button type="button" class="btn btn-secondary" id="btnCancelEditGroupModal">إغلاق النافذة</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { 
+      collection, 
+      onSnapshot, 
+      doc, 
+      query, 
+      where,
+      addDoc,
+      deleteDoc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+    import { showCustomConfirm } from '../assets/js/shared/utils/helpers.js';
+    import { sendPushNotification } from '../assets/js/shared/utils/pushService.js';
+    import { 
+      updateGroup, 
+      deleteGroup 
+    } from '../assets/js/features/groups/newGroupsService.js';
+
+    protectRoute('teacher');
+
+    let currentTeacher = null;
+    let teacherGroups = [];
+    let allStudents = [];
+    let pendingGroupRequests = [];
+    let currentEditingGroupId = null;
+
+    auth.onAuthStateChanged(async user => {
+      if (user) {
+        currentTeacher = user;
+        renderSidebar('groups', 'teacher');
+        renderNavbar('المجموعات والجماعي', { name: user.displayName || 'المعلم', roleName: 'معلم بالأكاديمية' });
+        initTeacherGroupsPage(user.uid);
+      }
+    });
+
+    async function initTeacherGroupsPage(teacherId) {
+      // 1. Listen to all active academy students
+      onSnapshot(collection(db, "students"), (studSnap) => {
+        allStudents = [];
+        studSnap.forEach(d => {
+          const s = d.data();
+          if (s.status !== 'archived' && s.status !== 'Suspended') {
+            allStudents.push({ id: d.id, ...s });
+          }
+        });
+        renderGroupsGrid();
+        if (currentEditingGroupId) {
+          renderModalStudentsSection(currentEditingGroupId);
+        }
+      });
+
+      // 2. Listen to teacher's groups
+      const q = query(collection(db, "groups"), where("teacherId", "==", teacherId));
+      onSnapshot(q, (snapshot) => {
+        teacherGroups = [];
+        snapshot.forEach(d => teacherGroups.push({ id: d.id, ...d.data() }));
+        renderGroupsGrid();
+        if (currentEditingGroupId) {
+          const activeG = teacherGroups.find(g => g.id === currentEditingGroupId);
+          if (activeG) {
+            renderModalStudentsSection(currentEditingGroupId);
+          }
+        }
+      });
+
+      // 3. Listen to pending group requests submitted by this teacher
+      const qReq = query(
+        collection(db, "group_requests"), 
+        where("teacherId", "==", teacherId),
+        where("status", "==", "pending")
+      );
+      onSnapshot(qReq, (snap) => {
+        pendingGroupRequests = [];
+        snap.forEach(d => pendingGroupRequests.push({ id: d.id, ...d.data() }));
+        renderPendingGroupRequestsBanner();
+        if (currentEditingGroupId) {
+          renderModalStudentsSection(currentEditingGroupId);
+        }
+      });
+
+      setupModalHandlers();
+    }
+
+    function renderPendingGroupRequestsBanner() {
+      const container = document.getElementById('teacherPendingGroupRequestsContainer');
+      if (!container) return;
+
+      if (pendingGroupRequests.length === 0) {
+        container.style.display = 'none';
+        container.innerHTML = '';
+        return;
+      }
+
+      container.style.display = 'block';
+      container.innerHTML = `
+        <div class="card" style="border: 1px solid rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.04); padding: 1rem; border-radius: var(--border-radius);">
+          <h3 style="font-size: 0.95rem; font-weight: 800; color: var(--warning); margin: 0 0 0.75rem 0; display: flex; align-items: center; gap: 0.5rem;">
+            <i data-lucide="clock" style="width: 18px; height: 18px;"></i> طلبات المجموعات قيد المراجعة والاعتماد لدى الإدارة (${pendingGroupRequests.length})
+          </h3>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            ${pendingGroupRequests.map(r => {
+              const isRemove = r.type === 'remove_student_from_group';
+              const typeBadge = isRemove 
+                ? `<span class="badge" style="background: rgba(239, 68, 68, 0.12); color: var(--danger); font-weight: 800; position: static;">➖ طلب إزالة طالب</span>`
+                : `<span class="badge" style="background: rgba(16, 185, 129, 0.12); color: var(--success); font-weight: 800; position: static;">➕ طلب إضافة طالب</span>`;
+
+              return `
+                <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-secondary); padding: 0.6rem 0.85rem; border-radius: 8px; border: 1px solid var(--border-color); font-size: 0.85rem; flex-wrap: wrap; gap: 0.5rem;">
+                  <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                    ${typeBadge}
+                    <span>الطالب: <strong style="color: var(--text-primary);">${r.studentName || 'طالب'}</strong></span>
+                    <span style="color: var(--text-secondary);">|</span>
+                    <span>المجموعة: <strong style="color: var(--primary-color);">${r.groupName || 'مجموعة'}</strong></span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: var(--warning); font-weight: 700; position: static;">بانتظار موافقة الإدارة ⏳</span>
+                    <button class="btn btn-secondary btn-cancel-request" data-id="${r.id}" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; color: var(--danger);" title="إلغاء وسحب الطلب">
+                      إلغاء الطلب
+                    </button>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+      if (window.lucide) window.lucide.createIcons();
+
+      container.querySelectorAll('.btn-cancel-request').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const reqId = e.currentTarget.dataset.id;
+          showCustomConfirm("هل أنت متأكد من سحب وإلغاء هذا الطلب؟", async () => {
+            try {
+              await deleteDoc(doc(db, "group_requests", reqId));
+              Toast.info("تم سحب الطلب بنجاح.");
+            } catch (err) {
+              console.error(err);
+              Toast.danger("حدث خطأ أثناء إلغاء الطلب.");
+            }
+          });
+        });
+      });
+    }
+
+    function renderGroupsGrid() {
+      const grid = document.getElementById('teacherGroupsGrid');
+      if (!grid) return;
+
+      if (teacherGroups.length === 0) {
+        grid.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 3.5rem 1rem; background: var(--bg-secondary); border-radius: var(--border-radius); border: 1px dashed var(--border-color);">
+            <i data-lucide="users" style="width: 48px; height: 48px; color: var(--text-muted); margin-bottom: 1rem;"></i>
+            <h3 style="font-weight: 800; color: var(--text-primary); margin-bottom: 0.5rem;">لا توجد لديك مجموعات جماعية حالياً</h3>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 0;">يتم إنشاء وتخصيص المجموعات وإدارتها من قبل إدارة الأكاديمية.</p>
+          </div>
+        `;
+        if (window.lucide) window.lucide.createIcons();
+        return;
+      }
+
+      grid.innerHTML = teacherGroups.map(g => {
+        const studentIds = g.studentIds || [];
+        const studentCount = studentIds.length;
+        const maxLimit = parseInt(g.maxStudents) || 10;
+        const dayTimeStr = `🕒 ${g.day || 'السبت'} • ${g.time || '05:30 مساءً'}`;
+
+        let studentsHtml = '';
+        if (studentCount === 0) {
+          studentsHtml = `<p style="font-size: 0.8rem; color: var(--danger); font-weight: 700; margin: 0.5rem 0;">⚠️ لا يوجد طلاب داخل هذه المجموعة.</p>`;
+        } else {
+          studentsHtml = `<div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.75rem 0; max-height: 120px; overflow-y: auto;">` +
+            studentIds.map(sid => {
+              const st = allStudents.find(s => s.id === sid);
+              const name = st ? st.name : 'طالب';
+              return `
+                <span class="student-tag">
+                  <i data-lucide="user" style="width: 13px; height: 13px; color: var(--primary-color);"></i>
+                  <span>${name}</span>
+                </span>
+              `;
+            }).join('') +
+            `</div>`;
+        }
+
+        return `
+          <div class="group-card">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--text-primary); margin: 0;">${g.name}</h3>
+                <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: var(--success); font-weight: 700;">نشطة 🟢</span>
+              </div>
+
+              <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-primary); padding: 0.5rem 0.75rem; border-radius: 8px; margin-top: 0.5rem;">
+                <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-primary);">${dayTimeStr}</span>
+                <span style="font-size: 0.8rem; font-weight: 700; color: var(--primary-color);">👥 ${studentCount} / ${maxLimit} طلاب</span>
+              </div>
+
+              ${g.notes ? `<p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0.5rem 0 0 0; background: var(--bg-primary); padding: 0.35rem 0.6rem; border-radius: 6px;">📝 ${g.notes}</p>` : ''}
+
+              <div style="margin-top: 0.75rem;">
+                <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.35rem;">الطلاب المسجلون:</div>
+                ${studentsHtml}
+              </div>
+            </div>
+
+            <!-- Action Buttons: ONLY Edit or Delete -->
+            <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; border-top: 1px dashed var(--border-color); padding-top: 0.75rem;">
+              <button class="btn btn-primary edit-group-btn" data-id="${g.id}" style="flex: 1; padding: 0.45rem 0.75rem; font-size: 0.82rem; font-weight: 700; gap: 0.4rem;">
+                <i data-lucide="edit-3" style="width: 15px; height: 15px;"></i> تعديل
+              </button>
+              <button class="btn btn-secondary delete-group-btn" data-id="${g.id}" style="padding: 0.45rem 0.75rem; font-size: 0.82rem; font-weight: 700; color: var(--danger); border-color: var(--border-color);" title="حذف المجموعة">
+                <i data-lucide="trash-2" style="width: 15px; height: 15px;"></i> حذف
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (window.lucide) window.lucide.createIcons();
+      bindDynamicEvents();
+    }
+
+    function bindDynamicEvents() {
+      // Edit Group button
+      document.querySelectorAll('.edit-group-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const groupId = btn.dataset.id;
+          openEditGroupModal(groupId);
+        });
+      });
+
+      // Delete Group button
+      document.querySelectorAll('.delete-group-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const groupId = btn.dataset.id;
+          const g = teacherGroups.find(group => group.id === groupId);
+          const groupName = g ? g.name : 'المجموعة';
+
+          showCustomConfirm(`هل أنت متأكد من حذف المجموعة (${groupName})؟ سيتم فك ارتباط الطلاب مع الحفاظ على ملفاتهم الشخصية.`, async () => {
+            try {
+              await deleteGroup(groupId);
+              Toast.danger("تم حذف المجموعة بنجاح.");
+            } catch (err) {
+              console.error(err);
+              Toast.danger("حدث خطأ أثناء حذف المجموعة.");
+            }
+          });
+        });
+      });
+    }
+
+    function openEditGroupModal(groupId) {
+      const g = teacherGroups.find(group => group.id === groupId);
+      if (!g) return;
+
+      currentEditingGroupId = groupId;
+      document.getElementById('editingGroupId').value = g.id;
+      document.getElementById('editGroupModalTitle').innerHTML = `<i data-lucide="edit-3" style="color: var(--primary-color);"></i> تعديل المجموعة: ${g.name}`;
+      document.getElementById('editGroupModalSubtitle').textContent = `تعديل موعد الحصة وإرسال طلبات إضافة وإزالة الطلاب`;
+
+      // Fill schedule form
+      document.getElementById('inputEditGroupDay').value = g.day || 'السبت';
+      document.getElementById('inputEditGroupTime').value = g.time || '05:30 مساءً';
+      document.getElementById('inputEditGroupNotes').value = g.notes || '';
+
+      renderModalStudentsSection(groupId);
+
+      document.getElementById('editGroupModal').style.display = 'flex';
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function renderModalStudentsSection(groupId) {
+      const g = teacherGroups.find(group => group.id === groupId);
+      if (!g) return;
+
+      const studentIds = g.studentIds || [];
+      const currentListContainer = document.getElementById('modalCurrentStudentsList');
+      const selectAdd = document.getElementById('modalSelectStudentToAdd');
+
+      // 1. Render current students with removal request buttons
+      if (studentIds.length === 0) {
+        currentListContainer.innerHTML = `<p style="font-size: 0.82rem; color: var(--text-muted); text-align: center; margin: 0.5rem 0;">لا يوجد طلاب داخل هذه المجموعة حالياً.</p>`;
+      } else {
+        currentListContainer.innerHTML = studentIds.map(sid => {
+          const st = allStudents.find(s => s.id === sid);
+          const name = st ? st.name : 'طالب';
+          
+          // Check if there is a pending removal request for this student & group
+          const pendingRemove = pendingGroupRequests.find(r => r.groupId === groupId && r.studentId === sid && r.type === 'remove_student_from_group');
+
+          if (pendingRemove) {
+            return `
+              <div class="student-manage-item">
+                <span style="font-weight: 700; color: var(--text-primary);">👤 ${name}</span>
+                <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: var(--warning); font-size: 0.75rem; font-weight: 800; position: static;">طلب إزالة قيد المراجعة ⏳</span>
+              </div>
+            `;
+          }
+
+          return `
+            <div class="student-manage-item">
+              <span style="font-weight: 700; color: var(--text-primary);">👤 ${name}</span>
+              <button type="button" class="btn btn-secondary btn-request-remove-student" data-groupid="${groupId}" data-studentid="${sid}" data-studentname="${name}" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; font-weight: 700; color: var(--danger); border-color: rgba(239, 68, 68, 0.3);">
+                <i data-lucide="user-x" style="width: 13px; height: 13px;"></i> طلب إزالة من المجموعة
+              </button>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // 2. Populate candidate students for addition request dropdown
+      selectAdd.innerHTML = '<option value="">-- اختر الطالب المراد إضافته للمجموعة --</option>';
+      const candidateStudents = allStudents.filter(s => !studentIds.includes(s.id));
+      candidateStudents.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+
+      candidateStudents.forEach(s => {
+        const pendingAdd = pendingGroupRequests.find(r => r.groupId === groupId && r.studentId === s.id && r.type === 'add_student_to_group');
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        const teacherNote = s.teacherName ? `(المعلم: ${s.teacherName})` : '';
+        const pendingNote = pendingAdd ? ' [طلب إضافة قيد المراجعة ⏳]' : '';
+        opt.textContent = `${s.name || 'طالب'} ${teacherNote}${pendingNote}`;
+        if (pendingAdd) opt.disabled = true;
+        selectAdd.appendChild(opt);
+      });
+
+      if (window.lucide) window.lucide.createIcons();
+
+      // Bind removal request buttons
+      currentListContainer.querySelectorAll('.btn-request-remove-student').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const sid = btn.dataset.studentid;
+          const sname = btn.dataset.studentname;
+          const gid = btn.dataset.groupid;
+          handleRequestRemoveStudent(gid, sid, sname);
+        });
+      });
+    }
+
+    async function handleRequestRemoveStudent(groupId, studentId, studentName) {
+      const g = teacherGroups.find(group => group.id === groupId);
+      if (!g) return;
+
+      showCustomConfirm(`هل أنت متأكد من إرسال طلب للإدارة لإزالة الطالب (${studentName}) من المجموعة (${g.name})؟`, async () => {
+        try {
+          // 1. Add removal request to group_requests
+          await addDoc(collection(db, "group_requests"), {
+            type: 'remove_student_from_group',
+            groupId: groupId,
+            groupName: g.name || 'مجموعة',
+            studentId: studentId,
+            studentName: studentName || 'طالب',
+            teacherId: currentTeacher.uid,
+            teacherName: currentTeacher.displayName || 'المعلم',
+            status: 'pending',
+            createdAt: serverTimestamp()
+          });
+
+          // 2. Send notification to admin
+          const notifMsg = `يرغب المعلم (${currentTeacher.displayName || 'المعلم'}) في إزالة الطالب (${studentName}) من المجموعة (${g.name}).`;
+          const notifTitle = "طلب إزالة طالب من مجموعة 👥";
+          const reqNotifRef = await addDoc(collection(db, "notifications"), {
+            title: notifTitle,
+            body: notifMsg,
+            message: notifMsg,
+            type: "group_request",
+            targetRole: "admin",
+            recipientId: "admin",
+            groupId: groupId,
+            studentId: studentId,
+            createdAt: serverTimestamp(),
+            read: false
+          });
+
+          sendPushNotification({
+            title: notifTitle,
+            body: notifMsg,
+            recipientId: "admin",
+            type: "group_request",
+            url: "/admin/groups.html",
+            data: { notifId: reqNotifRef.id, groupId, studentId }
+          }).catch(e => console.warn(e));
+
+          Toast.info(`تم إرسال طلب إزالة الطالب (${studentName}) للإدارة بانتظار الاعتماد ⏳`);
+        } catch (err) {
+          console.error("Error submitting removal request:", err);
+          Toast.danger("حدث خطأ أثناء إرسال طلب إزالة الطالب.");
+        }
+      });
+    }
+
+    function setupModalHandlers() {
+      // Close Edit Modal
+      document.getElementById('btnCloseEditGroupModal')?.addEventListener('click', () => {
+        document.getElementById('editGroupModal').style.display = 'none';
+        currentEditingGroupId = null;
+      });
+      document.getElementById('btnCancelEditGroupModal')?.addEventListener('click', () => {
+        document.getElementById('editGroupModal').style.display = 'none';
+        currentEditingGroupId = null;
+      });
+
+      // Submit Schedule Modification Form
+      document.getElementById('editScheduleForm')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const groupId = document.getElementById('editingGroupId').value;
+        const day = document.getElementById('inputEditGroupDay').value;
+        const time = document.getElementById('inputEditGroupTime').value;
+        const notes = document.getElementById('inputEditGroupNotes').value.trim();
+
+        const btn = document.getElementById('btnSaveSchedule');
+        if (btn) btn.disabled = true;
+
+        try {
+          await updateGroup(groupId, { day, time, notes });
+          Toast.success("تم حفظ وتحديث موعد الحصة والملاحظات بنجاح ✅");
+        } catch (err) {
+          console.error(err);
+          Toast.danger("حدث خطأ أثناء حفظ موعد المجموعة.");
+        } finally {
+          if (btn) btn.disabled = false;
+        }
+      });
+
+      // Submit Add Student Request Form
+      document.getElementById('modalAddStudentRequestForm')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const groupId = document.getElementById('editingGroupId').value;
+        const studentId = document.getElementById('modalSelectStudentToAdd').value;
+
+        if (!studentId || !groupId) return;
+
+        const studentObj = allStudents.find(s => s.id === studentId);
+        const groupObj = teacherGroups.find(g => g.id === groupId);
+
+        if (!studentObj || !groupObj) {
+          Toast.danger("عذراً، تعذر العثور على بيانات الطالب أو المجموعة.");
+          return;
+        }
+
+        // Check if there's already a pending request for this student & group
+        const existingReq = pendingGroupRequests.find(r => r.groupId === groupId && r.studentId === studentId && r.type === 'add_student_to_group');
+        if (existingReq) {
+          Toast.warning("يوجد طلب معلق بالفعل لإضافة هذا الطالب لنفس المجموعة بانتظار موافقة الإدارة.");
+          return;
+        }
+
+        const btn = document.getElementById('btnSubmitAddStudentReq');
+        if (btn) btn.disabled = true;
+
+        try {
+          // 1. Send group addition request to Firestore
+          await addDoc(collection(db, "group_requests"), {
+            type: 'add_student_to_group',
+            groupId: groupId,
+            groupName: groupObj.name || 'مجموعة',
+            studentId: studentId,
+            studentName: studentObj.name || 'طالب',
+            teacherId: currentTeacher.uid,
+            teacherName: currentTeacher.displayName || 'المعلم',
+            status: 'pending',
+            createdAt: serverTimestamp()
+          });
+
+          // 2. Send notification to Admin
+          const notifMsg = `يرغب المعلم (${currentTeacher.displayName || 'المعلم'}) في إضافة الطالب (${studentObj.name}) إلى مجموعة (${groupObj.name}).`;
+          const notifTitle = "طلب إضافة طالب لمجموعة 👥";
+          const reqNotifRef = await addDoc(collection(db, "notifications"), {
+            title: notifTitle,
+            body: notifMsg,
+            message: notifMsg,
+            type: "group_request",
+            targetRole: "admin",
+            recipientId: "admin",
+            groupId: groupId,
+            studentId: studentId,
+            createdAt: serverTimestamp(),
+            read: false
+          });
+
+          sendPushNotification({
+            title: notifTitle,
+            body: notifMsg,
+            recipientId: "admin",
+            type: "group_request",
+            url: "/admin/groups.html",
+            data: { notifId: reqNotifRef.id, groupId, studentId }
+          }).catch(e => console.warn(e));
+
+          Toast.info(`تم إرسال طلب إضافة الطالب (${studentObj.name}) للإدارة بانتظار الاعتماد ⏳`);
+          document.getElementById('modalSelectStudentToAdd').value = '';
+        } catch (err) {
+          console.error("Error submitting group request:", err);
+          Toast.danger("حدث خطأ أثناء إرسال طلب إضافة الطالب.");
+        } finally {
+          if (btn) btn.disabled = false;
+        }
+      });
+    }
+  </script>
+</body>
+</html>
