@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - سجل الحضور والغياب (المشرف)</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0284c7">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+
+  <style>
+    .attendance-table-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.45rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="calendar-check" style="color: var(--primary-color); width: 26px; height: 26px;"></i>
+              سجل الحضور والغياب
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; margin-top: 0.25rem;">
+              متابعة حضور وغياب الطلاب وتدقيق الأعذار المسجلة من قبل أولياء الأمور والمعلمين.
+            </p>
+          </div>
+        </div>
+
+        <!-- Metric Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="card" style="padding: 1.15rem; border-right: 4px solid var(--success);">
+            <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">إجمالي الحضور المسجل</div>
+            <h3 id="statTotalPresent" style="font-size: 1.6rem; font-weight: 800; margin: 0.35rem 0 0 0; color: var(--success);">0</h3>
+          </div>
+          <div class="card" style="padding: 1.15rem; border-right: 4px solid var(--danger);">
+            <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">إجمالي حالات الغياب</div>
+            <h3 id="statTotalAbsent" style="font-size: 1.6rem; font-weight: 800; margin: 0.35rem 0 0 0; color: var(--danger);">0</h3>
+          </div>
+          <div class="card" style="padding: 1.15rem; border-right: 4px solid #f59e0b;">
+            <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">الحصص المؤجلة</div>
+            <h3 id="statTotalDelayed" style="font-size: 1.6rem; font-weight: 800; margin: 0.35rem 0 0 0; color: #f59e0b;">0</h3>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem;">
+          <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+            <div style="flex: 1; min-width: 220px; position: relative;">
+              <input type="text" id="attendanceSearchInput" class="form-control" placeholder="بحث باسم الطالب أو المعلم..." style="font-size: 0.85rem; padding-right: 2.2rem;">
+              <i data-lucide="search" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--text-muted);"></i>
+            </div>
+            <div style="min-width: 160px;">
+              <select id="attendanceStatusFilter" class="form-control" style="font-size: 0.85rem; font-weight: 600;">
+                <option value="all">كل الحالات</option>
+                <option value="student_absent">غياب الطالب</option>
+                <option value="delayed">مؤجلة</option>
+                <option value="completed">حاضر / مكتملة</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="attendance-table-card">
+          <div style="overflow-x: auto;">
+            <table class="table" style="width: 100%; margin: 0; text-align: right;">
+              <thead>
+                <tr style="background: var(--bg-primary); border-bottom: 1px solid var(--border-color);">
+                  <th style="padding: 0.85rem 1rem; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">اسم الطالب</th>
+                  <th style="padding: 0.85rem 1rem; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">المعلم</th>
+                  <th style="padding: 0.85rem 1rem; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">التاريخ</th>
+                  <th style="padding: 0.85rem 1rem; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">حالة الحضور</th>
+                  <th style="padding: 0.85rem 1rem; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">نوع الغياب / العذر</th>
+                  <th style="padding: 0.85rem 1rem; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">الملاحظات</th>
+                </tr>
+              </thead>
+              <tbody id="attendanceTableBody">
+                <tr>
+                  <td colspan="6" style="padding: 2.5rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+                    جاري تحميل سجل الحضور...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { 
+      collection, 
+      onSnapshot, 
+      query, 
+      orderBy, 
+      limit 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    protectRoute('supervisor', ['viewStudents', 'manageSessions']);
+
+    renderSidebar('attendance', 'supervisor');
+    renderNavbar('سجل الحضور والغياب', { name: 'المشرف الأكاديمي' });
+
+    let attendanceRecords = [];
+
+    const tableBody = document.getElementById('attendanceTableBody');
+    const searchInput = document.getElementById('attendanceSearchInput');
+    const statusFilter = document.getElementById('attendanceStatusFilter');
+
+    const statPresent = document.getElementById('statTotalPresent');
+    const statAbsent = document.getElementById('statTotalAbsent');
+    const statDelayed = document.getElementById('statTotalDelayed');
+
+    const qSessions = query(collection(db, "sessions"), orderBy("createdAt", "desc"), limit(200));
+    onSnapshot(qSessions, (snapshot) => {
+      attendanceRecords = [];
+      snapshot.forEach(docSnap => {
+        attendanceRecords.push({ id: docSnap.id, ...docSnap.data() });
+      });
+
+      updateStats();
+      renderAttendance();
+    }, (err) => {
+      console.error("Error loading attendance:", err);
+      tableBody.innerHTML = `
+        <tr>
+          <td colspan="6" style="padding: 2rem; text-align: center; color: var(--danger); font-size: 0.88rem;">
+            تعذر تحميل سجل الحضور.
+          </td>
+        </tr>
+      `;
+    });
+
+    function updateStats() {
+      statPresent.textContent = attendanceRecords.filter(s => s.status === 'completed').length;
+      statAbsent.textContent = attendanceRecords.filter(s => s.status === 'student_absent').length;
+      statDelayed.textContent = attendanceRecords.filter(s => s.status === 'delayed').length;
+    }
+
+    function renderAttendance() {
+      const searchTerm = (searchInput.value || '').trim().toLowerCase();
+      const selectedStatus = statusFilter.value;
+
+      const filtered = attendanceRecords.filter(s => {
+        if (selectedStatus !== 'all' && s.status !== selectedStatus) return false;
+
+        if (searchTerm) {
+          const sName = (s.studentName || '').toLowerCase();
+          const tName = (s.teacherName || '').toLowerCase();
+          if (!sName.includes(searchTerm) && !tName.includes(searchTerm)) return false;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="6" style="padding: 3rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.88rem;">
+              لا توجد سجلات تطابق البحث.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tableBody.innerHTML = filtered.map(s => {
+        let statusBadge = '<span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; font-size: 0.72rem; padding: 2px 7px;">حاضر</span>';
+        if (s.status === 'student_absent') {
+          statusBadge = '<span class="badge" style="background: rgba(239, 68, 68, 0.12); color: #dc2626; font-size: 0.72rem; padding: 2px 7px;">غائب</span>';
+        } else if (s.status === 'delayed') {
+          statusBadge = '<span class="badge" style="background: rgba(245, 158, 11, 0.12); color: #d97706; font-size: 0.72rem; padding: 2px 7px;">مؤجل</span>';
+        }
+
+        const absenceTypeLabel = s.absenceType === 'excused' 
+          ? 'عذر مقبول' 
+          : (s.absenceType === 'unexcused' ? 'بدون عذر' : '--');
+
+        return `
+          <tr style="border-bottom: 1px solid var(--border-color);">
+            <td style="padding: 0.85rem 1rem; font-size: 0.88rem; font-weight: 700; color: var(--text-primary);">${s.studentName || 'غير محدد'}</td>
+            <td style="padding: 0.85rem 1rem; font-size: 0.85rem; color: var(--text-secondary);">${s.teacherName || 'غير محدد'}</td>
+            <td style="padding: 0.85rem 1rem; font-size: 0.82rem; color: var(--text-muted); direction: ltr; text-align: right;">${s.date || '--'}</td>
+            <td style="padding: 0.85rem 1rem;">${statusBadge}</td>
+            <td style="padding: 0.85rem 1rem; font-size: 0.82rem; color: var(--text-secondary);">${absenceTypeLabel}</td>
+            <td style="padding: 0.85rem 1rem; font-size: 0.82rem; color: var(--text-muted);">${s.notes || '--'}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    searchInput.addEventListener('input', renderAttendance);
+    statusFilter.addEventListener('change', renderAttendance);
+  </script>
+</body>
+</html>

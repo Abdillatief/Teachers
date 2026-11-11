@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - طلبات المشرف الإدارية</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0284c7">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <div id="sidebar-container"></div>
+
+    <div class="main-wrapper">
+      <div id="navbar-container"></div>
+
+      <main class="content-body">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.45rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="send" style="color: #7c3aed; width: 24px; height: 24px;"></i>
+              طلبات المشرف للإدارة العامة
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">رفع طلبات التعديل والاعتماد والشكاوى التشغيلية للمدير العام</p>
+          </div>
+          <button id="btnOpenNewRequestModal" class="btn btn-primary btn-sm" style="display: flex; align-items: center; gap: 0.4rem;">
+            <i data-lucide="plus" style="width: 15px; height: 15px;"></i>
+            <span>رفع طلب جديد للمدير</span>
+          </button>
+        </div>
+
+        <div class="card" style="margin-bottom: 1.5rem;">
+          <div class="table-container" style="overflow-x: auto;">
+            <table class="table" style="width: 100%; min-width: 600px;">
+              <thead>
+                <tr style="border-bottom: 1px solid var(--border-color); font-size: 0.82rem; color: var(--text-secondary);">
+                  <th style="padding: 0.85rem 1rem; text-align: right;">رقم وتاريخ الطلب</th>
+                  <th style="padding: 0.85rem 1rem; text-align: right;">نوع الطلب</th>
+                  <th style="padding: 0.85rem 1rem; text-align: right;">نص وموضوع الطلب</th>
+                  <th style="padding: 0.85rem 1rem; text-align: center;">حالة الاعتماد</th>
+                </tr>
+              </thead>
+              <tbody id="supervisorRequestsList">
+                <tr>
+                  <td colspan="4" style="text-align: center; padding: 2.5rem 1rem; color: var(--text-muted); font-size: 0.85rem;">
+                    لا توجد طلبات مرفوعة حالياً. يمكنك رفع طلب جديد عبر الزر أعلاه.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- New Request Modal -->
+  <div id="newRequestModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card" style="max-width: 520px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+        <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--text-primary); margin: 0;">رفع طلب جديد للإدارة العامة</h3>
+        <button id="btnCloseRequestModal" class="btn btn-secondary btn-sm" style="padding: 0.2rem 0.5rem;">&times;</button>
+      </div>
+
+      <form id="newRequestForm">
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label style="font-size: 0.82rem; font-weight: 700; display: block; margin-bottom: 0.35rem;">نوع الطلب</label>
+          <select id="reqType" class="form-control" required>
+            <option value="schedule_change">تعديل جدول أو موعد حصة</option>
+            <option value="student_issue">مشكلة دارس أو اشتراك</option>
+            <option value="teacher_inquiry">استفسار أو اقتراح تشغيلي</option>
+            <option value="general">طلب إداري عام</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label style="font-size: 0.82rem; font-weight: 700; display: block; margin-bottom: 0.35rem;">موضوع وتفاصيل الطلب</label>
+          <textarea id="reqDetails" class="form-control" rows="4" placeholder="اكتب تفاصيل طلبك بدقة لمراجعته من الإدارة..." required></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.25rem;">
+          <button type="button" id="btnCancelRequestModal" class="btn btn-secondary">إلغاء</button>
+          <button type="submit" class="btn btn-primary">إرسال الطلب الآن</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderBottomNav } from '../assets/js/shared/components/bottomNav.js';
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { collection, addDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderNavbar('navbar-container', 'طلبات المشرف', 'supervisor');
+      renderSidebar('sidebar-container', 'requests', 'supervisor');
+      renderBottomNav('supervisor');
+      if (window.lucide) window.lucide.createIcons();
+
+      const modal = document.getElementById('newRequestModal');
+      document.getElementById('btnOpenNewRequestModal')?.addEventListener('click', () => {
+        modal.style.display = 'flex';
+      });
+      document.getElementById('btnCloseRequestModal')?.addEventListener('click', () => {
+        modal.style.display = 'none';
+      });
+      document.getElementById('btnCancelRequestModal')?.addEventListener('click', () => {
+        modal.style.display = 'none';
+      });
+
+      document.getElementById('newRequestForm')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const type = document.getElementById('reqType').value;
+        const details = document.getElementById('reqDetails').value.trim();
+        if (!details) return;
+
+        let supervisorName = 'المشرف';
+        try {
+          const s = JSON.parse(sessionStorage.getItem('sabeel_user_session') || '{}');
+          if (s.name) supervisorName = s.name;
+        } catch (e) {}
+
+        try {
+          await addDoc(collection(db, 'supervisor_requests'), {
+            type,
+            details,
+            supervisorName,
+            status: 'pending',
+            createdAt: new Date().toISOString()
+          });
+          Toast.success("تم إرسال الطلب للإدارة العامة بنجاح");
+          modal.style.display = 'none';
+          document.getElementById('newRequestForm').reset();
+        } catch (err) {
+          console.error(err);
+          Toast.danger("حدث خطأ أثناء إرسال الطلب");
+        }
+      });
+
+      // Listen for requests
+      const q = query(collection(db, 'supervisor_requests'), orderBy('createdAt', 'desc'));
+      onSnapshot(q, (snap) => {
+        const tbody = document.getElementById('supervisorRequestsList');
+        if (snap.empty) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="4" style="text-align: center; padding: 2.5rem 1rem; color: var(--text-muted); font-size: 0.85rem;">
+                لا توجد طلبات مرفوعة حالياً. يمكنك رفع طلب جديد عبر الزر أعلاه.
+              </td>
+            </tr>
+          `;
+          return;
+        }
+        tbody.innerHTML = snap.docs.map(doc => {
+          const d = doc.data();
+          const date = d.createdAt ? new Date(d.createdAt).toLocaleDateString('ar-EG') : '-';
+          const statusBadge = d.status === 'approved' 
+            ? '<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #059669; font-weight: 700;">تمت الموافقة</span>'
+            : d.status === 'rejected'
+            ? '<span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #dc2626; font-weight: 700;">مرفوض</span>'
+            : '<span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #d97706; font-weight: 700;">قيد المراجعة</span>';
+
+          return `
+            <tr style="border-bottom: 1px solid var(--border-color); font-size: 0.82rem;">
+              <td style="padding: 0.85rem 1rem; font-weight: 600;">${date}</td>
+              <td style="padding: 0.85rem 1rem;">${d.type || 'عام'}</td>
+              <td style="padding: 0.85rem 1rem;">${d.details || '-'}</td>
+              <td style="padding: 0.85rem 1rem; text-align: center;">${statusBadge}</td>
+            </tr>
+          `;
+        }).join('');
+      });
+    });
+  </script>
+</body>
+</html>
