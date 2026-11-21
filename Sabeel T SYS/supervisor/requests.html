@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>سبيل - الطلبات الإدارية للمشرف</title>
+
+  <script>
+    try {
+      if (localStorage.getItem('academy_dark_mode') === 'true' || localStorage.getItem('sabeel_theme') === 'dark') {
+        document.documentElement.classList.add('dark-theme');
+      }
+    } catch (e) {}
+  </script>
+
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <header class="navbar" id="appNavbar"></header>
+
+      <main class="content-body">
+        <div class="dashboard-main-grid" style="display: grid; grid-template-columns: 1fr 1.45fr; gap: 1.25rem; align-items: start;">
+          <!-- Create Request Form -->
+          <div class="card">
+            <div class="card-header">
+              <h1 style="font-size: 1rem; font-weight: 800; display: flex; align-items: center; gap: 0.45rem;">
+                <i data-lucide="send" style="width: 18px; height: 18px; color: var(--primary-color);"></i>
+                رفع طلب إداري للإدارة
+              </h1>
+            </div>
+            <form id="createRequestForm">
+              <div class="form-group">
+                <label for="reqType">نوع الطلب</label>
+                <select id="reqType" class="form-control" required></select>
+              </div>
+              <div class="form-group" id="reqTargetStudentGroup">
+                <label for="reqStudentSelect">الطالب المعني (اختياري حسب نوع الطلب)</label>
+                <select id="reqStudentSelect" class="form-control"></select>
+              </div>
+              <div class="form-group" id="reqNewTeacherGroup" style="display: none;">
+                <label for="reqNewTeacherSelect">المعلم البديل المقترح</label>
+                <select id="reqNewTeacherSelect" class="form-control"></select>
+              </div>
+              <div class="form-group">
+                <label for="reqTitle">عنوان الطلب المختصر</label>
+                <input type="text" id="reqTitle" class="form-control" placeholder="مثال: استبدال معلم الطالب ..." required>
+              </div>
+              <div class="form-group">
+                <label for="reqDetails">التفاصيل والأسباب التشغيلية</label>
+                <textarea id="reqDetails" class="form-control" rows="4" placeholder="اكتب كافة التفاصيل والمبررات ليتمكن المدير من اتخاذ القرار..." required></textarea>
+              </div>
+              <button type="submit" id="submitRequestBtn" class="btn btn-primary" style="width: 100%;">إرسال الطلب للمدير</button>
+            </form>
+          </div>
+
+          <!-- Submitted Requests Tracker -->
+          <div class="card">
+            <div class="card-header">
+              <h2 style="font-size: 1rem; font-weight: 800; display: flex; align-items: center; gap: 0.45rem;">
+                <i data-lucide="inbox" style="width: 18px; height: 18px; color: var(--primary-color);"></i>
+                سجل طلباتي وحالة قرار الإدارة
+              </h2>
+              <select id="filterMyReqStatus" class="form-control" style="width: auto; min-width: 130px; height: 32px; font-size: 0.78rem;">
+                <option value="all">جميع الحالات</option>
+                <option value="pending">قيد المراجعة</option>
+                <option value="approved">تم الاعتماد والتنفيذ</option>
+                <option value="rejected">مرفوض</option>
+              </select>
+            </div>
+            <div id="myRequestsList" style="display: flex; flex-direction: column; gap: 0.7rem;">
+              <div class="empty-state"><p class="empty-state-description">جاري تحميل الطلبات...</p></div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import {
+      initSupervisorPage,
+      PERMISSIONS,
+      escapeHtml,
+      formatDateTimeAr,
+      badgeHtml
+    } from '../assets/js/features/supervisor/supervisorPageShell.js';
+    import {
+      SUPERVISOR_REQUEST_TYPES,
+      getRequestTypeLabel,
+      submitSupervisorRequest
+    } from '../assets/js/features/supervisor/supervisorDomainService.js';
+    import { dataStore } from '../assets/js/shared/data/dataStore.js';
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+
+    let actorCtx = null;
+    let studentsCache = [];
+    let teachersCache = [];
+    let requestsCache = [];
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialType = urlParams.get('type');
+    const initialTargetId = urlParams.get('targetId');
+    const initialTargetName = urlParams.get('targetName');
+
+    initSupervisorPage({
+      pageId: 'requests',
+      pageTitle: 'الطلبات الإدارية للمشرف',
+      requiredPermission: PERMISSIONS.CREATE_REQUESTS,
+      onReady: (ctx) => {
+        actorCtx = ctx;
+        populateRequestTypes();
+
+        dataStore.subscribe('studentOperationalSummaries', (list) => {
+          studentsCache = (list || []).slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ar'));
+          populateStudentAndTeacherSelectors();
+        });
+        dataStore.subscribe('teacherOperationalProfiles', (list) => {
+          teachersCache = (list || []).slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ar'));
+          populateStudentAndTeacherSelectors();
+        });
+        dataStore.subscribe('supervisorRequests', (list) => {
+          requestsCache = (list || []).slice().sort((a, b) => {
+            const ta = a.createdAt?.seconds ? a.createdAt.seconds : 0;
+            const tb = b.createdAt?.seconds ? b.createdAt.seconds : 0;
+            return tb - ta;
+          });
+          renderMyRequests();
+        });
+
+        document.getElementById('reqType')?.addEventListener('change', toggleTargetFields);
+        document.getElementById('filterMyReqStatus')?.addEventListener('change', renderMyRequests);
+        document.getElementById('createRequestForm')?.addEventListener('submit', handleRequestSubmit);
+      }
+    });
+
+    function populateRequestTypes() {
+      const sel = document.getElementById('reqType');
+      if (!sel) return;
+      sel.innerHTML = Object.entries(SUPERVISOR_REQUEST_TYPES)
+        .map(([k, label]) => `<option value="${escapeHtml(k)}">${escapeHtml(label)}</option>`)
+        .join('');
+      if (initialType && SUPERVISOR_REQUEST_TYPES[initialType]) {
+        sel.value = initialType;
+      }
+      if (initialTargetName) {
+        document.getElementById('reqTitle').value = `${getRequestTypeLabel(sel.value)} — ${initialTargetName}`;
+      }
+      toggleTargetFields();
+    }
+
+    function toggleTargetFields() {
+      const type = document.getElementById('reqType').value;
+      const newTeacherGroup = document.getElementById('reqNewTeacherGroup');
+      if (newTeacherGroup) {
+        newTeacherGroup.style.display = type === 'teacher_replacement' ? 'block' : 'none';
+      }
+    }
+
+    function populateStudentAndTeacherSelectors() {
+      const stSel = document.getElementById('reqStudentSelect');
+      if (stSel) {
+        stSel.innerHTML = '<option value="">-- بدون تحديد طالب محدد --</option>' +
+          studentsCache.map((s) => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('');
+        if (initialTargetId && studentsCache.some((s) => s.id === initialTargetId)) {
+          stSel.value = initialTargetId;
+        }
+      }
+
+      const tSel = document.getElementById('reqNewTeacherSelect');
+      if (tSel) {
+        tSel.innerHTML = '<option value="">-- اختر المعلم البديل --</option>' +
+          teachersCache.map((t) => `<option value="${escapeHtml(t.uid || t.id)}">${escapeHtml(t.name)}</option>`).join('');
+      }
+    }
+
+    function renderMyRequests() {
+      const container = document.getElementById('myRequestsList');
+      if (!container) return;
+
+      const statusFilter = document.getElementById('filterMyReqStatus')?.value || 'all';
+      const mine = requestsCache.filter((r) => {
+        if (r.supervisorId !== actorCtx?.uid) return false;
+        if (statusFilter !== 'all' && r.status !== statusFilter) return false;
+        return true;
+      });
+
+      if (mine.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state" style="padding: 2rem 1rem;">
+            <div class="empty-state-icon"><i data-lucide="inbox"></i></div>
+            <div class="empty-state-title">لا توجد طلبات مسجلة</div>
+            <p class="empty-state-description" style="margin: 0;">يمكنك استخدام النموذج لإرسال أي طلب تشغيلي إلى المدير العام.</p>
+          </div>
+        `;
+        if (window.lucide) window.lucide.createIcons({ root: container });
+        return;
+      }
+
+      container.innerHTML = mine.map((r) => {
+        let statusBadge = badgeHtml('قيد مراجعة المدير', 'warning');
+        if (r.status === 'approved') statusBadge = badgeHtml('تم الاعتماد والتنفيذ', 'success');
+        else if (r.status === 'rejected') statusBadge = badgeHtml('مرفوض', 'danger');
+        else if (r.adminDecision === 'kept_pending') statusBadge = badgeHtml('معلق للمراجعة الإضافية', 'info');
+
+        return `
+          <div style="padding: 0.85rem; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm);">
+            <div style="display: flex; justify-content: space-between; align-items: start; gap: 0.5rem; margin-bottom: 0.4rem;">
+              <div>
+                <strong style="font-size: 0.9rem; color: var(--text-primary);">${escapeHtml(r.title || getRequestTypeLabel(r.type))}</strong>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(getRequestTypeLabel(r.type))} • ${escapeHtml(formatDateTimeAr(r.createdAt))}</div>
+              </div>
+              ${statusBadge}
+            </div>
+            <p style="margin: 0.35rem 0 0; font-size: 0.82rem; color: var(--text-secondary);">${escapeHtml(r.details || '')}</p>
+            ${r.adminNote ? `
+              <div style="margin-top: 0.55rem; padding: 0.5rem 0.65rem; background: var(--bg-card); border-right: 3px solid var(--primary-color); border-radius: 4px; font-size: 0.78rem;">
+                <strong>ملاحظة الإدارة:</strong> ${escapeHtml(r.adminNote)}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function handleRequestSubmit(e) {
+      e.preventDefault();
+      if (!actorCtx?.hasPerm(PERMISSIONS.CREATE_REQUESTS)) return;
+
+      const type = document.getElementById('reqType').value;
+      const targetStudentId = document.getElementById('reqStudentSelect').value;
+      const targetStudent = studentsCache.find((s) => s.id === targetStudentId);
+      const newTeacherId = document.getElementById('reqNewTeacherSelect').value;
+      const newTeacher = teachersCache.find((t) => (t.uid || t.id) === newTeacherId);
+      const title = document.getElementById('reqTitle').value.trim();
+      const details = document.getElementById('reqDetails').value.trim();
+
+      const btn = document.getElementById('submitRequestBtn');
+      btn.disabled = true;
+
+      try {
+        const payload = {};
+        if (type === 'teacher_replacement' && newTeacherId) {
+          payload.newTeacherId = newTeacherId;
+          payload.newTeacherName = newTeacher?.name || '';
+        }
+
+        await submitSupervisorRequest({
+          type,
+          title,
+          details,
+          targetId: targetStudentId || '',
+          targetName: targetStudent?.name || initialTargetName || '',
+          payload,
+          actor: { uid: actorCtx.uid, name: actorCtx.name, role: 'supervisor' }
+        });
+
+        Toast.success('تم إرسال الطلب إلى المدير العام بنجاح.');
+        document.getElementById('createRequestForm').reset();
+        populateRequestTypes();
+      } catch (err) {
+        console.error(err);
+        Toast.danger('تعذر إرسال الطلب.');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

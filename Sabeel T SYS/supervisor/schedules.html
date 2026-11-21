@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>سبيل - الجداول والأوقات المتاحة للمعلمين</title>
+
+  <script>
+    try {
+      if (localStorage.getItem('academy_dark_mode') === 'true' || localStorage.getItem('sabeel_theme') === 'dark') {
+        document.documentElement.classList.add('dark-theme');
+      }
+    } catch (e) {}
+  </script>
+
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <header class="navbar" id="appNavbar"></header>
+
+      <main class="content-body">
+        <!-- Available Slots Finder -->
+        <div class="card" style="margin-bottom: 1.25rem; border-right: 4px solid var(--primary-color);">
+          <div class="card-header">
+            <h1 style="font-size: 1.05rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="calendar-search" style="width: 18px; height: 18px; color: var(--primary-color);"></i>
+              كاشف الأوقات المتاحة في جدول المعلم
+            </h1>
+            <button type="button" id="btnOpenEditStudentSchedule" class="btn btn-primary btn-sm" style="display: none;">
+              <i data-lucide="calendar-cog" style="width: 15px; height: 15px;"></i>
+              تعديل جدول طالب
+            </button>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.85rem; margin-bottom: 1rem;">
+            <div class="form-group" style="margin: 0;">
+              <label for="schedTeacherSelect">المعلم</label>
+              <select id="schedTeacherSelect" class="form-control"></select>
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label for="schedTargetDate">التاريخ المطلوب فحصه</label>
+              <input type="date" id="schedTargetDate" class="form-control">
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label for="schedDurationSelect">مدة الحصة المطلوبة</label>
+              <select id="schedDurationSelect" class="form-control">
+                <option value="30">30 دقيقة</option>
+                <option value="45">45 دقيقة</option>
+                <option value="60" selected>60 دقيقة</option>
+                <option value="90">90 دقيقة</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="availableSlotsResultBox" style="padding: 1rem; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm);">
+            <p style="margin: 0; color: var(--text-muted); font-size: 0.84rem;">اختر المعلم والتاريخ لعرض الفترات الفارغة والحصص المشغولة.</p>
+          </div>
+        </div>
+
+        <!-- Weekly Grid for Selected Teacher -->
+        <div class="card">
+          <div class="card-header">
+            <h2 style="font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="calendar-days" style="width: 18px; height: 18px; color: var(--primary-color);"></i>
+              الجدول الأسبوعي الثابت للمعلم المحدد
+            </h2>
+          </div>
+          <div id="weeklyTeacherGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0.85rem;"></div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Edit Student Schedule Modal (Permission-guarded by edit_schedules) -->
+  <div id="editScheduleModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card" style="max-width: 560px;">
+      <div class="modal-header">
+        <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700;">تعديل جدول الحصص لطالب</h3>
+        <button type="button" id="closeEditScheduleBtn" class="btn btn-ghost btn-sm" aria-label="إغلاق">
+          <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+        </button>
+      </div>
+      <form id="editScheduleForm">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="schedStudentSelect">الطالب</label>
+            <select id="schedStudentSelect" class="form-control" required></select>
+          </div>
+          <div class="form-group">
+            <label>الأيام الأسبوعية</label>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;" id="schedDaysCheckboxes">
+              <label style="display:flex; align-items:center; gap:0.35rem; font-size:0.82rem; cursor:pointer;"><input type="checkbox" value="السبت"> السبت</label>
+              <label style="display:flex; align-items:center; gap:0.35rem; font-size:0.82rem; cursor:pointer;"><input type="checkbox" value="الأحد"> الأحد</label>
+              <label style="display:flex; align-items:center; gap:0.35rem; font-size:0.82rem; cursor:pointer;"><input type="checkbox" value="الاثنين"> الاثنين</label>
+              <label style="display:flex; align-items:center; gap:0.35rem; font-size:0.82rem; cursor:pointer;"><input type="checkbox" value="الثلاثاء"> الثلاثاء</label>
+              <label style="display:flex; align-items:center; gap:0.35rem; font-size:0.82rem; cursor:pointer;"><input type="checkbox" value="الأربعاء"> الأربعاء</label>
+              <label style="display:flex; align-items:center; gap:0.35rem; font-size:0.82rem; cursor:pointer;"><input type="checkbox" value="الخميس"> الخميس</label>
+              <label style="display:flex; align-items:center; gap:0.35rem; font-size:0.82rem; cursor:pointer;"><input type="checkbox" value="الجمعة"> الجمعة</label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="schedUniformTime">موعد الحصة</label>
+            <input type="text" id="schedUniformTime" class="form-control" placeholder="مثال: 05:30 مساءً أو 17:30" required>
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="schedChangeReason">سبب تعديل الجدول (يُوثق في السجل)</label>
+            <input type="text" id="schedChangeReason" class="form-control" placeholder="توضيح سبب التعديل..." required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="cancelEditScheduleBtn" class="btn btn-secondary">إلغاء</button>
+          <button type="submit" id="saveEditScheduleBtn" class="btn btn-primary">حفظ الجدول وتوثيق التعديل</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import {
+      initSupervisorPage,
+      PERMISSIONS,
+      escapeHtml,
+      getTodayIsoDate,
+      badgeHtml
+    } from '../assets/js/features/supervisor/supervisorPageShell.js';
+    import {
+      normalizeArabicDay,
+      computeTeacherAvailableSlots,
+      updateStudentScheduleWithLog,
+      parseTimeToMinutes
+    } from '../assets/js/features/supervisor/supervisorDomainService.js';
+    import { dataStore } from '../assets/js/shared/data/dataStore.js';
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+
+    const WEEK_DAYS = ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
+
+    let actorCtx = null;
+    let teachersCache = [];
+    let studentsCache = [];
+    let groupsCache = [];
+    let sessionsCache = [];
+
+    initSupervisorPage({
+      pageId: 'schedules',
+      pageTitle: 'الجداول والأوقات المتاحة',
+      requiredPermission: PERMISSIONS.VIEW_SCHEDULES,
+      onReady: (ctx) => {
+        actorCtx = ctx;
+        document.getElementById('schedTargetDate').value = getTodayIsoDate();
+        toggleEditScheduleButton();
+
+        dataStore.subscribe('teacherOperationalProfiles', (list) => {
+          teachersCache = (list || []).slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ar'));
+          populateTeacherSelect();
+          renderSlotsAndWeeklyGrid();
+        });
+        dataStore.subscribe('studentOperationalSummaries', (list) => {
+          studentsCache = list || [];
+          populateStudentSelect();
+          renderSlotsAndWeeklyGrid();
+        });
+        dataStore.subscribe('groups', (list) => {
+          groupsCache = list || [];
+          renderSlotsAndWeeklyGrid();
+        });
+        dataStore.subscribe('sessions', (list) => {
+          sessionsCache = list || [];
+          renderSlotsAndWeeklyGrid();
+        });
+
+        ['schedTeacherSelect', 'schedTargetDate', 'schedDurationSelect'].forEach((id) => {
+          document.getElementById(id)?.addEventListener('change', renderSlotsAndWeeklyGrid);
+        });
+
+        document.getElementById('btnOpenEditStudentSchedule')?.addEventListener('click', openEditModal);
+        document.getElementById('closeEditScheduleBtn')?.addEventListener('click', closeEditModal);
+        document.getElementById('cancelEditScheduleBtn')?.addEventListener('click', closeEditModal);
+        document.getElementById('schedStudentSelect')?.addEventListener('change', preloadStudentScheduleIntoModal);
+        document.getElementById('editScheduleForm')?.addEventListener('submit', handleScheduleSave);
+      },
+      onPermissionsUpdated: ({ hasPerm }) => {
+        if (actorCtx) actorCtx.hasPerm = hasPerm;
+        toggleEditScheduleButton();
+      }
+    });
+
+    function toggleEditScheduleButton() {
+      const btn = document.getElementById('btnOpenEditStudentSchedule');
+      if (btn) btn.style.display = actorCtx?.hasPerm(PERMISSIONS.EDIT_SCHEDULES) ? 'inline-flex' : 'none';
+    }
+
+    function populateTeacherSelect() {
+      const sel = document.getElementById('schedTeacherSelect');
+      if (!sel) return;
+      const prev = sel.value;
+      const approved = teachersCache.filter((t) => t.status === 'approved' || t.status === 'active' || !t.status);
+      sel.innerHTML = approved.length === 0
+        ? '<option value="">لا يوجد معلمون متاحون</option>'
+        : approved.map((t) => `<option value="${escapeHtml(t.uid || t.id)}">${escapeHtml(t.name || 'معلم')}</option>`).join('');
+      if (prev && approved.some((t) => (t.uid || t.id) === prev)) sel.value = prev;
+    }
+
+    function populateStudentSelect() {
+      const sel = document.getElementById('schedStudentSelect');
+      if (!sel) return;
+      const active = studentsCache
+        .filter((s) => !['archived', 'Suspended', 'suspended'].includes(s.status))
+        .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ar'));
+      sel.innerHTML = '<option value="">اختر الطالب...</option>' +
+        active.map((s) => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)} (${escapeHtml(s.teacherName || 'بدون معلم')})</option>`).join('');
+    }
+
+    function renderSlotsAndWeeklyGrid() {
+      const teacherId = document.getElementById('schedTeacherSelect')?.value;
+      const targetDate = document.getElementById('schedTargetDate')?.value;
+      const duration = Number(document.getElementById('schedDurationSelect')?.value || 60);
+      const slotsBox = document.getElementById('availableSlotsResultBox');
+      const gridBox = document.getElementById('weeklyTeacherGrid');
+
+      if (!teacherId) {
+        if (slotsBox) slotsBox.innerHTML = '<p style="margin:0; color:var(--text-muted); font-size:0.84rem;">يرجى اختيار معلم لعرض جدوله.</p>';
+        if (gridBox) gridBox.innerHTML = '';
+        return;
+      }
+
+      const teacherProfile = teachersCache.find((t) => (t.uid || t.id) === teacherId) || { uid: teacherId };
+
+      if (targetDate && slotsBox) {
+        const res = computeTeacherAvailableSlots({
+          teacherProfile,
+          students: studentsCache,
+          groups: groupsCache,
+          sessions: sessionsCache,
+          targetDate,
+          slotDurationMinutes: duration
+        });
+
+        const slotsHtml = res.slots.length > 0
+          ? res.slots.map((slot) => `<span class="badge badge-info tabular-nums">${escapeHtml(slot.startLabel)} — ${escapeHtml(slot.endLabel)}</span>`).join('')
+          : '<span style="color: var(--danger); font-size: 0.82rem; font-weight: 600;">لا توجد فترات شاغرة في هذا اليوم</span>';
+
+        const busyHtml = res.busyIntervals.length > 0
+          ? res.busyIntervals.map((b) => `<span class="badge badge-neutral">${escapeHtml(b.label)}</span>`).join('')
+          : '<span style="color: var(--text-muted); font-size: 0.78rem;">لا توجد ارتباطات مسجلة في هذا اليوم</span>';
+
+        slotsBox.innerHTML = `
+          <div style="margin-bottom: 0.75rem;">
+            <div style="font-weight: 700; font-size: 0.86rem; margin-bottom: 0.45rem;">الأوقات المتاحة ليوم ${escapeHtml(res.targetDayName)} (${escapeHtml(targetDate)}):</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">${slotsHtml}</div>
+          </div>
+          <div style="padding-top: 0.65rem; border-top: 1px dashed var(--border-color);">
+            <div style="font-weight: 600; font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.35rem;">الالتزامات المحجوزة في هذا اليوم:</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.35rem;">${busyHtml}</div>
+          </div>
+        `;
+      }
+
+      if (gridBox) {
+        gridBox.innerHTML = WEEK_DAYS.map((dayName) => {
+          const normDay = normalizeArabicDay(dayName);
+          const dayItems = [];
+
+          studentsCache.forEach((st) => {
+            if (st.teacherId !== teacherId) return;
+            if (['archived', 'Suspended', 'suspended', 'pending_approval', 'paused', 'frozen'].includes(st.status)) return;
+            if (st.subscriptionType === 'group' || st.groupId) return;
+            const days = st.schedule?.days || st.days || [];
+            if (!days.some((d) => normalizeArabicDay(d) === normDay)) return;
+
+            let timeStr = st.schedule?.uniformTime || st.sessionTime || 'غير محدد';
+            if (st.schedule?.differentTimes && st.schedule?.times) {
+              const tk = Object.keys(st.schedule.times).find((k) => normalizeArabicDay(k) === normDay);
+              if (tk) timeStr = st.schedule.times[tk];
+            }
+            dayItems.push({
+              title: st.name,
+              sub: `${st.sessionDuration || 60} دقيقة`,
+              time: timeStr,
+              tone: 'primary'
+            });
+          });
+
+          groupsCache.forEach((grp) => {
+            if (grp.teacherId !== teacherId || grp.status === 'archived') return;
+            const grpDays = grp.day ? [grp.day] : (grp.days || []);
+            if (!grpDays.some((d) => normalizeArabicDay(d) === normDay)) return;
+            dayItems.push({
+              title: `مجموعة: ${grp.name || 'حلقة'}`,
+              sub: `${grp.duration || 60} دقيقة`,
+              time: grp.time || 'غير محدد',
+              tone: 'info'
+            });
+          });
+
+          dayItems.sort((a, b) => parseTimeToMinutes(a.time) - parseTimeToMinutes(b.time));
+
+          return `
+            <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); padding: 0.85rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; padding-bottom: 0.45rem; border-bottom: 1px solid var(--border-color);">
+                <strong style="font-size: 0.9rem;">${escapeHtml(dayName)}</strong>
+                ${badgeHtml(String(dayItems.length) + ' حصة', dayItems.length > 0 ? 'primary' : 'neutral')}
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 0.45rem;">
+                ${dayItems.length === 0
+                  ? '<span style="font-size: 0.78rem; color: var(--text-muted);">يوم متاح بالكامل</span>'
+                  : dayItems.map((it) => `
+                    <div style="padding: 0.45rem 0.6rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.8rem;">
+                      <div style="font-weight: 700; color: var(--text-primary);">${escapeHtml(it.title)}</div>
+                      <div style="font-size: 0.74rem; color: var(--text-secondary);" class="tabular-nums">${escapeHtml(it.time)} — ${escapeHtml(it.sub)}</div>
+                    </div>
+                  `).join('')}
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    function openEditModal() {
+      if (!actorCtx?.hasPerm(PERMISSIONS.EDIT_SCHEDULES)) {
+        Toast.warning('لا تمتلك صلاحية تعديل الجداول.');
+        return;
+      }
+      document.getElementById('editScheduleForm').reset();
+      document.getElementById('editScheduleModal').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+      document.getElementById('editScheduleModal').style.display = 'none';
+    }
+
+    function preloadStudentScheduleIntoModal() {
+      const stId = document.getElementById('schedStudentSelect').value;
+      const st = studentsCache.find((s) => s.id === stId);
+      const boxes = document.querySelectorAll('#schedDaysCheckboxes input[type="checkbox"]');
+      boxes.forEach((cb) => { cb.checked = false; });
+
+      if (!st) return;
+      const days = st.schedule?.days || st.days || [];
+      boxes.forEach((cb) => {
+        if (days.some((d) => normalizeArabicDay(d) === normalizeArabicDay(cb.value))) {
+          cb.checked = true;
+        }
+      });
+      document.getElementById('schedUniformTime').value = st.schedule?.uniformTime || st.sessionTime || '';
+    }
+
+    async function handleScheduleSave(e) {
+      e.preventDefault();
+      if (!actorCtx?.hasPerm(PERMISSIONS.EDIT_SCHEDULES)) return;
+
+      const studentId = document.getElementById('schedStudentSelect').value;
+      const days = Array.from(document.querySelectorAll('#schedDaysCheckboxes input[type="checkbox"]:checked')).map((c) => c.value);
+      const uniformTime = document.getElementById('schedUniformTime').value.trim();
+      const note = document.getElementById('schedChangeReason').value.trim();
+
+      if (!studentId || days.length === 0) {
+        Toast.warning('يرجى اختيار الطالب وتحديد يوم واحد على الأقل.');
+        return;
+      }
+
+      const btn = document.getElementById('saveEditScheduleBtn');
+      btn.disabled = true;
+
+      try {
+        await updateStudentScheduleWithLog({
+          studentId,
+          scheduleData: {
+            days,
+            uniformTime,
+            differentTimes: false,
+            times: {}
+          },
+          actor: { uid: actorCtx.uid, name: actorCtx.name, role: 'supervisor' },
+          note
+        });
+        Toast.success('تم تحديث جدول الطالب وتوثيقه في سجل النشاط.');
+        closeEditModal();
+      } catch (err) {
+        console.error(err);
+        Toast.danger('تعذر تحديث الجدول: ' + (err?.message || 'تحقق من الصلاحيات'));
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
