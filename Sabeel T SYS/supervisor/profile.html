@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - الملف الشخصي للمشرف</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0284c7">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <div id="sidebar-container"></div>
+
+    <div class="main-wrapper">
+      <div id="navbar-container"></div>
+
+      <main class="content-body">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.45rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="user-check" style="color: var(--primary-color); width: 24px; height: 24px;"></i>
+              الملف الشخصي للمشرف
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">بيانات الحساب والصلاحيات الإدارية الممنوحة</p>
+          </div>
+        </div>
+
+        <div class="card" style="max-width: 680px; margin-bottom: 1.5rem;">
+          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+            <div style="width: 56px; height: 56px; border-radius: 50%; background: var(--primary-light); color: var(--primary-color); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 800;">
+              <i data-lucide="shield" style="width: 28px; height: 28px;"></i>
+            </div>
+            <div>
+              <h2 id="supProfileName" style="font-size: 1.15rem; font-weight: 800; color: var(--text-primary); margin: 0;">-</h2>
+              <span id="supProfileRole" class="badge" style="background: rgba(14, 165, 233, 0.12); color: var(--primary-color); font-weight: 700; margin-top: 0.25rem; display: inline-block;">مشرف أكاديمي معتمد</span>
+            </div>
+          </div>
+
+          <form id="supProfileForm">
+            <div class="form-group" style="margin-bottom: 1rem;">
+              <label style="font-size: 0.82rem; font-weight: 700; display: block; margin-bottom: 0.35rem;">الاسم الكامل</label>
+              <input type="text" id="supInputName" class="form-control" required>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1rem;">
+              <label style="font-size: 0.82rem; font-weight: 700; display: block; margin-bottom: 0.35rem;">البريد الإلكتروني / اسم المستخدم</label>
+              <input type="text" id="supInputEmail" class="form-control" disabled style="background: var(--bg-primary); direction: ltr; text-align: right;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+              <label style="font-size: 0.82rem; font-weight: 700; display: block; margin-bottom: 0.35rem;">رقم الهاتف / الواتساب</label>
+              <input type="text" id="supInputPhone" class="form-control" placeholder="01xxxxxxxxx">
+            </div>
+
+            <div style="display: flex; justify-content: flex-end;">
+              <button type="submit" class="btn btn-primary" id="btnSaveSupProfile">
+                <i data-lucide="save" style="width: 15px; height: 15px;"></i>
+                <span>حفظ التعديلات</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderBottomNav } from '../assets/js/shared/components/bottomNav.js';
+    import { auth, db } from '../assets/js/config/firebase.js';
+    import { doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderNavbar('navbar-container', 'الملف الشخصي', 'supervisor');
+      renderSidebar('sidebar-container', 'profile', 'supervisor');
+      renderBottomNav('supervisor');
+      if (window.lucide) window.lucide.createIcons();
+
+      let currentSupervisor = null;
+      try {
+        currentSupervisor = JSON.parse(sessionStorage.getItem('sabeel_user_session') || '{}');
+      } catch (e) {}
+
+      if (currentSupervisor) {
+        document.getElementById('supProfileName').textContent = currentSupervisor.name || 'المشرف';
+        document.getElementById('supInputName').value = currentSupervisor.name || '';
+        document.getElementById('supInputEmail').value = currentSupervisor.email || '';
+        document.getElementById('supInputPhone').value = currentSupervisor.phone || '';
+      }
+
+      document.getElementById('supProfileForm')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newName = document.getElementById('supInputName').value.trim();
+        const newPhone = document.getElementById('supInputPhone').value.trim();
+
+        if (currentSupervisor && currentSupervisor.uid) {
+          try {
+            await updateDoc(doc(db, 'users', currentSupervisor.uid), {
+              name: newName,
+              phone: newPhone
+            });
+            currentSupervisor.name = newName;
+            currentSupervisor.phone = newPhone;
+            sessionStorage.setItem('sabeel_user_session', JSON.stringify(currentSupervisor));
+            Toast.success("تم تحديث البيانات بنجاح");
+            document.getElementById('supProfileName').textContent = newName;
+          } catch (err) {
+            console.error(err);
+            Toast.danger("حدث خطأ أثناء تحديث البيانات");
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>
