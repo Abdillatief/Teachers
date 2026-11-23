@@ -1,0 +1,858 @@
+{
+  "entities": {
+    "Role": {
+      "title": "Role",
+      "description": "Normalized RBAC system role definition",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "name": { "type": "string", "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 300 },
+        "isSystem": { "type": "boolean" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "name"]
+    },
+    "Permission": {
+      "title": "Permission",
+      "description": "Granular RBAC permission catalog definition",
+      "type": "object",
+      "properties": {
+        "key": { "type": "string", "maxLength": 100 },
+        "group": { "type": "string", "maxLength": 64 },
+        "groupLabel": { "type": "string", "maxLength": 120 },
+        "label": { "type": "string", "maxLength": 150 },
+        "description": { "type": "string", "maxLength": 400 },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["key", "label"]
+    },
+    "RolePermission": {
+      "title": "RolePermission",
+      "description": "Default permission map associated with a system role",
+      "type": "object",
+      "properties": {
+        "roleId": { "type": "string", "enum": ["admin", "supervisor", "teacher"] },
+        "permissions": { "type": "object" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["roleId", "permissions"]
+    },
+    "UserRole": {
+      "title": "UserRole",
+      "description": "Authoritative RBAC assignment for each user (source of truth for rules and guards)",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "roleId": { "type": "string", "enum": ["admin", "supervisor", "teacher"] },
+        "permissions": { "type": "object" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected", "suspended", "active"] },
+        "department": { "type": "string", "maxLength": 120 },
+        "supervisorTitle": { "type": "string", "maxLength": 120 },
+        "updatedBy": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["uid", "roleId", "permissions", "status"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile for admins, supervisors, and teachers",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 150 },
+        "role": { "type": "string", "enum": ["admin", "supervisor", "teacher"] },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected", "suspended", "active"] },
+        "phone": { "type": "string", "maxLength": 30 },
+        "department": { "type": "string", "maxLength": 120 },
+        "supervisorTitle": { "type": "string", "maxLength": 120 },
+        "bio": { "type": "string", "maxLength": 500 },
+        "permissions": { "type": "object" },
+        "paymentChannels": { "type": "object" },
+        "hourlyRate": { "type": "number" },
+        "monthlySalary": { "type": "number" },
+        "salaryType": { "type": "string", "maxLength": 40 },
+        "communityDisplayName": { "type": "string", "maxLength": 100 },
+        "communityTitle": { "type": "string", "maxLength": 150 },
+        "communityPhotoURL": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["name", "email", "role"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "Full student record managed by admins and teachers (isolated from supervisors)",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "parentPhone": { "type": "string", "maxLength": 30 },
+        "whatsapp": { "type": "string", "maxLength": 30 },
+        "waWarningCount": { "type": "number" },
+        "lastWaWarningAt": { "type": "string" },
+        "teacherId": { "type": "string", "maxLength": 128 },
+        "requestedByTeacherId": { "type": "string", "maxLength": 128 },
+        "status": { "type": "string", "maxLength": 30 },
+        "subject": { "type": "string", "maxLength": 100 },
+        "schedule": { "type": "object" },
+        "days": { "type": "array" },
+        "sessionDays": { "type": "array" },
+        "sessionTime": { "type": "string", "maxLength": 40 },
+        "notes": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "StudentOperationalSummary": {
+      "title": "StudentOperationalSummary",
+      "description": "Non-financial operational projection of student data accessible to authorized supervisors",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 120 },
+        "age": { "type": "string", "maxLength": 30 },
+        "gender": { "type": "string", "maxLength": 20 },
+        "parentName": { "type": "string", "maxLength": 120 },
+        "parentPhone": { "type": "string", "maxLength": 30 },
+        "whatsapp": { "type": "string", "maxLength": 30 },
+        "country": { "type": "string", "maxLength": 80 },
+        "teacherId": { "type": "string", "maxLength": 128 },
+        "teacherName": { "type": "string", "maxLength": 120 },
+        "status": { "type": "string", "maxLength": 40 },
+        "packageName": { "type": "string", "maxLength": 120 },
+        "sessionDuration": { "type": "number" },
+        "totalLessons": { "type": "number" },
+        "usedLessons": { "type": "number" },
+        "remainingLessons": { "type": "number" },
+        "remainingSessions": { "type": "number" },
+        "subscriptionType": { "type": "string", "maxLength": 30 },
+        "groupId": { "type": "string", "maxLength": 128 },
+        "groupName": { "type": "string", "maxLength": 120 },
+        "days": { "type": "array" },
+        "sessionTime": { "type": "string", "maxLength": 40 },
+        "schedule": { "type": "object" },
+        "memorizationDirection": { "type": "string", "enum": ["ascending", "descending"] },
+        "lastMemorizedSurahId": { "type": "number" },
+        "lastMemorizedSurahName": { "type": "string", "maxLength": 60 },
+        "lastMemorizedVerse": { "type": "number" },
+        "notes": { "type": "string", "maxLength": 1000 },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["studentId", "name"]
+    },
+    "TeacherOperationalProfile": {
+      "title": "TeacherOperationalProfile",
+      "description": "Non-financial operational profile and working schedule for teachers",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 120 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "subject": { "type": "string", "maxLength": 150 },
+        "status": { "type": "string", "maxLength": 40 },
+        "dailyWorkHours": { "type": "number" },
+        "workWindowHours": { "type": "string", "maxLength": 100 },
+        "weeklySchedule": { "type": "object" },
+        "notes": { "type": "string", "maxLength": 500 },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["uid", "name"]
+    },
+    "Session": {
+      "title": "Session",
+      "description": "Educational lesson/session record supporting 7 operational statuses and compensation linking",
+      "type": "object",
+      "properties": {
+        "teacherId": { "type": "string", "maxLength": 128 },
+        "teacherName": { "type": "string", "maxLength": 120 },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "studentName": { "type": "string", "maxLength": 120 },
+        "date": { "type": "string", "maxLength": 20 },
+        "time": { "type": "string", "maxLength": 30 },
+        "duration": { "type": "number" },
+        "type": { "type": "string", "maxLength": 30 },
+        "status": { "type": "string", "enum": ["scheduled", "completed", "student_absent", "teacher_absent", "delayed", "compensatory", "cancelled"] },
+        "absenceType": { "type": "string", "maxLength": 30 },
+        "absenceReason": { "type": "string", "maxLength": 500 },
+        "postponedFrom": { "type": "string", "maxLength": 20 },
+        "postponeReason": { "type": "string", "maxLength": 500 },
+        "responsibleParty": { "type": "string", "maxLength": 40 },
+        "makeupDate": { "type": "string", "maxLength": 20 },
+        "makeupTime": { "type": "string", "maxLength": 30 },
+        "teacherNotes": { "type": "string", "maxLength": 1000 },
+        "slotSelectionReason": { "type": "string", "maxLength": 500 },
+        "compensationStatus": { "type": "string", "enum": ["pending", "scheduled", "completed"] },
+        "originalLessonId": { "type": "string", "maxLength": 128 },
+        "compensatedBySessionId": { "type": "string", "maxLength": 128 },
+        "cancellationResponsibility": { "type": "string", "maxLength": 40 },
+        "cancellationReason": { "type": "string", "maxLength": 500 },
+        "notes": { "type": "string", "maxLength": 1500 },
+        "approved": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["teacherId", "studentId", "date", "status"]
+    },
+    "AbsenceLog": {
+      "title": "AbsenceLog",
+      "description": "Immutable log of student and teacher absences",
+      "type": "object",
+      "properties": {
+        "sessionId": { "type": "string", "maxLength": 128 },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "studentName": { "type": "string", "maxLength": 120 },
+        "teacherId": { "type": "string", "maxLength": 128 },
+        "teacherName": { "type": "string", "maxLength": 120 },
+        "absenceSubject": { "type": "string", "enum": ["student", "teacher"] },
+        "absenceType": { "type": "string", "enum": ["excused", "unexcused", "teacher_absence"] },
+        "reason": { "type": "string", "maxLength": 500 },
+        "date": { "type": "string", "maxLength": 20 },
+        "time": { "type": "string", "maxLength": 30 },
+        "recordedBy": { "type": "string", "maxLength": 128 },
+        "recordedByName": { "type": "string", "maxLength": 120 },
+        "recordedByRole": { "type": "string", "maxLength": 30 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["sessionId", "teacherId", "absenceSubject", "date", "recordedBy"]
+    },
+    "ActivityLog": {
+      "title": "ActivityLog",
+      "description": "Immutable operational audit log capturing who modified what, when, and why",
+      "type": "object",
+      "properties": {
+        "actorId": { "type": "string", "maxLength": 128 },
+        "actorName": { "type": "string", "maxLength": 120 },
+        "actorRole": { "type": "string", "maxLength": 30 },
+        "actionType": { "type": "string", "maxLength": 80 },
+        "targetCollection": { "type": "string", "maxLength": 80 },
+        "targetId": { "type": "string", "maxLength": 128 },
+        "summary": { "type": "string", "maxLength": 500 },
+        "oldValue": { "type": "object" },
+        "newValue": { "type": "object" },
+        "reason": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["actorId", "actionType", "targetCollection"]
+    },
+    "Subscription": {
+      "title": "Subscription",
+      "description": "Student package subscription",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string", "maxLength": 128 },
+        "packageId": { "type": "string", "maxLength": 128 },
+        "price": { "type": "number" },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      }
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "Financial payment transaction",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string", "maxLength": 128 },
+        "subscriptionId": { "type": "string", "maxLength": 128 },
+        "amount": { "type": "number" },
+        "date": { "type": "string" },
+        "method": { "type": "string" },
+        "notes": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string" }
+      }
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "Academy financial expense entry",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 200 },
+        "amount": { "type": "number" },
+        "date": { "type": "string", "maxLength": 30 },
+        "notes": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string" }
+      }
+    },
+    "Package": {
+      "title": "Package",
+      "description": "Educational course or subscription package",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "price": { "type": "number" },
+        "sessionsCount": { "type": "number" },
+        "createdAt": { "type": "string" }
+      }
+    },
+    "SalaryArchive": {
+      "title": "SalaryArchive",
+      "description": "Archived salary statement for teachers",
+      "type": "object",
+      "properties": {
+        "teacherId": { "type": "string", "maxLength": 128 },
+        "teacherName": { "type": "string", "maxLength": 100 },
+        "month": { "type": "string", "maxLength": 20 },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "paid", "confirmed"] },
+        "details": { "type": "object" },
+        "createdAt": { "type": "string" },
+        "confirmedAt": { "type": "string" }
+      },
+      "required": ["teacherId", "month", "amount"]
+    },
+    "Feedback": {
+      "title": "Feedback",
+      "description": "Feedback, opinions, and poll responses submitted by teachers",
+      "type": "object",
+      "properties": {
+        "notificationId": { "type": "string", "maxLength": 128 },
+        "topic": { "type": "string", "maxLength": 200 },
+        "question": { "type": "string", "maxLength": 1000 },
+        "teacherId": { "type": "string", "maxLength": 128 },
+        "teacherName": { "type": "string", "maxLength": 100 },
+        "teacherEmail": { "type": "string", "maxLength": 150 },
+        "teacherPhone": { "type": "string", "maxLength": 30 },
+        "message": { "type": "string", "maxLength": 3000 },
+        "rating": { "type": "string", "maxLength": 50 },
+        "status": { "type": "string", "enum": ["new", "reviewed", "addressed", "archived"] },
+        "adminNotes": { "type": "string", "maxLength": 1000 },
+        "adminReplied": { "type": "boolean" },
+        "adminReplyMessage": { "type": "string", "maxLength": 2000 },
+        "adminRepliedAt": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["teacherId", "message"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "System alert or notification message for Admin and Teachers",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 200 },
+        "body": { "type": "string", "maxLength": 2000 },
+        "image": { "type": "string" },
+        "type": { "type": "string", "maxLength": 50 },
+        "priority": { "type": "string", "enum": ["low", "normal", "high", "urgent"] },
+        "targetType": { "type": "string", "enum": ["all", "teachers", "admins", "role", "specific_teachers", "specific_user"] },
+        "targetIds": { "type": "array" },
+        "recipientId": { "type": "string", "maxLength": 128 },
+        "teacherId": { "type": "string", "maxLength": 128 },
+        "targetRole": { "type": "string", "maxLength": 50 },
+        "recipientRole": { "type": "string", "maxLength": 50 },
+        "isPinned": { "type": "boolean" },
+        "unpinnedBy": { "type": "array" },
+        "senderId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" },
+        "scheduledAt": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "scheduled", "sent", "failed", "cancelled"] },
+        "deepLink": { "type": "string", "maxLength": 500 },
+        "readBy": { "type": "array" },
+        "openedBy": { "type": "array" },
+        "deletedBy": { "type": "array" }
+      },
+      "required": ["title", "body"]
+    },
+    "NotificationDevice": {
+      "title": "NotificationDevice",
+      "description": "Registered device for push notifications supporting multi-device per user",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "deviceId": { "type": "string", "maxLength": 128 },
+        "oneSignalPlayerId": { "type": "string", "maxLength": 128 },
+        "platform": { "type": "string", "enum": ["web", "median-android", "median-ios", "web-mobile", "web-desktop"] },
+        "createdAt": { "type": "string" },
+        "lastActive": { "type": "string" },
+        "deviceModel": { "type": "string", "maxLength": 100 },
+        "appVersion": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["userId", "deviceId"]
+    },
+    "NotificationLog": {
+      "title": "NotificationLog",
+      "description": "Delivery, opening, and dispatch tracking log for notifications",
+      "type": "object",
+      "properties": {
+        "notificationId": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "sent": { "type": "boolean" },
+        "delivered": { "type": "boolean" },
+        "opened": { "type": "boolean" },
+        "failed": { "type": "boolean" },
+        "error": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["notificationId", "userId"]
+    },
+    "NotificationTemplate": {
+      "title": "NotificationTemplate",
+      "description": "Pre-configured and admin-customizable notification templates",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "title": { "type": "string", "maxLength": 200 },
+        "body": { "type": "string", "maxLength": 2000 },
+        "variables": { "type": "array" },
+        "image": { "type": "string" },
+        "sound": { "type": "string", "maxLength": 50 },
+        "priority": { "type": "string", "enum": ["low", "normal", "high", "urgent"] },
+        "enabled": { "type": "boolean" },
+        "category": { "type": "string", "maxLength": 50 },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["name", "title", "body"]
+    },
+    "NotificationSetting": {
+      "title": "NotificationSetting",
+      "description": "Global notification controls and master switches",
+      "type": "object",
+      "properties": {
+        "sessionReminderEnabled": { "type": "boolean" },
+        "sessionStartEnabled": { "type": "boolean" },
+        "salaryEnabled": { "type": "boolean" },
+        "communityEnabled": { "type": "boolean" },
+        "maintenanceEnabled": { "type": "boolean" },
+        "subscriptionEnabled": { "type": "boolean" },
+        "updatedAt": { "type": "string" }
+      }
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Audit trail log of actions taken in the academy",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "userName": { "type": "string", "maxLength": 100 },
+        "action": { "type": "string", "maxLength": 100 },
+        "details": { "type": "string", "maxLength": 1000 },
+        "timestamp": { "type": "string" }
+      }
+    },
+    "Setting": {
+      "title": "Setting",
+      "description": "Academy setting or configuration document",
+      "type": "object",
+      "properties": {
+        "academyName": { "type": "string", "maxLength": 100 },
+        "currency": { "type": "string", "maxLength": 10 },
+        "rules": { "type": "object" }
+      }
+    },
+    "TrashItem": {
+      "title": "TrashItem",
+      "description": "Soft deleted or trash item",
+      "type": "object",
+      "properties": {
+        "originalCollection": { "type": "string", "maxLength": 50 },
+        "originalId": { "type": "string", "maxLength": 128 },
+        "data": { "type": "object" },
+        "deletedAt": { "type": "string" }
+      }
+    },
+    "Group": {
+      "title": "Group",
+      "description": "Group session class record",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "teacherId": { "type": "string", "maxLength": 128 },
+        "teacherName": { "type": "string", "maxLength": 100 },
+        "students": { "type": "array" },
+        "sessionDays": { "type": "array" },
+        "sessionTime": { "type": "string" },
+        "duration": { "type": "number" },
+        "createdAt": { "type": "string" }
+      }
+    },
+    "GroupSession": {
+      "title": "GroupSession",
+      "description": "Recorded session for group attendance",
+      "type": "object",
+      "properties": {
+        "groupId": { "type": "string", "maxLength": 128 },
+        "groupName": { "type": "string", "maxLength": 100 },
+        "teacherId": { "type": "string", "maxLength": 128 },
+        "teacherName": { "type": "string", "maxLength": 100 },
+        "date": { "type": "string" },
+        "duration": { "type": "number" },
+        "studentsAttendance": { "type": "object" },
+        "createdAt": { "type": "string" }
+      }
+    },
+    "StudentPackage": {
+      "title": "StudentPackage",
+      "description": "Package-based subscription and credit allocation for a student",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string", "maxLength": 128 },
+        "studentName": { "type": "string", "maxLength": 100 },
+        "packageId": { "type": "string", "maxLength": 128 },
+        "packageName": { "type": "string", "maxLength": 100 },
+        "totalLessons": { "type": "number" },
+        "usedLessons": { "type": "number" },
+        "remainingLessons": { "type": "number" },
+        "lessonDuration": { "type": "number" },
+        "price": { "type": "number" },
+        "discount": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "totalPaid": { "type": "number" },
+        "remainingAmount": { "type": "number" },
+        "startDate": { "type": "string", "maxLength": 30 },
+        "expiryDate": { "type": "string", "maxLength": 30 },
+        "status": { "type": "string", "enum": ["active", "completed", "expired", "cancelled"] },
+        "notes": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["studentId", "totalLessons", "remainingLessons", "status"]
+    },
+    "LessonCreditsLog": {
+      "title": "LessonCreditsLog",
+      "description": "Audit log for credit deduction, addition, or adjustment",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string", "maxLength": 128 },
+        "studentName": { "type": "string", "maxLength": 100 },
+        "packageId": { "type": "string", "maxLength": 128 },
+        "sessionId": { "type": "string", "maxLength": 128 },
+        "changeAmount": { "type": "number" },
+        "previousCredits": { "type": "number" },
+        "newCredits": { "type": "number" },
+        "actionType": { "type": "string", "enum": ["session_deduction", "package_purchase", "package_renew", "admin_adjustment", "session_reversal"] },
+        "reason": { "type": "string", "maxLength": 500 },
+        "performedBy": { "type": "string", "maxLength": 128 },
+        "performedByName": { "type": "string", "maxLength": 100 },
+        "timestamp": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["studentId", "changeAmount", "actionType"]
+    },
+    "StudentBalance": {
+      "title": "StudentBalance",
+      "description": "Consolidated financial and credit balance summary per student",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string", "maxLength": 128 },
+        "studentName": { "type": "string", "maxLength": 100 },
+        "totalDebit": { "type": "number" },
+        "totalPaid": { "type": "number" },
+        "outstandingBalance": { "type": "number" },
+        "activePackageId": { "type": "string", "maxLength": 128 },
+        "activePackageName": { "type": "string", "maxLength": 100 },
+        "remainingLessons": { "type": "number" },
+        "totalLessons": { "type": "number" },
+        "usedLessons": { "type": "number" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["studentId"]
+    },
+    "StudentLedger": {
+      "title": "StudentLedger",
+      "description": "Financial ledger entry for charges and payments",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string", "maxLength": 128 },
+        "studentName": { "type": "string", "maxLength": 100 },
+        "type": { "type": "string", "enum": ["charge", "payment", "discount", "refund"] },
+        "amount": { "type": "number" },
+        "referenceId": { "type": "string", "maxLength": 128 },
+        "description": { "type": "string", "maxLength": 500 },
+        "paymentMethod": { "type": "string", "maxLength": 50 },
+        "date": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["studentId", "type", "amount"]
+    },
+    "PayrollReconciliationLog": {
+      "title": "PayrollReconciliationLog",
+      "description": "Audit record of payroll and session reconciliation verification",
+      "type": "object",
+      "properties": {
+        "teacherId": { "type": "string", "maxLength": 128 },
+        "teacherName": { "type": "string", "maxLength": 100 },
+        "month": { "type": "string", "maxLength": 20 },
+        "status": { "type": "string", "enum": ["balanced", "acceptable_discrepancy", "critical_discrepancy"] },
+        "calculatedSalary": { "type": "number" },
+        "targetSalary": { "type": "number" },
+        "discrepancyAmount": { "type": "number" },
+        "totalSessions": { "type": "number" },
+        "includedSessions": { "type": "number" },
+        "excludedSessions": { "type": "number" },
+        "adminName": { "type": "string", "maxLength": 100 },
+        "adminId": { "type": "string", "maxLength": 128 },
+        "notes": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["teacherId", "month", "status"]
+    },
+    "Warning": {
+      "title": "Warning",
+      "description": "System warning alerts such as duplicate session recording alerts",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["duplicate_session", "unrecorded_session", "unusual_credit_activity"] },
+        "teacherId": { "type": "string", "maxLength": 128 },
+        "teacherName": { "type": "string", "maxLength": 100 },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "studentName": { "type": "string", "maxLength": 100 },
+        "date": { "type": "string", "maxLength": 30 },
+        "firstRecordedAt": { "type": "string", "maxLength": 50 },
+        "secondRecordedAt": { "type": "string", "maxLength": 50 },
+        "status": { "type": "string", "enum": ["unreviewed", "reviewed"] },
+        "reviewedAt": { "type": "string" },
+        "reviewedBy": { "type": "string", "maxLength": 150 },
+        "notes": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["type", "status"]
+    },
+    "SupervisorRequest": {
+      "title": "SupervisorRequest",
+      "description": "Operational change and administrative action requests submitted by Supervisors to the Admin",
+      "type": "object",
+      "properties": {
+        "supervisorId": { "type": "string", "maxLength": 128 },
+        "supervisorName": { "type": "string", "maxLength": 100 },
+        "type": { "type": "string", "maxLength": 64 },
+        "typeLabel": { "type": "string", "maxLength": 120 },
+        "title": { "type": "string", "maxLength": 200 },
+        "details": { "type": "string", "maxLength": 2000 },
+        "reason": { "type": "string", "maxLength": 2000 },
+        "targetId": { "type": "string", "maxLength": 128 },
+        "targetName": { "type": "string", "maxLength": 120 },
+        "payload": { "type": "object" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "adminDecision": { "type": "string", "enum": ["pending", "kept_pending", "approved", "rejected"] },
+        "adminNote": { "type": "string", "maxLength": 2000 },
+        "adminResponse": { "type": "string", "maxLength": 2000 },
+        "reviewedBy": { "type": "string", "maxLength": 150 },
+        "reviewedByName": { "type": "string", "maxLength": 120 },
+        "reviewedAt": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["supervisorId", "type", "title", "status"]
+    },
+    "ParentInteraction": {
+      "title": "ParentInteraction",
+      "description": "Parent communication, complaints, inquiries, and follow-ups",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string", "maxLength": 128 },
+        "studentName": { "type": "string", "maxLength": 100 },
+        "parentName": { "type": "string", "maxLength": 100 },
+        "parentPhone": { "type": "string", "maxLength": 30 },
+        "supervisorId": { "type": "string", "maxLength": 128 },
+        "supervisorName": { "type": "string", "maxLength": 100 },
+        "type": { "type": "string", "enum": ["inquiry", "complaint", "renewal_followup", "performance_note", "general"] },
+        "channel": { "type": "string", "enum": ["whatsapp", "phone_call", "in_person"] },
+        "status": { "type": "string", "enum": ["open", "resolved", "pending_parent"] },
+        "subject": { "type": "string", "maxLength": 200 },
+        "details": { "type": "string", "maxLength": 3000 },
+        "actionTaken": { "type": "string", "maxLength": 2000 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["studentName", "type", "subject", "details", "status"]
+    },
+    "PackageArchive": {
+      "title": "PackageArchive",
+      "description": "Snapshot archive created before bulk resetting student packages",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "archiveName": { "type": "string", "maxLength": 200 },
+        "totalPackagesArchived": { "type": "number" },
+        "reason": { "type": "string", "maxLength": 300 },
+        "createdAtIso": { "type": "string" }
+      },
+      "required": ["archiveName", "totalPackagesArchived"]
+    },
+    "TrialSession": {
+      "title": "TrialSession",
+      "description": "Trial lesson record submitted by teachers or reviewed by admins",
+      "type": "object",
+      "properties": {
+        "teacherId": { "type": "string", "maxLength": 128 },
+        "studentName": { "type": "string", "maxLength": 120 },
+        "date": { "type": "string", "maxLength": 30 },
+        "status": { "type": "string", "maxLength": 40 },
+        "notes": { "type": "string", "maxLength": 1000 }
+      },
+      "required": ["teacherId", "date"]
+    },
+    "IdempotencyKey": {
+      "title": "IdempotencyKey",
+      "description": "Distributed duplicate-submission guard record",
+      "type": "object",
+      "properties": {
+        "idempotencyKey": { "type": "string", "maxLength": 150 },
+        "opName": { "type": "string", "maxLength": 100 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "userEmail": { "type": "string", "maxLength": 150 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["idempotencyKey", "opName", "userId"]
+    }
+  },
+  "firestore": {
+    "/roles/{roleId}": {
+      "schema": { "$ref": "#/entities/Role" },
+      "description": "Normalized RBAC system role definitions"
+    },
+    "/permissions/{permissionKey}": {
+      "schema": { "$ref": "#/entities/Permission" },
+      "description": "Granular RBAC permission catalog"
+    },
+    "/role_permissions/{roleId}": {
+      "schema": { "$ref": "#/entities/RolePermission" },
+      "description": "Default permission maps per system role"
+    },
+    "/user_roles/{userId}": {
+      "schema": { "$ref": "#/entities/UserRole" },
+      "description": "Authoritative RBAC role and permission bindings per user"
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profile data for admins, supervisors, and teachers"
+    },
+    "/students/{studentId}": {
+      "schema": { "$ref": "#/entities/Student" },
+      "description": "Full student records and financial metadata"
+    },
+    "/studentOperationalSummaries/{studentId}": {
+      "schema": { "$ref": "#/entities/StudentOperationalSummary" },
+      "description": "Non-financial operational student projection"
+    },
+    "/teacherOperationalProfiles/{teacherId}": {
+      "schema": { "$ref": "#/entities/TeacherOperationalProfile" },
+      "description": "Non-financial operational teacher profile and weekly hours"
+    },
+    "/absenceLogs/{logId}": {
+      "schema": { "$ref": "#/entities/AbsenceLog" },
+      "description": "Immutable student and teacher absence logs"
+    },
+    "/activityLogs/{logId}": {
+      "schema": { "$ref": "#/entities/ActivityLog" },
+      "description": "Immutable operational activity audit log"
+    },
+    "/payrollReconciliationLogs/{logId}": {
+      "schema": { "$ref": "#/entities/PayrollReconciliationLog" },
+      "description": "Historical audit logs for payroll reconciliations"
+    },
+    "/studentPackages/{packageId}": {
+      "schema": { "$ref": "#/entities/StudentPackage" },
+      "description": "Package-based subscriptions and credit allocations"
+    },
+    "/lessonCreditsLogs/{logId}": {
+      "schema": { "$ref": "#/entities/LessonCreditsLog" },
+      "description": "Granular credit debit and credit logs"
+    },
+    "/studentBalances/{studentId}": {
+      "schema": { "$ref": "#/entities/StudentBalance" },
+      "description": "Consolidated financial and credits balance per student"
+    },
+    "/studentLedger/{ledgerId}": {
+      "schema": { "$ref": "#/entities/StudentLedger" },
+      "description": "Financial transactions ledger"
+    },
+    "/groups/{groupId}": {
+      "schema": { "$ref": "#/entities/Group" },
+      "description": "Group class records and rosters"
+    },
+    "/group_sessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/GroupSession" },
+      "description": "Attendance logs for group sessions"
+    },
+    "/sessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/Session" },
+      "description": "Class session attendance and records"
+    },
+    "/subscriptions/{subscriptionId}": {
+      "schema": { "$ref": "#/entities/Subscription" },
+      "description": "Legacy / compatibility student subscriptions"
+    },
+    "/payments/{paymentId}": {
+      "schema": { "$ref": "#/entities/Payment" },
+      "description": "Financial payment receipts"
+    },
+    "/expenses/{expenseId}": {
+      "schema": { "$ref": "#/entities/Expense" },
+      "description": "Academy financial expenses"
+    },
+    "/packages/{packageId}": {
+      "schema": { "$ref": "#/entities/Package" },
+      "description": "Available educational packages"
+    },
+    "/salaryArchive/{archiveId}": {
+      "schema": { "$ref": "#/entities/SalaryArchive" },
+      "description": "Monthly salary payout logs and history"
+    },
+    "/feedbacks/{feedbackId}": {
+      "schema": { "$ref": "#/entities/Feedback" },
+      "description": "Teacher opinions and feedback records"
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/Notification" },
+      "description": "System alerts and notifications"
+    },
+    "/notification_devices/{deviceId}": {
+      "schema": { "$ref": "#/entities/NotificationDevice" },
+      "description": "Registered devices for multi-device push notification delivery"
+    },
+    "/notification_logs/{logId}": {
+      "schema": { "$ref": "#/entities/NotificationLog" },
+      "description": "Delivery, opening, and dispatch audit logs"
+    },
+    "/notification_templates/{templateId}": {
+      "schema": { "$ref": "#/entities/NotificationTemplate" },
+      "description": "Notification templates for sessions, salaries, community, and system alerts"
+    },
+    "/settings/notifications": {
+      "schema": { "$ref": "#/entities/NotificationSetting" },
+      "description": "Master notification switches and settings"
+    },
+    "/auditLogs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "Audit trail for system actions"
+    },
+    "/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/Setting" },
+      "description": "Global system configurations"
+    },
+    "/trash/{trashId}": {
+      "schema": { "$ref": "#/entities/TrashItem" },
+      "description": "Archived or soft-deleted items"
+    },
+    "/warnings/{warningId}": {
+      "schema": { "$ref": "#/entities/Warning" },
+      "description": "System warning alerts and administrative review logs"
+    },
+    "/supervisorRequests/{requestId}": {
+      "schema": { "$ref": "#/entities/SupervisorRequest" },
+      "description": "Administrative requests submitted by Supervisors to the Admin"
+    },
+    "/parentInteractions/{interactionId}": {
+      "schema": { "$ref": "#/entities/ParentInteraction" },
+      "description": "Parent communication, complaint, and follow-up records"
+    },
+    "/packageArchives/{archiveId}": {
+      "schema": { "$ref": "#/entities/PackageArchive" },
+      "description": "Archived package snapshots prior to bulk reset"
+    },
+    "/trial_sessions/{trialId}": {
+      "schema": { "$ref": "#/entities/TrialSession" },
+      "description": "Trial sessions records"
+    },
+    "/idempotency_keys/{keyId}": {
+      "schema": { "$ref": "#/entities/IdempotencyKey" },
+      "description": "Distributed transaction idempotency keys"
+    }
+  }
+}

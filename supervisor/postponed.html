@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>سبيل - الحصص المؤجلة والتعويضية</title>
+
+  <script>
+    try {
+      if (localStorage.getItem('academy_dark_mode') === 'true' || localStorage.getItem('sabeel_theme') === 'dark') {
+        document.documentElement.classList.add('dark-theme');
+      }
+    } catch (e) {}
+  </script>
+
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <header class="navbar" id="appNavbar"></header>
+
+      <main class="content-body">
+        <div class="card" style="margin-bottom: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            <div>
+              <h1 style="font-size: 1.15rem; font-weight: 800; margin: 0;">إدارة الحصص المؤجلة والتعويضية</h1>
+              <p style="margin: 0.25rem 0 0; font-size: 0.82rem; color: var(--text-secondary);">متابعة أسباب التأجيل، الطرف المتسبب، وربط الحصص المؤجلة بمواعيد تعويضية من الأوقات المتاحة للمعلم.</p>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button type="button" class="btn btn-primary btn-sm comp-filter-tab" data-filter="pending">بانتظار التعويض</button>
+              <button type="button" class="btn btn-secondary btn-sm comp-filter-tab" data-filter="scheduled">تمت جدولة التعويض</button>
+              <button type="button" class="btn btn-secondary btn-sm comp-filter-tab" data-filter="completed">تم التعويض</button>
+              <button type="button" class="btn btn-secondary btn-sm comp-filter-tab" data-filter="all">الكل</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>تاريخ الحصة المؤجلة</th>
+                <th>الطالب والمعلم</th>
+                <th>سبب التأجيل والطرف</th>
+                <th>موعد التعويض</th>
+                <th>ملاحظات وتبرير الموعد</th>
+                <th>حالة التعويض</th>
+                <th>الإجراء</th>
+              </tr>
+            </thead>
+            <tbody id="postponedTableBody">
+              <tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-muted);">جاري تحميل الحصص المؤجلة...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Assign / Schedule Makeup Lesson Modal -->
+  <div id="makeupModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700;">تعيين / تحديث موعد الحصة التعويضية</h3>
+        <button type="button" id="closeMakeupModalBtn" class="btn btn-ghost btn-sm" aria-label="إغلاق">
+          <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+        </button>
+      </div>
+      <form id="makeupAssignForm">
+        <div class="modal-body">
+          <input type="hidden" id="makeupDelayedSessionId">
+          <div id="makeupLessonSummary" style="padding: 0.75rem; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); margin-bottom: 1rem; font-size: 0.84rem;"></div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-bottom: 0.85rem;">
+            <div class="form-group" style="margin: 0;">
+              <label for="makeupDateInput">تاريخ الحصة التعويضية</label>
+              <input type="date" id="makeupDateInput" class="form-control" required>
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label for="makeupTimeInput">وقت التعويض</label>
+              <input type="time" id="makeupTimeInput" class="form-control" required>
+            </div>
+          </div>
+
+          <div id="makeupAvailableSlotsBox" style="margin-bottom: 0.85rem; padding: 0.75rem; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm);">
+            <p style="margin: 0; font-size: 0.78rem; color: var(--text-muted);">حدد تاريخ التعويض لعرض الأوقات المتاحة في جدول المعلم.</p>
+          </div>
+
+          <div class="form-group">
+            <label for="makeupSelectionReason">سبب اختيار الموعد البديل</label>
+            <input type="text" id="makeupSelectionReason" class="form-control" placeholder="مثال: بناءً على توافق ولي الأمر ووقت المعلم المتاح">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="makeupTeacherNotes">ملاحظات للمعلم</label>
+            <textarea id="makeupTeacherNotes" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="cancelMakeupModalBtn" class="btn btn-secondary">إلغاء</button>
+          <button type="submit" id="saveMakeupBtn" class="btn btn-primary">تثبيت موعد التعويض</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import {
+      initSupervisorPage,
+      PERMISSIONS,
+      escapeHtml,
+      getTodayIsoDate,
+      badgeHtml
+    } from '../assets/js/features/supervisor/supervisorPageShell.js';
+    import {
+      computeTeacherAvailableSlots,
+      recordLessonWithWorkflow,
+      LESSON_STATUSES
+    } from '../assets/js/features/supervisor/supervisorDomainService.js';
+    import { dataStore } from '../assets/js/shared/data/dataStore.js';
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+
+    let actorCtx = null;
+    let currentFilter = 'pending';
+    let sessionsCache = [];
+    let studentsCache = [];
+    let teachersCache = [];
+    let groupsCache = [];
+    let selectedDelayedSession = null;
+
+    initSupervisorPage({
+      pageId: 'postponed',
+      pageTitle: 'المؤجلة والتعويض',
+      requiredPermission: PERMISSIONS.VIEW_POSTPONED_LESSONS,
+      onReady: (ctx) => {
+        actorCtx = ctx;
+
+        dataStore.subscribe('sessions', (list) => {
+          sessionsCache = list || [];
+          renderPostponedTable();
+        });
+        dataStore.subscribe('studentOperationalSummaries', (list) => {
+          studentsCache = list || [];
+        });
+        dataStore.subscribe('teacherOperationalProfiles', (list) => {
+          teachersCache = list || [];
+        });
+        dataStore.subscribe('groups', (list) => {
+          groupsCache = list || [];
+        });
+
+        document.querySelectorAll('.comp-filter-tab').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            currentFilter = btn.dataset.filter;
+            document.querySelectorAll('.comp-filter-tab').forEach((b) => {
+              b.className = b === btn ? 'btn btn-primary btn-sm comp-filter-tab' : 'btn btn-secondary btn-sm comp-filter-tab';
+            });
+            renderPostponedTable();
+          });
+        });
+
+        document.getElementById('closeMakeupModalBtn')?.addEventListener('click', closeMakeupModal);
+        document.getElementById('cancelMakeupModalBtn')?.addEventListener('click', closeMakeupModal);
+        document.getElementById('makeupDateInput')?.addEventListener('change', renderSlotsInMakeupModal);
+        document.getElementById('makeupAssignForm')?.addEventListener('submit', handleAssignMakeupSubmit);
+      },
+      onPermissionsUpdated: ({ hasPerm }) => {
+        if (actorCtx) actorCtx.hasPerm = hasPerm;
+        renderPostponedTable();
+      }
+    });
+
+    function resolveCompStatus(delayed) {
+      if (delayed.compensationStatus === 'completed') return 'completed';
+      const linked = sessionsCache.find(
+        (s) => s.status === 'compensatory' && (s.originalLessonId === delayed.id || s.id === delayed.compensatedBySessionId)
+      );
+      if (linked && linked.status === 'completed') return 'completed';
+      if (delayed.makeupDate || delayed.compensationStatus === 'scheduled' || linked) return 'scheduled';
+      return 'pending';
+    }
+
+    function renderPostponedTable() {
+      const tbody = document.getElementById('postponedTableBody');
+      if (!tbody) return;
+
+      const delayedList = sessionsCache
+        .filter((s) => s.status === 'delayed')
+        .map((s) => ({ ...s, resolvedCompStatus: resolveCompStatus(s) }))
+        .filter((s) => currentFilter === 'all' || s.resolvedCompStatus === currentFilter)
+        .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+      if (delayedList.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-muted);">لا توجد حصص مؤجلة مطابقة لهذا التصنيف.</td></tr>';
+        return;
+      }
+
+      const canScheduleMakeup = actorCtx?.hasPerm(PERMISSIONS.MANAGE_LESSONS) || actorCtx?.hasPerm(PERMISSIONS.EDIT_SCHEDULES);
+      const partyLabels = { student: 'الطالب / ولي الأمر', teacher: 'المعلم', academy: 'الأكاديمية' };
+
+      tbody.innerHTML = delayedList.map((s) => {
+        let compBadge = badgeHtml('بانتظار التعويض', 'warning');
+        if (s.resolvedCompStatus === 'scheduled') compBadge = badgeHtml('مجدولة للتعويض', 'info');
+        else if (s.resolvedCompStatus === 'completed') compBadge = badgeHtml('تم التعويض', 'success');
+
+        return `
+          <tr>
+            <td>
+              <strong class="tabular-nums">${escapeHtml(s.postponedFrom || s.date || '-')}</strong>
+              <div style="font-size: 0.74rem; color: var(--text-muted);" class="tabular-nums">${escapeHtml(s.time || '')}</div>
+            </td>
+            <td>
+              <strong>${escapeHtml(s.studentName || 'طالب')}</strong>
+              <div style="font-size: 0.76rem; color: var(--text-secondary);">${escapeHtml(s.teacherName || 'غير معين')}</div>
+            </td>
+            <td>
+              <div style="font-size: 0.82rem; font-weight: 600;">${escapeHtml(s.postponeReason || 'لم يحدد سبب')}</div>
+              <div style="font-size: 0.74rem; color: var(--text-muted);">المتسبب: ${escapeHtml(partyLabels[s.responsibleParty] || 'غير محدد')}</div>
+            </td>
+            <td>
+              ${s.makeupDate ? `<strong class="tabular-nums">${escapeHtml(s.makeupDate)}</strong><div style="font-size: 0.74rem; color: var(--primary-color);" class="tabular-nums">${escapeHtml(s.makeupTime || '')}</div>` : badgeHtml('غير محدد بعد', 'neutral')}
+            </td>
+            <td style="max-width: 220px; font-size: 0.78rem; color: var(--text-secondary);">
+              ${escapeHtml([s.slotSelectionReason, s.teacherNotes].filter(Boolean).join(' — ') || '-')}
+            </td>
+            <td>${compBadge}</td>
+            <td>
+              ${canScheduleMakeup && s.resolvedCompStatus !== 'completed' ? `
+                <button type="button" class="btn btn-secondary btn-sm btn-schedule-makeup" data-id="${escapeHtml(s.id)}">
+                  <i data-lucide="calendar-plus" style="width: 14px; height: 14px;"></i>
+                  ${s.makeupDate ? 'تعديل الموعد' : 'تعيين موعد'}
+                </button>
+              ` : badgeHtml(s.resolvedCompStatus === 'completed' ? 'مغلق' : 'عرض فقط', 'neutral')}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      tbody.querySelectorAll('.btn-schedule-makeup').forEach((btn) => {
+        btn.addEventListener('click', () => openMakeupModal(btn.dataset.id));
+      });
+
+      if (window.lucide) window.lucide.createIcons({ root: tbody });
+    }
+
+    function openMakeupModal(sessionId) {
+      selectedDelayedSession = sessionsCache.find((s) => s.id === sessionId);
+      if (!selectedDelayedSession) return;
+
+      document.getElementById('makeupDelayedSessionId').value = selectedDelayedSession.id;
+      document.getElementById('makeupLessonSummary').innerHTML = `
+        <strong>الطالب:</strong> ${escapeHtml(selectedDelayedSession.studentName || '')} |
+        <strong>المعلم:</strong> ${escapeHtml(selectedDelayedSession.teacherName || '')} |
+        <strong>التاريخ الأصلي:</strong> <span class="tabular-nums">${escapeHtml(selectedDelayedSession.postponedFrom || selectedDelayedSession.date || '')}</span>
+      `;
+      document.getElementById('makeupDateInput').value = selectedDelayedSession.makeupDate || getTodayIsoDate();
+      document.getElementById('makeupTimeInput').value = selectedDelayedSession.makeupTime || '17:00';
+      document.getElementById('makeupSelectionReason').value = selectedDelayedSession.slotSelectionReason || '';
+      document.getElementById('makeupTeacherNotes').value = selectedDelayedSession.teacherNotes || '';
+
+      renderSlotsInMakeupModal();
+      document.getElementById('makeupModal').style.display = 'flex';
+    }
+
+    function closeMakeupModal() {
+      document.getElementById('makeupModal').style.display = 'none';
+      selectedDelayedSession = null;
+    }
+
+    function renderSlotsInMakeupModal() {
+      const box = document.getElementById('makeupAvailableSlotsBox');
+      if (!box || !selectedDelayedSession) return;
+
+      const targetDate = document.getElementById('makeupDateInput').value;
+      if (!targetDate) return;
+
+      const teacherProfile = teachersCache.find(
+        (t) => (t.uid || t.id) === selectedDelayedSession.teacherId
+      ) || { uid: selectedDelayedSession.teacherId };
+
+      const result = computeTeacherAvailableSlots({
+        teacherProfile,
+        students: studentsCache,
+        groups: groupsCache,
+        sessions: sessionsCache,
+        targetDate,
+        slotDurationMinutes: Number(selectedDelayedSession.duration || 60)
+      });
+
+      if (result.slots.length === 0) {
+        box.innerHTML = '<p style="margin: 0; font-size: 0.78rem; color: var(--danger);">لا توجد فترات شاغرة في جدول المعلم لهذا اليوم.</p>';
+        return;
+      }
+
+      box.innerHTML = `
+        <div style="font-size: 0.76rem; font-weight: 700; margin-bottom: 0.45rem; color: var(--text-secondary);">المواعيد الشاغرة للمعلم يوم ${escapeHtml(result.targetDayName)}:</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; max-height: 120px; overflow-y: auto;">
+          ${result.slots.map((slot) => `
+            <button type="button" class="btn btn-outline btn-sm makeup-slot-pick" data-time="${escapeHtml(slot.time24)}">${escapeHtml(slot.startLabel)}</button>
+          `).join('')}
+        </div>
+      `;
+
+      box.querySelectorAll('.makeup-slot-pick').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document.getElementById('makeupTimeInput').value = btn.dataset.time;
+        });
+      });
+    }
+
+    async function handleAssignMakeupSubmit(e) {
+      e.preventDefault();
+      if (!selectedDelayedSession) return;
+
+      const makeupDate = document.getElementById('makeupDateInput').value;
+      const makeupTime = document.getElementById('makeupTimeInput').value;
+      const slotSelectionReason = document.getElementById('makeupSelectionReason').value.trim();
+      const teacherNotes = document.getElementById('makeupTeacherNotes').value.trim();
+
+      const btn = document.getElementById('saveMakeupBtn');
+      btn.disabled = true;
+
+      try {
+        await recordLessonWithWorkflow({
+          existingSessionId: selectedDelayedSession.id,
+          studentId: selectedDelayedSession.studentId,
+          studentName: selectedDelayedSession.studentName,
+          teacherId: selectedDelayedSession.teacherId,
+          teacherName: selectedDelayedSession.teacherName,
+          date: selectedDelayedSession.postponedFrom || selectedDelayedSession.date,
+          time: selectedDelayedSession.time,
+          duration: selectedDelayedSession.duration,
+          type: selectedDelayedSession.type || 'individual',
+          status: LESSON_STATUSES.DELAYED,
+          postponeReason: selectedDelayedSession.postponeReason || '',
+          responsibleParty: selectedDelayedSession.responsibleParty || 'student',
+          makeupDate,
+          makeupTime,
+          teacherNotes,
+          slotSelectionReason,
+          createMakeupSession: !selectedDelayedSession.compensatedBySessionId
+        }, {
+          uid: actorCtx.uid,
+          name: actorCtx.name,
+          role: 'supervisor',
+          canEditDuration: actorCtx.hasPerm(PERMISSIONS.EDIT_LESSON_DURATION)
+        });
+
+        Toast.success('تم تعيين موعد الحصة التعويضية وربطه بنجاح.');
+        closeMakeupModal();
+      } catch (err) {
+        console.error(err);
+        Toast.danger('تعذر حفظ موعد الحصة التعويضية.');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

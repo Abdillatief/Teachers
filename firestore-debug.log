@@ -1,0 +1,13 @@
+Nov 23, 2026 1:36:12 PM com.google.cloud.datastore.emulator.firestore.CloudFirestore main
+SEVERE: Exiting due to unexpected exception.
+java.io.FileNotFoundException: C:\Users\H_114\Desktop\????????-???? (1\firestore.rules (The filename, directory name, or volume label syntax is incorrect)
+	at java.base/java.io.FileInputStream.open0(Native Method)
+	at java.base/java.io.FileInputStream.open(FileInputStream.java:213)
+	at java.base/java.io.FileInputStream.<init>(FileInputStream.java:152)
+	at com.google.common.io.Files$FileByteSource.openStream(Files.java:140)
+	at com.google.common.io.Files$FileByteSource.read(Files.java:170)
+	at com.google.common.io.ByteSource$AsCharSource.read(ByteSource.java:534)
+	at com.google.cloud.datastore.emulator.firestore.CloudFirestore.init(CloudFirestore.java:186)
+	at com.google.cloud.datastore.emulator.firestore.CloudFirestore.startLocally(CloudFirestore.java:120)
+	at com.google.cloud.datastore.emulator.firestore.CloudFirestore.main(CloudFirestore.java:101)
+
