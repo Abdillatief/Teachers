@@ -27,6 +27,8 @@ import { playNotificationChime } from './reminderService.js';
 import { loginAndSyncOneSignal } from '../services/oneSignalManager.js';
 import { 
   isMedianApp, 
+  isCapacitorNative,
+  isNativeApp,
   getAppPlatform, 
   initMedianOneSignal,
   loginMedianOneSignal,
@@ -56,8 +58,8 @@ export function getOrCreateDeviceId() {
  * Registers the Service Worker required for FCM background web push
  */
 export async function registerFCMServiceWorker() {
-  if (isMedianApp()) {
-    // Inside Median Native App wrapper, OS handles native push directly without Service Worker
+  if (isNativeApp()) {
+    // Inside native app wrapper, OS handles native push directly without Service Worker
     return null;
   }
 
@@ -107,51 +109,76 @@ export async function initAndSyncFCM(user, role = null) {
   loginAndSyncOneSignal(user, userRole).catch(e => console.warn('[Push Manager] OneSignal link warning:', e));
 
   /* ========================================================================
-     1. MEDIAN NATIVE APP MODE (OneSignal Native Push)
+     1. NATIVE APP MODE (Capacitor / Median OneSignal Native Push)
      ======================================================================== */
-  if (isMedianApp()) {
-    console.log('[Push Manager] Running inside Median Mobile Wrapper. Initializing OneSignal Native Push...');
-    
+  if (isNativeApp()) {
+    console.log('[Push Manager] Running inside native app wrapper. Initializing native push...');
+
     try {
-      // 1. Initialize OneSignal Native Bridge and set External User ID = user.uid
-      const oneSignalData = await initMedianOneSignal(user, userRole);
-      const oneSignalId = oneSignalData?.oneSignalId || localStorage.getItem('sabeel_onesignal_player_id') || null;
+      let oneSignalId = null;
 
-      // 2. Fetch Native FCM token if also available via Median FCM fallback
-      const nativeFcmToken = await getMedianNativeFcmToken(3000).catch(() => null);
+      if (isCapacitorNative()) {
+        // Capacitor OneSignal SDK
+        try {
+          const { default: OneSignal } = await import('@onesignal/capacitor-plugin');
+          OneSignal.initialize('61a2cc38-b4a8-4032-96ae-caa738df2ffd');
+          await OneSignal.login(user.uid);
+          try { await OneSignal.Notifications.requestPermission(true); } catch (_) {}
+          // Give native layer a moment to register subscription
+          await new Promise(r => setTimeout(r, 1500));
+          try {
+            const idRes = await OneSignal.User.pushSubscription.getIdAsync();
+            oneSignalId = idRes || null;
+          } catch (_) {}
+          if (!oneSignalId) {
+            try { oneSignalId = await OneSignal.User.getOnesignalId(); } catch (_) {}
+          }
+          try {
+            await OneSignal.User.addTags({ uid: user.uid, role: userRole, external_id: user.uid });
+          } catch (_) {}
+          console.log('[Push Manager] Capacitor OneSignal initialized', { oneSignalId });
+        } catch (capErr) {
+          console.warn('[Push Manager] Capacitor OneSignal init error:', capErr);
+        }
+      } else if (isMedianApp()) {
+        // Median / GoNative
+        const oneSignalData = await initMedianOneSignal(user, userRole);
+        oneSignalId = oneSignalData?.oneSignalId || localStorage.getItem('sabeel_onesignal_player_id') || null;
+      }
 
-      // 3. Save OneSignal & Device mapping in Firestore under users/{userId}
+      if (!oneSignalId) oneSignalId = localStorage.getItem('sabeel_onesignal_player_id') || null;
+
+      const nativeFcmToken = (!isCapacitorNative() ? await getMedianNativeFcmToken(3000).catch(() => null) : null);
+
       const userDocRef = doc(db, 'users', user.uid);
       const nowIso = new Date().toISOString();
-
       const updateData = {
         oneSignalId: oneSignalId || null,
         oneSignalExternalId: user.uid,
         deviceType: userPlatform,
         lastPushTokenUpdate: nowIso,
-        isMedianUser: true,
+        isMedianUser: isMedianApp(),
+        isCapacitorUser: isCapacitorNative(),
         pushProvider: 'onesignal',
         [`devices.${deviceId}`]: {
-          provider: 'onesignal',
+          provider: isCapacitorNative() ? 'onesignal-capacitor' : 'onesignal',
           oneSignalId: oneSignalId || null,
           externalId: user.uid,
           platform: userPlatform,
-          userAgent: navigator.userAgent || 'Median App Wrapper',
+          userAgent: navigator.userAgent || 'Native App Wrapper',
           lastUpdated: nowIso
         }
       };
 
-      if (nativeFcmToken) {
-        updateData.fcmTokens = arrayUnion(nativeFcmToken);
-      }
+      if (nativeFcmToken) updateData.fcmTokens = arrayUnion(nativeFcmToken);
 
-      await updateDoc(userDocRef, updateData).catch(e => console.warn('[Push Manager] Firestore OneSignal sync error:', e));
+      await updateDoc(userDocRef, updateData).catch(e => console.warn('[Push Manager] Firestore native push sync error:', e));
       sessionStorage.setItem('sabeel_current_push_provider', 'onesignal');
-      console.log('[Push Manager] OneSignal Native Push registered successfully for User UID:', user.uid, 'Player ID:', oneSignalId);
+      console.log('[Push Manager] Native push registered successfully for UID:', user.uid, 'Player ID:', oneSignalId);
 
       return oneSignalId || user.uid;
-    } catch (medianErr) {
-      console.warn('[Push Manager] Error during Median OneSignal native sync:', medianErr);
+    } catch (nativeErr) {
+      console.warn('[Push Manager] Error during native push sync:', nativeErr);
       return null;
     }
   }
@@ -334,6 +361,9 @@ export async function removeFCMTokenOnLogout(userId) {
 
     // Unlink OneSignal external ID on logout
     logoutMedianOneSignal();
+    if (isCapacitorNative()) {
+      try { const { default: OneSignal } = await import('@onesignal/capacitor-plugin'); await OneSignal.logout(); } catch (_) {}
+    }
 
     const updateObj = {
       [`fcmDevices.${deviceId}`]: deleteField(),

@@ -13,7 +13,7 @@
 import '../utils/jsonShield.js';
 import { auth, db } from '../../config/firebase.js';
 import { doc, getDoc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-import { isMedianApp, getMedianOneSignalInfo, setMedianOneSignalTags, promptMedianPushPermission, logoutMedianOneSignal } from '../utils/medianBridge.js';
+import { isMedianApp, isCapacitorNative, getMedianOneSignalInfo, setMedianOneSignalTags, promptMedianPushPermission, logoutMedianOneSignal } from '../utils/medianBridge.js';
 import { sanitizeFirebaseUid } from '../utils/helpers.js';
 import { registerDevice } from './deviceService.js';
 
@@ -91,6 +91,30 @@ export async function initOneSignal() {
  * @returns {Promise<{ subscriptionId: string|null, pushToken: string|null, optedIn: boolean, playerId: string|null }>}
  */
 export async function waitForSubscriptionRegistration(timeoutMs = 6000) {
+  // Capacitor native
+  if (isCapacitorNative()) {
+    try {
+      const { default: OneSignal } = await import('@onesignal/capacitor-plugin');
+      const deadline = Date.now() + timeoutMs;
+      let playerId = null;
+      let subscriptionId = null;
+      let optedIn = false;
+      while (Date.now() < deadline) {
+        try { subscriptionId = (await OneSignal.User?.pushSubscription?.getIdAsync?.()) || subscriptionId; } catch (_) {}
+        try { if (subscriptionId && typeof subscriptionId === 'object') subscriptionId = subscriptionId.id || subscriptionId.subscriptionId || null; } catch (_) {}
+        try { playerId = (await OneSignal.User?.getOnesignalId?.()) || playerId; } catch (_) {}
+        try { if (playerId && typeof playerId === 'object') playerId = playerId.onesignalId || playerId.id || null; } catch (_) {}
+        try { const o = await OneSignal.User?.pushSubscription?.getOptedInAsync?.(); optedIn = typeof o === 'object' ? Boolean(o.optedIn) : Boolean(o); } catch (_) {}
+        if (subscriptionId || playerId) return { subscriptionId: subscriptionId || playerId, pushToken: null, optedIn: optedIn || Boolean(subscriptionId || playerId), playerId: playerId || subscriptionId };
+        await new Promise(r => setTimeout(r, 500));
+      }
+      return { subscriptionId: subscriptionId || playerId, pushToken: null, optedIn: optedIn || Boolean(subscriptionId || playerId), playerId: playerId || subscriptionId };
+    } catch (e) {
+      console.warn('[OneSignalManager] Capacitor info wait error:', e);
+      return { subscriptionId: null, pushToken: null, optedIn: false, playerId: null };
+    }
+  }
+
   // If running inside Median Native App, check native bridge
   if (isMedianApp()) {
     try {
@@ -213,94 +237,71 @@ export async function loginAndSyncOneSignal(firebaseUser, role = 'teacher') {
   console.log(`[OneSignalManager] Initializing OneSignal sync for UID: ${uid} (Role: ${role})...`);
 
   try {
-    // 1. Ensure OneSignal Web SDK is initialized
-    await initOneSignal();
-
-    // 2. Deduplication & Anti-malformed logic:
-    // Check if currently associated externalId in Web SDK or localStorage is an object, JSON string, or mismatch
-    const currentExternalId = window.OneSignal?.User?.externalId || localStorage.getItem('sabeel_onesignal_external_id');
-    const isMalformed = currentExternalId && (
-      currentExternalId.startsWith('{') ||
-      currentExternalId.includes('externalId') ||
-      currentExternalId.includes('[object') ||
-      currentExternalId.includes('"')
-    );
-
-    if (isMalformed || (currentExternalId && currentExternalId !== uid)) {
-      console.warn(`[OneSignalManager] Malformed or stale external ID detected ("${currentExternalId}"). Clearing session to prevent duplicates...`);
+    // Capacitor native: use OneSignal Capacitor SDK
+    if (isCapacitorNative()) {
       try {
-        if (window.OneSignal && typeof window.OneSignal.logout === 'function') {
-          await window.OneSignal.logout();
-        }
-      } catch (e) {}
-      try {
-        logoutMedianOneSignal();
-      } catch (e) {}
-      localStorage.removeItem('sabeel_onesignal_external_id');
-    }
-
-    // 3. Perform Median Native Bridge login if inside Median App (PURE STRING UID ONLY)
-    if (isMedianApp()) {
-      try {
-        if (window.median?.onesignal?.login) {
-          window.median.onesignal.login(uid);
-        } else if (window.gonative?.onesignal?.login) {
-          window.gonative.onesignal.login(uid);
-        }
-        if (window.median?.onesignal?.setExternalUserId) {
-          window.median.onesignal.setExternalUserId(uid);
-        }
-        // Ensure push permission is requested with requestPermission(true)
-        await promptMedianPushPermission();
-      } catch (e) {
-        console.warn('[OneSignalManager] Median native login call warning:', e);
-      }
-    }
-
-    // 4. Web SDK login: await OneSignal.login(firebaseUID) - pure string only!
-    if (window.OneSignal && typeof window.OneSignal.login === 'function') {
-      try {
-        await window.OneSignal.login(uid);
-        console.log(`[OneSignalManager] Successfully executed: await OneSignal.login('${uid}')`);
-      } catch (loginErr) {
-        console.warn('[OneSignalManager] OneSignal.login error:', loginErr);
+        const { default: OneSignal } = await import('@onesignal/capacitor-plugin');
+        OneSignal.initialize(ONESIGNAL_APP_ID);
+        try { await OneSignal.login(uid); } catch (e) { console.warn('[OneSignalManager] Capacitor login warning:', e); }
+        try { await OneSignal.Notifications.requestPermission(true); } catch (_) {}
+        try { await OneSignal.User.addTags({ uid, external_id: uid, role, email: firebaseUser.email || '', last_sync: new Date().toISOString() }); } catch (_) {}
+      } catch (capErr) {
+        console.warn('[OneSignalManager] Capacitor OneSignal sync error:', capErr);
       }
     } else {
-      // Push into deferred queue
-      window.OneSignalDeferred = window.OneSignalDeferred || [];
-      window.OneSignalDeferred.push(async function(OneSignal) {
-        try {
-          await OneSignal.login(uid);
-          console.log(`[OneSignalManager] OneSignalDeferred executed OneSignal.login('${uid}')`);
-        } catch (e) {
-          console.warn('[OneSignalManager] OneSignalDeferred login error:', e);
-        }
-      });
-    }
+      // 1. Ensure OneSignal Web SDK is initialized
+      await initOneSignal();
 
-    // 4. Set user tags for role and identification
-    try {
-      const tags = {
-        uid: uid,
-        external_id: uid,
-        role: role,
-        email: firebaseUser.email || '',
-        last_sync: new Date().toISOString()
-      };
-      if (window.OneSignal?.User?.addTags) {
-        window.OneSignal.User.addTags(tags);
+      // 2. Deduplication & Anti-malformed logic
+      const currentExternalId = window.OneSignal?.User?.externalId || localStorage.getItem('sabeel_onesignal_external_id');
+      const isMalformed = currentExternalId && (
+        currentExternalId.startsWith('{') ||
+        currentExternalId.includes('externalId') ||
+        currentExternalId.includes('[object') ||
+        currentExternalId.includes('"')
+      );
+
+      if (isMalformed || (currentExternalId && currentExternalId !== uid)) {
+        console.warn(`[OneSignalManager] Malformed or stale external ID detected ("${currentExternalId}"). Clearing session to prevent duplicates...`);
+        try { if (window.OneSignal && typeof window.OneSignal.logout === 'function') await window.OneSignal.logout(); } catch (e) {}
+        try { logoutMedianOneSignal(); } catch (e) {}
+        localStorage.removeItem('sabeel_onesignal_external_id');
       }
-      setMedianOneSignalTags(tags);
-    } catch (e) {}
 
-    // 5. If browser permission was already granted, ensure pushSubscription is opted in
-    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-      if (window.OneSignal?.User?.pushSubscription && !window.OneSignal.User.pushSubscription.optedIn) {
+      // 3. Median Native Bridge login
+      if (isMedianApp()) {
         try {
-          await window.OneSignal.User.pushSubscription.optIn();
-          console.log('[OneSignalManager] OneSignal.User.pushSubscription.optIn executed');
-        } catch (optErr) {
-          console.warn('[OneSignalManager] optIn attempt notice:', optErr);
+          if (window.median?.onesignal?.login) window.median.onesignal.login(uid);
+          else if (window.gonative?.onesignal?.login) window.gonative.onesignal.login(uid);
+          if (window.median?.onesignal?.setExternalUserId) window.median.onesignal.setExternalUserId(uid);
+          await promptMedianPushPermission();
+        } catch (e) {
+          console.warn('[OneSignalManager] Median native login call warning:', e);
+        }
+      }
+
+      // 4. Web SDK login
+      if (window.OneSignal && typeof window.OneSignal.login === 'function') {
+        try { await window.OneSignal.login(uid); console.log(`[OneSignalManager] Successfully executed: await OneSignal.login('${uid}')`); }
+        catch (loginErr) { console.warn('[OneSignalManager] OneSignal.login error:', loginErr); }
+      } else {
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        window.OneSignalDeferred.push(async function(OneSignal) {
+          try { await OneSignal.login(uid); } catch (e) { console.warn('[OneSignalManager] OneSignalDeferred login error:', e); }
+        });
+      }
+
+      // 4b. Set user tags
+      try {
+        const tags = { uid, external_id: uid, role, email: firebaseUser.email || '', last_sync: new Date().toISOString() };
+        if (window.OneSignal?.User?.addTags) window.OneSignal.User.addTags(tags);
+        setMedianOneSignalTags(tags);
+      } catch (e) {}
+
+      // 5. Opt in if permission granted
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        if (window.OneSignal?.User?.pushSubscription && !window.OneSignal.User.pushSubscription.optedIn) {
+          try { await window.OneSignal.User.pushSubscription.optIn(); } catch (optErr) { console.warn('[OneSignalManager] optIn attempt notice:', optErr); }
         }
       }
     }
@@ -315,7 +316,7 @@ export async function loginAndSyncOneSignal(firebaseUser, role = 'teacher') {
     const permission = window.OneSignal?.Notifications?.permission || (typeof Notification !== 'undefined' ? Notification.permission : 'default');
 
     // If permission is still default and user hasn't dismissed the prompt, suggest enabling notifications
-    if (permission === 'default' && !isMedianApp() && typeof window !== 'undefined') {
+    if (permission === 'default' && !isNativeApp() && typeof window !== 'undefined') {
       showPushPromptBanner(firebaseUser);
     }
 
@@ -433,7 +434,14 @@ export async function ensureActivePushSubscription(firebaseUser = null) {
 
   console.log(`[OneSignalManager] User ${uid} does not have an active push subscription. Triggering device registration...`);
 
-  if (isMedianApp()) {
+  if (isCapacitorNative()) {
+    try {
+      const { default: OneSignal } = await import('@onesignal/capacitor-plugin');
+      await OneSignal.Notifications.requestPermission(true);
+      await OneSignal.login(uid);
+    } catch (_) {}
+    await loginAndSyncOneSignal(user);
+  } else if (isMedianApp()) {
     await promptMedianPushPermission();
     await loginMedianOneSignal(user);
   } else {
@@ -494,6 +502,9 @@ export async function reconcileOneSignalIds(firebaseUser) {
  */
 export async function logoutOneSignal() {
   try {
+    if (isCapacitorNative()) {
+      try { const { default: OneSignal } = await import('@onesignal/capacitor-plugin'); await OneSignal.logout(); } catch (_) {}
+    }
     if (window.OneSignal && typeof window.OneSignal.logout === 'function') {
       await window.OneSignal.logout();
     }

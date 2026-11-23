@@ -15,7 +15,7 @@ import {
   deleteDoc, 
   serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-import { isMedianApp, getAppPlatform } from '../utils/medianBridge.js';
+import { isMedianApp, isNativeApp, getAppPlatform } from '../utils/medianBridge.js';
 
 const DEVICE_ID_KEY = 'sabeel_unique_device_id';
 
@@ -50,7 +50,8 @@ export function getDeviceDetails() {
     deviceType,
     platform: getAppPlatform(),
     userAgent: ua.substring(0, 150),
-    isMedian: isMedianApp()
+    isMedian: isMedianApp(),
+    isNativeApp: isNativeApp()
   };
 }
 
@@ -75,6 +76,7 @@ export async function registerDevice(user, oneSignalPlayerId = null) {
     platform: details.platform,
     deviceType: details.deviceType,
     isMedian: details.isMedian,
+    isNativeApp: details.isNativeApp || false,
     lastActive: new Date().toISOString(),
     updatedAt: serverTimestamp()
   };

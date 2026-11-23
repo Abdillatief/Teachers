@@ -60,6 +60,24 @@
     .btn:hover { transform: translateY(-1px); }
     .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; box-shadow: 0 10px 30px rgba(13,148,136,.35); }
     .btn-secondary { background: rgba(255,255,255,.04); color: var(--text); border-color: var(--border); }
+    .btn:disabled { opacity: .7; cursor: wait; transform: none; }
+    .download-overlay { position: fixed; inset: 0; background: rgba(11,18,32,.72); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 9999; }
+    .download-overlay.show { display: flex; }
+    .download-modal { width: min(100%, 460px); background: linear-gradient(180deg, #16233a, #121b2e); border: 1px solid var(--border); border-radius: 24px; padding: 24px; box-shadow: 0 24px 80px rgba(0,0,0,.45); text-align: center; }
+    .dl-anim { width: 88px; height: 88px; margin: 0 auto 14px; border-radius: 50%; background: rgba(13,148,136,.12); display: grid; place-items: center; position: relative; }
+    .dl-anim::before { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 3px solid rgba(94,234,212,.18); border-top-color: #5eead4; animation: spin 1s linear infinite; }
+    .dl-anim svg { width: 34px; height: 34px; color: #5eead4; animation: bounce 1.4s ease-in-out infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes bounce { 0%,100% { transform: translateY(-2px); } 50% { transform: translateY(4px); } }
+    .download-modal h2 { margin: 0 0 8px; font-size: 1.3rem; }
+    .download-modal p { margin: 0; color: var(--muted); line-height: 1.8; font-size: .92rem; }
+    .dl-steps { margin-top: 16px; text-align: right; background: rgba(255,255,255,.03); border: 1px solid var(--border); border-radius: 16px; padding: 14px; }
+    .dl-step { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; font-size: .86rem; color: #cbd5e1; line-height: 1.7; }
+    .dl-step + .dl-step { border-top: 1px dashed var(--border); }
+    .dl-dot { width: 24px; height: 24px; flex: 0 0 24px; border-radius: 50%; background: rgba(13,148,136,.18); color: #99f6e4; display: grid; place-items: center; font-size: .75rem; font-weight: 800; margin-top: 1px; }
+    .dl-actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+    .dl-actions .btn { flex: 1; min-width: 140px; padding: 11px 14px; font-size: .88rem; }
+    .dl-file { margin-top: 12px; font-size: .78rem; color: var(--muted); }
     .meta { display: flex; flex-wrap: wrap; gap: 10px; color: var(--muted); font-size: .8rem; }
     .meta span { background: rgba(255,255,255,.03); border: 1px solid var(--border); padding: 6px 10px; border-radius: 999px; }
     .phone {
@@ -113,9 +131,9 @@
         <p class="lead">نفس النظام اللي بتستخدمه على الويب، لكن كتطبيق أندرويد سريع وسهل الوصول من الشاشة الرئيسية. مناسب للإدارة والمعلمين والمشرفين.</p>
 
         <div class="actions">
-          <a class="btn btn-primary" id="apkDownloadBtn" href="/downloads/sabeel-academy.apk" download>
+          <a class="btn btn-primary" id="apkDownloadBtn" href="/downloads/sabeel-academy.apk" download="sabeel-academy.apk">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            تحميل تطبيق أندرويد (APK)
+            <span id="apkBtnText">تحميل تطبيق أندرويد (APK)</span>
           </a>
           <a class="btn btn-secondary" href="/" >فتح نسخة الويب</a>
         </div>
@@ -124,9 +142,6 @@
           <span>Android 8+</span>
           <span>تثبيت مباشر APK</span>
           <span>يعمل بنفس حسابك</span>
-        </div>
-        <div class="note" id="apkNote">
-          إذا ظهر لك أن رابط التحميل غير متاح حاليًا، فهذا يعني أن ملف الـ APK لم يُرفع بعد إلى مجلد <code>/public/downloads/</code>. اطلب من المسؤول رفع الملف باسم <code>sabeel-academy.apk</code>.
         </div>
       </div>
 
@@ -185,25 +200,81 @@
     <div class="footer">أكاديمية سبيل © 2026 — صفحة تحميل التطبيق</div>
   </div>
 
+  <div class="download-overlay" id="downloadOverlay" aria-hidden="true">
+    <div class="download-modal" role="dialog" aria-modal="true" aria-labelledby="dlTitle">
+      <div class="dl-anim" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </div>
+      <h2 id="dlTitle">جاري تجهيز التحميل...</h2>
+      <p id="dlDesc">بدأ تحميل ملف التطبيق. على معظم موبايلات أندرويد هتلاقيه في شريط الإشعارات أو في تطبيق <strong>الملفات / التنزيلات</strong>.</p>
+      <div class="dl-steps">
+        <div class="dl-step"><div class="dl-dot">1</div><div>انتظر اكتمال التحميل من شريط الإشعارات بالأعلى.</div></div>
+        <div class="dl-step"><div class="dl-dot">2</div><div>اضغط على الملف <strong>sabeel-academy.apk</strong> بعد اكتماله.</div></div>
+        <div class="dl-step"><div class="dl-dot">3</div><div>لو ظهر طلب إذن، اسمح بالتثبيت من هذا المصدر ثم أكمل التثبيت.</div></div>
+      </div>
+      <div class="dl-actions">
+        <a class="btn btn-primary" id="dlRetryBtn" href="/downloads/sabeel-academy.apk" download="sabeel-academy.apk">إعادة بدء التحميل</a>
+        <button class="btn btn-secondary" id="dlCloseBtn" type="button">إغلاق</button>
+      </div>
+      <div class="dl-file">اسم الملف: sabeel-academy.apk · الحجم تقريبًا: 5.5 MB</div>
+    </div>
+  </div>
+
   <script>
-    // Friendly message when APK file is missing
     (function () {
       const btn = document.getElementById('apkDownloadBtn');
-      const note = document.getElementById('apkNote');
-      if (!btn) return;
-      btn.addEventListener('click', async function (e) {
-        // Let normal download attempt happen for real file; also probe to show friendly message if missing.
+      const btnText = document.getElementById('apkBtnText');
+      const overlay = document.getElementById('downloadOverlay');
+      const closeBtn = document.getElementById('dlCloseBtn');
+      const retryBtn = document.getElementById('dlRetryBtn');
+      if (!btn || !overlay) return;
+
+      function showOverlay() {
+        overlay.classList.add('show');
+        overlay.setAttribute('aria-hidden', 'false');
+        btn.setAttribute('aria-busy', 'true');
+        if (btnText) btnText.textContent = 'جاري بدء التحميل...';
+      }
+      function hideOverlay() {
+        overlay.classList.remove('show');
+        overlay.setAttribute('aria-hidden', 'true');
+        btn.removeAttribute('aria-busy');
+        if (btnText) btnText.textContent = 'تحميل تطبيق أندرويد (APK)';
+      }
+
+      closeBtn && closeBtn.addEventListener('click', hideOverlay);
+      overlay.addEventListener('click', function (e) { if (e.target === overlay) hideOverlay(); });
+
+      async function startDownload(e) {
+        if (e) e.preventDefault();
+        const href = btn.getAttribute('href');
+        btn.disabled = true;
+        if (btnText) btnText.textContent = 'جاري التحقق...';
         try {
-          const res = await fetch(btn.getAttribute('href'), { method: 'HEAD', cache: 'no-store' });
+          const res = await fetch(href, { method: 'HEAD', cache: 'no-store' });
           if (!res.ok) {
-            e.preventDefault();
-            note.style.background = 'rgba(239,68,68,.08)';
-            note.style.borderColor = 'rgba(239,68,68,.25)';
-            note.style.color = '#fecaca';
-            note.textContent = 'ملف التطبيق غير متوفر حاليًا على الخادم. تأكد من رفع ملف sabeel-academy.apk داخل /public/downloads/ ثم أعد النشر.';
+            alert('ملف التطبيق غير متاح حاليًا. يرجى المحاولة لاحقًا.');
+            return;
           }
-        } catch (_) { /* ignore probe errors; browser will handle download */ }
-      });
+        } catch (_) { /* continue - browser may still download */ }
+
+        showOverlay();
+        // Trigger actual download after showing feedback
+        setTimeout(function () {
+          const a = document.createElement('a');
+          a.href = href;
+          a.download = 'sabeel-academy.apk';
+          a.rel = 'noopener';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        }, 350);
+
+        setTimeout(function () { btn.disabled = false; if (btnText) btnText.textContent = 'تحميل تطبيق أندرويد (APK)'; }, 2500);
+      }
+
+      btn.addEventListener('click', startDownload);
+      retryBtn && retryBtn.addEventListener('click', startDownload);
     })();
   </script>
 </body>

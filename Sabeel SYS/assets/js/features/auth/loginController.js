@@ -118,6 +118,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Show Android download CTA only on web/browser (not inside native app wrapper)
+  const downloadCard = document.getElementById('mobileAppDownloadCard');
+  if (downloadCard) {
+    const capNative = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+    downloadCard.style.display = (capNative || isMedianApp()) ? 'none' : 'block';
+  }
+
   // Load custom academy logo and branding
   const renderBranding = (logoUrl, name, desc) => {
     const splashLogoImg = document.getElementById('splashLogoImg');

@@ -3,6 +3,7 @@ import { auth, db } from '../../config/firebase.js';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { doc, setDoc, collection, addDoc, query, where, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { Toast } from '../../shared/utils/toast.js';
+import { isMedianApp } from '../../shared/utils/medianBridge.js';
 import { RBAC_COLLECTIONS, ROLES, buildPermissionMap } from '../rbac/rbacService.js';
 import { extractNonFinancialTeacherProfile } from '../supervisor/supervisorDomainService.js';
 
@@ -63,6 +64,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   if (roleSupervisorBtn) {
     roleSupervisorBtn.addEventListener('click', () => setRole(ROLES.SUPERVISOR));
+  }
+
+  // Show Android download CTA only on web/browser (not inside native app wrapper)
+  const downloadCard = document.getElementById('mobileAppDownloadCard');
+  if (downloadCard) {
+    const capNative = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+    downloadCard.style.display = (capNative || isMedianApp()) ? 'none' : 'block';
   }
 
   async function persistNewAccountDocs(user, role, { name, phone, email, supervisorDept, supervisorNotes }) {

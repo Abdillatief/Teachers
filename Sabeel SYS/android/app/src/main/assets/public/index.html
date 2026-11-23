@@ -75,10 +75,10 @@
   <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
-  <script type="module" crossorigin src="/assets/main-V4iIXEVD.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/rbacService-D2RrsA9d.js">
-  <link rel="modulepreload" crossorigin href="/assets/activityLogger-BK9d5021.js">
-  <link rel="modulepreload" crossorigin href="/assets/authService-CtWWGArP.js">
+  <script type="module" crossorigin src="/assets/main-CzK7_rOT.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/rbacService-Daqk2lPi.js">
+  <link rel="modulepreload" crossorigin href="/assets/activityLogger-CddtPFfY.js">
+  <link rel="modulepreload" crossorigin href="/assets/authService-HszOwoL9.js">
   <link rel="stylesheet" crossorigin href="/assets/rbacService-CHOdNZNU.css">
   <link rel="stylesheet" crossorigin href="/assets/auth-CVLx824O.css">
 </head>
@@ -284,6 +284,18 @@
         <span>ليس لديك حساب معلم؟</span>
         <a href="register.html" class="auth-link" style="margin-right: 0.25rem;">تقديم طلب تسجيل جديد</a>
       </div>
+
+      <div id="mobileAppDownloadCard" class="auth-app-download-card" style="display: none; margin-top: 1rem; padding: 1rem; border: 1px solid rgba(13,148,136,.2); background: linear-gradient(180deg, rgba(13,148,136,.08), rgba(13,148,136,.03)); border-radius: 16px; text-align: center;">
+        <div style="font-weight: 800; color: var(--text-primary); font-size: .95rem; margin-bottom: .25rem;">تطبيق أكاديمية سبيل للأندرويد</div>
+        <div style="color: var(--text-secondary); font-size: .8rem; line-height: 1.7; margin-bottom: .75rem;">حمّل التطبيق على موبايلك لتجربة أسرع وأسهل.</div>
+        <a href="/download.html" style="display: inline-flex; align-items: center; justify-content: center; gap: .45rem; padding: .75rem 1rem; border-radius: 12px; background: linear-gradient(135deg, #0d9488, #0f766e); color: #fff; text-decoration: none; font-weight: 800; font-size: .86rem;">
+          <i data-lucide="smartphone" style="width: 16px; height: 16px;"></i>
+          <span>تحميل التطبيق</span>
+        </a>
+      </div>
+      <script>
+        (function(){ try { var cap = window.Capacitor; var isNative = !!(cap && ((cap.isNativePlatform && cap.isNativePlatform()) || (cap.getPlatform && cap.getPlatform() !== 'web'))); var ua=(navigator.userAgent||'').toLowerCase(); var isMedian = /median|gonative/.test(ua) || window.median || window.gonative; if (!isNative && !isMedian) { var el=document.getElementById('mobileAppDownloadCard'); if(el) el.style.display='block'; } } catch(e){} })();
+      </script>
     </section>
 
     <!-- App System Brand Footer -->

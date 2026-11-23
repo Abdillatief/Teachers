@@ -12,6 +12,25 @@ import { sanitizeFirebaseUid } from './helpers.js';
  */
 
 /**
+ * Detects if running inside Capacitor native container (Android/iOS)
+ * @returns {boolean}
+ */
+export function isCapacitorNative() {
+  if (typeof window === 'undefined') return false;
+  try {
+    const cap = window.Capacitor;
+    if (cap && typeof cap.isNativePlatform === 'function') return Boolean(cap.isNativePlatform());
+    if (cap && typeof cap.getPlatform === 'function') return cap.getPlatform() !== 'web';
+  } catch (_) {}
+  const proto = (window.location?.protocol || '').toLowerCase();
+  if (proto === 'capacitor:' || proto === 'ionic:' || proto === 'file:') {
+    // file: can also be local web; combine with capacitor global when possible
+    if (window.Capacitor) return true;
+  }
+  return false;
+}
+
+/**
  * Detects if the current web app is executing inside Median Native App Wrapper (Android or iOS)
  * @returns {boolean}
  */
@@ -30,6 +49,14 @@ export function isMedianApp() {
   const isMedianStored = localStorage.getItem('sabeel_median_mode') === 'true';
 
   return Boolean(hasMedianBridge || isMedianUA || isMedianQuery || isMedianStored);
+}
+
+/**
+ * Detects any native app wrapper (Median or Capacitor)
+ * @returns {boolean}
+ */
+export function isNativeApp() {
+  return isMedianApp() || isCapacitorNative();
 }
 
 /**
@@ -76,8 +103,12 @@ export function getAppPlatform() {
   const ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
   const isIOS = /iphone|ipad|ipod/i.test(ua);
   const isAndroid = /android/i.test(ua);
+  const cap = (typeof window !== 'undefined' && window.Capacitor) ? window.Capacitor : null;
+  const capPlatform = cap && typeof cap.getPlatform === 'function' ? cap.getPlatform() : null;
 
   if (isMedian) {
+    if (capPlatform === 'ios') return 'median-ios';
+    if (capPlatform === 'android') return 'median-android';
     return isIOS ? 'median-ios' : 'median-android';
   }
   if (isIOS || isAndroid) {
