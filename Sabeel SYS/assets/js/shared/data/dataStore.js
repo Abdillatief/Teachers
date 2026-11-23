@@ -146,9 +146,19 @@ class CentralDataStore {
       } else {
         q = query(collection(db, targetCollection), where("teacherId", "==", currentUid));
       }
-    } else if (collectionKey === 'sessions' && options.currentMonthOnly) {
-      const startOfMonth = options.startOfMonth || new Date().toISOString().substring(0, 7) + '-01';
-      q = query(collection(db, "sessions"), where("date", ">=", startOfMonth));
+    } else if (collectionKey === 'sessions' && (options.currentMonthOnly || options.monthsBack || options.startDate)) {
+      let startDate = options.startDate;
+      if (!startDate && options.currentMonthOnly) {
+        startDate = options.startOfMonth || new Date().toISOString().substring(0, 7) + '-01';
+      }
+      if (!startDate && options.monthsBack) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - Number(options.monthsBack));
+        startDate = d.toISOString().split('T')[0];
+      }
+      if (startDate) {
+        q = query(collection(db, "sessions"), where("date", ">=", startDate));
+      }
     } else if (collectionKey === 'supervisorRequests' && (options.supervisorId || sessionRole === 'supervisor')) {
       const targetSupervisorUid = options.supervisorId || currentUid;
       if (!targetSupervisorUid) {
@@ -321,7 +331,7 @@ class CentralDataStore {
       this.subscribe('users', () => {});
       this.subscribe('teachers', () => {});
       this.subscribe('students', () => {});
-      this.subscribe('sessions', () => {});
+      this.subscribe('sessions', () => {}, { monthsBack: 6 });
       this.subscribe('groups', () => {});
       this.subscribe('studentBalances', () => {});
       this.subscribe('packages', () => {});
@@ -332,7 +342,7 @@ class CentralDataStore {
         this.subscribe('notifications', () => {});
         this.subscribe('subscriptions', () => {});
         this.subscribe('expenses', () => {});
-      }, 150);
+      }, 600);
 
     } catch (e) {
       console.warn("[DataStore] Preload warning:", e);

@@ -121,6 +121,11 @@ export function renderNavbar(title, userData = {}) {
         <i data-lucide="moon" id="themeIcon" style="width: 18px; height: 18px;"></i>
       </button>
 
+      <!-- Android App Download -->
+      <a href="/download.html" class="navbar-icon-btn" title="تحميل تطبيق أندرويد" aria-label="تحميل تطبيق أندرويد" style="color: var(--primary-color); text-decoration: none;">
+        <i data-lucide="smartphone" style="width: 18px; height: 18px;"></i>
+      </a>
+
       ${notifCenterHtml}
       
       <!-- User profile info (Clickable to profile) -->

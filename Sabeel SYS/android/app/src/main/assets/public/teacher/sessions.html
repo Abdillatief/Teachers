@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - سجل الحصص والتحضير</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .sessions-layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+    @media (min-width: 1024px) {
+      .sessions-layout {
+        grid-template-columns: 1fr 380px;
+      }
+    }
+  </style>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+  <script type="module" crossorigin src="/assets/teacher_sessions-CVOB1VzN.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/rbacService-D2RrsA9d.js">
+  <link rel="modulepreload" crossorigin href="/assets/activityLogger-BK9d5021.js">
+  <link rel="modulepreload" crossorigin href="/assets/authService-CtWWGArP.js">
+  <link rel="modulepreload" crossorigin href="/assets/navbar-Bz3pjZSE.js">
+  <link rel="modulepreload" crossorigin href="/assets/auditService-D31EusTs.js">
+  <link rel="modulepreload" crossorigin href="/assets/quranData-BxaWbcIK.js">
+  <link rel="modulepreload" crossorigin href="/assets/supervisorDomainService-BW5mzJbW.js">
+  <link rel="modulepreload" crossorigin href="/assets/creditManager-lKPCrGcp.js">
+  <link rel="modulepreload" crossorigin href="/assets/sessionRecordService-C3_PUNju.js">
+  <link rel="stylesheet" crossorigin href="/assets/rbacService-CHOdNZNU.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0;">إدارة الحصص والدروس</h1>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; margin-top: 0.25rem;">فصل كامل بين نموذج تسجيل الحصص الجديدة وأرشيف الحصص المنجزة للوصول والتنظيم السريع.</p>
+          </div>
+        </div>
+
+        <!-- أزرار التبويب الرئيسية المكتملة -->
+        <div style="display: flex; gap: 0.75rem; border-bottom: 2px solid var(--border-color); margin-bottom: 1.75rem; padding-bottom: 0.25rem; flex-wrap: wrap;">
+          <button class="session-tab-btn active" data-tab="tab-record" style="padding: 0.65rem 1.25rem; font-weight: 800; font-size: 0.92rem; border: none; background: transparent; color: var(--primary-color); border-bottom: 3px solid var(--primary-color); cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: all 0.2s;">
+            <i data-lucide="plus-circle" style="width: 18px; height: 18px;"></i> تسجيل وإثبات حصة جديدة
+          </button>
+          <button class="session-tab-btn" data-tab="tab-history" style="padding: 0.65rem 1.25rem; font-weight: 800; font-size: 0.92rem; border: none; background: transparent; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: all 0.2s;">
+            <i data-lucide="archive" style="width: 18px; height: 18px;"></i> سجل وأرشيف الحصص التاريخي
+          </button>
+        </div>
+
+        <!-- ================= 1. سيكشن تسجيل حصة جديدة ================= -->
+        <div id="tab-record" class="session-tab-content">
+          <div class="card" style="max-width: 850px; border-top: 4px solid var(--primary-color); box-shadow: var(--shadow-sm); margin: 0 auto;">
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+              <h3 style="font-weight: 800; font-size: 1.15rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem; margin: 0;">
+                <i data-lucide="plus-circle" style="color: var(--primary-color); width: 22px; height: 22px;"></i> تسجيل وإثبات حصة تعليمية جديدة
+              </h3>
+              <span class="badge" style="background: var(--primary-light); color: var(--primary-color); font-weight: 800; padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.8rem;">إثبات فوري مباشر ⚡</span>
+            </div>
+
+            <form id="manualRecordSessionForm">
+              
+              <!-- المجموعة الأولى: اختيار الطالب والزمن -->
+              <div style="background-color: var(--bg-primary); padding: 1.25rem; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 1.25rem;">
+                <h4 style="font-size: 0.9rem; font-weight: 800; color: var(--primary-color); margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.4rem;">
+                  <i data-lucide="user-check" style="width: 18px; height: 18px;"></i> 1. تحديد الطالب وموعد الدرس
+                </h4>
+
+                <div id="recStudentSelectContainer" class="form-group" style="margin-bottom: 1rem;">
+                  <label for="recStudent" style="font-weight: 700; font-size: 0.88rem;">الاسم الشخصي للدارس</label>
+                  <select id="recStudent" class="form-control" style="border: 1px solid var(--border-color); font-weight: 700;">
+                    <option value="" disabled selected>اختر الدارس الكريم...</option>
+                  </select>
+                </div>
+
+                <div id="trialStudentInputContainer" class="form-group" style="display: none; margin-bottom: 1rem;">
+                  <label for="recTrialStudentName" style="font-weight: 700; font-size: 0.88rem; color: var(--primary-color);">
+                    🧪 اسم الطالب التجريبي (طالب جديد غير مسجل بالأكاديمية)
+                  </label>
+                  <input type="text" id="recTrialStudentName" class="form-control" placeholder="اكتب اسم الطالب التجريبي الجديد هنا..." style="border: 2px solid var(--primary-color); font-weight: 700; background-color: var(--bg-card);">
+                  <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem;">* الحصة التجريبية تُسجل باسم الطالب الجديد وتصبح قيد اعتماد الإدارة لحين اشتراكه.</div>
+                </div>
+
+                <!-- قسم تحضير واختيار طلاب المجموعة الجماعية -->
+                <div id="groupAttendanceContainer" style="display: none; background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+                  <div class="form-group" style="margin-bottom: 0.75rem;">
+                    <label for="recGroupSelect" style="font-weight: 800; font-size: 0.88rem; color: var(--primary-color); display: flex; align-items: center; gap: 0.35rem;">
+                      <i data-lucide="users-round" style="width: 18px; height: 18px;"></i> اختر المجموعة الجماعية
+                    </label>
+                    <select id="recGroupSelect" class="form-control" style="font-weight: 700; border: 2px solid var(--primary-color);">
+                      <option value="">-- اختر المجموعة الجماعية --</option>
+                    </select>
+                  </div>
+
+                  <div id="groupDynamicContent"></div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                  <div class="form-group" style="margin: 0;">
+                    <label for="recDate" style="font-weight: 700; font-size: 0.85rem;">تاريخ الحصة</label>
+                    <input type="date" id="recDate" class="form-control" required style="font-weight: 700;">
+                  </div>
+                  <div class="form-group" style="margin: 0;">
+                    <label for="recTime" style="font-weight: 700; font-size: 0.85rem;">وقت بداية الحصة</label>
+                    <input type="time" id="recTime" class="form-control" required style="font-weight: 700;">
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                  <div class="form-group" style="margin: 0;">
+                    <label for="recDuration" style="font-weight: 700; font-size: 0.85rem;">مدة الحصة</label>
+                    <select id="recDuration" class="form-control" style="font-weight: 700;">
+                      <option value="30">30 دقيقة</option>
+                      <option value="45">45 دقيقة</option>
+                      <option value="60" selected>60 دقيقة (ساعة كاملة)</option>
+                      <option value="90">90 دقيقة (ساعة ونصف)</option>
+                      <option value="120">120 دقيقة (ساعتان)</option>
+                    </select>
+                    <div id="recDurationLockHint" style="display: none; font-size: 0.72rem; color: var(--text-muted); margin-top: 0.25rem;">
+                      مدة الحصة مقفلة تلقائياً حسب باقة الطالب
+                    </div>
+                  </div>
+                  <div class="form-group" style="margin: 0;">
+                    <label for="recType" style="font-weight: 700; font-size: 0.85rem;">تصنيف الدرس</label>
+                    <select id="recType" class="form-control" style="font-weight: 700;">
+                      <option value="individual" selected>حصة فردية (Indiv)</option>
+                      <option value="group">مجموعة جماعية (Group)</option>
+                      <option value="trial">حصة تجريبية (Trial)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- المجموعة الثانية: حالة الحضور والغياب -->
+              <div style="background-color: var(--bg-primary); padding: 1.25rem; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 1.25rem;">
+                <h4 style="font-size: 0.9rem; font-weight: 800; color: var(--primary-color); margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.4rem;">
+                  <i data-lucide="check-square" style="width: 18px; height: 18px;"></i> 2. حالة الحضور والتسجيل
+                </h4>
+
+                <div class="form-group" style="margin: 0;">
+                  <label for="recStatus" style="font-weight: 700; font-size: 0.88rem;">وضع الحضور النهائي للجلسة</label>
+                  <select id="recStatus" class="form-control" style="border: 2px solid var(--primary-color); font-weight: 800;">
+                    <option value="scheduled">مجدولة (Scheduled)</option>
+                    <option value="completed" selected>حاضر ومكتمل (Completed)</option>
+                    <option value="student_absent">غياب الطالب (Student Absent)</option>
+                    <option value="teacher_absent">غياب المعلم (Teacher Absent)</option>
+                    <option value="delayed">مؤجلة (Delayed)</option>
+                    <option value="compensatory">حصة تعويضية (Compensatory)</option>
+                    <option value="cancelled">ملغاة (Cancelled)</option>
+                  </select>
+                </div>
+
+                <!-- تفاصيل غياب الطالب -->
+                <div id="absenceTypeContainer" class="form-group" style="display: none; margin-top: 1rem; padding: 1rem; background-color: var(--bg-card); border: 1px dashed var(--border-color); border-radius: 8px;">
+                  <label for="recAbsenceType" style="font-weight: 700; font-size: 0.85rem;">تصنيف غياب الطالب</label>
+                  <select id="recAbsenceType" class="form-control" style="font-weight: 700;">
+                    <option value="unexcused" selected>غياب بدون عذر - يُحسب ضمن الأجر</option>
+                    <option value="excused">غياب بعذر مسبق - لا يُحسب ضمن الأجر</option>
+                  </select>
+                  <label for="recAbsenceReason" style="font-weight: 700; font-size: 0.82rem; margin-top: 0.65rem;">سبب أو ملاحظة الغياب</label>
+                  <input type="text" id="recAbsenceReason" class="form-control" placeholder="توضيح سبب غياب الطالب...">
+                </div>
+
+                <!-- تفاصيل غياب المعلم -->
+                <div id="teacherAbsentContainer" class="form-group" style="display: none; margin-top: 1rem; padding: 1rem; background-color: var(--bg-card); border: 1px dashed var(--danger); border-radius: 8px;">
+                  <label for="recTeacherAbsentReason" style="font-weight: 700; font-size: 0.85rem;">سبب غياب المعلم</label>
+                  <input type="text" id="recTeacherAbsentReason" class="form-control" placeholder="اكتب سبب الغياب ليتم توثيقه في سجل الغياب...">
+                </div>
+
+                <!-- تفاصيل الموعد البديل للتأجيل -->
+                <div id="postponeContainer" class="form-group" style="display: none; margin-top: 1rem; padding: 1rem; background-color: var(--bg-card); border: 1px dashed var(--border-color); border-radius: 8px;">
+                  <h5 style="font-size: 0.8rem; font-weight: 800; color: var(--primary-color); margin: 0 0 0.75rem 0; display: flex; align-items: center; gap: 0.35rem;">
+                    <i data-lucide="clock" style="width: 16px; height: 16px;"></i> بيانات التأجيل والموعد التعويضي
+                  </h5>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                    <div class="form-group" style="margin: 0;">
+                      <label style="font-size: 0.78rem; font-weight: 700;">التاريخ البديل</label>
+                      <input type="date" id="recNewDate" class="form-control">
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                      <label style="font-size: 0.78rem; font-weight: 700;">الوقت البديل</label>
+                      <input type="time" id="recNewTime" class="form-control">
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                      <label for="recResponsibleParty" style="font-size: 0.78rem; font-weight: 700;">الطرف المتسبب في التأجيل</label>
+                      <select id="recResponsibleParty" class="form-control">
+                        <option value="student">الطالب / ولي الأمر</option>
+                        <option value="teacher">المعلم</option>
+                        <option value="academy">الأكاديمية / ظرف عام</option>
+                      </select>
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                      <label for="recPostponeReason" style="font-size: 0.78rem; font-weight: 700;">سبب التأجيل</label>
+                      <input type="text" id="recPostponeReason" class="form-control" placeholder="سبب التأجيل...">
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                      <label for="recDelayTeacherNotes" style="font-size: 0.78rem; font-weight: 700;">ملاحظات المعلم</label>
+                      <input type="text" id="recDelayTeacherNotes" class="form-control" placeholder="ملاحظة للمشرف أو الإدارة...">
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                      <label for="recSlotSelectionReason" style="font-size: 0.78rem; font-weight: 700;">سبب اختيار الموعد البديل</label>
+                      <input type="text" id="recSlotSelectionReason" class="form-control" placeholder="توضيح سبب اختيار التوقيت">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- تفاصيل الحصة التعويضية -->
+                <div id="compensatoryContainer" class="form-group" style="display: none; margin-top: 1rem; padding: 1rem; background-color: var(--bg-card); border: 1px dashed var(--primary-color); border-radius: 8px;">
+                  <label for="recOriginalLessonId" style="font-weight: 700; font-size: 0.85rem;">ربط بحصة مؤجلة سابقة</label>
+                  <select id="recOriginalLessonId" class="form-control">
+                    <option value="">-- بدون ربط أو اختر الحصة المؤجلة --</option>
+                  </select>
+                  <label for="recCompensatoryNotes" style="font-weight: 700; font-size: 0.82rem; margin-top: 0.65rem;">ملاحظات الحصة التعويضية</label>
+                  <input type="text" id="recCompensatoryNotes" class="form-control" placeholder="ملاحظات الحصة التعويضية...">
+                </div>
+
+                <!-- تفاصيل إلغاء الحصة -->
+                <div id="cancelContainer" class="form-group" style="display: none; margin-top: 1rem; padding: 1rem; background-color: var(--bg-card); border: 1px dashed var(--border-color); border-radius: 8px;">
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                    <div class="form-group" style="margin: 0;">
+                      <label for="recCancelResponsibility" style="font-size: 0.78rem; font-weight: 700;">جهة الإلغاء</label>
+                      <select id="recCancelResponsibility" class="form-control">
+                        <option value="academy">الإدارة / الأكاديمية</option>
+                        <option value="student">الطالب</option>
+                        <option value="teacher">المعلم</option>
+                      </select>
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                      <label for="recCancelReason" style="font-size: 0.78rem; font-weight: 700;">سبب الإلغاء</label>
+                      <input type="text" id="recCancelReason" class="form-control" placeholder="توضيح سبب الإلغاء...">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- المجموعة الثالثة: التقييم والملاحظات والتوجيه الذكي -->
+              <div style="background-color: var(--bg-primary); padding: 1.25rem; border-radius: var(--border-radius); border: 1px solid var(--border-color); margin-bottom: 1.5rem;">
+                <h4 style="font-size: 0.9rem; font-weight: 800; color: var(--primary-color); margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.4rem;">
+                  <i data-lucide="sparkles" style="width: 18px; height: 18px;"></i> 3. التقييم والمنهج المنجز والواجب
+                </h4>
+
+                <div class="form-group" style="margin-bottom: 1rem;">
+                  <label for="recRating" style="font-weight: 700; font-size: 0.88rem;">تقييم أداء ومشاركة الطالب في الدرس</label>
+                  <select id="recRating" class="form-control" style="font-weight: 700;">
+                    <option value="5">ممتاز (5 / 5)</option>
+                    <option value="4">جيد جداً (4 / 5)</option>
+                    <option value="3">متوسط (3 / 5)</option>
+                    <option value="2">ضعيف (2 / 5)</option>
+                    <option value="1">يحتاج تحسين (1 / 5)</option>
+                  </select>
+                </div>
+
+                <!-- مساعد المنهج والواجب الذكي للقرآن -->
+                <div id="smartQuranHelperCard" class="card" style="display: none; margin-bottom: 1rem; padding: 1rem; background-color: var(--bg-card); border: 1px dashed var(--success); border-radius: 8px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
+                    <h5 style="font-size: 0.85rem; font-weight: 800; color: var(--success); margin: 0; display: flex; align-items: center; gap: 0.35rem;">
+                      <i data-lucide="sparkles" style="width: 16px; height: 16px;"></i> نظام الاقتراح الذكي للواجب والمنهج القرآني
+                    </h5>
+                    <span id="smartRateBadge" class="badge" style="background: var(--primary-light); color: var(--primary-color); font-size: 0.72rem; font-weight: 700; display: none;"></span>
+                  </div>
+
+                  <!-- تحديد مسار ومنهج الحفظ للطالب (أفقي أم عمودي / البقرة أم الإخلاص) -->
+                  <div style="background: var(--bg-primary); padding: 0.6rem 0.75rem; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 0.75rem;">
+                    <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-secondary); display: block; margin-bottom: 0.35rem;">
+                      مسار ومنهج حفظ الطالب (لتحديد الاقتراح التلقائي الصحيح):
+                    </label>
+                    <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                      <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 0.35rem; user-select: none;">
+                        <input type="radio" name="smartQuranDirection" value="ascending" id="smartDirAscending" checked style="accent-color: var(--primary-color); cursor: pointer;">
+                        <span>أفقي (بادئ من البقرة للأخير ➡️)</span>
+                      </label>
+                      <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 0.35rem; user-select: none;">
+                        <input type="radio" name="smartQuranDirection" value="descending" id="smartDirDescending" style="accent-color: var(--primary-color); cursor: pointer;">
+                        <span>عمودي (بادئ من الإخلاص وجزء عم ⬅️)</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.75rem;">
+                    <div class="form-group" style="margin: 0;">
+                      <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.25rem;">سورة إنجاز اليوم</label>
+                      <select id="smartActualSurahId" class="form-control" style="font-size: 0.78rem; height: auto; padding: 0.4rem; font-weight: 700;"></select>
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                      <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.25rem;">آخر آية تم حفظها اليوم</label>
+                      <input type="number" id="smartActualVerse" class="form-control" style="font-size: 0.78rem; height: auto; padding: 0.4rem; font-weight: 700;" placeholder="مثال: 15" min="1">
+                    </div>
+                  </div>
+
+                  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; background: var(--bg-primary); padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                    <label style="font-size: 0.78rem; font-weight: 800; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 0.4rem; user-select: none;">
+                      <input type="checkbox" id="smartFullSurahCheckbox" style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--primary-color);">
+                      📖 إكمال / أخذ السورة كاملة (من الآية 1 إلى نهايتها)
+                    </label>
+                  </div>
+
+                  <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; padding: 0.65rem 0.85rem; margin-bottom: 0.65rem;">
+                    <p id="smartQuranSuggestionText" style="font-size: 0.82rem; color: var(--text-primary); margin: 0; line-height: 1.5; font-weight: 600;"></p>
+                  </div>
+
+                  <button type="button" id="btnApplySmartSuggestion" class="btn btn-secondary" style="font-size: 0.78rem; padding: 0.4rem 0.85rem; border-color: var(--success); color: var(--success); font-weight: 800; width: 100%; justify-content: center; display: flex; align-items: center; gap: 0.35rem; background: transparent; cursor: pointer;">
+                    <i data-lucide="check" style="width: 15px; height: 15px;"></i> كتابة / تطبيق الاقتراح التلقائي في الملاحظات والواجب
+                  </button>
+                </div>
+
+                <div class="form-group" id="recNotesGroup" style="margin: 0;">
+                  <label for="recNotes" style="font-weight: 700; font-size: 0.88rem;">ملاحظات الدرس والواجب المقررة</label>
+                  <input type="text" id="recNotes" class="form-control" placeholder="اكتب السورة والآيات المنجزة أو الواجب المنزلي..." style="font-weight: 600;">
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary" id="btnSubmitRecord" style="width: 100%; font-weight: 800; padding: 0.85rem; font-size: 1rem; justify-content: center; gap: 0.5rem; display: flex; align-items: center;">
+                <i data-lucide="plus" style="width: 20px; height: 20px;"></i> تسجيل وإثبات الحصة الآن
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- ================= 2. سيكشن سجل وأرشيف الحصص التاريخي ================= -->
+        <div id="tab-history" class="session-tab-content" style="display: none;">
+          
+          <!-- كروت ملخص إحصائيات الأرشيف -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+            <div class="card" style="padding: 1.25rem; border-right: 4px solid var(--primary-color);">
+              <div style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700;">إجمالي الحصص المسجلة</div>
+              <h3 id="statTotalSessions" style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0.25rem 0 0 0;">0 حصة</h3>
+            </div>
+            <div class="card" style="padding: 1.25rem; border-right: 4px solid var(--success);">
+              <div style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700;">المعتمـدة وجاهزة للصرف</div>
+              <h3 id="statApprovedSessions" style="font-size: 1.5rem; font-weight: 800; color: var(--success); margin: 0.25rem 0 0 0;">0 حصة</h3>
+            </div>
+            <div class="card" style="padding: 1.25rem; border-right: 4px solid var(--warning);">
+              <div style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700;">قيد المراجعة والتدقيق</div>
+              <h3 id="statPendingSessions" style="font-size: 1.5rem; font-weight: 800; color: var(--warning); margin: 0.25rem 0 0 0;">0 حصة</h3>
+            </div>
+            <div class="card" style="padding: 1.25rem; border-right: 4px solid #8b5cf6;">
+              <div style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700;">إجمالي الساعات المنجزة</div>
+              <h3 id="statTotalHours" style="font-size: 1.5rem; font-weight: 800; color: #8b5cf6; margin: 0.25rem 0 0 0;">0.0 ساعة</h3>
+            </div>
+          </div>
+
+          <div class="card" style="border-top: 4px solid var(--primary-color); box-shadow: var(--shadow-sm);">
+            <!-- شريط البحث والفلترة الاحترافي -->
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+              <h3 style="font-weight: 800; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem; color: var(--text-primary); margin: 0;">
+                <i data-lucide="archive" style="color: var(--primary-color);"></i> سجل وأرشيف الحصص التاريخي
+              </h3>
+
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem;">
+                <div style="position: relative; min-width: 220px;">
+                  <input type="text" id="historySearchInput" class="form-control" placeholder="بحث باسم الطالب أو الواجب..." style="padding-right: 2.2rem; font-size: 0.85rem;">
+                  <i data-lucide="search" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); width: 16px;"></i>
+                </div>
+
+                <select id="historyApprovalFilter" class="form-control" style="font-size: 0.85rem; width: auto; font-weight: 700;">
+                  <option value="all">كل حالات الاعتماد</option>
+                  <option value="approved">المعتمدة فقط ✅</option>
+                  <option value="pending">قيد المراجعة ⏳</option>
+                </select>
+
+                <select id="historyTypeFilter" class="form-control" style="font-size: 0.85rem; width: auto; font-weight: 700;">
+                  <option value="all">كل أنواع الدروس</option>
+                  <option value="individual">حصة فردية 👤</option>
+                  <option value="group">حصة جماعية 👥</option>
+                  <option value="trial">حصة تجريبية 🧪</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>تاريخ وساعة الحصة</th>
+                    <th>اسم الطالب والنوع</th>
+                    <th>المدة الزمنية</th>
+                    <th>حالة الجلسة والغياب</th>
+                    <th>تقييم الطالب</th>
+                    <th>الواجب والملاحظات</th>
+                    <th>حالة الاعتماد المالي</th>
+                  </tr>
+                </thead>
+                <tbody id="teacherHistorySessionsTableBody">
+                  <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">جاري جلب وفهرسة وتحديث أرشيف الحصص المنجزة...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- درج إضافة وتحديد أسماء طلاب المجموعة السريع -->
+  <div id="quickGroupDrawerModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card" style="max-width: 520px; border-radius: 12px; box-shadow: var(--shadow-lg);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.85rem;">
+        <h3 style="font-weight: 800; color: var(--primary-color); margin: 0; display: flex; align-items: center; gap: 0.5rem; font-size: 1.05rem;">
+          <i data-lucide="users" style="color: var(--primary-color);"></i> درج كتابة أسماء طلاب المجموعة 👥
+        </h3>
+        <span id="btnCloseQuickGroupDrawer" style="cursor: pointer; padding: 0.25rem; display: flex; align-items: center; justify-content: center;">
+          <i data-lucide="x" style="color: var(--text-muted);"></i>
+        </span>
+      </div>
+
+      <div style="background-color: rgba(37, 99, 235, 0.08); border: 1px solid rgba(37, 99, 235, 0.25); border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem; font-size: 0.8rem; color: var(--text-primary); line-height: 1.5;">
+        💡 <strong>كتابة أسماء طلاب المجموعة:</strong> اكتب أسماء الطلاب المنضمين لهذه المجموعة (كل طالب في سطر جديد) ليتم إدراجهم في كشف حضور وغياب المجموعة فوراً!
+      </div>
+
+      <form id="quickGroupStudentsForm">
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label style="font-weight: 700; font-size: 0.85rem; margin-bottom: 0.35rem; display: block;">أسماء الطلاب (اسم طالب في كل سطر):</label>
+          <textarea id="quickGroupStudentsNamesInput" class="form-control" rows="6" placeholder="مثال:&#10;عبد الرحمن أحمد&#10;محمد محمود&#10;عمر يوسف" style="font-size: 0.9rem; font-weight: 600; line-height: 1.6;" required></textarea>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.25rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+          <button type="submit" class="btn btn-primary" id="btnSaveQuickGroupStudents" style="gap: 0.35rem; font-weight: 700;">
+            <i data-lucide="check-circle-2" style="width: 16px; height: 16px;"></i> إضافة وتحديث الكشف فوراً ✅
+          </button>
+          <button type="button" class="btn btn-secondary" id="btnCancelQuickGroupDrawer">إلغاء</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- مودال تحديد الجميع حاضر إلا طالب محدد -->
+  <div id="selectExceptModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card" style="max-width: 440px; border-radius: 12px; box-shadow: var(--shadow-lg);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.85rem;">
+        <h3 style="font-weight: 800; color: #b45309; margin: 0; display: flex; align-items: center; gap: 0.5rem; font-size: 1.05rem;">
+          <i data-lucide="user-minus" style="color: #b45309;"></i> الجميع حاضر إلا الطالب... 🔴
+        </h3>
+        <span id="btnCloseSelectExceptModal" style="cursor: pointer; padding: 0.25rem; display: flex; align-items: center; justify-content: center;">
+          <i data-lucide="x" style="color: var(--text-muted);"></i>
+        </span>
+      </div>
+
+      <div style="background-color: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem; font-size: 0.8rem; color: #92400e; line-height: 1.5;">
+        سيتم تعليم جميع طلاب المجموعة كـ <strong>(حاضر ✅)</strong> باستثناء الطالب الذي تحدده أدناه سيكون <strong>(غائب 🔴)</strong>!
+      </div>
+
+      <form id="selectExceptForm">
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label style="font-weight: 700; font-size: 0.85rem; margin-bottom: 0.35rem; display: block;">اختر الطالب الغائب من قائمة المجموعة:</label>
+          <select id="selectExceptStudentDropdown" class="form-control" style="font-size: 0.9rem; font-weight: 700;" required>
+            <!-- يتم التعبئة تلقائياً -->
+          </select>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.25rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+          <button type="submit" class="btn btn-primary" style="gap: 0.35rem; font-weight: 700; background: #b45309; border-color: #92400e;">
+            تطبيق (الجميع حاضر عدا الطالب المختار) 🔴
+          </button>
+          <button type="button" class="btn btn-secondary" id="btnCancelSelectExceptModal">إلغاء</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+</body>
+</html>

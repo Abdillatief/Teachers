@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - أرشيف الرواتب العام</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .modal-card {
+      background-color: var(--bg-secondary); border-radius: var(--border-radius);
+      border: 1px solid var(--border-color); width: 100%; max-width: 600px; padding: 2rem;
+      max-height: 90vh; overflow-y: auto;
+    }
+    .form-group label {
+      font-weight: 700;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.4rem;
+      display: block;
+    }
+  </style>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+  <script type="module" crossorigin src="/assets/admin_salary_archive-BfxSSyCM.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/rbacService-D2RrsA9d.js">
+  <link rel="modulepreload" crossorigin href="/assets/activityLogger-BK9d5021.js">
+  <link rel="modulepreload" crossorigin href="/assets/authService-CtWWGArP.js">
+  <link rel="modulepreload" crossorigin href="/assets/navbar-Bz3pjZSE.js">
+  <link rel="stylesheet" crossorigin href="/assets/rbacService-CHOdNZNU.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0;">أرشيف رواتب المعلمين</h1>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">إغلاق الدورات المالية الشهرية، صرف الرواتب وأرشفتها رسمياً في قاعدة البيانات.</p>
+          </div>
+          
+          <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+            <a href="payroll-reconciliation.html" class="btn btn-secondary" style="gap: 0.5rem; font-weight: 700; color: var(--primary-color);">
+              <i data-lucide="scale"></i> مطابقة وتدقيق الرواتب ⚖️
+            </a>
+            <button class="btn btn-secondary" id="btnManualAutoArchive" style="gap: 0.5rem; background: var(--primary-light); color: var(--primary-color); border: 1px solid var(--primary-color); font-weight: 700;">
+              <i data-lucide="refresh-cw"></i> تصفير وأرشفة مستحقات الشهور المكتملة 🔄
+            </button>
+            <button class="btn btn-primary" id="openArchiveModalBtn"><i data-lucide="badge-dollar-sign"></i> صرف وأرشفة دورة راتب جديدة</button>
+          </div>
+        </div>
+
+        <!-- فلاتر التصفية والبحث في الأرشيف -->
+        <div class="card" style="margin-bottom: 1.5rem; padding: 1.25rem;">
+          <div style="display: grid; grid-template-columns: 1fr 220px 200px; gap: 1rem; align-items: center;">
+            <div style="display: flex; gap: 0.75rem; align-items: center; border: 1px solid var(--border-color); padding: 0.5rem 0.75rem; border-radius: var(--border-radius); background: var(--bg-primary);">
+              <i data-lucide="search" style="color: var(--text-muted); width: 18px; height: 18px;"></i>
+              <input type="text" id="archiveSearchInput" placeholder="البحث باسم المعلم..." style="border: none; outline: none; background: transparent; width: 100%; font-size: 0.85rem; color: var(--text-primary);">
+            </div>
+
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <span style="font-size: 0.8rem; color: var(--text-secondary); white-space: nowrap;">الشهر:</span>
+              <select id="archiveMonthFilter" class="form-control" style="margin: 0; font-size: 0.85rem; height: auto; padding: 0.45rem 1rem; border: 1px solid var(--border-color);">
+                <option value="">-- جميع الشهور --</option>
+              </select>
+            </div>
+
+            <button class="btn btn-secondary" id="btnClearFilters" style="padding: 0.5rem;"><i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i> إعادة ضبط التصفية</button>
+          </div>
+        </div>
+
+        <!-- جدول الأرشيف التاريخي -->
+        <div class="card">
+          <h3 style="font-weight: 800; font-size: 1.1rem; margin-bottom: 1rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+            <i data-lucide="archive" style="color: var(--primary-color);"></i> سجل الرواتب المصروفة والمؤرشفة مسبقاً
+          </h3>
+          <div class="table-container" style="margin-top: 0;">
+            <table>
+              <thead>
+                <tr>
+                  <th>الشهر المالي</th>
+                  <th>اسم المعلم</th>
+                  <th>الحصص المعتمدة</th>
+                  <th>ساعات العمل</th>
+                  <th>صافي المبلغ المصروف</th>
+                  <th>الحالة</th>
+                  <th>طريقة وتاريخ الصرف</th>
+                  <th>ملاحظات الإدارة</th>
+                  <th>خيارات الإدارة</th>
+                </tr>
+              </thead>
+              <tbody id="archiveTableBody">
+                <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">جاري تحميل سجلات الأرشيف المالي...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- مودال صرف وأرشفة راتب جديد -->
+  <div id="addArchiveModal" class="modal-overlay">
+    <div class="modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+        <h3 style="font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="badge-dollar-sign" style="color: var(--primary-color);"></i> صرف وتسجيل راتب معلم بالأرشيف
+        </h3>
+        <span id="btnCloseArchiveModal" style="cursor: pointer; padding: 0.25rem; display: flex; align-items: center; justify-content: center;">
+          <i data-lucide="x" style="color: var(--text-muted);"></i>
+        </span>
+      </div>
+      <form id="addArchiveForm">
+        <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label for="archiveTeacherSelect">اختر المعلم المستفيد</label>
+            <select id="archiveTeacherSelect" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
+              <option value="">-- اختر معلماً --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="archiveMonth">الشهر المستهدف</label>
+            <select id="archiveMonth" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
+              <option value="">-- اختر الشهر --</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- زر الحساب التلقائي اللحظي من سجل الحصص -->
+        <button type="button" class="btn btn-secondary" id="btnCalculateSalary" style="width: 100%; margin: 1rem 0; background-color: var(--primary-light); color: var(--primary-color); border-color: var(--primary-color);">
+          <i data-lucide="calculator"></i> احتساب الساعات والأجر التلقائي للشهر المختار
+        </button>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; background-color: var(--bg-primary); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 1rem;">
+          <div>
+            <span style="font-size: 0.75rem; color: var(--text-secondary); display: block;">الحصص المعتمدة المحسوبة</span>
+            <strong id="calcSessionsCount" style="color: var(--text-primary);">0 حصة</strong>
+          </div>
+          <div>
+            <span style="font-size: 0.75rem; color: var(--text-secondary); display: block;">ساعات العمل الإجمالية</span>
+            <strong id="calcHoursCount" style="color: var(--text-primary);">0.00 ساعة</strong>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+          <div class="form-group">
+            <label for="archiveAmount">صافي المبلغ المصروف (ج.م)</label>
+            <input type="number" id="archiveAmount" class="form-control" required placeholder="مثال: 1200" min="1">
+          </div>
+          <div class="form-group">
+            <label for="archiveMethod">طريقة الصرف والتحويل</label>
+            <select id="archiveMethod" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
+              <option value="فودافون كاش (Vodafone Cash)">فودافون كاش (Vodafone Cash)</option>
+              <option value="إنستا باي (InstaPay)">إنستا باي (InstaPay)</option>
+              <option value="وي باي (WE Pay)">وي باي (WE Pay)</option>
+              <option value="تحويل بنكي مباشر">تحويل بنكي مباشر</option>
+              <option value="نقدي (كاش) ليد المعلم">نقدي (كاش) ليد المعلم</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 1rem;">
+          <label for="archiveNotes">ملاحظات الصرف والتحويل (اختياري)</label>
+          <textarea id="archiveNotes" class="form-control" rows="3" placeholder="ملاحظات الحسابات، رقم كود المعاملة، تفاصيل المكافأة أو الخصومات إن وجدت..." style="resize: vertical; font-family: inherit; font-size: 0.9rem;"></textarea>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+          <button type="submit" class="btn btn-primary" style="background: var(--success); border-color: var(--success);">توثيق الصرف والأرشفة</button>
+          <button type="button" class="btn btn-secondary" id="btnCancelArchiveModal">إلغاء</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+</body>
+</html>

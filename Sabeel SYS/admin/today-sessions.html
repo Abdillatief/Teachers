@@ -154,17 +154,24 @@
       let groupSessionsCached = [];
       const adminTodayUnsubs = [];
 
-      // 1. Listen to individual sessions today
-      adminTodayUnsubs.push(onSnapshot(collection(db, "sessions"), (sessSnap) => {
-        sessionsCached = [];
-        sessSnap.forEach(d => {
-          const data = d.data();
-          if (data.date === todayStr || data.postponedFrom === todayStr) {
-            sessionsCached.push({ id: d.id, ...data });
-          }
-        });
+      // 1. Listen to individual sessions today (scoped query)
+      const qToday = query(collection(db, "sessions"), where("date", "==", todayStr));
+      adminTodayUnsubs.push(onSnapshot(qToday, (sessSnap) => {
+        const todaySessions = sessSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        // merge with postponed-from-today set
+        const prevPostponed = sessionsCached.filter(s => s.postponedFrom === todayStr && s.date !== todayStr);
+        sessionsCached = [...todaySessions, ...prevPostponed];
         renderAdminTodayList();
       }, (err) => console.warn("Admin today sessions listener error:", err)));
+
+      // 1b. Sessions postponed from today (separate scoped query)
+      const qPostponed = query(collection(db, "sessions"), where("postponedFrom", "==", todayStr));
+      adminTodayUnsubs.push(onSnapshot(qPostponed, (snap) => {
+        const postponed = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.date !== todayStr);
+        const todayOnly = sessionsCached.filter(s => s.date === todayStr);
+        sessionsCached = [...todayOnly, ...postponed];
+        renderAdminTodayList();
+      }, (err) => console.warn("Admin today postponed sessions listener error:", err)));
 
       // 2. Listen to active students
       adminTodayUnsubs.push(onSnapshot(collection(db, "students"), (studSnap) => {

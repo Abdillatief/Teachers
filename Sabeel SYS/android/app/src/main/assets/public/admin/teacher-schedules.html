@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - جداول المعلمين والشواغر</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .day-column {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      min-height: 260px;
+      transition: all var(--transition-fast);
+      box-shadow: var(--shadow-xs);
+    }
+    .day-column:hover {
+      border-color: var(--border-color-strong);
+      box-shadow: var(--shadow-sm);
+    }
+    .day-header {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .class-item {
+      background-color: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius-sm);
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      transition: all var(--transition-fast);
+      position: relative;
+    }
+    .class-item:hover {
+      border-color: var(--primary-border);
+      background-color: var(--primary-subtle);
+    }
+    .free-slot-item {
+      background-color: rgba(34, 197, 94, 0.05);
+      border: 1px dashed rgba(34, 197, 94, 0.4);
+      border-radius: var(--border-radius-sm);
+      padding: 0.55rem 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--success);
+      font-size: 0.76rem;
+      font-weight: 600;
+      transition: all var(--transition-fast);
+    }
+    .free-slot-item:hover {
+      background-color: rgba(34, 197, 94, 0.1);
+      border-color: var(--success);
+    }
+    .grid-seven-days {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.15rem;
+    }
+    .occupancy-bar-bg {
+      height: 8px;
+      width: 100%;
+      background-color: var(--border-color);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .occupancy-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+    @media (max-width: 1200px) {
+      .grid-seven-days {
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      }
+    }
+    @media (max-width: 768px) {
+      .grid-seven-days {
+        grid-template-columns: 1fr;
+      }
+    }
+    @media print {
+      body {
+        background: white !important;
+        color: black !important;
+        padding: 1cm !important;
+        font-size: 10pt !important;
+      }
+      .no-print, .sidebar, .navbar, #appSidebar, #appNavbar, .btn, .view-switch-tabs, #filtersCard {
+        display: none !important;
+      }
+      .app-container {
+        display: block !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .main-wrapper {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+      }
+      .content-body {
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: 100% !important;
+      }
+      .print-header {
+        display: block !important;
+      }
+      .grid-seven-days {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 10px !important;
+      }
+      .day-column {
+        background: white !important;
+        border: 1px solid #999 !important;
+        box-shadow: none !important;
+        padding: 8px !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        min-height: auto !important;
+      }
+      .day-header {
+        color: #000 !important;
+        border-bottom: 1.5px solid #333 !important;
+      }
+      .class-item {
+        background: white !important;
+        border: 1px solid #aaa !important;
+        padding: 6px !important;
+        page-break-inside: avoid !important;
+      }
+      .free-slot-item {
+        border: 1px dashed #777 !important;
+        background: transparent !important;
+        color: #333 !important;
+      }
+    }
+  </style>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+  <script type="module" crossorigin src="/assets/admin_teacher_schedules-DCNU1yQD.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/rbacService-D2RrsA9d.js">
+  <link rel="modulepreload" crossorigin href="/assets/activityLogger-BK9d5021.js">
+  <link rel="modulepreload" crossorigin href="/assets/authService-CtWWGArP.js">
+  <link rel="modulepreload" crossorigin href="/assets/navbar-Bz3pjZSE.js">
+  <link rel="stylesheet" crossorigin href="/assets/rbacService-CHOdNZNU.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        
+        <!-- Header area -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;" class="no-print">
+          <div>
+            <h1 style="font-size: 1.45rem; font-weight: 700; color: var(--text-primary); margin: 0;">جداول المعلمين والشواغر</h1>
+            <p style="color: var(--text-secondary); font-size: 0.875rem; margin-top: 0.25rem;">استعراض جداول عمل المعلمين الأسبوعية، وتحليل الساعات المشغولة والفارغة بدقة.</p>
+          </div>
+          
+          <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <button id="btnPrintSchedule" class="btn btn-secondary" style="font-weight: 600;">
+              <i data-lucide="printer" style="width: 15px; height: 15px;"></i> طباعة وتصدير
+            </button>
+            <a href="teachers.html" class="btn btn-secondary">
+              <i data-lucide="users" style="width: 15px; height: 15px;"></i> إدارة المعلمين
+            </a>
+            <a href="students.html" class="btn btn-primary">
+              <i data-lucide="user-plus" style="width: 15px; height: 15px;"></i> تسكين وتوزيع الطلاب
+            </a>
+          </div>
+        </div>
+
+        <!-- Filter & Selection Card -->
+        <div class="card no-print" id="filtersCard" style="margin-bottom: 1.5rem;">
+          <div style="display: grid; grid-template-columns: 2fr 1.5fr 1fr; gap: 1rem; align-items: flex-end;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="teacherSelect">المعلم المستهدف:</label>
+              <select id="teacherSelect" class="form-control">
+                <option value="ALL">جميع المعلمين (نظرة مقارنة شاملة والشواغر)</option>
+                <!-- Filled dynamically -->
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="dayFilterSelect">تصفية اليوم:</label>
+              <select id="dayFilterSelect" class="form-control">
+                <option value="ALL">جميع أيام الأسبوع (الأحد - السبت)</option>
+                <option value="Sunday">الأحد</option>
+                <option value="Monday">الاثنين</option>
+                <option value="Tuesday">الثلاثاء</option>
+                <option value="Wednesday">الأربعاء</option>
+                <option value="Thursday">الخميس</option>
+                <option value="Friday">الجمعة</option>
+                <option value="Saturday">السبت</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="workWindowSelect">نافذة دوام المعلم اليومية:</label>
+              <select id="workWindowSelect" class="form-control">
+                <option value="8">8 ساعات (02:00 م - 10:00 م)</option>
+                <option value="6">6 ساعات (03:00 م - 09:00 م)</option>
+                <option value="10">10 ساعات (01:00 م - 11:00 م)</option>
+                <option value="12">12 ساعة (دوام كامل مرن)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Summary Metrics -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;" id="metricsContainer">
+          <div class="metric-card">
+            <span class="metric-label">
+              <i data-lucide="clock" style="width: 15px; height: 15px; color: var(--primary-color);"></i>
+              ساعات التدريس الأسبوعية
+            </span>
+            <span class="metric-value" id="metricScheduledHours">0.0 ساعة</span>
+            <span class="metric-footer" id="metricSessionsCount">0 حصة مجدولة</span>
+          </div>
+
+          <div class="metric-card">
+            <span class="metric-label">
+              <i data-lucide="calendar-check" style="width: 15px; height: 15px; color: var(--success);"></i>
+              الساعات الفارغة المتاحة
+            </span>
+            <span class="metric-value" id="metricFreeHours" style="color: var(--success);">0.0 ساعة</span>
+            <span class="metric-footer" id="metricFreeSlotsCount">متاح لتسكين طلاب جدد</span>
+          </div>
+
+          <div class="metric-card">
+            <span class="metric-label">
+              <i data-lucide="activity" style="width: 15px; height: 15px; color: var(--warning);"></i>
+              نسبة الإشغال الأسبوعي
+            </span>
+            <span class="metric-value" id="metricOccupancyRate">0%</span>
+            <div class="occupancy-bar-bg" style="margin-top: 0.35rem;">
+              <div class="occupancy-bar-fill" id="metricOccupancyBar" style="width: 0%; background-color: var(--primary-color);"></div>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <span class="metric-label">
+              <i data-lucide="users" style="width: 15px; height: 15px; color: var(--info);"></i>
+              الطلاب والمجموعات
+            </span>
+            <span class="metric-value" id="metricStudentsCount">0</span>
+            <span class="metric-footer" id="metricGroupsCount">0 مجموعات جماعية</span>
+          </div>
+        </div>
+
+        <!-- Print Header (Visible only when printing) -->
+        <div class="print-header" style="display: none; margin-bottom: 1.5rem; border-bottom: 2px solid var(--border-color); padding-bottom: 1rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+            <div>
+              <h2 style="font-size: 1.4rem; font-weight: 800; color: #000; margin: 0;" id="printAcademyName">أكاديمية سبيل</h2>
+              <p style="font-size: 0.85rem; color: #555; margin: 0.2rem 0 0 0;" id="printAcademyDesc">جدول عمل المعلمين وتوزيع الساعات والشواغر</p>
+            </div>
+            <div style="text-align: left; direction: ltr;">
+              <h3 style="font-size: 1.1rem; font-weight: 700; color: #000; margin: 0; direction: rtl;" id="printTargetTitle">جدول المعلم: -</h3>
+              <p style="font-size: 0.8rem; color: #555; margin: 0.2rem 0 0 0; direction: rtl;" id="printDateGenerated">تاريخ التقرير: -</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- View Container 1: Individual Teacher Weekly Schedule Grid -->
+        <div id="teacherGridView">
+          <!-- 7-day grid -->
+          <div class="grid-seven-days" id="weeklyScheduleGrid">
+            <!-- Sunday -->
+            <div class="day-column" id="col-Sunday">
+              <div class="day-header">
+                <span>الأحد</span>
+                <span class="badge badge-primary" id="count-Sunday">0 حصة</span>
+              </div>
+              <div class="day-classes-list" id="list-Sunday" style="display: flex; flex-direction: column; gap: 0.65rem;">
+                <div style="color: var(--text-muted); text-align: center; padding: 2rem 0; font-size: 0.82rem;">جاري التحميل...</div>
+              </div>
+            </div>
+
+            <!-- Monday -->
+            <div class="day-column" id="col-Monday">
+              <div class="day-header">
+                <span>الاثنين</span>
+                <span class="badge badge-primary" id="count-Monday">0 حصة</span>
+              </div>
+              <div class="day-classes-list" id="list-Monday" style="display: flex; flex-direction: column; gap: 0.65rem;">
+                <div style="color: var(--text-muted); text-align: center; padding: 2rem 0; font-size: 0.82rem;">جاري التحميل...</div>
+              </div>
+            </div>
+
+            <!-- Tuesday -->
+            <div class="day-column" id="col-Tuesday">
+              <div class="day-header">
+                <span>الثلاثاء</span>
+                <span class="badge badge-primary" id="count-Tuesday">0 حصة</span>
+              </div>
+              <div class="day-classes-list" id="list-Tuesday" style="display: flex; flex-direction: column; gap: 0.65rem;">
+                <div style="color: var(--text-muted); text-align: center; padding: 2rem 0; font-size: 0.82rem;">جاري التحميل...</div>
+              </div>
+            </div>
+
+            <!-- Wednesday -->
+            <div class="day-column" id="col-Wednesday">
+              <div class="day-header">
+                <span>الأربعاء</span>
+                <span class="badge badge-primary" id="count-Wednesday">0 حصة</span>
+              </div>
+              <div class="day-classes-list" id="list-Wednesday" style="display: flex; flex-direction: column; gap: 0.65rem;">
+                <div style="color: var(--text-muted); text-align: center; padding: 2rem 0; font-size: 0.82rem;">جاري التحميل...</div>
+              </div>
+            </div>
+
+            <!-- Thursday -->
+            <div class="day-column" id="col-Thursday">
+              <div class="day-header">
+                <span>الخميس</span>
+                <span class="badge badge-primary" id="count-Thursday">0 حصة</span>
+              </div>
+              <div class="day-classes-list" id="list-Thursday" style="display: flex; flex-direction: column; gap: 0.65rem;">
+                <div style="color: var(--text-muted); text-align: center; padding: 2rem 0; font-size: 0.82rem;">جاري التحميل...</div>
+              </div>
+            </div>
+
+            <!-- Friday -->
+            <div class="day-column" id="col-Friday">
+              <div class="day-header">
+                <span>الجمعة</span>
+                <span class="badge badge-primary" id="count-Friday">0 حصة</span>
+              </div>
+              <div class="day-classes-list" id="list-Friday" style="display: flex; flex-direction: column; gap: 0.65rem;">
+                <div style="color: var(--text-muted); text-align: center; padding: 2rem 0; font-size: 0.82rem;">جاري التحميل...</div>
+              </div>
+            </div>
+
+            <!-- Saturday -->
+            <div class="day-column" id="col-Saturday">
+              <div class="day-header">
+                <span>السبت</span>
+                <span class="badge badge-primary" id="count-Saturday">0 حصة</span>
+              </div>
+              <div class="day-classes-list" id="list-Saturday" style="display: flex; flex-direction: column; gap: 0.65rem;">
+                <div style="color: var(--text-muted); text-align: center; padding: 2rem 0; font-size: 0.82rem;">جاري التحميل...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- View Container 2: All Teachers Comparison Matrix Table -->
+        <div id="allTeachersComparisonView" style="display: none;">
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>المعلم</th>
+                  <th>الطلاب النشطون</th>
+                  <th>المجموعات</th>
+                  <th>إجمالي الحصص/أسبوع</th>
+                  <th>ساعات التدريس</th>
+                  <th>الساعات الفارغة المقدرة</th>
+                  <th>نسبة الإشغال</th>
+                  <th>أكثر الأيام ازدحاماً</th>
+                  <th>إجراء</th>
+                </tr>
+              </thead>
+              <tbody id="allTeachersTableBody">
+                <tr>
+                  <td colspan="9" style="text-align: center; padding: 2rem; color: var(--text-muted);">جاري تحميل إحصائيات المعلمين...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <!-- Firebase setup and core scripts -->
+</body>
+</html>

@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - تفاصيل المعلم والملف المالي</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .teacher-details-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .teacher-header-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .teacher-header-info {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .teacher-header-avatar {
+      width: 85px;
+      height: 85px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid var(--primary-light);
+      flex-shrink: 0;
+    }
+
+    .teacher-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      flex-wrap: wrap;
+    }
+
+    .tabs-nav-bar {
+      display: flex;
+      gap: 0.5rem;
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 0.5rem;
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+
+    .tab-item-btn {
+      background: none;
+      border: none;
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 0.65rem 1.15rem;
+      border-radius: 8px;
+      transition: all var(--transition-fast);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .tab-item-btn.active, .tab-item-btn:hover {
+      background-color: var(--primary-light);
+      color: var(--primary-color);
+    }
+
+    .tab-item-btn.financial-tab.active {
+      background-color: rgba(34, 197, 94, 0.12);
+      color: var(--success);
+    }
+
+    .tab-section {
+      display: none;
+    }
+
+    .tab-section.active {
+      display: block;
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .kpi-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .kpi-card .kpi-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .kpi-card .kpi-value {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: var(--text-primary);
+    }
+
+    .section-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.75rem;
+    }
+
+    /* Proof Image Preview Modal */
+    .img-preview-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+  </style>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+  <script type="module" crossorigin src="/assets/admin_teacher_details-B0e24ND-.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/rbacService-D2RrsA9d.js">
+  <link rel="modulepreload" crossorigin href="/assets/activityLogger-BK9d5021.js">
+  <link rel="modulepreload" crossorigin href="/assets/authService-CtWWGArP.js">
+  <link rel="modulepreload" crossorigin href="/assets/navbar-Bz3pjZSE.js">
+  <link rel="stylesheet" crossorigin href="/assets/rbacService-CHOdNZNU.css">
+</head>
+<body>
+  <div id="sidebar-container"></div>
+
+  <div class="main-content">
+    <div id="navbar-container"></div>
+
+    <div class="content-body">
+      <!-- Top Breadcrumb & Return Link -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: var(--text-secondary); font-weight: 700;">
+          <a href="teachers.html" style="color: var(--primary-color); text-decoration: none; display: flex; align-items: center; gap: 0.3rem;">
+            <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i> قائمة المعلمين
+          </a>
+          <span>/</span>
+          <span id="breadcrumbTeacherName" style="color: var(--text-primary);">تفاصيل المعلم</span>
+        </div>
+
+        <a href="teachers.html" class="btn btn-secondary" style="font-weight: 700; gap: 0.4rem; font-size: 0.85rem;">
+          <i data-lucide="list"></i> العودة لإدارة المعلمين
+        </a>
+      </div>
+
+      <!-- Main Teacher Profile Card Header -->
+      <div class="teacher-header-card">
+        <div class="teacher-header-info">
+          <img id="headerAvatar" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=120" class="teacher-header-avatar" alt="Avatar">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem;">
+              <h2 id="headerName" style="font-size: 1.4rem; font-weight: 900; color: var(--text-primary); margin: 0;">-</h2>
+              <span id="headerStatusBadge" class="badge" style="background-color: var(--success-light); color: var(--success); font-weight: 800; padding: 0.3rem 0.65rem;">نشط</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;">
+              <span><i data-lucide="mail" style="width: 15px; height: 15px; vertical-align: middle; color: var(--primary-color);"></i> <span id="headerEmail">-</span></span>
+              <span><i data-lucide="phone" style="width: 15px; height: 15px; vertical-align: middle; color: var(--primary-color);"></i> <span id="headerPhone">-</span></span>
+              <span><i data-lucide="book-open" style="width: 15px; height: 15px; vertical-align: middle; color: var(--primary-color);"></i> <span id="headerSubject">-</span></span>
+              <span><i data-lucide="target" style="width: 15px; height: 15px; vertical-align: middle; color: #8b5cf6;"></i> الهدف الشهري: <strong id="headerTargetHours">40 ساعة</strong></span>
+              <span><i data-lucide="clock" style="width: 15px; height: 15px; vertical-align: middle; color: var(--primary-color);"></i> آخر دخول: <span id="headerLastLogin">-</span></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="teacher-header-actions">
+          <button id="btnToggleStatus" class="btn btn-secondary" style="font-weight: 700; gap: 0.4rem; font-size: 0.85rem;">
+            <i data-lucide="power"></i> <span id="lblToggleStatus">إيقاف الحساب</span>
+          </button>
+          <button id="btnResetPassword" class="btn btn-secondary" style="font-weight: 700; gap: 0.4rem; font-size: 0.85rem;">
+            <i data-lucide="key-round"></i> إرسال كلمة المرور
+          </button>
+          <button id="btnDeleteTeacher" class="btn btn-secondary" style="font-weight: 700; gap: 0.4rem; font-size: 0.85rem; color: var(--danger); border-color: rgba(239, 68, 68, 0.3);">
+            <i data-lucide="trash-2"></i> حذف المعلم
+          </button>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs Header -->
+      <div class="tabs-nav-bar" style="margin-top: 1.25rem;">
+        <button class="tab-item-btn active" data-tab-id="tab-profile">
+          <i data-lucide="user"></i> الملف الشخصي والبيانات
+        </button>
+        <button class="tab-item-btn financial-tab" data-tab-id="tab-payroll">
+          <i data-lucide="wallet"></i> الملف المالي والرواتب
+        </button>
+
+        <button class="tab-item-btn" data-tab-id="tab-channels">
+          <i data-lucide="credit-card"></i> قنوات الاستلام المالية
+        </button>
+        <button class="tab-item-btn" data-tab-id="tab-students-sessions">
+          <i data-lucide="users"></i> الطلاب والحصص
+        </button>
+        <button class="tab-item-btn" data-tab-id="tab-audit">
+          <i data-lucide="history"></i> سجل العمليات Timeline
+        </button>
+      </div>
+
+      <!-- TAB 1: الملف الشخصي والبيانات -->
+      <div id="tab-profile" class="tab-section active" style="margin-top: 1.25rem;">
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
+          <!-- Form to edit profile -->
+          <div class="section-card">
+            <h3 class="section-title">
+              <i data-lucide="user-check" style="color: var(--primary-color);"></i> تعديل البيانات الشخصية والمهنية
+            </h3>
+            <form id="editProfileForm">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div class="form-group">
+                  <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">الاسم الكامل للمعلم</label>
+                  <input type="text" id="profName" class="form-control" required style="font-weight: 700;">
+                </div>
+                <div class="form-group">
+                  <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">البريد الإلكتروني (الحساب الرسمي)</label>
+                  <input type="email" id="profEmail" class="form-control" readonly style="background-color: var(--bg-primary); color: var(--text-muted); font-family: monospace;">
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div class="form-group">
+                  <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">رقم الهاتف (واتساب)</label>
+                  <input type="tel" id="profPhone" class="form-control" placeholder="01xxxxxxxxx" style="font-weight: 700; direction: ltr; text-align: right;">
+                </div>
+                <div class="form-group">
+                  <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">المادة / التخصص التعليمي</label>
+                  <input type="text" id="profSubject" class="form-control" placeholder="مثال: القرآن الكريم والتجويد" style="font-weight: 700;">
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 1.25rem;">
+                <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">ملاحظات خاصة بالإدارة عن المعلم</label>
+                <textarea id="profNotes" class="form-control" rows="3" placeholder="أضف أية ملاحظات إدارية هنا..."></textarea>
+              </div>
+
+              <button type="submit" class="btn btn-primary" style="font-weight: 800; gap: 0.5rem; padding: 0.75rem 1.5rem;">
+                <i data-lucide="save"></i> حفظ التحديثات الشخصية
+              </button>
+            </form>
+          </div>
+
+          <!-- Quick Overview Box -->
+          <div>
+            <div class="section-card">
+              <h3 class="section-title">
+                <i data-lucide="shield-check" style="color: var(--success);"></i> حالة الحساب والأمان
+              </h3>
+              <div style="display: flex; flex-direction: column; gap: 0.85rem; font-size: 0.88rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border-color); padding-bottom: 0.5rem;">
+                  <span style="color: var(--text-secondary); font-weight: 600;">تاريخ الانضمام:</span>
+                  <strong id="cardJoinDate" style="color: var(--text-primary);">-</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border-color); padding-bottom: 0.5rem;">
+                  <span style="color: var(--text-secondary); font-weight: 600;">معرف الحساب (UID):</span>
+                  <strong id="cardUid" style="font-family: monospace; font-size: 0.75rem; color: var(--text-muted);">-</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="color: var(--text-secondary); font-weight: 600;">عدد الطلاب الحاليين:</span>
+                  <strong id="cardStudentsCount" style="color: var(--primary-color); font-size: 1.1rem;">0 طالب</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: الملف المالي والرواتب -->
+      <div id="tab-payroll" class="tab-section" style="margin-top: 1.25rem;">
+        <!-- KPI Row -->
+        <div class="kpi-grid">
+          <div class="kpi-card" style="border-right: 4px solid var(--success);">
+            <div class="kpi-title"><i data-lucide="coins" style="color: var(--success);"></i> صافي المستحقات الحالية</div>
+            <div id="kpiNetSalary" class="kpi-value" style="color: var(--success);">0 ج.م</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted);">عن الدورة المالية الحالية الجارية</div>
+          </div>
+
+          <div class="kpi-card" style="border-right: 4px solid var(--primary-color);">
+            <div class="kpi-title"><i data-lucide="clock" style="color: var(--primary-color);"></i> مجموع الساعات المنجزة</div>
+            <div id="kpiTotalHours" class="kpi-value">0 ساعة</div>
+            <div id="kpiSubHours" style="font-size: 0.78rem; color: var(--text-muted);">0 فردي | 0 جماعي</div>
+          </div>
+
+          <div class="kpi-card" style="border-right: 4px solid #8b5cf6;">
+            <div class="kpi-title"><i data-lucide="calendar-check" style="color: #8b5cf6;"></i> الحصص المكتملة والمحسوبة</div>
+            <div id="kpiTotalSessions" class="kpi-value">0 حصة</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted);">تشمل حصص غياب الطالب المعتمدة</div>
+          </div>
+
+          <div class="kpi-card" style="border-right: 4px solid var(--warning);">
+            <div class="kpi-title"><i data-lucide="credit-card" style="color: var(--warning);"></i> قناة التحويل المفضلة</div>
+            <div id="kpiPreferredMethod" class="kpi-value" style="font-size: 1.1rem; color: var(--text-primary); margin-top: 0.25rem;">-</div>
+            <div id="kpiLastUpdatedFinancial" style="font-size: 0.75rem; color: var(--text-muted);">آخر تحديث: -</div>
+          </div>
+        </div>
+
+        <!-- Expected Salary Card Banner -->
+        <div style="background-color: rgba(59, 130, 246, 0.08); border: 1.5px dashed #2563eb; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div style="display: flex; align-items: center; gap: 0.85rem;">
+            <div style="background-color: #2563eb; color: white; width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+              <i data-lucide="target" style="width: 24px; height: 24px;"></i>
+            </div>
+            <div>
+              <div style="font-size: 0.88rem; font-weight: 800; color: #1d4ed8;">المرتب المتوقع لهذا الشهر (100% حضور):</div>
+              <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.15rem;" id="kpiExpectedHours">0 ساعة متوقعة (0 حصة)</div>
+            </div>
+          </div>
+          <div style="text-align: left;">
+            <div style="font-size: 1.4rem; font-weight: 900; color: #1e40af;" id="kpiExpectedSalary">0 ج.م</div>
+            <div style="font-size: 0.72rem; color: var(--text-muted); font-style: italic;">* محسوب بناءً على جدول طلاب المعلم ومجموعاته الجارية</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.5rem;">
+          <!-- Detailed Breakdown and Pricing Config -->
+          <div class="section-card">
+            <h3 class="section-title">
+              <i data-lucide="calculator" style="color: var(--success);"></i> تفاصيل الاحتساب والأسعار المعتمدة
+            </h3>
+
+            <div style="overflow-x: auto; margin-bottom: 1.5rem;">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>نوع الحصة</th>
+                    <th>تسعيرة الساعة المعتمدة</th>
+                    <th>ساعات العمل</th>
+                    <th>إجمالي المبلغ المستحق</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>فردي (Individual)</strong></td>
+                    <td><strong id="tblRateInd">0</strong> ج.م/ساعة</td>
+                    <td><span id="tblHoursInd">0</span> ساعة</td>
+                    <td><strong id="tblGrossInd" style="color: var(--success);">0</strong> ج.م</td>
+                  </tr>
+                  <tr>
+                    <td><strong>جماعي (Group)</strong></td>
+                    <td><strong id="tblRateGrp">0</strong> ج.م/ساعة</td>
+                    <td><span id="tblHoursGrp">0</span> ساعة</td>
+                    <td><strong id="tblGrossGrp" style="color: var(--success);">0</strong> ج.م</td>
+                  </tr>
+                  <tr style="background-color: rgba(34, 197, 94, 0.04);">
+                    <td colspan="3"><strong>المكافآت والحوافز (+)</strong></td>
+                    <td><strong id="tblBonuses" style="color: var(--success);">+0</strong> ج.م</td>
+                  </tr>
+                  <tr style="background-color: rgba(239, 68, 68, 0.04);">
+                    <td colspan="3"><strong>الخصومات والتسويات (-)</strong></td>
+                    <td><strong id="tblDeductions" style="color: var(--danger);">-0</strong> ج.م</td>
+                  </tr>
+                  <tr style="background-color: rgba(59, 130, 246, 0.08); border-top: 2px solid #2563eb;">
+                    <td colspan="2"><strong style="color: #1d4ed8;">🎯 المرتب المتوقع للشهر (عند حضور 100% من الطلاب)</strong></td>
+                    <td><span id="tblExpectedTotalHours" style="color: #1d4ed8; font-weight: 800;">0</span> ساعة</td>
+                    <td><strong id="tblExpectedSalaryVal" style="color: #1e40af; font-size: 1.05rem;">0</strong> ج.م</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Form to edit rate / bonuses -->
+            <form id="formUpdateRates" style="background-color: var(--bg-primary); padding: 1.25rem; border-radius: var(--border-radius); border: 1px solid var(--border-color);">
+              <h4 style="font-weight: 800; font-size: 0.95rem; margin-bottom: 1rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.4rem;">
+                <i data-lucide="settings-2" style="width: 18px; color: var(--primary-color);"></i> ضبط تسعيرة الحصص وساعات الهدف والمكافآت
+              </h4>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div class="form-group">
+                  <label style="font-weight: 700; font-size: 0.82rem; color: var(--text-primary);">أجر الساعة الفردية (ج.م)</label>
+                  <input type="number" id="inputRateInd" class="form-control" required min="0" style="font-weight: 800;">
+                </div>
+                <div class="form-group">
+                  <label style="font-weight: 700; font-size: 0.82rem; color: var(--text-primary);">أجر الساعة الجماعية (ج.م)</label>
+                  <input type="number" id="inputRateGrp" class="form-control" required min="0" style="font-weight: 800;">
+                </div>
+                <div class="form-group">
+                  <label style="font-weight: 800; font-size: 0.82rem; color: var(--primary-color); display: flex; align-items: center; gap: 0.35rem;">
+                    <i data-lucide="target" style="width: 14px; height: 14px;"></i> الهدف الشهري (ساعة)
+                  </label>
+                  <input type="number" id="inputTargetHours" class="form-control" min="1" step="0.5" placeholder="40" style="font-weight: 800; border-color: var(--primary-color); background-color: rgba(14, 165, 233, 0.05);">
+                </div>
+              </div>
+
+              <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: -0.4rem; margin-bottom: 0.9rem; display: flex; align-items: center; gap: 0.35rem;">
+                <i data-lucide="info" style="width: 13px; height: 13px; color: var(--primary-color);"></i> الهدف الشهري يحدد سقف "شريط الساعات المطلوبة" في لوحة تحكم المعلم (المثبت افتراضياً على 40 ساعة).
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                <div class="form-group">
+                  <label style="font-weight: 700; font-size: 0.82rem; color: var(--text-primary);">المكافآت والحوافز (ج.م)</label>
+                  <input type="number" id="inputBonuses" class="form-control" min="0" style="font-weight: 800;">
+                </div>
+                <div class="form-group">
+                  <label style="font-weight: 700; font-size: 0.82rem; color: var(--text-primary);">الخصومات والتسويات (ج.م)</label>
+                  <input type="number" id="inputDeductions" class="form-control" min="0" style="font-weight: 800;">
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary" style="font-weight: 800; gap: 0.4rem; padding: 0.65rem 1.25rem;">
+                <i data-lucide="check"></i> تحديث التسعيرة وساعات الهدف والمكافآت
+              </button>
+            </form>
+          </div>
+
+          <!-- Payout & Proof Upload Form -->
+          <div>
+            <div class="section-card" style="border-top: 4px solid var(--success);">
+              <h3 class="section-title">
+                <i data-lucide="file-check-2" style="color: var(--success);"></i> توثيق تحويل المرتب الشهرية
+              </h3>
+
+              <form id="formUploadPayoutProof">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                  <label style="font-weight: 700; font-size: 0.85rem;">اختر شهر المستحقات</label>
+                  <input type="month" id="payoutMonth" class="form-control" required style="font-weight: 800;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1rem;">
+                  <label style="font-weight: 700; font-size: 0.85rem;">المبلغ المحول إثباته (ج.م)</label>
+                  <input type="number" id="payoutAmount" class="form-control" required min="0" style="font-weight: 800;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1rem;">
+                  <label style="font-weight: 700; font-size: 0.85rem;">صورة / إيصال تحويل المرتب (اختياري)</label>
+                  <input type="file" id="payoutFile" class="form-control" accept="image/*">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                  <label style="font-weight: 700; font-size: 0.85rem;">ملاحظات التحويل</label>
+                  <input type="text" id="payoutNotes" class="form-control" placeholder="مثال: تم التحويل عبر فودافون كاش">
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; font-weight: 800; gap: 0.5rem; justify-content: center; background-color: var(--success); border-color: var(--success);">
+                  <i data-lucide="upload-cloud"></i> إرفاق الإيصال وأرشفة المستحقات
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Historical Salary Archive Table for this Teacher -->
+        <div class="section-card" style="margin-top: 1.5rem;">
+          <h3 class="section-title">
+            <i data-lucide="archive" style="color: var(--primary-color);"></i> أرشيف الرواتب والتحويلات المسجلة للمعلم
+          </h3>
+
+          <div style="overflow-x: auto;">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>الشهر / الدورة</th>
+                  <th>المبلغ الأرشيفي</th>
+                  <th>عدد الحصص والساعات</th>
+                  <th>طريقة التحويل</th>
+                  <th>الحالة</th>
+                  <th>إيصال التحويل</th>
+                  <th>تاريخ التوثيق</th>
+                </tr>
+              </thead>
+              <tbody id="tblTeacherSalaryArchive">
+                <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">جاري تحميل الأرشيف...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: قنوات الاستلام المالية -->
+      <div id="tab-channels" class="tab-section" style="margin-top: 1.25rem;">
+        <div class="section-card">
+          <h3 class="section-title">
+            <i data-lucide="credit-card" style="color: var(--success);"></i> بيانات وقنوات استلام الأجور والرواتب
+          </h3>
+
+          <form id="formAdminChannels">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+              <div class="form-group">
+                <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">محفظة كاش (Vodafone / Orange / WE Cash)</label>
+                <input type="tel" id="chnVodafone" class="form-control" placeholder="01xxxxxxxxx" style="font-weight: 800; direction: ltr; text-align: right;">
+              </div>
+
+              <div class="form-group">
+                <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">معرف انستاباي (InstaPay ID)</label>
+                <input type="text" id="chnInstapay" class="form-control" placeholder="username@instapay" style="font-weight: 800; direction: ltr; text-align: right;">
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+              <div class="form-group">
+                <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">الحساب البنكي / رقم الـ IBAN الرسمي</label>
+                <textarea id="chnBankAccount" class="form-control" rows="2" placeholder="رقم الحساب البنكي أو الـ IBAN..." style="font-weight: 700; font-size: 0.88rem;"></textarea>
+              </div>
+
+              <div class="form-group">
+                <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">طريقة التحويل المفضلة</label>
+                <select id="chnPreferred" class="form-control" style="font-weight: 700;">
+                  <option value="فودافون كاش (Vodafone Cash)">فودافون كاش (Vodafone Cash)</option>
+                  <option value="انستاباي (InstaPay)">انستاباي (InstaPay)</option>
+                  <option value="حساب بنكي (Bank Transfer)">حساب بنكي (Bank Transfer)</option>
+                  <option value="أورنج كاش (Orange Cash)">أورنج كاش (Orange Cash)</option>
+                  <option value="وي باي (WE Pay)">وي باي (WE Pay)</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-primary); padding: 0.85rem 1rem; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 1.25rem; font-size: 0.85rem; color: var(--text-secondary);">
+              <span><i data-lucide="info" style="width: 16px; height: 16px; vertical-align: middle; color: var(--primary-color);"></i> آخر تعديل لقنوات التحويل بواسطة المعلم: <strong id="chnLastTeacherUpdate" style="color: var(--text-primary);">-</strong></span>
+            </div>
+
+            <button type="submit" class="btn btn-secondary" style="font-weight: 800; gap: 0.5rem; color: var(--success); border-color: rgba(34, 197, 94, 0.4); padding: 0.75rem 1.5rem;">
+              <i data-lucide="check-circle"></i> حفظ تعديلات قنوات الصرف المالي
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- TAB 4: الطلاب والحصص -->
+      <div id="tab-students-sessions" class="tab-section" style="margin-top: 1.25rem;">
+        <div style="display: grid; grid-template-columns: 1fr 1.6fr; gap: 1.5rem;">
+          <!-- Assigned Students -->
+          <div class="section-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+              <h3 class="section-title" style="border: none; margin: 0; padding: 0;">
+                <i data-lucide="users" style="color: var(--primary-color);"></i> الطلاب المسندين للمعلم
+              </h3>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>اسم الطالب</th>
+                    <th>إجمالي الحصص</th>
+                    <th>حصص الشهر الحالي</th>
+                  </tr>
+                </thead>
+                <tbody id="tblAssignedStudents">
+                  <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">جاري التحميل...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Session History -->
+          <div class="section-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; flex-wrap: wrap; gap: 0.75rem;">
+              <h3 class="section-title" style="border: none; margin: 0; padding: 0;">
+                <i data-lucide="calendar" style="color: var(--primary-color);"></i> سجل الحصص الأخيرة
+              </h3>
+              <!-- Filter by Month -->
+              <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <label for="filterSessionMonth" style="font-size: 0.82rem; font-weight: 700; color: var(--text-secondary); white-space: nowrap;">فلترة بالشهر:</label>
+                <input type="month" id="filterSessionMonth" class="form-control" style="font-size: 0.82rem; padding: 0.3rem 0.5rem; width: auto; font-weight: 700;">
+                <button id="btnClearSessionMonth" class="btn btn-secondary" style="font-size: 0.78rem; padding: 0.3rem 0.6rem; font-weight: 700;">عرض الكل</button>
+              </div>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>الطالب</th>
+                    <th>التاريخ</th>
+                    <th>المدة</th>
+                    <th>نوع الحصة</th>
+                    <th>احتساب المرتب</th>
+                    <th>الحالة</th>
+                  </tr>
+                </thead>
+                <tbody id="tblTeacherSessions">
+                  <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">جاري التحميل...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 5: سجل العمليات Timeline -->
+      <div id="tab-audit" class="tab-section" style="margin-top: 1.25rem;">
+        <div class="section-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; flex-wrap: wrap; gap: 0.75rem;">
+            <h3 class="section-title" style="border: none; margin: 0; padding: 0;">
+              <i data-lucide="history" style="color: var(--primary-color);"></i> سجل النشاط والعمليات الخاص بالمعلم
+            </h3>
+            
+            <!-- Category Filter & Search -->
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+              <input type="text" id="searchAuditInput" class="form-control" placeholder="بحث في السجل..." style="font-size: 0.82rem; padding: 0.35rem 0.6rem; width: 170px;">
+              <select id="filterAuditCategory" class="form-control" style="font-size: 0.82rem; padding: 0.35rem 0.6rem; width: auto; font-weight: 700;">
+                <option value="all">جميع العمليات (الكل)</option>
+                <option value="session">الحصص المسجلة 📚</option>
+                <option value="attendance">سجل التحركات والدخول 🚪</option>
+                <option value="activity">أنشطة المعلم ⚡</option>
+                <option value="audit">تدقيق وتعديلات النظام 🛡️</option>
+                <option value="financial">التحويلات والرواتب 💰</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Summary Stats Row -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem;">
+            <div style="background: var(--bg-primary); padding: 0.65rem 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); text-align: center;">
+              <div style="font-size: 0.73rem; color: var(--text-secondary); font-weight: 700;">إجمالي العمليات</div>
+              <div id="auditStatTotal" style="font-size: 1.2rem; font-weight: 800; color: var(--primary-color);">0</div>
+            </div>
+            <div style="background: var(--bg-primary); padding: 0.65rem 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); text-align: center;">
+              <div style="font-size: 0.73rem; color: var(--text-secondary); font-weight: 700;">الحصص المسجلة</div>
+              <div id="auditStatSessions" style="font-size: 1.2rem; font-weight: 800; color: #2563eb;">0</div>
+            </div>
+            <div style="background: var(--bg-primary); padding: 0.65rem 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); text-align: center;">
+              <div style="font-size: 0.73rem; color: var(--text-secondary); font-weight: 700;">التحركات والدخول</div>
+              <div id="auditStatAttendance" style="font-size: 1.2rem; font-weight: 800; color: #16a34a;">0</div>
+            </div>
+            <div style="background: var(--bg-primary); padding: 0.65rem 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); text-align: center;">
+              <div style="font-size: 0.73rem; color: var(--text-secondary); font-weight: 700;">عمليات وتدقيق النظام</div>
+              <div id="auditStatSystem" style="font-size: 1.2rem; font-weight: 800; color: #9333ea;">0</div>
+            </div>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>التاريخ والوقت</th>
+                  <th>نوع العملية</th>
+                  <th>عنوان النشاط</th>
+                  <th>التفاصيل والملاحظات</th>
+                </tr>
+              </thead>
+              <tbody id="tblAuditLogs">
+                <tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 2rem;">جاري تحميل سجل النشاط والعمليات...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Image Modal Viewer -->
+  <div id="imgPreviewModal" class="img-preview-modal" onclick="closeImgModal()">
+    <div style="position: relative; max-width: 90vw; max-height: 90vh;" onclick="event.stopPropagation()">
+      <button onclick="closeImgModal()" style="position: absolute; top: -15px; left: -15px; background: red; color: white; border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-weight: bold; font-size: 16px;">✕</button>
+      <img id="imgPreviewTarget" src="" style="max-width: 100%; max-height: 85vh; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);" alt="إيصال التحويل">
+    </div>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>تحميل تطبيق أكاديمية سبيل للأندرويد</title>
+  <meta name="theme-color" content="#0d9488">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    :root {
+      --primary: #0d9488;
+      --primary-dark: #0f766e;
+      --bg: #0b1220;
+      --surface: #121b2e;
+      --surface-2: #18243b;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --border: rgba(148,163,184,.18);
+      --success: #10b981;
+      --warn: #f59e0b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 50% -10%, rgba(13,148,136,.25), transparent 60%), var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 24px 16px 48px; }
+    .top {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 24px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 1.1rem; }
+    .brand img { width: 44px; height: 44px; border-radius: 12px; background: #fff; object-fit: contain; padding: 4px; }
+    .back {
+      color: var(--muted); text-decoration: none; font-size: .9rem; border: 1px solid var(--border);
+      padding: 8px 12px; border-radius: 10px; background: rgba(255,255,255,.02);
+    }
+    .hero {
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.01));
+      border: 1px solid var(--border); border-radius: 24px; padding: 28px; display: grid;
+      grid-template-columns: 1.2fr .8fr; gap: 24px; align-items: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    }
+    @media (max-width: 760px) { .hero { grid-template-columns: 1fr; padding: 22px; } }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px;
+      background: rgba(13,148,136,.14); color: #99f6e4; font-size: .78rem; font-weight: 700; margin-bottom: 14px;
+    }
+    h1 { margin: 0 0 10px; font-size: clamp(1.7rem, 4vw, 2.5rem); line-height: 1.3; }
+    .lead { margin: 0 0 20px; color: var(--muted); line-height: 1.8; font-size: .98rem; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 13px 18px;
+      border-radius: 14px; font-weight: 800; text-decoration: none; border: 1px solid transparent; cursor: pointer;
+      font-size: .95rem; transition: transform .15s ease, opacity .15s ease;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; box-shadow: 0 10px 30px rgba(13,148,136,.35); }
+    .btn-secondary { background: rgba(255,255,255,.04); color: var(--text); border-color: var(--border); }
+    .meta { display: flex; flex-wrap: wrap; gap: 10px; color: var(--muted); font-size: .8rem; }
+    .meta span { background: rgba(255,255,255,.03); border: 1px solid var(--border); padding: 6px 10px; border-radius: 999px; }
+    .phone {
+      background: linear-gradient(180deg, #1e293b, #0f172a); border: 1px solid var(--border); border-radius: 30px;
+      padding: 14px; max-width: 280px; margin: 0 auto; box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+    }
+    .screen {
+      background: linear-gradient(180deg, #0d9488, #134e4a); border-radius: 22px; min-height: 420px; padding: 22px 16px;
+      display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden;
+    }
+    .screen::after { content:''; position:absolute; width:180px; height:180px; background:rgba(255,255,255,.08); border-radius:50%; top:-60px; left:-40px; }
+    .app-icon { width: 72px; height: 72px; border-radius: 20px; background: #fff; padding: 8px; object-fit: contain; box-shadow: 0 10px 30px rgba(0,0,0,.2); position: relative; }
+    .screen h2 { margin: 16px 0 6px; font-size: 1.5rem; position: relative; }
+    .screen p { margin: 0; color: rgba(255,255,255,.85); line-height: 1.7; font-size: .9rem; position: relative; }
+    .screen .mock-row { background: rgba(255,255,255,.12); border-radius: 12px; padding: 10px 12px; margin-top: 10px; font-size: .78rem; backdrop-filter: blur(2px); }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 18px; }
+    @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+    .card { background: rgba(255,255,255,.03); border: 1px solid var(--border); border-radius: 18px; padding: 18px; }
+    .card .icon { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: rgba(13,148,136,.14); color: #5eead4; font-size: 1.1rem; margin-bottom: 10px; }
+    .card h3 { margin: 0 0 6px; font-size: .98rem; }
+    .card p { margin: 0; color: var(--muted); font-size: .86rem; line-height: 1.7; }
+    .steps { margin-top: 18px; background: rgba(255,255,255,.03); border: 1px solid var(--border); border-radius: 18px; padding: 20px; }
+    .steps h2 { margin: 0 0 14px; font-size: 1.1rem; }
+    .step { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px dashed var(--border); }
+    .step:last-child { border-bottom: 0; padding-bottom: 0; }
+    .num { width: 28px; height: 28px; flex: 0 0 28px; border-radius: 50%; background: rgba(13,148,136,.18); color: #99f6e4; display: grid; place-items: center; font-weight: 800; font-size: .82rem; }
+    .step p { margin: 2px 0 0; color: var(--muted); font-size: .88rem; line-height: 1.7; }
+    .step strong { font-size: .92rem; }
+    .note {
+      margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: rgba(245,158,11,.08);
+      border: 1px solid rgba(245,158,11,.25); color: #fde68a; font-size: .84rem; line-height: 1.7;
+    }
+    .footer { margin-top: 22px; text-align: center; color: var(--muted); font-size: .78rem; }
+    code { background: rgba(255,255,255,.06); padding: 2px 6px; border-radius: 6px; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .92em; direction: ltr; display: inline-block; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="brand">
+        <img src="/icons/icon-192.png" alt="سبيل" onerror="this.style.display='none'">
+        <span>أكاديمية سبيل</span>
+      </div>
+      <a class="back" href="/">العودة للرئيسية</a>
+    </div>
+
+    <section class="hero">
+      <div>
+        <div class="badge">📱 إصدار أندرويد</div>
+        <h1>حمّل تطبيق أكاديمية سبيل على هاتفك</h1>
+        <p class="lead">نفس النظام اللي بتستخدمه على الويب، لكن كتطبيق أندرويد سريع وسهل الوصول من الشاشة الرئيسية. مناسب للإدارة والمعلمين والمشرفين.</p>
+
+        <div class="actions">
+          <a class="btn btn-primary" id="apkDownloadBtn" href="/downloads/sabeel-academy.apk" download>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            تحميل تطبيق أندرويد (APK)
+          </a>
+          <a class="btn btn-secondary" href="/" >فتح نسخة الويب</a>
+        </div>
+
+        <div class="meta">
+          <span>Android 8+</span>
+          <span>تثبيت مباشر APK</span>
+          <span>يعمل بنفس حسابك</span>
+        </div>
+        <div class="note" id="apkNote">
+          إذا ظهر لك أن رابط التحميل غير متاح حاليًا، فهذا يعني أن ملف الـ APK لم يُرفع بعد إلى مجلد <code>/public/downloads/</code>. اطلب من المسؤول رفع الملف باسم <code>sabeel-academy.apk</code>.
+        </div>
+      </div>
+
+      <div>
+        <div class="phone">
+          <div class="screen">
+            <div>
+              <img class="app-icon" src="/icons/icon-192.png" alt="Sabeel" onerror="this.style.display='none'">
+              <h2>سبيل</h2>
+              <p>إدارة الأكاديمية، الحصص، الطلاب، والرواتب من مكان واحد.</p>
+            </div>
+            <div>
+              <div class="mock-row">✅ إشعارات فورية</div>
+              <div class="mock-row">📊 تقارير ولوحات متابعة</div>
+              <div class="mock-row">🔒 دخول آمن بنفس الحساب</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid">
+      <div class="card">
+        <div class="icon">⚡</div>
+        <h3>وصول أسرع</h3>
+        <p>افتح التطبيق مباشرة من الشاشة الرئيسية بدون ما تدور على الرابط كل مرة.</p>
+      </div>
+      <div class="card">
+        <div class="icon">🔔</div>
+        <h3>تجربة موبايل</h3>
+        <p>واجهة مناسبة للموبايل مع نفس بياناتك وإعداداتك الموجودة على النظام.</p>
+      </div>
+      <div class="card">
+        <div class="icon">🛡️</div>
+        <h3>نفس الحساب</h3>
+        <p>سجّل دخولك بنفس البريد وكلمة المرور. لا يوجد نقل بيانات أو تغيير في حسابك.</p>
+      </div>
+    </div>
+
+    <section class="steps">
+      <h2>طريقة التثبيت على أندرويد</h2>
+      <div class="step">
+        <div class="num">1</div>
+        <div><strong>اضغط “تحميل تطبيق أندرويد (APK)”</strong><p>سيتم تنزيل ملف التثبيت على هاتفك.</p></div>
+      </div>
+      <div class="step">
+        <div class="num">2</div>
+        <div><strong>اسمح بالتثبيت من هذا المصدر إذا طُلب منك</strong><p>أندرويد قد يطلب السماح بتثبيت التطبيقات من المتصفح/الملفات لمرة واحدة.</p></div>
+      </div>
+      <div class="step">
+        <div class="num">3</div>
+        <div><strong>افتح التطبيق وسجّل دخولك</strong><p>استخدم نفس حساب أكاديمية سبيل المعتاد.</p></div>
+      </div>
+    </section>
+
+    <div class="footer">أكاديمية سبيل © 2026 — صفحة تحميل التطبيق</div>
+  </div>
+
+  <script>
+    // Friendly message when APK file is missing
+    (function () {
+      const btn = document.getElementById('apkDownloadBtn');
+      const note = document.getElementById('apkNote');
+      if (!btn) return;
+      btn.addEventListener('click', async function (e) {
+        // Let normal download attempt happen for real file; also probe to show friendly message if missing.
+        try {
+          const res = await fetch(btn.getAttribute('href'), { method: 'HEAD', cache: 'no-store' });
+          if (!res.ok) {
+            e.preventDefault();
+            note.style.background = 'rgba(239,68,68,.08)';
+            note.style.borderColor = 'rgba(239,68,68,.25)';
+            note.style.color = '#fecaca';
+            note.textContent = 'ملف التطبيق غير متوفر حاليًا على الخادم. تأكد من رفع ملف sabeel-academy.apk داخل /public/downloads/ ثم أعد النشر.';
+          }
+        } catch (_) { /* ignore probe errors; browser will handle download */ }
+      });
+    })();
+  </script>
+</body>
+</html>

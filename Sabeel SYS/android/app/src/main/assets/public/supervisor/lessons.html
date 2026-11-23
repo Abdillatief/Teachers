@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>سبيل - إدارة ومتابعة الحصص</title>
+
+  <script>
+    try {
+      if (localStorage.getItem('academy_dark_mode') === 'true' || localStorage.getItem('sabeel_theme') === 'dark') {
+        document.documentElement.classList.add('dark-theme');
+      }
+    } catch (e) {}
+  </script>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <script type="module" crossorigin src="/assets/supervisor_lessons-D-cToCC3.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/rbacService-D2RrsA9d.js">
+  <link rel="modulepreload" crossorigin href="/assets/activityLogger-BK9d5021.js">
+  <link rel="modulepreload" crossorigin href="/assets/authService-CtWWGArP.js">
+  <link rel="modulepreload" crossorigin href="/assets/navbar-Bz3pjZSE.js">
+  <link rel="modulepreload" crossorigin href="/assets/supervisorPageShell-CklIJ_wK.js">
+  <link rel="modulepreload" crossorigin href="/assets/supervisorDomainService-BW5mzJbW.js">
+  <link rel="stylesheet" crossorigin href="/assets/rbacService-CHOdNZNU.css">
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <header class="navbar" id="appNavbar"></header>
+
+      <main class="content-body">
+        <div class="card" style="margin-bottom: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+            <div>
+              <h1 style="font-size: 1.15rem; font-weight: 800; margin: 0;">سجل ومتابعة الحصص</h1>
+              <p style="margin: 0.2rem 0 0; font-size: 0.82rem; color: var(--text-secondary);">متابعة حالات الحضور والتأجيل والتعويض والإلغاء عبر المنصة.</p>
+            </div>
+            <button type="button" id="btnNewLesson" class="btn btn-primary" style="display: none;">
+              <i data-lucide="plus-circle" style="width: 16px; height: 16px;"></i>
+              تسجيل حصة جديدة
+            </button>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.75rem; align-items: end;">
+            <div class="form-group" style="margin: 0;">
+              <label for="filterLessonDate">التاريخ</label>
+              <input type="date" id="filterLessonDate" class="form-control">
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label for="filterShowAllDates">نطاق العرض</label>
+              <select id="filterShowAllDates" class="form-control">
+                <option value="date">حسب التاريخ المحدد</option>
+                <option value="all">جميع التواريخ (الأحدث أولاً)</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label for="filterLessonStatus">حالة الحصة</label>
+              <select id="filterLessonStatus" class="form-control">
+                <option value="all">جميع الحالات (7)</option>
+                <option value="scheduled">مجدولة</option>
+                <option value="completed">مكتملة</option>
+                <option value="student_absent">غياب طالب</option>
+                <option value="teacher_absent">غياب معلم</option>
+                <option value="delayed">مؤجلة</option>
+                <option value="compensatory">تعويضية</option>
+                <option value="cancelled">ملغاة</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label for="filterLessonTeacher">المعلم</label>
+              <select id="filterLessonTeacher" class="form-control">
+                <option value="all">جميع المعلمين</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label for="filterLessonSearch">بحث سريع</label>
+              <input type="search" id="filterLessonSearch" class="form-control" placeholder="اسم الطالب أو المعلم...">
+            </div>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>التاريخ والوقت</th>
+                <th>الطالب</th>
+                <th>المعلم</th>
+                <th>المدة</th>
+                <th>الحالة</th>
+                <th>تفاصيل وملاحظات</th>
+                <th>الإجراء</th>
+              </tr>
+            </thead>
+            <tbody id="lessonsTableBody">
+              <tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-muted);">جاري تحميل سجل الحصص...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Record / Edit Lesson Modal -->
+  <div id="lessonModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card" style="max-width: 640px;">
+      <div class="modal-header">
+        <h3 id="lessonModalTitle" style="margin: 0; font-size: 1.05rem; font-weight: 700;">تسجيل أو تعديل حالة حصة</h3>
+        <button type="button" id="closeLessonModalBtn" class="btn btn-ghost btn-sm" aria-label="إغلاق">
+          <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+        </button>
+      </div>
+      <form id="lessonWorkflowForm">
+        <div class="modal-body">
+          <input type="hidden" id="formExistingSessionId">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
+            <div class="form-group">
+              <label for="formStudentId">الطالب</label>
+              <select id="formStudentId" class="form-control" required></select>
+            </div>
+            <div class="form-group">
+              <label for="formTeacherId">المعلم</label>
+              <select id="formTeacherId" class="form-control" required></select>
+            </div>
+            <div class="form-group">
+              <label for="formLessonDate">تاريخ الحصة</label>
+              <input type="date" id="formLessonDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label for="formLessonTime">وقت الحصة</label>
+              <input type="time" id="formLessonTime" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label for="formLessonDuration">مدة الحصة (دقيقة)</label>
+              <select id="formLessonDuration" class="form-control">
+                <option value="30">30 دقيقة</option>
+                <option value="45">45 دقيقة</option>
+                <option value="60" selected>60 دقيقة</option>
+                <option value="90">90 دقيقة</option>
+                <option value="120">120 دقيقة</option>
+              </select>
+              <small id="durationLockNotice" style="display: none; color: var(--text-muted); font-size: 0.72rem;">مقفل حسب باقة الطالب (يتطلب صلاحية تعديل المدة).</small>
+            </div>
+            <div class="form-group">
+              <label for="formLessonStatus">حالة الحصة</label>
+              <select id="formLessonStatus" class="form-control" required>
+                <option value="scheduled">مجدولة (Scheduled)</option>
+                <option value="completed">مكتملة (Completed)</option>
+                <option value="student_absent">غياب طالب (Student Absent)</option>
+                <option value="teacher_absent">غياب معلم (Teacher Absent)</option>
+                <option value="delayed">مؤجلة (Delayed)</option>
+                <option value="compensatory">حصة تعويضية (Compensatory)</option>
+                <option value="cancelled">ملغاة (Cancelled)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Conditional Student Absent -->
+          <div id="condStudentAbsent" style="display: none; padding: 0.85rem; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); margin-bottom: 1rem;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+              <div class="form-group" style="margin: 0;">
+                <label for="formAbsenceType">تصنيف غياب الطالب</label>
+                <select id="formAbsenceType" class="form-control">
+                  <option value="unexcused">غياب بدون عذر</option>
+                  <option value="excused">غياب بعذر</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin: 0;">
+                <label for="formAbsenceReason">سبب الغياب</label>
+                <input type="text" id="formAbsenceReason" class="form-control" placeholder="سبب غياب الطالب...">
+              </div>
+            </div>
+          </div>
+
+          <!-- Conditional Teacher Absent -->
+          <div id="condTeacherAbsent" style="display: none; padding: 0.85rem; background: var(--bg-primary); border: 1px solid var(--danger-border); border-radius: var(--border-radius-sm); margin-bottom: 1rem;">
+            <div class="form-group" style="margin: 0;">
+              <label for="formTeacherAbsenceReason">سبب غياب المعلم</label>
+              <input type="text" id="formTeacherAbsenceReason" class="form-control" placeholder="يُحفظ تلقائياً في سجل الغياب...">
+            </div>
+          </div>
+
+          <!-- Conditional Delayed -->
+          <div id="condDelayed" style="display: none; padding: 0.85rem; background: var(--bg-primary); border: 1px solid var(--primary-border); border-radius: var(--border-radius-sm); margin-bottom: 1rem;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+              <div class="form-group" style="margin: 0;">
+                <label for="formResponsibleParty">الطرف المتسبب</label>
+                <select id="formResponsibleParty" class="form-control">
+                  <option value="student">الطالب / ولي الأمر</option>
+                  <option value="teacher">المعلم</option>
+                  <option value="academy">الأكاديمية / ظرف عام</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin: 0;">
+                <label for="formPostponeReason">سبب التأجيل</label>
+                <input type="text" id="formPostponeReason" class="form-control" placeholder="سبب التأجيل...">
+              </div>
+              <div class="form-group" style="margin: 0;">
+                <label for="formMakeupDate">تاريخ الحصة التعويضية (اختياري)</label>
+                <input type="date" id="formMakeupDate" class="form-control">
+              </div>
+              <div class="form-group" style="margin: 0;">
+                <label for="formMakeupTime">وقت التعويض (من المواعيد المتاحة)</label>
+                <input type="time" id="formMakeupTime" class="form-control">
+              </div>
+            </div>
+            <div id="availableSlotsPreview" style="margin-bottom: 0.75rem;"></div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+              <div class="form-group" style="margin: 0;">
+                <label for="formTeacherDelayNotes">ملاحظات المعلم</label>
+                <input type="text" id="formTeacherDelayNotes" class="form-control">
+              </div>
+              <div class="form-group" style="margin: 0;">
+                <label for="formSlotSelectionReason">سبب اختيار الموعد</label>
+                <input type="text" id="formSlotSelectionReason" class="form-control">
+              </div>
+            </div>
+          </div>
+
+          <!-- Conditional Compensatory -->
+          <div id="condCompensatory" style="display: none; padding: 0.85rem; background: var(--bg-primary); border: 1px solid var(--primary-border); border-radius: var(--border-radius-sm); margin-bottom: 1rem;">
+            <div class="form-group" style="margin: 0;">
+              <label for="formOriginalLessonId">الحصة المؤجلة المرتبطة</label>
+              <select id="formOriginalLessonId" class="form-control"></select>
+            </div>
+          </div>
+
+          <!-- Conditional Cancelled -->
+          <div id="condCancelled" style="display: none; padding: 0.85rem; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); margin-bottom: 1rem;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+              <div class="form-group" style="margin: 0;">
+                <label for="formCancelResponsibility">جهة الإلغاء</label>
+                <select id="formCancelResponsibility" class="form-control">
+                  <option value="academy">الإدارة / الأكاديمية</option>
+                  <option value="student">الطالب</option>
+                  <option value="teacher">المعلم</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin: 0;">
+                <label for="formCancelReason">سبب الإلغاء</label>
+                <input type="text" id="formCancelReason" class="form-control">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="formLessonNotes">ملاحظات تشغيلية</label>
+            <textarea id="formLessonNotes" class="form-control" rows="2" placeholder="أي ملاحظات مرتبطة بسير الحصة..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="cancelLessonModalBtn" class="btn btn-secondary">إلغاء</button>
+          <button type="submit" id="saveLessonBtn" class="btn btn-primary">حفظ الحصة</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+</body>
+</html>

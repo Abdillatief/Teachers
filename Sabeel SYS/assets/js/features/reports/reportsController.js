@@ -1,6 +1,4 @@
-import { db } from '../../config/firebase.js';
-import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-import { ListenerManager } from '../../shared/utils/perfUtils.js';
+import { dataStore } from '../../shared/data/dataStore.js';
 
 let sessionsCached = [];
 let teachersCached = [];
@@ -8,40 +6,41 @@ let currentRange = 'month'; // 'month', 'week', 'day'
 
 let trendChartInstance = null;
 let attendanceChartInstance = null;
-
-const listenerManager = new ListenerManager();
+let reportUnsubs = [];
+let renderQueued = false;
 
 export function initReportsRealtime() {
-  listenerManager.unsubscribeAll();
+  cleanupReports();
 
-  // 1. Listen to approved teachers
-  const unsubUsers = onSnapshot(collection(db, "users"), (userSnap) => {
-    teachersCached = [];
-    userSnap.forEach(docSnap => {
-      const data = docSnap.data();
-      if (data.role === 'teacher') {
-        teachersCached.push({ uid: docSnap.id, ...data });
-      }
-    });
-    calculateAndRenderReports();
-  }, (err) => console.warn("Error loading users in reports:", err));
+  reportUnsubs.push(
+    dataStore.subscribe('users', (users) => {
+      teachersCached = (users || [])
+        .filter(u => u.role === 'teacher')
+        .map(u => ({ uid: u.uid || u.id, ...u }));
+      queueRender();
+    })
+  );
 
-  listenerManager.register("users", unsubUsers);
-
-  // 2. Listen to sessions independently
-  const unsubSessions = onSnapshot(collection(db, "sessions"), (sessSnap) => {
-    sessionsCached = [];
-    sessSnap.forEach(docSnap => {
-      sessionsCached.push({ id: docSnap.id, ...docSnap.data() });
-    });
-    calculateAndRenderReports();
-  }, (err) => console.warn("Error loading sessions in reports:", err));
-
-  listenerManager.register("sessions", unsubSessions);
+  reportUnsubs.push(
+    dataStore.subscribe('sessions', (sessions) => {
+      sessionsCached = (sessions || []).map(s => ({ id: s.id, ...s }));
+      queueRender();
+    })
+  );
 }
 
 export function cleanupReports() {
-  listenerManager.unsubscribeAll();
+  reportUnsubs.forEach(unsub => { try { unsub(); } catch (_) {} });
+  reportUnsubs = [];
+}
+
+function queueRender() {
+  if (renderQueued) return;
+  renderQueued = true;
+  requestAnimationFrame(() => {
+    renderQueued = false;
+    calculateAndRenderReports();
+  });
 }
 
 export function setReportsRange(range) {
@@ -54,31 +53,25 @@ function calculateAndRenderReports() {
   const todayStr = now.toISOString().split('T')[0];
   const currentYearMonth = todayStr.substring(0, 7); // "YYYY-MM"
 
-  // Calculate 7 days ago timestamp for week range
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(now.getDate() - 7);
   const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
 
-  // Filter sessions based on selected range
   const filteredSessions = sessionsCached.filter(s => {
     if (!s.date) return false;
-    if (currentRange === 'day') {
-      return s.date === todayStr;
-    } else if (currentRange === 'week') {
-      return s.date >= sevenDaysAgoStr && s.date <= todayStr;
-    } else {
-      // Month
-      return s.date.startsWith(currentYearMonth);
-    }
+    if (currentRange === 'day') return s.date === todayStr;
+    if (currentRange === 'week') return s.date >= sevenDaysAgoStr && s.date <= todayStr;
+    return s.date.startsWith(currentYearMonth);
   });
 
-  // 1. Calculate General Stats
   let totalHours = 0;
   let totalSessionsCount = 0;
   let completedCount = 0;
   let absentExcusedCount = 0;
   let absentUnexcusedCount = 0;
   let totalPayroll = 0;
+
+  const teachersById = new Map(teachersCached.map(t => [t.uid, t]));
 
   filteredSessions.forEach(s => {
     const isCompleted = s.status === "completed";
@@ -96,22 +89,17 @@ function calculateAndRenderReports() {
       totalHours += hours;
 
       if (s.approved) {
-        // Calculate payroll for approved sessions
-        const teacher = teachersCached.find(t => t.uid === s.teacherId);
+        const teacher = teachersById.get(s.teacherId);
         if (teacher) {
-          let rate = 0;
-          if (s.type === "group") {
-            rate = teacher.hourlyRateGroup || teacher.hourlyRate || 120;
-          } else {
-            rate = teacher.hourlyRateIndividual || teacher.hourlyRate || 100;
-          }
+          const rate = s.type === "group"
+            ? (teacher.hourlyRateGroup || teacher.hourlyRate || 120)
+            : (teacher.hourlyRateIndividual || teacher.hourlyRate || 100);
           totalPayroll += hours * rate;
         }
       }
     }
   });
 
-  // Render Stats Card Values
   const elHours = document.getElementById('statTotalHours');
   const elSessions = document.getElementById('statTotalSessions');
   const elAttendance = document.getElementById('statAttendanceRate');
@@ -119,21 +107,18 @@ function calculateAndRenderReports() {
 
   if (elHours) elHours.textContent = `${totalHours.toFixed(1)} ساعة`;
   if (elSessions) elSessions.textContent = `${totalSessionsCount} حصة`;
-  
-  const attendanceRate = totalSessionsCount > 0 
-    ? (completedCount / (completedCount + absentUnexcusedCount + absentExcusedCount)) * 100 
+
+  const attendanceRate = totalSessionsCount > 0
+    ? (completedCount / (completedCount + absentUnexcusedCount + absentExcusedCount)) * 100
     : 100;
   if (elAttendance) elAttendance.textContent = `${attendanceRate.toFixed(1)}%`;
   if (elPayroll) elPayroll.textContent = `${totalPayroll.toFixed(2)} ج.م`;
 
-  // 2. Render Payroll Table
-  renderPayrollTable(filteredSessions);
-
-  // 3. Render Charts (Trends & Attendance Rate)
+  renderPayrollTable(filteredSessions, teachersById);
   renderCharts(filteredSessions, completedCount, absentExcusedCount, absentUnexcusedCount);
 }
 
-function renderPayrollTable(filteredSessions) {
+function renderPayrollTable(filteredSessions, teachersById) {
   const tbody = document.getElementById('payrollTableBody');
   if (!tbody) return;
 
@@ -144,35 +129,28 @@ function renderPayrollTable(filteredSessions) {
     return;
   }
 
-  const rangeLabels = {
-    day: 'اليوم الجاري',
-    week: 'الأسبوع الأخير',
-    month: 'الشهر الحالي'
-  };
+  const rangeLabels = { day: 'اليوم الجاري', week: 'الأسبوع الأخير', month: 'الشهر الحالي' };
 
   tbody.innerHTML = approvedTeachers.map(t => {
-    // Sum hours and sessions for this teacher
     let teacherHours = 0;
     let teacherSessions = 0;
     let finalSalary = 0;
 
     filteredSessions.forEach(s => {
-      if (s.teacherId === t.uid) {
-        const isCompleted = s.status === "completed";
-        const isUnexcused = s.status === "student_absent" && s.absenceType === "unexcused";
-        
-        if (isCompleted || isUnexcused) {
-          teacherSessions++;
-          const hours = (parseInt(s.duration) || 0) / 60;
-          teacherHours += hours;
+      if (s.teacherId !== t.uid) return;
+      const isCompleted = s.status === "completed";
+      const isUnexcused = s.status === "student_absent" && s.absenceType === "unexcused";
+      if (!(isCompleted || isUnexcused)) return;
 
-          if (s.approved) {
-            let rate = s.type === "group" 
-              ? (t.hourlyRateGroup || t.hourlyRate || 120) 
-              : (t.hourlyRateIndividual || t.hourlyRate || 100);
-            finalSalary += hours * rate;
-          }
-        }
+      teacherSessions++;
+      const hours = (parseInt(s.duration) || 0) / 60;
+      teacherHours += hours;
+
+      if (s.approved) {
+        const rate = s.type === "group"
+          ? (t.hourlyRateGroup || t.hourlyRate || 120)
+          : (t.hourlyRateIndividual || t.hourlyRate || 100);
+        finalSalary += hours * rate;
       }
     });
 
@@ -192,78 +170,47 @@ function renderPayrollTable(filteredSessions) {
 }
 
 function renderCharts(filteredSessions, completed, excused, unexcused) {
-  // 1. Attendance Doughnut Chart
   const attendanceCanvas = document.getElementById('attendanceRateChart');
-  if (attendanceCanvas) {
-    if (attendanceChartInstance) {
-      attendanceChartInstance.destroy();
-    }
-    
+  if (attendanceCanvas && typeof Chart !== 'undefined') {
+    if (attendanceChartInstance) attendanceChartInstance.destroy();
     attendanceChartInstance = new Chart(attendanceCanvas, {
       type: 'doughnut',
       data: {
         labels: ['تمت بنجاح', 'مؤجلة (بعذر)', 'غياب (بدون عذر)'],
-        datasets: [{
-          data: [completed, excused, unexcused],
-          backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
-          borderWidth: 1
-        }]
+        datasets: [{ data: [completed, excused, unexcused], backgroundColor: ['#10b981', '#f59e0b', '#ef4444'], borderWidth: 1 }]
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: false
-          }
-        }
-      }
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
     });
   }
 
-  // 2. Sessions trends bar/line chart
   const trendsCanvas = document.getElementById('sessionsTrendsChart');
-  if (trendsCanvas) {
-    if (trendChartInstance) {
-      trendChartInstance.destroy();
-    }
+  if (trendsCanvas && typeof Chart !== 'undefined') {
+    if (trendChartInstance) trendChartInstance.destroy();
 
-    // Aggregate sessions by day for the trend chart
     const dailyMap = {};
     const dateLabels = [];
-    
-    // Create past 7 days / labels
     const daysToGenerate = currentRange === 'day' ? 1 : (currentRange === 'week' ? 7 : 15);
     const now = new Date();
-    
+
     for (let i = daysToGenerate - 1; i >= 0; i--) {
       const d = new Date();
       d.setDate(now.getDate() - i);
       const str = d.toISOString().split('T')[0];
       dailyMap[str] = 0;
-      
-      // format label (e.g. "20 يوليو")
-      const label = d.toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' });
-      dateLabels.push({ dateStr: str, label });
+      dateLabels.push({ dateStr: str, label: d.toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' }) });
     }
 
-    // Sum sessions for generated labels
     filteredSessions.forEach(s => {
-      if (s.date && dailyMap[s.date] !== undefined) {
-        dailyMap[s.date]++;
-      }
+      if (s.date && dailyMap[s.date] !== undefined) dailyMap[s.date]++;
     });
-
-    const dataValues = dateLabels.map(item => dailyMap[item.dateStr]);
-    const labels = dateLabels.map(item => item.label);
 
     trendChartInstance = new Chart(trendsCanvas, {
       type: 'bar',
       data: {
-        labels: labels,
+        labels: dateLabels.map(i => i.label),
         datasets: [{
           label: 'عدد الحصص والدروس',
-          data: dataValues,
+          data: dateLabels.map(i => dailyMap[i.dateStr]),
           backgroundColor: 'rgba(13, 148, 136, 0.7)',
           borderColor: '#0d9488',
           borderWidth: 1,
@@ -273,19 +220,8 @@ function renderCharts(filteredSessions, completed, excused, unexcused) {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              stepSize: 1
-            }
-          }
-        },
-        plugins: {
-          legend: {
-            display: false
-          }
-        }
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+        plugins: { legend: { display: false } }
       }
     });
   }

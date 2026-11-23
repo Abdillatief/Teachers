@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - إدارة المجموعات</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(0,0,0,0.55); z-index: 10000; align-items: center; justify-content: center; padding: 1rem;
+      backdrop-filter: blur(4px);
+    }
+    .modal-card {
+      background-color: var(--bg-secondary); border-radius: var(--border-radius);
+      border: 1px solid var(--border-color); width: 100%; max-width: 540px; padding: 1.75rem;
+      max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    .group-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 1rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .group-card:hover {
+      border-color: var(--primary-color);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .student-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 0.3rem 0.65rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .student-tag .btn-remove {
+      cursor: pointer;
+      color: var(--danger);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      padding: 2px;
+      font-weight: bold;
+    }
+    .student-tag .btn-remove:hover {
+      background: rgba(239, 68, 68, 0.15);
+    }
+    .capacity-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 12px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+    .capacity-normal {
+      background: rgba(14, 165, 233, 0.12);
+      color: var(--primary-color);
+    }
+    .capacity-full {
+      background: rgba(239, 68, 68, 0.12);
+      color: var(--danger);
+    }
+  </style>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+  <script type="module" crossorigin src="/assets/admin_groups-ba9SSawS.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/rbacService-D2RrsA9d.js">
+  <link rel="modulepreload" crossorigin href="/assets/activityLogger-BK9d5021.js">
+  <link rel="modulepreload" crossorigin href="/assets/authService-CtWWGArP.js">
+  <link rel="modulepreload" crossorigin href="/assets/navbar-Bz3pjZSE.js">
+  <link rel="modulepreload" crossorigin href="/assets/newGroupsService-nXFU0cvk.js">
+  <link rel="stylesheet" crossorigin href="/assets/rbacService-CHOdNZNU.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        
+        <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="users-round" style="color: var(--primary-color);"></i>
+              إدارة المجموعات والحصص الجماعية
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">
+              تنظيم وتوزيع الطلاب في مجموعات، تحديد المعلم المسؤول ومواعيد الحصص، ومتابعة السعة الاستيعابية.
+            </p>
+          </div>
+
+          <button id="btnOpenCreateGroupModal" class="btn btn-primary" style="gap: 0.5rem; font-weight: 700;">
+            <i data-lucide="plus-circle"></i> إضافة مجموعة جديدة 👥
+          </button>
+        </div>
+
+        <!-- قسم طلبات إضافة الطلاب للمجموعات المعلقة من المعلمين (بانتظار الاعتماد) -->
+        <div class="card" id="pendingGroupRequestsCard" style="margin-bottom: 1.5rem; border: 1px solid rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.03); display: none; padding: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+            <h3 style="font-size: 1.05rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="clock" style="color: var(--warning);"></i> طلبات إضافة الطلاب للمجموعات المعلقة من المعلمين
+              <span id="pendingGroupReqBadgeCount" class="badge" style="position:static; background-color: var(--warning-light); color: var(--warning); font-size: 0.75rem; font-weight:800;">0 طلبات معلقة</span>
+            </h3>
+          </div>
+          <div class="table-container" style="margin-top: 0; overflow-x: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>اسم الطالب المراد إضافته</th>
+                  <th>المجموعة المستهدفة</th>
+                  <th>المعلم صاحب الطلب</th>
+                  <th>تاريخ تقديم الطلب</th>
+                  <th>الإجراء واتخاذ القرار</th>
+                </tr>
+              </thead>
+              <tbody id="pendingGroupRequestsTableBody">
+                <tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 1rem;">لا توجد طلبات معلقة حالياً.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Filters & Search -->
+        <div class="card" style="margin-bottom: 1.5rem; padding: 1rem;">
+          <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 1rem; align-items: center;">
+            <div class="form-group" style="margin: 0;">
+              <input type="text" id="groupSearchInput" class="form-control" placeholder="🔍 البحث باسم المجموعة..." style="height: 42px;">
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <select id="groupTeacherFilter" class="form-control" style="height: 42px;">
+                <option value="all">جميع المعلمين 👥</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <select id="groupStatusFilter" class="form-control" style="height: 42px;">
+                <option value="all">جميع الحالات</option>
+                <option value="active" selected>نشطة 🟢</option>
+                <option value="archived">مؤرشفة 📦</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Groups Grid -->
+        <div id="groupsGridContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.25rem;">
+          <p style="text-align: center; color: var(--text-muted); padding: 2rem; grid-column: 1 / -1;">جاري تحميل المجموعات...</p>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal: Create / Edit Group -->
+  <div id="groupModal" class="modal-overlay">
+    <div class="modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+        <h3 style="font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;" id="groupModalTitle">
+          <i data-lucide="users-round" style="color: var(--primary-color);"></i> إنشاء مجموعة جديدة
+        </h3>
+        <span class="btn-close-modal" id="btnCloseGroupModal" style="cursor: pointer; padding: 0.25rem;"><i data-lucide="x"></i></span>
+      </div>
+
+      <form id="groupForm">
+        <input type="hidden" id="editingGroupId">
+
+        <div class="form-group">
+          <label for="inputGroupName" style="font-weight: 700; font-size: 0.85rem; margin-bottom: 0.35rem; display: block;">اسم المجموعة <span style="color:var(--danger);">*</span></label>
+          <input type="text" id="inputGroupName" class="form-control" placeholder="مثال: مجموعة التجويد A" required style="font-weight: bold;">
+        </div>
+
+        <div class="form-group" style="margin-top: 1rem;">
+          <label for="inputGroupTeacher" style="font-weight: 700; font-size: 0.85rem; margin-bottom: 0.35rem; display: block;">المعلم المسؤول <span style="color:var(--danger);">*</span></label>
+          <select id="inputGroupTeacher" class="form-control" required style="font-weight: 600;">
+            <option value="">-- اختر المعلم المسؤول --</option>
+          </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+          <div class="form-group">
+            <label for="inputGroupDay" style="font-weight: 700; font-size: 0.85rem; margin-bottom: 0.35rem; display: block;">يوم الحصة <span style="color:var(--danger);">*</span></label>
+            <select id="inputGroupDay" class="form-control" required style="font-weight: 600;">
+              <option value="السبت" selected>السبت</option>
+              <option value="الأحد">الأحد</option>
+              <option value="الاثنين">الاثنين</option>
+              <option value="الثلاثاء">الثلاثاء</option>
+              <option value="الأربعاء">الأربعاء</option>
+              <option value="الخميس">الخميس</option>
+              <option value="الجمعة">الجمعة</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="inputGroupTime" style="font-weight: 700; font-size: 0.85rem; margin-bottom: 0.35rem; display: block;">موعد الحصة <span style="color:var(--danger);">*</span></label>
+            <select id="inputGroupTime" class="form-control" required style="font-weight: 600;">
+              <option value="08:00 صباحاً">08:00 صباحاً</option>
+              <option value="08:30 صباحاً">08:30 صباحاً</option>
+              <option value="09:00 صباحاً">09:00 صباحاً</option>
+              <option value="09:30 صباحاً">09:30 صباحاً</option>
+              <option value="10:00 صباحاً">10:00 صباحاً</option>
+              <option value="10:30 صباحاً">10:30 صباحاً</option>
+              <option value="11:00 صباحاً">11:00 صباحاً</option>
+              <option value="11:30 صباحاً">11:30 صباحاً</option>
+              <option value="12:00 مساءً">12:00 مساءً</option>
+              <option value="12:30 مساءً">12:30 مساءً</option>
+              <option value="01:00 مساءً">01:00 مساءً</option>
+              <option value="01:30 مساءً">01:30 مساءً</option>
+              <option value="02:00 مساءً">02:00 مساءً</option>
+              <option value="02:30 مساءً">02:30 مساءً</option>
+              <option value="03:00 مساءً">03:00 مساءً</option>
+              <option value="03:30 مساءً">03:30 مساءً</option>
+              <option value="04:00 مساءً">04:00 مساءً</option>
+              <option value="04:30 مساءً">04:30 مساءً</option>
+              <option value="05:00 مساءً">05:00 مساءً</option>
+              <option value="05:30 مساءً" selected>05:30 مساءً</option>
+              <option value="06:00 مساءً">06:00 مساءً</option>
+              <option value="06:30 مساءً">06:30 مساءً</option>
+              <option value="07:00 مساءً">07:00 مساءً</option>
+              <option value="07:30 مساءً">07:30 مساءً</option>
+              <option value="08:00 مساءً">08:00 مساءً</option>
+              <option value="08:30 مساءً">08:30 مساءً</option>
+              <option value="09:00 مساءً">09:00 مساءً</option>
+              <option value="09:30 مساءً">09:30 مساءً</option>
+              <option value="10:00 مساءً">10:00 مساءً</option>
+              <option value="10:30 مساءً">10:30 مساءً</option>
+              <option value="11:00 مساءً">11:00 مساءً</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+          <div class="form-group">
+            <label for="inputGroupMaxStudents" style="font-weight: 700; font-size: 0.85rem; margin-bottom: 0.35rem; display: block;">الحد الأقصى للطلاب <span style="color:var(--danger);">*</span></label>
+            <input type="number" id="inputGroupMaxStudents" class="form-control" min="1" max="50" value="10" required placeholder="10">
+          </div>
+          <div class="form-group">
+            <label for="inputGroupStatus" style="font-weight: 700; font-size: 0.85rem; margin-bottom: 0.35rem; display: block;">حالة المجموعة <span style="color:var(--danger);">*</span></label>
+            <select id="inputGroupStatus" class="form-control">
+              <option value="active" selected>نشطة 🟢</option>
+              <option value="archived">مؤرشفة 📦</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 1rem;">
+          <label for="inputGroupNotes" style="font-weight: 700; font-size: 0.85rem; margin-bottom: 0.35rem; display: block;">ملاحظات تفصيلية (اختياري)</label>
+          <textarea id="inputGroupNotes" class="form-control" rows="2" placeholder="أهداف المجموعة، المستوى المطلوب..."></textarea>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+          <button type="submit" id="btnSaveGroup" class="btn btn-primary" style="font-weight: 700; gap: 0.5rem;">
+            <i data-lucide="save"></i> حفظ بيانات المجموعة
+          </button>
+          <button type="button" class="btn btn-secondary" id="btnCancelGroupModal">إلغاء</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add Student to Group -->
+  <div id="addStudentModal" class="modal-overlay">
+    <div class="modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+        <h3 style="font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="user-plus" style="color: var(--primary-color);"></i> إضافة طالب للمجموعة
+        </h3>
+        <span class="btn-close-modal" id="btnCloseAddStudentModal" style="cursor: pointer; padding: 0.25rem;"><i data-lucide="x"></i></span>
+      </div>
+
+      <form id="addStudentForm">
+        <input type="hidden" id="targetGroupIdForAdd">
+        <div style="background: var(--bg-primary); border: 1px solid var(--border-color); padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1rem;">
+          <span style="font-size: 0.8rem; color: var(--text-secondary);">المجموعة:</span>
+          <strong id="targetGroupNameText" style="font-size: 0.95rem; color: var(--primary-color); display: block;"></strong>
+        </div>
+
+        <div class="form-group">
+          <label for="selectStudentToAdd" style="font-weight: 700; font-size: 0.85rem; margin-bottom: 0.35rem; display: block;">اختر الطالب المراد إضافته</label>
+          <select id="selectStudentToAdd" class="form-control" required style="font-weight: 600;">
+            <option value="">-- اختر الطالب --</option>
+          </select>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+          <button type="submit" class="btn btn-primary" style="font-weight: 700; gap: 0.5rem;">
+            <i data-lucide="user-plus"></i> تأكيد إضافة الطالب
+          </button>
+          <button type="button" class="btn btn-secondary" id="btnCancelAddStudentModal">إلغاء</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Transfer Student Between Groups -->
+  <div id="transferStudentModal" class="modal-overlay">
+    <div class="modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+        <h3 style="font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="arrow-left-right" style="color: var(--primary-color);"></i> نقل طالب لمجموعة أخرى
+        </h3>
+        <span class="btn-close-modal" id="btnCloseTransferModal" style="cursor: pointer; padding: 0.25rem;"><i data-lucide="x"></i></span>
+      </div>
+
+      <form id="transferStudentForm">
+        <input type="hidden" id="sourceGroupIdForTransfer">
+        <input type="hidden" id="transferStudentId">
+        
+        <div style="background: var(--bg-primary); border: 1px solid var(--border-color); padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1rem;">
+          <span style="font-size: 0.8rem; color: var(--text-secondary);">اسم الطالب:</span>
+          <strong id="transferStudentNameText" style="font-size: 0.95rem; color: var(--primary-color); display: block;"></strong>
+        </div>
+
+        <div class="form-group">
+          <label for="selectTargetGroup" style="font-weight: 700; font-size: 0.85rem; margin-bottom: 0.35rem; display: block;">اختر المجموعة الجديدة</label>
+          <select id="selectTargetGroup" class="form-control" required style="font-weight: 600;">
+            <option value="">-- اختر المجموعة المنقول إليها --</option>
+          </select>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+          <button type="submit" class="btn btn-primary" style="font-weight: 700; gap: 0.5rem;">
+            <i data-lucide="arrow-left-right"></i> تأكيد نقل الطالب
+          </button>
+          <button type="button" class="btn btn-secondary" id="btnCancelTransferModal">إلغاء</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+</body>
+</html>

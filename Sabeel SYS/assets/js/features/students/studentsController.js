@@ -1,5 +1,6 @@
 import { db, auth } from '../../config/firebase.js';
 import { collection, onSnapshot, doc, getDoc, updateDoc, setDoc, addDoc, serverTimestamp, deleteDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { dataStore } from '../../shared/data/dataStore.js';
 import { protectRoute } from '../auth/authService.js';
 import { resolveEffectiveRole, ROLES } from '../rbac/rbacService.js';
 import { renderSidebar } from '../../shared/components/sidebar.js';
@@ -117,63 +118,53 @@ auth.onAuthStateChanged(async (user) => {
   }
 });
 
+let _studentsRenderQueued = false;
+function queueStudentsRender() {
+  if (_studentsRenderQueued) return;
+  _studentsRenderQueued = true;
+  requestAnimationFrame(() => {
+    _studentsRenderQueued = false;
+    renderPendingStudentsTable();
+    renderStudentsTable(document.getElementById('adminStudentSearchInput')?.value || '');
+  });
+}
+
 function initStudentsModule() {
   listenerManager.unsubscribeAll();
   backfillOperationalProjectionsIfNeeded().catch(err => console.warn("Backfill operational summaries warning:", err));
 
-  // 1. Fetch packages
+  // 1. Packages (raw collection "packages")
   const unsubPackages = onSnapshot(collection(db, "packages"), (snapshot) => {
-    packagesCached = [];
-    snapshot.forEach(docSnap => {
-      packagesCached.push({ id: docSnap.id, ...docSnap.data() });
-    });
+    packagesCached = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     populatePackageOptions();
   }, err => console.warn("Error fetching packages:", err));
   listenerManager.register("packages", unsubPackages);
 
-  // 2. Fetch active groups
-  const unsubGroups = onSnapshot(collection(db, "groups"), (groupSnap) => {
-    groupsCached = [];
-    groupSnap.forEach(docSnap => {
-      groupsCached.push({ id: docSnap.id, ...docSnap.data() });
-    });
+  // 2. Groups via shared store (deduped)
+  const unsubGroups = dataStore.subscribe('groups', (groups) => {
+    groupsCached = (groups || []).map(g => ({ ...g, id: g.id }));
     populateGroupDropdowns();
-    renderStudentsTable();
-  }, err => console.warn("Error fetching groups:", err));
+    queueStudentsRender();
+  });
   listenerManager.register("groups", unsubGroups);
 
-  // 3. Fetch approved teachers
-  const unsubUsers = onSnapshot(collection(db, "users"), (snapshot) => {
-    teachersCached = [];
-    snapshot.forEach(docSnap => {
-      const userData = docSnap.data();
-      if (userData.role === 'teacher' && userData.status === 'approved') {
-        teachersCached.push({ uid: docSnap.id, ...userData });
-      }
-    });
-
+  // 3. Teachers from shared users store (deduped)
+  const unsubUsers = dataStore.subscribe('users', (users) => {
+    teachersCached = (users || [])
+      .filter(u => u.role === 'teacher' && u.status === 'approved')
+      .map(u => ({ uid: u.uid || u.id, ...u }));
     populateTeachersDropdowns();
-    renderStudentsTable();
-  }, err => console.warn("Error fetching teachers:", err));
+    queueStudentsRender();
+  });
   listenerManager.register("users", unsubUsers);
 
-  // 4. Fetch students independently
-  const unsubStudents = onSnapshot(collection(db, "students"), (studentsSnapshot) => {
-    studentsCached = [];
-    pendingStudentsCached = [];
-
-    studentsSnapshot.forEach(docSnap => {
-      const data = { id: docSnap.id, ...docSnap.data() };
-      if (data.status === 'pending_approval') {
-        pendingStudentsCached.push(data);
-      } else {
-        studentsCached.push(data);
-      }
-    });
-
-    renderPendingStudentsTable();
-    renderStudentsTable();
-  }, err => console.warn("Error fetching students:", err));
+  // 4. Students via shared store (deduped)
+  const unsubStudents = dataStore.subscribe('students', (students) => {
+    const all = (students || []).map(s => ({ ...s, id: s.id }));
+    pendingStudentsCached = all.filter(s => s.status === 'pending_approval');
+    studentsCached = all.filter(s => s.status !== 'pending_approval');
+    queueStudentsRender();
+  });
   listenerManager.register("students", unsubStudents);
 
   setupEventListeners();

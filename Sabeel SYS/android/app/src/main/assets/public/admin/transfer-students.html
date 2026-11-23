@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - نقل الطلاب بين المعلمين</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .transfer-card {
+      background-color: var(--bg-secondary);
+      border-radius: var(--border-radius);
+      border: 1px solid var(--border-color);
+      padding: 1.5rem;
+    }
+    .form-group label {
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+    .teacher-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--bg-primary);
+      padding: 0.5rem 0.75rem;
+      border-radius: var(--border-radius-sm, 6px);
+      border: 1px solid var(--border-color);
+      font-weight: 700;
+    }
+  </style>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+  <script type="module" crossorigin src="/assets/admin_transfer_students-D7rJOW1R.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/rbacService-D2RrsA9d.js">
+  <link rel="modulepreload" crossorigin href="/assets/activityLogger-BK9d5021.js">
+  <link rel="modulepreload" crossorigin href="/assets/authService-CtWWGArP.js">
+  <link rel="modulepreload" crossorigin href="/assets/navbar-Bz3pjZSE.js">
+  <link rel="stylesheet" crossorigin href="/assets/rbacService-CHOdNZNU.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        <div style="margin-bottom: 2rem;">
+          <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.25rem;">
+            نقل وربط كافة طلاب المعلم لآخر 🔄
+          </h1>
+          <p style="color: var(--text-secondary); font-size: 0.9rem;">
+            إعادة تخصيص ونقل بيانات كافة الطلاب من معلم حالي إلى معلم آخر دفعة واحدة مع تحديث كافة سجلات الأكاديمية تلقائياً.
+          </p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 1.5rem; flex-wrap: wrap;">
+          
+          <!-- بطاقة تحديد المعلم الحاضن والمستلم -->
+          <div class="transfer-card">
+            <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="arrow-left-right" style="color: var(--primary-color);"></i>
+              خيارات التوزيع والنقل
+            </h3>
+
+            <form id="transferForm">
+              <div class="form-group" style="margin-bottom: 1.25rem;">
+                <label for="sourceTeacherSelect">1. المعلم الحالي (المُراد نقل طلابه) 🔴</label>
+                <select id="sourceTeacherSelect" class="form-control" style="font-weight: 700; font-size: 0.95rem;" required>
+                  <option value="">-- اختر المعلم الحالي --</option>
+                </select>
+              </div>
+
+              <div style="text-align: center; margin: 1rem 0;">
+                <i data-lucide="arrow-down" style="color: var(--primary-color); width: 24px; height: 24px;"></i>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label for="targetTeacherSelect">2. المعلم الجديد المستلِم 🟢</label>
+                <select id="targetTeacherSelect" class="form-control" style="font-weight: 700; font-size: 0.95rem;" required>
+                  <option value="">-- اختر المعلم الجديد --</option>
+                </select>
+              </div>
+
+              <div style="background-color: var(--bg-primary); border-right: 4px solid var(--primary-color); padding: 0.85rem; border-radius: 6px; margin-bottom: 1.5rem; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5;">
+                ℹ️ <strong>ملاحظة هامة:</strong>
+                سيتم تحديث سجل كافة الطلاب المحددين مباشرة ليكون المعلم المستلم هو المعلم المسؤول عنهم وعن تسجيل حصصهم ومتابعتهم المستقبليّة.
+              </div>
+
+              <button type="submit" id="btnSubmitTransfer" class="btn btn-primary" style="width: 100%; font-weight: 800; gap: 0.5rem; padding: 0.85rem;" disabled>
+                <i data-lucide="refresh-cw"></i> تنفيذ نقل كافة الطلاب المحددين
+              </button>
+            </form>
+          </div>
+
+          <!-- قائمة وقائمة الطلاب المشمولين -->
+          <div class="transfer-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+              <h3 style="font-size: 1.1rem; font-weight: 800; margin: 0;">
+                الطلاب التابعين للمعلم المحدد (<span id="studentsCountBadge">0</span>)
+              </h3>
+              <label style="font-size: 0.85rem; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 0.3rem;">
+                <input type="checkbox" id="selectAllCheckbox" checked> تحديد الكل
+              </label>
+            </div>
+
+            <div class="table-container" style="max-height: 480px; overflow-y: auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width: 40px; text-align: center;">#</th>
+                    <th>اسم الطالب</th>
+                    <th>العمر</th>
+                    <th>الباقة الدراسيّة</th>
+                    <th>الأيام والمواعيد</th>
+                  </tr>
+                </thead>
+                <tbody id="transferStudentsTableBody">
+                  <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                      يرجى اختيار المعلم الحالي أولاً لعرض قائمة الطلاب التابعين له.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+</body>
+</html>

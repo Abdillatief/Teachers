@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - إدارة المدفوعات والمالية</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .modal-card {
+      background-color: var(--bg-secondary); border-radius: var(--border-radius);
+      border: 1px solid var(--border-color); width: 100%; max-width: 550px; padding: 2rem;
+      max-height: 90vh; overflow-y: auto;
+    }
+    .form-group label {
+      font-weight: 700;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.4rem;
+      display: block;
+    }
+    .form-control {
+      font-size: 0.9rem;
+    }
+    .metric-card {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .metric-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* أنماط طباعة سند القبض المالي */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #receiptPrintContainer, #receiptPrintContainer * {
+        visibility: visible;
+      }
+      #receiptPrintContainer {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 20px;
+        background: #fff !important;
+        color: #000 !important;
+        display: block !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+  <script type="module" crossorigin src="/assets/admin_payments-BMV4bykO.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/rbacService-D2RrsA9d.js">
+  <link rel="modulepreload" crossorigin href="/assets/activityLogger-BK9d5021.js">
+  <link rel="modulepreload" crossorigin href="/assets/authService-CtWWGArP.js">
+  <link rel="modulepreload" crossorigin href="/assets/navbar-Bz3pjZSE.js">
+  <link rel="modulepreload" crossorigin href="/assets/trashService-KArkF8Bg.js">
+  <link rel="modulepreload" crossorigin href="/assets/supervisorDomainService-BW5mzJbW.js">
+  <link rel="modulepreload" crossorigin href="/assets/creditManager-lKPCrGcp.js">
+  <link rel="modulepreload" crossorigin href="/assets/whatsappWidget-BgZo_pma.js">
+  <link rel="modulepreload" crossorigin href="/assets/receiptService-Da2FAYPN.js">
+  <link rel="stylesheet" crossorigin href="/assets/rbacService-CHOdNZNU.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0;">المدفوعات والمقبوضات المالية</h1>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">تسجيل وإدارة تحصيل اشتراكات الطلاب وتتبع التدفقات النقدية الواردة للأكاديمية.</p>
+          </div>
+          <button class="btn btn-primary" id="addNewPaymentBtn" style="gap: 0.35rem;"><i data-lucide="plus" style="width: 16px; height: 16px;"></i> تسجيل عملية تحصيل جديدة</button>
+        </div>
+
+        <!-- شبكة الإحصائيات المالية المباشرة -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="metric-card">
+            <div class="metric-icon" style="background-color: rgba(16, 185, 129, 0.12); color: var(--success);">
+              <i data-lucide="trending-up" style="width: 24px; height: 24px;"></i>
+            </div>
+            <div>
+              <p style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin: 0;">إجمالي التحصيل والمقبوضات</p>
+              <h3 style="font-size: 1.4rem; font-weight: 800; color: var(--text-primary); margin: 0.25rem 0 0 0;" id="totalRevenueVal">0 ج.م</h3>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon" style="background-color: rgba(99, 102, 241, 0.12); color: var(--primary-color);">
+              <i data-lucide="file-text" style="width: 24px; height: 24px;"></i>
+            </div>
+            <div>
+              <p style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin: 0;">عدد الإيصالات والعمليات</p>
+              <h3 style="font-size: 1.4rem; font-weight: 800; color: var(--text-primary); margin: 0.25rem 0 0 0;" id="totalReceiptsVal">0</h3>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon" style="background-color: rgba(245, 158, 11, 0.12); color: var(--warning);">
+              <i data-lucide="pie-chart" style="width: 24px; height: 24px;"></i>
+            </div>
+            <div>
+              <p style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin: 0;">متوسط قيمة التحصيل</p>
+              <h3 style="font-size: 1.4rem; font-weight: 800; color: var(--text-primary); margin: 0.25rem 0 0 0;" id="avgReceiptVal">0 ج.م</h3>
+            </div>
+          </div>
+
+          <div class="metric-card" style="border-right: 4px solid var(--primary-color);">
+            <div class="metric-icon" style="background-color: rgba(13, 148, 136, 0.12); color: var(--primary-color);">
+              <i data-lucide="badge-dollar-sign" style="width: 24px; height: 24px;"></i>
+            </div>
+            <div>
+              <p style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin: 0;">الإيرادات المتوقعة هذا الشهر</p>
+              <h3 style="font-size: 1.4rem; font-weight: 800; color: var(--primary-color); margin: 0.25rem 0 0 0;" id="expectedRevenueVal">0 ج.م</h3>
+            </div>
+          </div>
+        </div>
+
+        <!-- أزرار التبديل التفاعلية بين سجل المقبوضات والموقف المالي للطلاب -->
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; flex-wrap: wrap;">
+          <button class="btn" id="tabPaymentsLogBtn" style="padding: 0.5rem 1rem; font-size: 0.85rem; background: var(--primary-color); border-color: var(--primary-color); color: #fff; display: flex; align-items: center; gap: 0.35rem;">
+            <i data-lucide="receipt" style="width: 16px; height: 16px;"></i> سجل إيصالات المقبوضات المالية
+          </button>
+          <button class="btn" id="tabStudentsStatusBtn" style="padding: 0.5rem 1rem; font-size: 0.85rem; background: transparent; border-color: transparent; color: var(--text-secondary); display: flex; align-items: center; gap: 0.35rem;">
+            <i data-lucide="users" style="width: 16px; height: 16px;"></i> الموقف المالي العام للدارسين
+          </button>
+        </div>
+
+        <!-- القسم الأول: سجل إيصالات المقبوضات والعمليات -->
+        <div id="sectionPaymentsLog">
+          <!-- فلاتر البحث والفرز المالي وأزرار التصدير -->
+          <div class="card" style="margin-bottom: 1.5rem; padding: 1.25rem;">
+            <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between;">
+              <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; flex: 1; min-width: 300px;">
+                <div style="display: flex; gap: 0.75rem; align-items: center; border: 1px solid var(--border-color); padding: 0.5rem 0.75rem; border-radius: var(--border-radius); background: var(--bg-primary); flex: 1; min-width: 200px;">
+                  <i data-lucide="search" style="color: var(--text-muted); width: 18px; height: 18px;"></i>
+                  <input type="text" id="financialSearchInput" placeholder="البحث برقم الإيصال أو باسم الدارس أو الملاحظات..." style="border: none; outline: none; background: transparent; width: 100%; font-size: 0.85rem; color: var(--text-primary);">
+                </div>
+                <select id="financialMethodFilter" class="form-control" style="border: 1px solid var(--border-color); margin: 0; width: auto; min-width: 180px;">
+                  <option value="">-- جميع طرق الدفع --</option>
+                  <option value="Vodafone Cash">فودافون كاش (Vodafone Cash)</option>
+                  <option value="WE Pay">وي باي (WE Pay)</option>
+                  <option value="InstaPay">إنستا باي (InstaPay)</option>
+                  <option value="تحويل بنكي">تحويل بنكي مباشر</option>
+                  <option value="نقدي">دفع نقدي (كاش)</option>
+                </select>
+              </div>
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <button type="button" class="btn btn-secondary" id="btnExportPaymentsCsv" style="gap: 0.35rem; font-size: 0.85rem; font-weight: 700; color: #10b981; border-color: #10b981;" title="تصدير السجل المالي إلى Excel / CSV">
+                  <i data-lucide="file-spreadsheet" style="width: 16px; height: 16px;"></i> تصدير إكسيل (Excel / CSV)
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="table-container" style="margin-top: 0;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>التاريخ والوقت</th>
+                    <th>اسم الطالب المستفيد</th>
+                    <th>القيمة المحصلة</th>
+                    <th>طريقة الدفع وملاحظات العملية</th>
+                    <th>اسم المسؤول المستلم</th>
+                    <th>خيارات السجل</th>
+                  </tr>
+                </thead>
+                <tbody id="paymentsTableBody">
+                  <tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">جاري مزامنة سجلات العمليات المقبوضة...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- القسم الثاني: الموقف المالي العام للدارسين -->
+        <div id="sectionStudentsStatus" style="display: none;">
+          <!-- شريط بحث وفلترة فوري للموقف المالي للطلاب -->
+          <div class="card" style="margin-bottom: 1.5rem; padding: 1rem;">
+            <div style="display: grid; grid-template-columns: 1fr 250px; gap: 1rem; align-items: center;">
+              <div style="display: flex; gap: 0.75rem; align-items: center; border: 1px solid var(--border-color); padding: 0.5rem 0.75rem; border-radius: var(--border-radius); background: var(--bg-primary);">
+                <i data-lucide="search" style="color: var(--text-muted); width: 18px; height: 18px;"></i>
+                <input type="text" id="studentsStatusSearchInput" placeholder="ابحث فوريًا باسم الطالب لتفقد موقفه المالي..." style="border: none; outline: none; background: transparent; width: 100%; font-size: 0.85rem; color: var(--text-primary);">
+              </div>
+              <div>
+                <select id="studentsStatusPaymentFilter" class="form-control" style="border: 1px solid var(--border-color); margin: 0; font-size: 0.85rem;">
+                  <option value="all">-- جميع حالات الدفع ورصيد الحصص --</option>
+                  <option value="overdraft">دين حصص / رصيد سالب (&lt; 0) 🔴</option>
+                  <option value="empty">نفد الرصيد تماماً (0 حصة) ⚠️</option>
+                  <option value="unpaid">غير مدفوع (شامل نفاد الحصص والديون) ❌</option>
+                  <option value="partially">مسدد جزئياً ⏳</option>
+                  <option value="paid">المدفوع (رصيد ساري ومسدد بالكامل) ✅</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="table-container" style="margin-top: 0;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>اسم الدارس الكرم</th>
+                    <th>باقة الاشتراك النشطة</th>
+                    <th>القيمة المالية</th>
+                    <th>فترة الصلاحية</th>
+                    <th>حالة الاشتراك</th>
+                    <th>خيارات وتسجيل التحصيل</th>
+                  </tr>
+                </thead>
+                <tbody id="studentsStatusTableBody">
+                  <tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">جاري جلب وفهرسة كشوف الموقف المالي للطلاب...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- مودال تسجيل عملية تحصيل جديدة -->
+  <div id="addPaymentModal" class="modal-overlay">
+    <div class="modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+        <h3 style="font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="plus-circle" style="color: var(--success);"></i> تسجيل إيصال قبض وتحصيل جديد
+        </h3>
+        <span id="btnCloseAddPayModal" style="cursor: pointer; padding: 0.25rem; display: flex; align-items: center; justify-content: center;">
+          <i data-lucide="x" style="color: var(--text-muted);"></i>
+        </span>
+      </div>
+      <form id="addPaymentForm">
+        <div class="form-group">
+          <label for="payStudentSelect">اختر الطالب المستفيد</label>
+          <select id="payStudentSelect" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
+            <option value="">-- اختر طالباً --</option>
+          </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+          <div class="form-group">
+            <label for="payParentName">اسم ولي الأمر</label>
+            <input type="text" id="payParentName" class="form-control" placeholder="اسم ولي أمر الطالب" style="border: 1px solid var(--border-color); width: 100%;">
+          </div>
+          <div class="form-group">
+            <label for="payReceivedBy">تم الاستلام بواسطة *</label>
+            <select id="payReceivedBy" class="form-control" required style="border: 1px solid var(--border-color); width: 100%; font-weight: 700;">
+              <option value="محمد عادل">محمد عادل</option>
+              <option value="عبداللطيف فتحي">عبداللطيف فتحي</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- بطاقة فحص موقف رصيد الحصص والتجديد التلقائي -->
+        <div id="studentCreditInfoBox" style="display: none; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem; margin-top: 1rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary);" id="modalStudentCreditTitle">رصيد الحصص للدارس:</span>
+            <span id="modalStudentCreditBadge" class="badge" style="font-weight: 800; font-size: 0.8rem; position: static;">0 حصة</span>
+          </div>
+          <div id="modalStudentCreditNotice" style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.35rem; line-height: 1.4;"></div>
+
+          <!-- خيار التجديد والشحن التلقائي فور السداد -->
+          <div style="border-top: 1px dashed var(--border-color); margin-top: 0.75rem; padding-top: 0.75rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 700; font-size: 0.85rem; color: var(--primary-color);">
+              <input type="checkbox" id="chkAutoRenewPackage" style="accent-color: var(--primary-color); width: 16px; height: 16px;">
+              <span>شحن وتجديد باقة الحصص تلقائياً للطالب فور السداد ⚡</span>
+            </label>
+
+            <div id="autoRenewOptions" style="display: none; margin-top: 0.75rem; background: rgba(13,148,136,0.05); padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(13,148,136,0.2);">
+              <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary-color); margin-bottom: 0.5rem;">
+                بيانات الباقة المراد شحنها وتسوية الحصص المستهلكة منها:
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
+                <div>
+                  <label style="font-size: 0.72rem; font-weight: 700;">اسم الباقة *</label>
+                  <input type="text" id="renewPkgName" class="form-control" style="font-size: 0.82rem; padding: 0.35rem 0.5rem;" placeholder="مثال: باقة 8 حصص تجويد">
+                </div>
+                <div>
+                  <label style="font-size: 0.72rem; font-weight: 700;">عدد الحصص *</label>
+                  <input type="number" id="renewPkgTotalLessons" class="form-control" style="font-weight: 800; font-size: 0.82rem; padding: 0.35rem 0.5rem;" value="8" min="1">
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; margin-top: 0.5rem;">
+                <div>
+                  <label style="font-size: 0.72rem; font-weight: 700;">مدة الحصة (دقيقة) *</label>
+                  <select id="renewPkgDuration" class="form-control" style="font-size: 0.82rem; padding: 0.35rem 0.5rem;">
+                    <option value="30">30 دقيقة</option>
+                    <option value="45">45 دقيقة</option>
+                    <option value="60">60 دقيقة (ساعة)</option>
+                    <option value="90">90 دقيقة</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-size: 0.72rem; font-weight: 700;">قالب باقة جاهز (اختياري)</label>
+                  <select id="renewPkgTemplateSelect" class="form-control" style="font-size: 0.82rem; padding: 0.35rem 0.5rem;">
+                    <option value="">-- باقة مخصصة --</option>
+                  </select>
+                </div>
+              </div>
+              <div style="margin-top: 0.65rem; padding-top: 0.5rem; border-top: 1px dashed rgba(13,148,136,0.3); display: flex; align-items: center; gap: 0.4rem;">
+                <input type="checkbox" id="chkAllowPartialActivation" checked style="accent-color: var(--primary-color); width: 16px; height: 16px; cursor: pointer;">
+                <label for="chkAllowPartialActivation" style="font-size: 0.76rem; font-weight: 700; color: var(--text-primary); cursor: pointer; margin-bottom: 0;">
+                  السماح بتفعيل الباقة وشحن الحصص فورًا عند السداد الجزئي (تنشيط الباقة)
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+          <div class="form-group">
+            <label for="payMonth">تحصيل عن شهر</label>
+            <input type="month" id="payMonth" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
+          </div>
+          <div class="form-group">
+            <label for="payAmount">المبلغ المالي المحصل (ج.م)</label>
+            <input type="number" id="payAmount" class="form-control" required placeholder="سعر الباقة تلقائيًا" min="1">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 1rem;">
+          <label for="payMethod">وسيلة الدفع ومزود الخدمة</label>
+          <select id="payMethod" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
+            <option value="فودافون كاش (Vodafone Cash)">فودافون كاش (Vodafone Cash)</option>
+            <option value="إنستا باي (InstaPay)">إنستا باي (InstaPay)</option>
+            <option value="وي باي (WE Pay)">وي باي (WE Pay)</option>
+            <option value="تحويل بنكي مباشر">تحويل بنكي مباشر</option>
+            <option value="نقدي (كاش) ليد المشرف">نقدي (كاش) ليد المشرف</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-top: 1rem;">
+          <label for="payNotes">ملاحظات توثيقية إضافية (اختياري)</label>
+          <textarea id="payNotes" class="form-control" rows="3" placeholder="ملاحظات الحسابات، رقم التحويل لVodafone Cash، إلخ..." style="resize: vertical; font-family: inherit; font-size: 0.9rem;"></textarea>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+          <button type="submit" class="btn btn-primary" style="background: var(--success); border-color: var(--success);">توثيق وتسجيل العملية</button>
+          <button type="button" class="btn btn-secondary" id="btnCancelAddPayModal">إلغاء</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- مودال تعديل عملية تحصيل مالي -->
+  <div id="editPaymentModal" class="modal-overlay">
+    <div class="modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+        <h3 style="font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="edit-3" style="color: var(--primary-color);"></i> تعديل بيانات إيصال التحصيل المالي
+        </h3>
+        <span id="btnCloseEditPayModal" style="cursor: pointer; padding: 0.25rem; display: flex; align-items: center; justify-content: center;">
+          <i data-lucide="x" style="color: var(--text-muted);"></i>
+        </span>
+      </div>
+      <form id="editPaymentForm">
+        <div class="form-group">
+          <label>اسم الطالب المستفيد (غير قابل للتعديل)</label>
+          <input type="text" id="editPayStudentName" class="form-control" readonly disabled style="background-color: var(--bg-primary);">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+          <div class="form-group">
+            <label for="editPayParentName">اسم ولي الأمر</label>
+            <input type="text" id="editPayParentName" class="form-control" placeholder="اسم ولي الأمر" style="border: 1px solid var(--border-color); width: 100%;">
+          </div>
+          <div class="form-group">
+            <label for="editPayReceivedBy">تم الاستلام بواسطة *</label>
+            <select id="editPayReceivedBy" class="form-control" required style="border: 1px solid var(--border-color); width: 100%; font-weight: 700;">
+              <option value="محمد عادل">محمد عادل</option>
+              <option value="عبداللطيف فتحي">عبداللطيف فتحي</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+          <div class="form-group">
+            <label for="editPayMonth">تحصيل عن شهر</label>
+            <input type="month" id="editPayMonth" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
+          </div>
+          <div class="form-group">
+            <label for="editPayAmount">المبلغ المالي المحصل (ج.م)</label>
+            <input type="number" id="editPayAmount" class="form-control" required placeholder="السعر" min="1">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 1rem;">
+          <label for="editPayMethod">وسيلة الدفع ومزود الخدمة</label>
+          <select id="editPayMethod" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
+            <option value="فودافون كاش (Vodafone Cash)">فودافون كاش (Vodafone Cash)</option>
+            <option value="إنستا باي (InstaPay)">إنستا باي (InstaPay)</option>
+            <option value="وي باي (WE Pay)">وي باي (WE Pay)</option>
+            <option value="تحويل بنكي مباشر">تحويل بنكي مباشر</option>
+            <option value="نقدي (كاش) ليد المشرف">نقدي (كاش) ليد المشرف</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-top: 1rem;">
+          <label for="editPayNotes">ملاحظات توثيقية إضافية (اختياري)</label>
+          <textarea id="editPayNotes" class="form-control" rows="3" placeholder="ملاحظات الحسابات" style="resize: vertical; font-family: inherit; font-size: 0.9rem;"></textarea>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+          <button type="submit" class="btn btn-primary">حفظ وتعديل الإيصال</button>
+          <button type="button" class="btn btn-secondary" id="btnCancelEditPayModal">إلغاء</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- مودال استعراض وطباعة سند القبض المالي (Feature 1: Receipt / Invoice) -->
+  <div id="receiptModal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 600px; padding: 0; overflow: hidden;">
+      <!-- شريط تحكم رأس المودال -->
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; background: var(--bg-primary); border-bottom: 1px solid var(--border-color);">
+        <h3 style="font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem; font-size: 1.05rem;">
+          <i data-lucide="printer" style="color: var(--primary-color);"></i> سند قبض مالي رسمي
+        </h3>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <button type="button" class="btn btn-primary" id="btnPrintReceiptBtn" style="padding: 0.4rem 0.85rem; font-size: 0.85rem; font-weight: 700; gap: 0.35rem;">
+            <i data-lucide="printer" style="width: 15px; height: 15px;"></i> طباعة السند (Print / PDF)
+          </button>
+          <span id="btnCloseReceiptModal" style="cursor: pointer; padding: 0.25rem; display: flex; align-items: center; justify-content: center;">
+            <i data-lucide="x" style="color: var(--text-muted);"></i>
+          </span>
+        </div>
+      </div>
+
+      <!-- محتوى السند الرسمي القابل للعرض والطباعة -->
+      <div style="padding: 1.75rem; background: #ffffff; color: #1e293b;" id="receiptModalContent">
+        <!-- ترويسة السند -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0d9488; padding-bottom: 1rem; margin-bottom: 1.25rem;">
+          <div>
+            <div style="font-size: 1.35rem; font-weight: 900; color: #0f766e; display: flex; align-items: center; gap: 0.4rem;">
+              <span>📖</span>
+              <span>أكاديمية سبيل لعلوم القرآن الكريم</span>
+            </div>
+            <p style="font-size: 0.8rem; color: #64748b; margin: 0.2rem 0 0 0;">منصة التعليم والتحفيظ القرآني الشامل</p>
+          </div>
+          <div style="text-align: left;">
+            <div style="display: inline-block; background: #f0fdf4; border: 1px solid #86efac; color: #166534; font-weight: 800; font-size: 0.82rem; padding: 0.25rem 0.75rem; border-radius: 6px;">
+              سند قبض مالي معتمد ✅
+            </div>
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.3rem;" id="receiptNumberDisplay">رقم السند: #REC-0000</div>
+          </div>
+        </div>
+
+        <!-- ملخص القيمة والبيانات الأساسية -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem;">
+          <div>
+            <span style="font-size: 0.75rem; color: #64748b; display: block; margin-bottom: 0.2rem;">استلمنا من الطالب الكرم:</span>
+            <strong style="font-size: 1rem; color: #0f172a;" id="receiptStudentNameDisplay">-</strong>
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;" id="receiptTeacherDisplay">المعلم المشرف: -</div>
+          </div>
+          <div style="text-align: left;">
+            <span style="font-size: 0.75rem; color: #64748b; display: block; margin-bottom: 0.2rem;">المبلغ الإجمالي المحصل:</span>
+            <strong style="font-size: 1.4rem; color: #059669; font-weight: 900;" id="receiptAmountDisplay">0 ج.م</strong>
+          </div>
+        </div>
+
+        <!-- جدول تفاصيل المعاملة -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 1.25rem; font-size: 0.85rem;">
+          <tbody>
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 0.6rem 0.5rem; color: #64748b; font-weight: 700; width: 35%;">تاريخ وتوقيت التحصيل:</td>
+              <td style="padding: 0.6rem 0.5rem; color: #0f172a; font-weight: 800;" id="receiptDateDisplay">-</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 0.6rem 0.5rem; color: #64748b; font-weight: 700;">الشهر المحاسبي:</td>
+              <td style="padding: 0.6rem 0.5rem; color: #0d9488; font-weight: 800;" id="receiptMonthDisplay">-</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 0.6rem 0.5rem; color: #64748b; font-weight: 700;">طريقة ومزود الدفع:</td>
+              <td style="padding: 0.6rem 0.5rem; color: #0f172a; font-weight: 800;" id="receiptMethodDisplay">-</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 0.6rem 0.5rem; color: #64748b; font-weight: 700;">باقة الحصص والرصيد:</td>
+              <td style="padding: 0.6rem 0.5rem; color: #0f172a; font-weight: 700;" id="receiptPackageDisplay">-</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 0.6rem 0.5rem; color: #64748b; font-weight: 700;">الموقف المالي الحالي:</td>
+              <td style="padding: 0.6rem 0.5rem; font-weight: 800;" id="receiptBalanceDisplay">-</td>
+            </tr>
+            <tr>
+              <td style="padding: 0.6rem 0.5rem; color: #64748b; font-weight: 700;">ملاحظات التحصيل:</td>
+              <td style="padding: 0.6rem 0.5rem; color: #475569;" id="receiptNotesDisplay">-</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- تذييل وتوقيع السند -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px dashed #cbd5e1; padding-top: 1rem; margin-top: 1rem; flex-wrap: wrap; gap: 0.75rem;">
+          <div>
+            <div style="font-size: 0.75rem; color: #64748b;">المسؤول المحصل:</div>
+            <strong style="font-size: 0.88rem; color: #0f172a;" id="receiptAdminDisplay">-</strong>
+            <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.25rem;">إيصال إلكتروني صادر وموثق نظامياً</div>
+          </div>
+          
+          <!-- ختم وتوقيع مدير الأكاديمية (Abdullatief fathy) -->
+          <div style="text-align: center;">
+            <div style="border: 2px dashed #1e3a8a; background: rgba(30, 58, 138, 0.03); border-radius: 12px; padding: 0.5rem 1rem; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(30, 58, 138, 0.08); transform: rotate(-2deg); min-width: 190px;">
+              <div style="font-size: 0.6rem; font-weight: 800; color: #1e3a8a; letter-spacing: 1.5px; border-bottom: 1px solid rgba(30, 58, 138, 0.2); padding-bottom: 0.15rem; width: 100%; text-transform: uppercase;">
+                ★ SABEEL ACADEMY ★
+              </div>
+              
+              <!-- توقيع انسيابي احترافي بسحبة قلم حبرية (Executive Director Signature Stroke) -->
+              <div style="margin: 0.2rem 0; display: flex; align-items: center; justify-content: center; height: 46px;">
+                <svg width="170" height="46" viewBox="0 0 170 46" fill="none" xmlns="http://www.w3.org/2000/svg" style="overflow: visible;">
+                  <!-- سحبة التوقيع الانسيابية بحرف A والحركات السريعة المميزة للمدير -->
+                  <path d="M12 36 C8 24 16 12 24 9 C31 6 34 18 28 28 C23 37 18 34 26 27 C36 18 48 30 58 22 C67 15 76 28 88 19 C98 12 110 24 122 17 C133 11 142 22 156 14" stroke="#1e3a8a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+                  <!-- العقدة العلوية والحركات الانسيابية -->
+                  <path d="M22 10 C26 4 32 3 35 8 C38 14 30 22 20 25" stroke="#1e3a8a" stroke-width="1.8" stroke-linecap="round" />
+                  <path d="M60 21 C65 14 70 14 73 19" stroke="#1e3a8a" stroke-width="1.6" stroke-linecap="round" />
+                  <path d="M92 18 C96 11 102 12 105 17" stroke="#1e3a8a" stroke-width="1.6" stroke-linecap="round" />
+                  <!-- سحبة الذيل السفلية الطويلة الممتدة تحت التوقيع -->
+                  <path d="M15 37 C45 42 85 41 148 31 C158 29 146 39 118 41 C82 43 40 40 18 36" stroke="#1e3a8a" stroke-width="2" stroke-linecap="round" />
+                  <!-- نقطة توكيد الاعتماد النهائي -->
+                  <circle cx="160" cy="16" r="2" fill="#1e3a8a" />
+                </svg>
+              </div>
+
+              <div style="font-size: 0.64rem; font-weight: 700; color: #1e3a8a; display: flex; align-items: center; justify-content: space-between; width: 100%; border-top: 1px solid rgba(30, 58, 138, 0.15); padding-top: 0.2rem;">
+                <span style="letter-spacing: 0.3px; font-family: sans-serif;">Abdullatief fathy</span>
+                <span style="background: #1e3a8a; color: #fff; font-size: 0.55rem; padding: 0.05rem 0.35rem; border-radius: 3px; font-weight: 800;">معتمد ✅</span>
+              </div>
+            </div>
+            <div style="font-size: 0.65rem; color: #64748b; margin-top: 0.25rem; font-weight: 600;">ختم وتوقيع مدير عام الأكاديمية</div>
+          </div>
+
+          <div style="text-align: left;">
+            <div style="font-size: 0.72rem; color: #64748b; font-weight: 600;">أكاديمية سبيل لعلوم القرآن</div>
+            <div style="font-size: 0.7rem; color: #059669; font-weight: 700; margin-top: 0.2rem;">✔ معتمد ورسمي</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- حاوية خاصة بالطباعة المباشرة لسند القبض المالي -->
+  <div id="receiptPrintContainer" style="display: none;"></div>
+
+  <div id="toast-container"></div>
+
+</body>
+</html>

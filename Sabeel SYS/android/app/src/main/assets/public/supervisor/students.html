@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>سبيل - متابعة الطلاب التشغيلية</title>
+
+  <script>
+    try {
+      if (localStorage.getItem('academy_dark_mode') === 'true' || localStorage.getItem('sabeel_theme') === 'dark') {
+        document.documentElement.classList.add('dark-theme');
+      }
+    } catch (e) {}
+  </script>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <script type="module" crossorigin src="/assets/supervisor_students-VPRQfdWq.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/rbacService-D2RrsA9d.js">
+  <link rel="modulepreload" crossorigin href="/assets/activityLogger-BK9d5021.js">
+  <link rel="modulepreload" crossorigin href="/assets/authService-CtWWGArP.js">
+  <link rel="modulepreload" crossorigin href="/assets/navbar-Bz3pjZSE.js">
+  <link rel="modulepreload" crossorigin href="/assets/supervisorPageShell-CklIJ_wK.js">
+  <link rel="modulepreload" crossorigin href="/assets/supervisorDomainService-BW5mzJbW.js">
+  <link rel="stylesheet" crossorigin href="/assets/rbacService-CHOdNZNU.css">
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <header class="navbar" id="appNavbar"></header>
+
+      <main class="content-body">
+        <!-- Filters Toolbar -->
+        <div class="card" style="margin-bottom: 1.25rem;">
+          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 0.85rem; align-items: end;" class="form-row-2">
+            <div class="form-group" style="margin: 0;">
+              <label for="searchStudentsInput">بحث بالاسم أو ولي الأمر أو الهاتف</label>
+              <input type="search" id="searchStudentsInput" name="sabeel_sup_student_q" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" class="form-control" placeholder="ابحث عن طالب أو ولي أمر...">
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label for="filterStatusSelect">حالة الطالب</label>
+              <select id="filterStatusSelect" class="form-control" autocomplete="off">
+                <option value="all">جميع الحالات</option>
+                <option value="active">نشط ومنتظم</option>
+                <option value="paused">متوقف مؤقتاً</option>
+                <option value="suspended">موقوف</option>
+                <option value="archived">مؤرشف</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label for="filterTeacherSelect">المعلم المسؤول</label>
+              <select id="filterTeacherSelect" class="form-control" autocomplete="off">
+                <option value="all">جميع المعلمين</option>
+              </select>
+            </div>
+            <div>
+              <button type="button" id="refreshStudentsBtn" class="btn btn-secondary" title="تحديث القائمة">
+                <i data-lucide="refresh-cw" style="width: 15px; height: 15px;"></i>
+                تحديث
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Operational Summary -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;" id="statsCardsContainer">
+          <div class="op-metric-card">
+            <span class="metric-label">إجمالي الطلاب المعروضين</span>
+            <div class="metric-value tabular-nums" id="countFilteredStudents">0</div>
+          </div>
+          <div class="op-metric-card">
+            <span class="metric-label">طلاب نشطون</span>
+            <div class="metric-value tabular-nums" id="countActiveStudents">0</div>
+          </div>
+          <div class="op-metric-card">
+            <span class="metric-label">حصص متبقية منخفضة (أقل من 3)</span>
+            <div class="metric-value tabular-nums" id="countLowBalanceStudents">0</div>
+          </div>
+        </div>
+
+        <!-- Students Operational Table -->
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>الطالب والعمر</th>
+                <th>ولي الأمر والتواصل</th>
+                <th>المعلم</th>
+                <th>الباقة والمدة</th>
+                <th>الرصيد التشغيلي للحصص</th>
+                <th>أيام ومواعيد الجدول</th>
+                <th>الحالة</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="studentsTableBody">
+              <tr><td colspan="8" style="text-align: center; padding: 2rem; color: var(--text-muted);">جاري تحميل بيانات الطلاب التشغيلية...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Operational Student Edit Modal -->
+  <div id="editStudentModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card" style="max-width: 560px;">
+      <div class="modal-header">
+        <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700;">تحديث البيانات التشغيلية للطالب</h3>
+        <button type="button" id="closeEditStudentBtn" class="btn btn-ghost btn-sm" aria-label="إغلاق">
+          <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+        </button>
+      </div>
+      <form id="editStudentForm">
+        <div class="modal-body">
+          <input type="hidden" id="editStudentId">
+          <div style="margin-bottom: 1rem; padding: 0.75rem; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm);">
+            <strong id="editStudentNameHeader" style="color: var(--text-primary);"></strong>
+            <div id="editStudentPackageHeader" style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.2rem;"></div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
+            <div class="form-group">
+              <label for="editParentName">اسم ولي الأمر</label>
+              <input type="text" id="editParentName" class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="editParentPhone">رقم التواصل / الواتساب</label>
+              <input type="tel" id="editParentPhone" class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="editStudentStatus">الحالة التشغيلية</label>
+              <select id="editStudentStatus" class="form-control">
+                <option value="active">نشط ومنتظم</option>
+                <option value="paused">متوقف مؤقتاً</option>
+                <option value="frozen">مجمد مؤقتاً</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="editMemorizationDir">مسار الحفظ</label>
+              <select id="editMemorizationDir" class="form-control">
+                <option value="ascending">تصاعدي (من البقرة)</option>
+                <option value="descending">تنازلي (من جزء عم)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="editStudentNotes">ملاحظات تشغيلية</label>
+            <textarea id="editStudentNotes" class="form-control" rows="3" placeholder="ملاحظات المتابعة التعليمية والتشغيلية..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="cancelEditStudentBtn" class="btn btn-secondary">إلغاء</button>
+          <button type="submit" id="saveEditStudentBtn" class="btn btn-primary">حفظ التعديلات</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+</body>
+</html>

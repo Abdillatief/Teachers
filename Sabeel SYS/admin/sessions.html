@@ -64,13 +64,24 @@
 
         <!-- شريط البحث والفلترة المتقدم -->
         <div class="card" style="margin-bottom: 1.5rem; padding: 1rem;">
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.85rem; align-items: center;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.85rem; align-items: center;">
             <div>
               <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 0.35rem;">البحث الفوري:</label>
               <div style="display: flex; align-items: center; gap: 0.5rem; background: var(--bg-primary); border: 1px solid var(--border-color); padding: 0.4rem 0.75rem; border-radius: 8px;">
                 <i data-lucide="search" style="width: 16px; height: 16px; color: var(--text-muted);"></i>
                 <input type="text" id="sessionSearchInput" placeholder="ابحث بالطالب أو المعلم أو التاريخ..." style="border: none; background: transparent; outline: none; font-size: 0.85rem; width: 100%;">
               </div>
+            </div>
+
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 0.35rem;">الفترة:</label>
+              <select id="sessionPeriodFilter" class="form-control" style="font-size: 0.85rem; padding: 0.45rem;">
+                <option value="6m" selected>آخر 6 شهور (افتراضي)</option>
+                <option value="1m">الشهر الحالي</option>
+                <option value="3m">آخر 3 شهور</option>
+                <option value="12m">آخر 12 شهر</option>
+                <option value="all">كل السجل (أبطأ)</option>
+              </select>
             </div>
 
             <div>
@@ -103,6 +114,7 @@
               </select>
             </div>
           </div>
+          <p id="sessionsPeriodHint" style="margin:0.65rem 0 0; font-size:0.75rem; color:var(--text-muted);">يعرض آخر 6 شهور افتراضيًا لتسريع التحميل. اختر "كل السجل" عند الحاجة للحصص القديمة.</p>
         </div>
 
         <div class="card">
@@ -136,13 +148,14 @@
     import { protectRoute } from '../assets/js/features/auth/authService.js';
     import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
     import { renderNavbar } from '../assets/js/shared/components/navbar.js';
-    import { collection, onSnapshot, doc, updateDoc, deleteDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+    import { collection, onSnapshot, doc, updateDoc, deleteDoc, addDoc, serverTimestamp, query, where, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
     import { Toast } from '../assets/js/shared/utils/toast.js';
     import { softDeleteToTrash } from '../assets/js/features/trash/trashService.js';
     import { showCustomConfirm } from '../assets/js/shared/utils/helpers.js';
     import { reverseSessionCredit } from '../assets/js/shared/utils/creditManager.js';
 
     let allSessionsCached = [];
+    let sessionsUnsub = null;
 
     protectRoute('admin');
 
@@ -160,26 +173,66 @@
       const statusFilter = document.getElementById('sessionStatusFilter');
       const typeFilter = document.getElementById('sessionTypeFilter');
       const approvalFilter = document.getElementById('sessionApprovalFilter');
+      const periodFilter = document.getElementById('sessionPeriodFilter');
 
       if (searchInput) searchInput.addEventListener('input', renderFilteredSessions);
       if (statusFilter) statusFilter.addEventListener('change', renderFilteredSessions);
       if (typeFilter) typeFilter.addEventListener('change', renderFilteredSessions);
       if (approvalFilter) approvalFilter.addEventListener('change', renderFilteredSessions);
+      if (periodFilter) periodFilter.addEventListener('change', () => initSessionsRealtime(periodFilter.value));
     }
 
-    function initSessionsRealtime() {
-      onSnapshot(collection(db, "sessions"), (snapshot) => {
-        allSessionsCached = [];
-        snapshot.forEach(docSnap => {
-          allSessionsCached.push({ id: docSnap.id, ...docSnap.data() });
-        });
+    function getSessionsQueryForPeriod(period) {
+      const now = new Date();
+      let startDate = null;
+      if (period === '1m') startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+      else if (period === '3m') { const d = new Date(now); d.setMonth(d.getMonth() - 3); startDate = d.toISOString().split('T')[0]; }
+      else if (period === '12m') { const d = new Date(now); d.setMonth(d.getMonth() - 12); startDate = d.toISOString().split('T')[0]; }
+      else if (period === 'all') startDate = null;
+      else { const d = new Date(now); d.setMonth(d.getMonth() - 6); startDate = d.toISOString().split('T')[0]; } // 6m default
 
-        // ترتيب من الأحدث للأقدم تنازليًا
-        allSessionsCached.sort((a,b) => (b.date || '').localeCompare(a.date || ''));
+      const hint = document.getElementById('sessionsPeriodHint');
+      if (hint) {
+        hint.textContent = period === 'all'
+          ? 'يتم عرض السجل بالكامل (قد يكون أبطأ).'
+          : `يعرض السجلات من ${startDate} حتى اليوم لتسريع التحميل.`;
+      }
 
+      if (startDate) return query(collection(db, "sessions"), where("date", ">=", startDate), orderBy("date", "desc"), limit(2000));
+      return query(collection(db, "sessions"), orderBy("date", "desc"), limit(3000));
+    }
+
+    async function initSessionsRealtime(period = null) {
+      if (sessionsUnsub) { try { sessionsUnsub(); } catch (_) {} }
+      const selectedPeriod = period || document.getElementById('sessionPeriodFilter')?.value || '6m';
+      const q = getSessionsQueryForPeriod(selectedPeriod);
+
+      sessionsUnsub = onSnapshot(q, (snapshot) => {
+        allSessionsCached = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
         updateSessionStats();
         renderFilteredSessions();
-      }, (err) => console.warn("Admin sessions listener warning:", err));
+      }, async (err) => {
+        console.warn("Admin sessions listener warning:", err);
+        try {
+          const selectedPeriod2 = period || document.getElementById('sessionPeriodFilter')?.value || '6m';
+          const now = new Date();
+          let startDate = null;
+          if (selectedPeriod2 === '1m') startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+          else if (selectedPeriod2 === '3m') { const d = new Date(now); d.setMonth(d.getMonth() - 3); startDate = d.toISOString().split('T')[0]; }
+          else if (selectedPeriod2 === '12m') { const d = new Date(now); d.setMonth(d.getMonth() - 12); startDate = d.toISOString().split('T')[0]; }
+          else if (selectedPeriod2 !== 'all') { const d = new Date(now); d.setMonth(d.getMonth() - 6); startDate = d.toISOString().split('T')[0]; }
+          const q2 = startDate
+            ? query(collection(db, "sessions"), where("date", ">=", startDate), limit(2000))
+            : query(collection(db, "sessions"), limit(3000));
+          const snap = await getDocs(q2);
+          allSessionsCached = snap.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
+            .sort((a,b) => (b.date || '').localeCompare(a.date || ''));
+          updateSessionStats();
+          renderFilteredSessions();
+        } catch (e2) {
+          console.warn("Admin sessions fallback failed:", e2);
+        }
+      });
     }
 
     function updateSessionStats() {

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - الحصص الجارية اليوم (الإدارة)</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .session-card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    .session-item-card {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      transition: transform var(--transition-fast), border-color var(--transition-fast);
+    }
+    .session-item-card:hover {
+      border-color: var(--primary-color);
+      transform: translateY(-2px);
+    }
+  </style>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+  <script type="module" crossorigin src="/assets/admin_today_sessions-CaONkXcP.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/rbacService-D2RrsA9d.js">
+  <link rel="modulepreload" crossorigin href="/assets/activityLogger-BK9d5021.js">
+  <link rel="modulepreload" crossorigin href="/assets/authService-CtWWGArP.js">
+  <link rel="modulepreload" crossorigin href="/assets/navbar-Bz3pjZSE.js">
+  <link rel="modulepreload" crossorigin href="/assets/auditService-D31EusTs.js">
+  <link rel="modulepreload" crossorigin href="/assets/supervisorDomainService-BW5mzJbW.js">
+  <link rel="modulepreload" crossorigin href="/assets/creditManager-lKPCrGcp.js">
+  <link rel="modulepreload" crossorigin href="/assets/groupSessionModal-r95vjFmb.js">
+  <link rel="stylesheet" crossorigin href="/assets/rbacService-CHOdNZNU.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        
+        <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="play-circle" style="color: var(--primary-color); width: 28px; height: 28px;"></i>
+              الحصص الجارية اليوم
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">متابعة فورية للحصص المجدولة والمكتملة لليوم مع أسماء المعلمين وحالة التنفيذ.</p>
+          </div>
+          <div style="font-size: 0.85rem; padding: 0.5rem 1rem; border-radius: 30px; background-color: rgba(var(--primary-rgb, 14, 165, 233), 0.1); color: var(--primary-color); font-weight: 700;" id="todayAdminDateLabel">
+            اليوم: ...
+          </div>
+        </div>
+
+        <!-- summary stats -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="card" style="border-right: 4px solid var(--primary-color);">
+            <div style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600;">إجمالي حصص اليوم</div>
+            <h3 id="statTodayTotal" style="font-size: 1.6rem; font-weight: 800; margin-top: 0.25rem;">0</h3>
+          </div>
+          <div class="card" style="border-right: 4px solid var(--success);">
+            <div style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600;">تمت بنجاح ✅</div>
+            <h3 id="statTodayCompleted" style="font-size: 1.6rem; font-weight: 800; margin-top: 0.25rem; color: var(--success);">0</h3>
+          </div>
+          <div class="card" style="border-right: 4px solid #6366f1;">
+            <div style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600;">لم تتم بعد ⏳</div>
+            <h3 id="statTodayPending" style="font-size: 1.6rem; font-weight: 800; margin-top: 0.25rem; color: #6366f1;">0</h3>
+          </div>
+          <div class="card" style="border-right: 4px solid #d97706;">
+            <div style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600;">مؤجلة 🔄</div>
+            <h3 id="statTodayDelayed" style="font-size: 1.6rem; font-weight: 800; margin-top: 0.25rem; color: #d97706;">0</h3>
+          </div>
+          <div class="card" style="border-right: 4px solid var(--danger);">
+            <div style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600;">غياب / ملغاة 🔴</div>
+            <h3 id="statTodayAbsent" style="font-size: 1.6rem; font-weight: 800; margin-top: 0.25rem; color: var(--danger);">0</h3>
+          </div>
+        </div>
+
+        <!-- filters -->
+        <div class="card" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem;">
+          <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+            <div style="flex: 1; min-width: 220px;">
+              <input type="text" id="adminSearchInput" class="form-control" placeholder="بحث باسم الطالب أو المعلم...">
+            </div>
+            <div style="width: 180px;">
+              <select id="adminStatusFilter" class="form-control">
+                <option value="all">كل الحالات</option>
+                <option value="completed">تمت بنجاح ✅</option>
+                <option value="pending">لم تتم بعد ⏳</option>
+                <option value="delayed">مؤجلة 🔄</option>
+                <option value="absent">غياب / ملغاة 🔴</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- list container -->
+        <div id="adminTodaySessionsGrid" class="session-card-grid">
+          <p style="text-align: center; color: var(--text-muted); padding: 2rem; grid-column: 1 / -1;">جاري تحميل حصص اليوم الفورية...</p>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+</body>
+</html>

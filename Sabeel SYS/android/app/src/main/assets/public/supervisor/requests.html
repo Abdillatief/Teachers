@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>سبيل - الطلبات الإدارية للمشرف</title>
+
+  <script>
+    try {
+      if (localStorage.getItem('academy_dark_mode') === 'true' || localStorage.getItem('sabeel_theme') === 'dark') {
+        document.documentElement.classList.add('dark-theme');
+      }
+    } catch (e) {}
+  </script>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <script type="module" crossorigin src="/assets/supervisor_requests-CMIcu-r3.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/rbacService-D2RrsA9d.js">
+  <link rel="modulepreload" crossorigin href="/assets/activityLogger-BK9d5021.js">
+  <link rel="modulepreload" crossorigin href="/assets/authService-CtWWGArP.js">
+  <link rel="modulepreload" crossorigin href="/assets/navbar-Bz3pjZSE.js">
+  <link rel="modulepreload" crossorigin href="/assets/supervisorPageShell-CklIJ_wK.js">
+  <link rel="modulepreload" crossorigin href="/assets/supervisorDomainService-BW5mzJbW.js">
+  <link rel="stylesheet" crossorigin href="/assets/rbacService-CHOdNZNU.css">
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <header class="navbar" id="appNavbar"></header>
+
+      <main class="content-body">
+        <div class="dashboard-main-grid" style="display: grid; grid-template-columns: 1fr 1.45fr; gap: 1.25rem; align-items: start;">
+          <!-- Create Request Form -->
+          <div class="card">
+            <div class="card-header">
+              <h1 style="font-size: 1rem; font-weight: 800; display: flex; align-items: center; gap: 0.45rem;">
+                <i data-lucide="send" style="width: 18px; height: 18px; color: var(--primary-color);"></i>
+                رفع طلب إداري للإدارة
+              </h1>
+            </div>
+            <form id="createRequestForm">
+              <div class="form-group">
+                <label for="reqType">نوع الطلب</label>
+                <select id="reqType" class="form-control" required></select>
+              </div>
+              <div class="form-group" id="reqTargetStudentGroup">
+                <label for="reqStudentSelect">الطالب المعني (اختياري حسب نوع الطلب)</label>
+                <select id="reqStudentSelect" class="form-control"></select>
+              </div>
+              <div class="form-group" id="reqNewTeacherGroup" style="display: none;">
+                <label for="reqNewTeacherSelect">المعلم البديل المقترح</label>
+                <select id="reqNewTeacherSelect" class="form-control"></select>
+              </div>
+              <div class="form-group">
+                <label for="reqTitle">عنوان الطلب المختصر</label>
+                <input type="text" id="reqTitle" class="form-control" placeholder="مثال: استبدال معلم الطالب ..." required>
+              </div>
+              <div class="form-group">
+                <label for="reqDetails">التفاصيل والأسباب التشغيلية</label>
+                <textarea id="reqDetails" class="form-control" rows="4" placeholder="اكتب كافة التفاصيل والمبررات ليتمكن المدير من اتخاذ القرار..." required></textarea>
+              </div>
+              <button type="submit" id="submitRequestBtn" class="btn btn-primary" style="width: 100%;">إرسال الطلب للمدير</button>
+            </form>
+          </div>
+
+          <!-- Submitted Requests Tracker -->
+          <div class="card">
+            <div class="card-header">
+              <h2 style="font-size: 1rem; font-weight: 800; display: flex; align-items: center; gap: 0.45rem;">
+                <i data-lucide="inbox" style="width: 18px; height: 18px; color: var(--primary-color);"></i>
+                سجل طلباتي وحالة قرار الإدارة
+              </h2>
+              <select id="filterMyReqStatus" class="form-control" style="width: auto; min-width: 130px; height: 32px; font-size: 0.78rem;">
+                <option value="all">جميع الحالات</option>
+                <option value="pending">قيد المراجعة</option>
+                <option value="approved">تم الاعتماد والتنفيذ</option>
+                <option value="rejected">مرفوض</option>
+              </select>
+            </div>
+            <div id="myRequestsList" style="display: flex; flex-direction: column; gap: 0.7rem;">
+              <div class="empty-state"><p class="empty-state-description">جاري تحميل الطلبات...</p></div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+</body>
+</html>

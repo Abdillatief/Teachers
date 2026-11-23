@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">أكاديمية سبيل</string>
+    <string name="title_activity_main">أكاديمية سبيل</string>
+    <string name="package_name">com.sabeel.academy</string>
+    <string name="custom_url_scheme">com.sabeel.academy</string>
+</resources>
