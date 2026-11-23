@@ -4,9 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>سبيل - إدارة وتوجيه الإشعارات الذكية</title>
-  <link rel="stylesheet" href="../assets/css/variables.css">
-  <link rel="stylesheet" href="../assets/css/main.css">
-  <link rel="stylesheet" href="../assets/css/components.css">
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     .notif-tab-btn {
@@ -102,14 +99,15 @@
   </style>
 </head>
 <body>
+  <!-- Header Navbar -->
+  <header id="appNavbar" class="navbar"></header>
 
-  <div class="app-container">
-    <aside class="sidebar" id="appSidebar"></aside>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside id="appSidebar" class="sidebar"></aside>
 
-    <div class="main-wrapper" id="mainWrapper">
-      <nav class="navbar" id="appNavbar"></nav>
-
-      <main class="content-body">
+    <!-- Main Content Area -->
+    <main class="main-content">
       <!-- Breadcrumb & Page Title -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
         <div>
@@ -599,8 +597,7 @@
           </div>
         </div>
       </section>
-      </main>
-    </div>
+    </main>
   </div>
 
   <!-- Edit Template Modal -->
@@ -671,6 +668,5 @@
     </div>
   </div>
 
-  <script type="module" src="../assets/js/features/notifications/adminNotificationsController.js"></script>
 </body>
 </html>

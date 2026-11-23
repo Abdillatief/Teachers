@@ -4,9 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>سبيل - مركز التحقيق وإدارة العمليات (Investigation Center)</title>
-  <link rel="stylesheet" href="../assets/css/variables.css">
-  <link rel="stylesheet" href="../assets/css/main.css">
-  <link rel="stylesheet" href="../assets/css/components.css">
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     /* Linear / Stripe / Notion Inspired Aesthetics for Investigation Center */
@@ -320,8 +317,6 @@
   <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
-  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
-
 </head>
 <body class="bg-primary text-primary">
 
@@ -649,63 +644,5 @@
   </div>
 
   <!-- PAGE INVOCATION SCRIPT -->
-  <script type="module">
-    import { auth, db } from '../assets/js/config/firebase.js';
-    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-    import { protectRoute } from '../assets/js/features/auth/authService.js';
-    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
-    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
-    import { initInvestigationCenter, loadAllSystemData, handleSaveSessionEdit } from '../assets/js/features/audit/investigationController.js';
-    import { ROLES, resolveEffectiveRole } from '../assets/js/features/rbac/rbacService.js';
-
-    protectRoute('admin');
-
-    auth.onAuthStateChanged(async (user) => {
-      if (!user) {
-        window.location.href = '../index.html';
-        return;
-      }
-
-      try {
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        const userData = userDoc.exists() ? userDoc.data() : {};
-
-        // Admin-only: supervisors must never reach the investigation center.
-        if (resolveEffectiveRole(userData) !== ROLES.ADMIN) {
-          window.location.href = '../teacher/dashboard.html';
-          return;
-        }
-
-        renderNavbar('مركز التحقيق وإدارة العمليات', { name: userData.name || user.displayName, roleName: 'مدير النظام' });
-        renderSidebar('investigation', 'admin');
-
-        // Initialize investigation controller
-        await initInvestigationCenter();
-
-        // Refresh button
-        document.getElementById('btnRefreshAllInvData')?.addEventListener('click', async () => {
-          await loadAllSystemData();
-          if (window.lucide) window.lucide.createIcons();
-        });
-
-        // Form save listener
-        document.getElementById('editSessionForm')?.addEventListener('submit', handleSaveSessionEdit);
-
-        // Filter event listeners
-        ['lessonsSearchInput', 'lessonsFilterStatus', 'finSearchInput', 'finFilterType', 'actSearchInput', 'actFilterCategory'].forEach(id => {
-          const el = document.getElementById(id);
-          if (el) {
-            const trigger = () => window.dispatchEvent(new CustomEvent('invFilterChanged'));
-            el.addEventListener('input', trigger);
-            el.addEventListener('change', trigger);
-          }
-        });
-
-        if (window.lucide) window.lucide.createIcons();
-      } catch (err) {
-        console.error("Auth check error in Investigation Center:", err);
-      }
-    });
-  </script>
 </body>
 </html>
