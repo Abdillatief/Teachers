@@ -4,9 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>سبيل - نقل الطلاب بين المعلمين</title>
-  <link rel="stylesheet" href="../assets/css/variables.css">
-  <link rel="stylesheet" href="../assets/css/main.css">
-  <link rel="stylesheet" href="../assets/css/components.css">
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     .transfer-card {
@@ -33,6 +30,26 @@
       font-weight: 700;
     }
   </style>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+  <script type="module" crossorigin src="/assets/admin_transfer_students-C7I379La.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/rbacService-D2RrsA9d.js">
+  <link rel="modulepreload" crossorigin href="/assets/activityLogger-BK9d5021.js">
+  <link rel="modulepreload" crossorigin href="/assets/authService-CtWWGArP.js">
+  <link rel="modulepreload" crossorigin href="/assets/navbar-BWutcREu.js">
+  <link rel="stylesheet" crossorigin href="/assets/rbacService-CHOdNZNU.css">
 </head>
 <body>
 
@@ -131,215 +148,5 @@
 
   <div id="toast-container"></div>
 
-  <script type="module">
-    import { db, auth } from '../assets/js/config/firebase.js';
-    import { collection, getDocs, doc, updateDoc, query, where, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import { protectRoute } from '../assets/js/features/auth/authService.js';
-    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
-    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
-    import { Toast } from '../assets/js/shared/utils/toast.js';
-    import { showCustomConfirm } from '../assets/js/shared/utils/helpers.js';
-
-    protectRoute('admin');
-
-    let teachersList = [];
-    let studentsList = [];
-    let currentSourceStudents = [];
-
-    auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        renderSidebar('transfer-students', 'admin');
-        renderNavbar('نقل الطلاب بين المعلمين', { name: 'الإدارة العامة', roleName: 'مدير الأكاديمية' });
-        await loadData();
-      }
-    });
-
-    async function loadData() {
-      try {
-        // 1. جلب المعلمين المقبولين
-        const tSnap = await getDocs(query(collection(db, "users"), where("role", "==", "teacher")));
-        teachersList = [];
-        tSnap.forEach(d => {
-          const t = d.data();
-          if (t.status === "approved" || t.status === "active") {
-            teachersList.push({ uid: d.id, ...t });
-          }
-        });
-
-        // 2. جلب جميع الطلاب
-        const sSnap = await getDocs(collection(db, "students"));
-        studentsList = [];
-        sSnap.forEach(d => {
-          studentsList.push({ id: d.id, ...d.data() });
-        });
-
-        populateTeacherDropdowns();
-      } catch (err) {
-        console.error("خطأ تحميل البيانات:", err);
-        Toast.danger("عذرًا، حدث خطأ أثناء تحميل بيانات الطلاب والمعلمين.");
-      }
-    }
-
-    function populateTeacherDropdowns() {
-      const sourceSelect = document.getElementById('sourceTeacherSelect');
-      const targetSelect = document.getElementById('targetTeacherSelect');
-
-      sourceSelect.innerHTML = `<option value="">-- اختر المعلم الحالي (المرسل) --</option>` +
-        teachersList.map(t => {
-          const count = studentsList.filter(s => s.teacherId === t.uid).length;
-          return `<option value="${t.uid}">${t.name} (${count} طلاب)</option>`;
-        }).join('');
-
-      targetSelect.innerHTML = `<option value="">-- اختر المعلم الجديد (المستلم) --</option>` +
-        teachersList.map(t => `<option value="${t.uid}">${t.name}</option>`).join('');
-
-      sourceSelect.addEventListener('change', handleSourceChange);
-      targetSelect.addEventListener('change', validateForm);
-    }
-
-    function handleSourceChange() {
-      const sourceUid = document.getElementById('sourceTeacherSelect').value;
-      const tbody = document.getElementById('transferStudentsTableBody');
-      const countBadge = document.getElementById('studentsCountBadge');
-
-      if (!sourceUid) {
-        currentSourceStudents = [];
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">يرجى اختيار المعلم الحالي أولاً لعرض قائمة الطلاب التابعين له.</td></tr>`;
-        countBadge.textContent = "0";
-        validateForm();
-        return;
-      }
-
-      currentSourceStudents = studentsList.filter(s => s.teacherId === sourceUid);
-      countBadge.textContent = String(currentSourceStudents.length);
-
-      if (currentSourceStudents.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">لا يوجد أي طلاب مسجلين بحساب هذا المعلم حالياً.</td></tr>`;
-      } else {
-        tbody.innerHTML = currentSourceStudents.map(s => `
-          <tr>
-            <td style="text-align: center;">
-              <input type="checkbox" class="student-select-checkbox" data-id="${s.id}" checked>
-            </td>
-            <td><strong>${s.name}</strong></td>
-            <td>${s.age ? `${s.age} سنة` : 'غير محدد'}</td>
-            <td><span style="background-color: var(--primary-light); color: var(--primary-color); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.78rem; font-weight:700;">${s.packageName || 'باقة معتمدة'}</span></td>
-            <td style="font-size: 0.8rem;">${(s.days || s.sessionDays || []).join('، ') || 'طوال الأسبوع'} • ${s.time || s.sessionTime || 'غير محدد'}</td>
-          </tr>
-        `).join('');
-      }
-
-      // ربط خانة تحديد الكل
-      const selectAll = document.getElementById('selectAllCheckbox');
-      selectAll.checked = true;
-      selectAll.onchange = (e) => {
-        document.querySelectorAll('.student-select-checkbox').forEach(cb => cb.checked = e.target.checked);
-        validateForm();
-      };
-
-      document.querySelectorAll('.student-select-checkbox').forEach(cb => {
-        cb.onchange = validateForm;
-      });
-
-      validateForm();
-    }
-
-    function validateForm() {
-      const sourceUid = document.getElementById('sourceTeacherSelect').value;
-      const targetUid = document.getElementById('targetTeacherSelect').value;
-      const btn = document.getElementById('btnSubmitTransfer');
-
-      const selectedCheckboxes = document.querySelectorAll('.student-select-checkbox:checked');
-
-      if (sourceUid && targetUid && sourceUid !== targetUid && selectedCheckboxes.length > 0) {
-        btn.disabled = false;
-      } else {
-        btn.disabled = true;
-      }
-    }
-
-    document.getElementById('transferForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const sourceUid = document.getElementById('sourceTeacherSelect').value;
-      const targetUid = document.getElementById('targetTeacherSelect').value;
-
-      if (!sourceUid || !targetUid || sourceUid === targetUid) {
-        Toast.danger("يرجى تحديد معلمين مختلفين للنقل.");
-        return;
-      }
-
-      const sourceTeacher = teachersList.find(t => t.uid === sourceUid);
-      const targetTeacher = teachersList.find(t => t.uid === targetUid);
-
-      const checkedBoxes = document.querySelectorAll('.student-select-checkbox:checked');
-      const selectedIds = Array.from(checkedBoxes).map(cb => cb.dataset.id);
-
-      if (selectedIds.length === 0) {
-        Toast.danger("يرجى اختيار طالب واحد على الأقل للنقل.");
-        return;
-      }
-
-      showCustomConfirm(`هل أنت متأكد من رغبتك في نقل (${selectedIds.length}) طالب من المعلم (${sourceTeacher.name}) إلى المعلم (${targetTeacher.name})؟`, async () => {
-        const btn = document.getElementById('btnSubmitTransfer');
-        btn.disabled = true;
-        btn.innerHTML = `<i data-lucide="loader-2" class="spin"></i> جاري النقل...`;
-
-        try {
-          // 1. تحديث مستندات الطلاب في Firestore
-          for (const studentId of selectedIds) {
-            await updateDoc(doc(db, "students", studentId), {
-              teacherId: targetTeacher.uid,
-              teacherName: targetTeacher.name,
-              transferredAt: new Date().toISOString(),
-              previousTeacherName: sourceTeacher.name
-            });
-          }
-
-          // 2. تسجيل سجل إجراءات (Audit Log)
-          await addDoc(collection(db, "auditLogs"), {
-            action: "TRANSFER_STUDENTS",
-            actorId: auth.currentUser.uid,
-            actorName: "الإدارة العامة",
-            details: `تم نقل عدد ${selectedIds.length} طالب من المعلم (${sourceTeacher.name}) إلى المعلم (${targetTeacher.name})`,
-            timestamp: new Date().toISOString()
-          });
-
-          // 3. إرسال إشعار موجه للمعلم السابق
-          await addDoc(collection(db, "notifications"), {
-            title: "إعادة تخصيص ونقل طلاب 🔄",
-            body: `تم نقل عدد (${selectedIds.length}) طالب من قائمتك وإسنادهم للمعلم (${targetTeacher.name}) بواسطة الإدارة.`,
-            recipientId: sourceTeacher.uid,
-            readBy: [],
-            createdAt: serverTimestamp()
-          });
-
-          // 4. إرسال إشعار موجه للمعلم المستلم
-          await addDoc(collection(db, "notifications"), {
-            title: "إضافة طلاب جديد لقائمتك 🎉",
-            body: `تم إضافة وتكليفك بعدد (${selectedIds.length}) طالب جديد محولين من المعلم (${sourceTeacher.name}) بواسطة إدارة الأكاديمية.`,
-            recipientId: targetTeacher.uid,
-            readBy: [],
-            createdAt: serverTimestamp()
-          });
-
-          Toast.success(`تم نقل (${selectedIds.length}) طالب بنجاح إلى المعلم (${targetTeacher.name})! 🎉`);
-
-          // إعادة تحميل البيانات
-          await loadData();
-          document.getElementById('sourceTeacherSelect').value = sourceUid;
-          handleSourceChange();
-
-        } catch (err) {
-          console.error("خطأ أثناء عملية النقل:", err);
-          Toast.danger("عذرًا، حدث خطأ أثناء تنفيذ عملية نقل الطلاب.");
-        } finally {
-          btn.disabled = false;
-          btn.innerHTML = `<i data-lucide="refresh-cw"></i> تنفيذ نقل كافة الطلاب المحددين`;
-          if (window.lucide) window.lucide.createIcons();
-        }
-      });
-    });
-  </script>
 </body>
 </html>

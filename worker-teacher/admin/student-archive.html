@@ -4,10 +4,27 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>سبيل - أرشيف الطلاب</title>
-  <link rel="stylesheet" href="../assets/css/variables.css">
-  <link rel="stylesheet" href="../assets/css/main.css">
-  <link rel="stylesheet" href="../assets/css/components.css">
   <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+  <script type="module" crossorigin src="/assets/admin_student_archive-D2Jq3YcQ.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/rbacService-D2RrsA9d.js">
+  <link rel="modulepreload" crossorigin href="/assets/activityLogger-BK9d5021.js">
+  <link rel="modulepreload" crossorigin href="/assets/authService-CtWWGArP.js">
+  <link rel="modulepreload" crossorigin href="/assets/navbar-BWutcREu.js">
+  <link rel="stylesheet" crossorigin href="/assets/rbacService-CHOdNZNU.css">
 </head>
 <body>
 
@@ -50,80 +67,5 @@
 
   <div id="toast-container"></div>
 
-  <script type="module">
-    import { auth, db } from '../assets/js/config/firebase.js';
-    import { protectRoute } from '../assets/js/features/auth/authService.js';
-    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
-    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
-    import { collection, onSnapshot, doc, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import { Toast } from '../assets/js/shared/utils/toast.js';
-
-    protectRoute('admin');
-
-    auth.onAuthStateChanged((user) => {
-      if (user) {
-        renderSidebar('student-archive', 'admin');
-        renderNavbar('📦 أرشيف الطلاب', { name: 'الإدارة العامة', roleName: 'مدير الأكاديمية' });
-        initStudentArchiveRealtime();
-      }
-    });
-
-    function initStudentArchiveRealtime() {
-      const tbody = document.getElementById('archiveStudentsTableBody');
-      if (!tbody) return;
-
-      // تصفية الطلاب الحائزين على حالة archived أو Suspended أو غير نشطين
-      const q = query(collection(db, "students"), where("status", "in", ["archived", "Suspended"]));
-
-      onSnapshot(q, (snapshot) => {
-        if (snapshot.empty) {
-          tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">الأرشيف فارغ ولا توجد سجلات مؤرشفة.</td></tr>`;
-          return;
-        }
-
-        const list = [];
-        snapshot.forEach(docSnap => {
-          list.push({ id: docSnap.id, ...docSnap.data() });
-        });
-
-        tbody.innerHTML = list.map(student => `
-          <tr>
-            <td><strong>${student.name}</strong></td>
-            <td>${student.age} سنة</td>
-            <td>${student.teacherName || 'غير مسجل'}</td>
-            <td>${student.sessionsCount || 0} حصة</td>
-            <td style="max-width: 200px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${student.notes || ''}</td>
-            <td>
-              <div style="display: flex; align-items: center; gap: 0.25rem; color: var(--warning);">
-                <i data-lucide="star" style="width: 14px; height: 14px; fill: var(--warning);"></i>
-                <span style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary);">${student.averageRating || 0}</span>
-              </div>
-            </td>
-            <td><span class="badge" style="position:static; background-color: var(--danger-light); color: var(--danger); font-weight:700;">مؤرشف / منقطع 📦</span></td>
-            <td>
-              <button class="btn btn-secondary restore-student-btn" data-id="${student.id}" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;"><i data-lucide="rotate-ccw" style="width:14px;height:14px;"></i> استعادة للنشط</button>
-            </td>
-          </tr>
-        `).join('');
-
-        if (window.lucide) {
-          window.lucide.createIcons();
-        }
-        setupArchiveListeners();
-      });
-    }
-
-    function setupArchiveListeners() {
-      document.querySelectorAll('.restore-student-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-          const id = e.target.closest('.restore-student-btn').dataset.id;
-          if (confirm("هل تريد استعادة الطالب من الأرشيف وإرجاعه للقائمة النشطة بالدراسة؟")) {
-            await updateDoc(doc(db, "students", id), { status: "active" });
-            Toast.success("تم استعادة الطالب بنجاح وتنشيط ملفه التعليمي.");
-          }
-        });
-      });
-    }
-  </script>
 </body>
 </html>

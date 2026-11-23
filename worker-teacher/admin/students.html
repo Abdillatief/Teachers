@@ -4,9 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>سبيل - إدارة الطلاب</title>
-  <link rel="stylesheet" href="../assets/css/variables.css">
-  <link rel="stylesheet" href="../assets/css/main.css">
-  <link rel="stylesheet" href="../assets/css/components.css">
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     .modal-overlay {
@@ -29,6 +26,34 @@
       font-size: 0.9rem;
     }
   </style>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+  <script type="module" crossorigin src="/assets/admin_students-B8Q5ynYx.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/rbacService-D2RrsA9d.js">
+  <link rel="modulepreload" crossorigin href="/assets/activityLogger-BK9d5021.js">
+  <link rel="modulepreload" crossorigin href="/assets/authService-CtWWGArP.js">
+  <link rel="modulepreload" crossorigin href="/assets/navbar-BWutcREu.js">
+  <link rel="modulepreload" crossorigin href="/assets/trashService-17CPxIjU.js">
+  <link rel="modulepreload" crossorigin href="/assets/auditService-D31EusTs.js">
+  <link rel="modulepreload" crossorigin href="/assets/quranData-BxaWbcIK.js">
+  <link rel="modulepreload" crossorigin href="/assets/studentReportCard-D3YWKqS6.js">
+  <link rel="modulepreload" crossorigin href="/assets/newGroupsService-nXFU0cvk.js">
+  <link rel="modulepreload" crossorigin href="/assets/supervisorDomainService-BW5mzJbW.js">
+  <link rel="modulepreload" crossorigin href="/assets/creditManager-CewcMcqw.js">
+  <link rel="modulepreload" crossorigin href="/assets/whatsappWidget-BgZo_pma.js">
+  <link rel="stylesheet" crossorigin href="/assets/rbacService-CHOdNZNU.css">
 </head>
 <body>
 
@@ -45,7 +70,12 @@
             <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">إضافة طلاب جدد، توزيع وتعيين الإشراف للمعلمين، وأرشفة الملفات المنتهية دراسياً.</p>
           </div>
           
-          <button class="btn btn-primary" id="openAddStudentModal"><i data-lucide="user-plus"></i> تسجيل طالب جديد</button>
+          <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <a href="groups.html" class="btn btn-secondary">
+              <i data-lucide="users"></i> إدارة المجموعات
+            </a>
+            <button class="btn btn-primary" id="openAddStudentModal"><i data-lucide="user-plus"></i> تسجيل طالب جديد</button>
+          </div>
         </div>
 
         <!-- قسم طلبات إضافة الطلاب المعلقة من المعلمين (بانتظار الاعتماد وتحديد الباقة) -->
@@ -144,11 +174,23 @@
           <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.5rem;">المعلم المتقدم بالطلب: <span id="approveStudentTeacherDisplay" style="color: var(--primary-color); font-weight: 700;">-</span></div>
         </div>
 
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label for="approvePackageSelect" style="font-weight: 700; display: block; margin-bottom: 0.35rem;">اختر الباقة والاشتراك التعليمي المعتمد <span style="color: var(--danger);">*</span></label>
-          <select id="approvePackageSelect" class="form-control" required style="border: 1px solid var(--border-color); width: 100%; font-weight: 600;">
-            <option value="">-- اختر الباقة التعليمية المناسبة للطالب --</option>
-          </select>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+          <div class="form-group">
+            <label for="approvePackageSelect" style="font-weight: 700; display: block; margin-bottom: 0.35rem;">اختر الباقة التعليمية <span style="color: var(--danger);">*</span></label>
+            <select id="approvePackageSelect" class="form-control" required style="border: 1px solid var(--border-color); width: 100%; font-weight: 600;">
+              <option value="">-- اختر الباقة التعليمية المناسبة للطالب --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="approveSessionDuration" style="font-weight: 700; display: block; margin-bottom: 0.35rem;">مدة الحصة المعتمدة (بالدقائق) <span style="color: var(--danger);">*</span></label>
+            <select id="approveSessionDuration" class="form-control" required style="border: 1px solid var(--border-color); width: 100%; font-weight: 600;">
+              <option value="30">30 دقيقة (نصف ساعة)</option>
+              <option value="45">45 دقيقة</option>
+              <option value="60" selected>60 دقيقة (ساعة كاملة)</option>
+              <option value="90">90 دقيقة (ساعة ونصف)</option>
+              <option value="120">120 دقيقة (ساعتان)</option>
+            </select>
+          </div>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
@@ -214,17 +256,40 @@
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
           <div class="form-group">
+            <label for="editStudentPhone">رقم هاتف ولي الأمر (واتساب)</label>
+            <input type="tel" id="editStudentPhone" class="form-control" placeholder="مثال: 01012345678 أو 201012345678" style="direction: ltr; text-align: left;">
+          </div>
+          <div class="form-group">
             <label for="editStudentStatus">حالة القيد الدراسية</label>
             <select id="editStudentStatus" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
-              <option value="active">نشط ومستمر (Active) ✅</option>
-              <option value="Suspended">موقوف مؤقتاً (Suspended) ⚠️</option>
-              <option value="archived">مؤرشف / منتهي (Archived) 📦</option>
+              <option value="active">نشط ومستمر (Active)</option>
+              <option value="Suspended">موقوف مؤقتاً (Suspended)</option>
+              <option value="archived">مؤرشف / منتهي (Archived)</option>
             </select>
           </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1rem;">
           <div class="form-group">
             <label for="editStudentTeacher">المعلم المشرف المعتمد</label>
             <select id="editStudentTeacher" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
               <!-- سيتم ملؤه ديناميكياً -->
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+          <div class="form-group">
+            <label for="editSubscriptionType" style="font-weight: 700;">نوع الاشتراك</label>
+            <select id="editSubscriptionType" class="form-control" style="border: 1px solid var(--border-color); width: 100%; font-weight: 600;">
+              <option value="individual" selected>فردي</option>
+              <option value="group">مجموعة</option>
+            </select>
+          </div>
+          <div class="form-group" id="editGroupSelectContainer" style="display: none;">
+            <label for="editStudentGroupSelect" style="font-weight: 700;">اختر المجموعة التابع لها</label>
+            <select id="editStudentGroupSelect" class="form-control" style="border: 1px solid var(--border-color); width: 100%; font-weight: 600;">
+              <option value="">-- اختر المجموعة --</option>
             </select>
           </div>
         </div>
@@ -331,8 +396,153 @@
     </div>
   </div>
 
+  <!-- مودال الباقة الحالية وأرشيف باقات الدارس الاحترافي -->
+  <div id="studentPackagesModal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 860px; max-height: 90vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+        <div>
+          <h3 style="font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem; font-size: 1.15rem;">
+            <i data-lucide="layers" style="color: var(--primary-color);"></i> باقات واشتراكات الدارس
+          </h3>
+          <div id="packagesModalStudentSubtitle" style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.25rem;">
+            الدارس: جاري التحميل...
+          </div>
+        </div>
+        <span id="btnCloseStudentPackagesModal" style="cursor: pointer; padding: 0.35rem; display: flex; align-items: center; justify-content: center; border-radius: 6px; border: 1px solid var(--border-color);">
+          <i data-lucide="x" style="color: var(--text-muted); width: 18px; height: 18px;"></i>
+        </span>
+      </div>
+
+      <!-- 1. قسم الباقة الحالية Active Package -->
+      <div style="margin-bottom: 1.75rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+          <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--primary-color); margin: 0; display: flex; align-items: center; gap: 0.4rem;">
+            <i data-lucide="sparkles" style="width: 16px; height: 16px;"></i> 1. تفاصيل الباقة الحالية (Active Package)
+          </h4>
+          <button type="button" id="btnQuickRenewFromModal" class="btn btn-sm btn-primary" style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; background: var(--success); border-color: var(--success); font-weight: 700;">
+            <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i> تجديد باقة الدارس الآن
+          </button>
+        </div>
+
+        <div id="activePackageContainer">
+          <div style="text-align: center; color: var(--text-muted); padding: 1.5rem;">جاري جلب تفاصيل الباقة الحالية...</div>
+        </div>
+      </div>
+
+      <!-- 2. قسم أرشيف الاشتراكات (Subscription Archive) مع زر عرض/إخفاء للحفاظ على البيانات المحاسبية -->
+      <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 10px; padding: 1rem; margin-top: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.4rem;">
+              <i data-lucide="archive" style="width: 16px; height: 16px; color: var(--text-secondary);"></i> أرشيف الاشتراكات السابقة
+            </h4>
+            <span id="archiveCountBadge" class="badge" style="background: rgba(100,116,139,0.12); color: #475569; font-size: 0.75rem; font-weight: 700;">0 باقة سابقة</span>
+          </div>
+          <button type="button" id="btnToggleArchiveSection" class="btn btn-sm btn-secondary" style="display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; font-weight: 700; border-radius: 6px; padding: 0.35rem 0.75rem;">
+            <i data-lucide="eye" id="archiveToggleIcon" style="width: 14px; height: 14px;"></i>
+            <span id="archiveToggleText">عرض أرشيف الاشتراكات</span>
+          </button>
+        </div>
+
+        <div id="studentArchiveCollapsibleContainer" style="display: none; margin-top: 1rem; border-top: 1px dashed var(--border-color); padding-top: 1rem;">
+          <div class="table-container" style="margin: 0; max-height: 280px; overflow-y: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>رقم / اسم الباقة</th>
+                  <th>تاريخ البداية والانتهاء</th>
+                  <th>الحصص (مستهلكة / إجمالي)</th>
+                  <th>المبلغ والمسدد</th>
+                  <th>حالة الباقة</th>
+                  <th>دورة التجديد</th>
+                  <th>بيانات السند المالي</th>
+                </tr>
+              </thead>
+              <tbody id="studentArchiveTableBody">
+                <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">لا توجد باقات سابقة في الأرشيف</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+        <button type="button" class="btn btn-secondary" id="btnClosePackagesModalBtn">إغلاق النافذة</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- مودال التجديد السريع للباقة للطالب -->
+  <div id="quickRenewStudentModal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 550px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+        <h3 style="font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem; font-size: 1.1rem;">
+          <i data-lucide="refresh-cw" style="color: var(--success);"></i> تجديد باقة الدارس وأرشفة السابقة
+        </h3>
+        <span id="btnCloseQuickRenewModal" style="cursor: pointer; padding: 0.25rem;">
+          <i data-lucide="x" style="color: var(--text-muted);"></i>
+        </span>
+      </div>
+
+      <form id="quickRenewStudentForm">
+        <input type="hidden" id="renewModalStudentId">
+        <div style="background: rgba(99, 102, 241, 0.06); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem;">
+          <div style="font-weight: 800; color: var(--primary-color); font-size: 0.95rem;" id="renewStudentNameDisplay">الدارس: -</div>
+          <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.25rem;">
+            ⚠️ سيتم تلقائياً نقل الباقة الحالية للأرشيف وتصفير عداد الحصص المستهلكة وإنشاء باقة نشطة جديدة.
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label for="renewPackageTemplateSelect" style="font-weight: 700; display: block; margin-bottom: 0.35rem;">اختر قالب الباقة الجديدة</label>
+          <select id="renewPackageTemplateSelect" class="form-control" style="border: 1px solid var(--border-color); width: 100%; font-weight: 600;">
+            <!-- قائمة الباقات -->
+          </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+          <div class="form-group">
+            <label for="renewPackageTotalLessons" style="font-weight: 700;">عدد الحصص</label>
+            <input type="number" id="renewPackageTotalLessons" class="form-control" required min="1" value="8">
+          </div>
+          <div class="form-group">
+            <label for="renewPackagePrice" style="font-weight: 700;">سعر الباقة (ج.م)</label>
+            <input type="number" id="renewPackagePrice" class="form-control" required min="0" value="500">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+          <div class="form-group">
+            <label for="renewPackageDuration" style="font-weight: 700;">مدة الحصة (دقيقة)</label>
+            <select id="renewPackageDuration" class="form-control">
+              <option value="30">30 دقيقة</option>
+              <option value="45">45 دقيقة</option>
+              <option value="60" selected>60 دقيقة</option>
+              <option value="90">90 دقيقة</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="renewPackageStartDate" style="font-weight: 700;">تاريخ التجديد والبدء</label>
+            <input type="date" id="renewPackageStartDate" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+          <label for="renewPackageNotes" style="font-weight: 700;">ملاحظات التجديد</label>
+          <input type="text" id="renewPackageNotes" class="form-control" placeholder="مثال: تجديد شهري دوري">
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 1.25rem;">
+          <button type="submit" class="btn btn-primary" id="btnSubmitQuickRenew" style="background: var(--success); border-color: var(--success); font-weight: 700; gap: 0.35rem;">
+            <i data-lucide="check" style="width: 16px; height: 16px;"></i> تأكيد التجديد والأرشفة فوراً
+          </button>
+          <button type="button" class="btn btn-secondary" id="btnCancelQuickRenew">إلغاء</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div id="toast-container"></div>
 
-  <script type="module" src="../assets/js/features/students/studentsController.js"></script>
 </body>
 </html>

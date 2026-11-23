@@ -4,10 +4,27 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>سبيل - الإحصائيات العامة</title>
-  <link rel="stylesheet" href="../assets/css/variables.css">
-  <link rel="stylesheet" href="../assets/css/main.css">
-  <link rel="stylesheet" href="../assets/css/components.css">
   <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+  <script type="module" crossorigin src="/assets/admin_academy_stats-wP8ijH7x.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/rbacService-D2RrsA9d.js">
+  <link rel="modulepreload" crossorigin href="/assets/activityLogger-BK9d5021.js">
+  <link rel="modulepreload" crossorigin href="/assets/authService-CtWWGArP.js">
+  <link rel="modulepreload" crossorigin href="/assets/navbar-BWutcREu.js">
+  <link rel="stylesheet" crossorigin href="/assets/rbacService-CHOdNZNU.css">
 </head>
 <body>
 
@@ -42,59 +59,14 @@
             <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.5rem;">احتساب الساعات الكلية المكتملة</p>
           </div>
         </div>
+
+        <!-- المخططات البيانية التفاعلية للإيرادات والاشتراكات Recharts -->
+        <div id="statsFinancialChartsContainer" style="margin-bottom: 2rem;"></div>
       </main>
     </div>
   </div>
 
   <div id="toast-container"></div>
 
-  <script type="module">
-    import { auth, db } from '../assets/js/config/firebase.js';
-    import { protectRoute } from '../assets/js/features/auth/authService.js';
-    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
-    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
-    import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-    protectRoute('admin');
-
-    auth.onAuthStateChanged((user) => {
-      if (user) {
-        renderSidebar('academy-stats', 'admin');
-        renderNavbar('الإحصائيات العامة', { name: 'الإدارة العامة', roleName: 'مدير الأكاديمية' });
-        initStatsPageRealtime();
-      }
-    });
-
-    function initStatsPageRealtime() {
-      // 1. جلب وحساب الطلاب
-      onSnapshot(collection(db, "students"), (snapshot) => {
-        document.getElementById('statsTotalStudentsCount').textContent = snapshot.size;
-      });
-
-      // 2. جلب وحساب المعلمين
-      onSnapshot(collection(db, "users"), (snapshot) => {
-        let teachersCount = 0;
-        snapshot.forEach(docSnap => {
-          if (docSnap.data().role === "teacher" && docSnap.data().status === "approved") {
-            teachersCount++;
-          }
-        });
-        document.getElementById('statsTotalTeachersCount').textContent = teachersCount;
-      });
-
-      // 3. جلب وحساب الساعات التراكمية
-      onSnapshot(collection(db, "sessions"), (snapshot) => {
-        let totalMinutes = 0;
-        snapshot.forEach(docSnap => {
-          const s = docSnap.data();
-          if (s.status === "completed") {
-            totalMinutes += parseInt(s.duration || 0);
-          }
-        });
-        const totalHours = (totalMinutes / 60).toFixed(1);
-        document.getElementById('statsTotalHoursCount').textContent = `${totalHours} ساعة`;
-      });
-    }
-  </script>
 </body>
 </html>

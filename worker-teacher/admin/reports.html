@@ -4,12 +4,29 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>سبيل - التقارير المتقدمة</title>
-  <link rel="stylesheet" href="../assets/css/variables.css">
-  <link rel="stylesheet" href="../assets/css/main.css">
-  <link rel="stylesheet" href="../assets/css/components.css">
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- Chart.js للمطابقة البيانية المتقدمة -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+  <script type="module" crossorigin src="/assets/admin_reports-FU0zZhqT.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/rbacService-D2RrsA9d.js">
+  <link rel="modulepreload" crossorigin href="/assets/activityLogger-BK9d5021.js">
+  <link rel="modulepreload" crossorigin href="/assets/authService-CtWWGArP.js">
+  <link rel="modulepreload" crossorigin href="/assets/navbar-BWutcREu.js">
+  <link rel="stylesheet" crossorigin href="/assets/rbacService-CHOdNZNU.css">
 </head>
 <body>
 
@@ -104,55 +121,5 @@
 
   <div id="toast-container"></div>
 
-  <script type="module">
-    import { auth } from '../assets/js/config/firebase.js';
-    import { protectRoute } from '../assets/js/features/auth/authService.js';
-    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
-    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
-    import { initReportsRealtime, setReportsRange } from '../assets/js/features/reports/reportsController.js';
-
-    protectRoute('admin');
-
-    auth.onAuthStateChanged((user) => {
-      if (user) {
-        renderSidebar('reports', 'admin');
-        renderNavbar('التقارير المتقدمة والرواتب', { name: 'الإدارة العامة', roleName: 'مدير الأكاديمية' });
-        
-        // ربط الإشارات والشارتات فوريًا
-        initReportsRealtime();
-      }
-    });
-
-    const btnMonth = document.getElementById('btnRangeMonth');
-    const btnWeek = document.getElementById('btnRangeWeek');
-    const btnDay = document.getElementById('btnRangeDay');
-
-    function resetRangeActive() {
-      btnMonth.classList.remove('active');
-      btnWeek.classList.remove('active');
-      btnDay.classList.remove('active');
-    }
-
-    btnMonth.addEventListener('click', () => {
-      resetRangeActive();
-      btnMonth.classList.add('active');
-      setReportsRange('month');
-    });
-
-    btnWeek.addEventListener('click', () => {
-      resetRangeActive();
-      btnWeek.classList.add('active');
-      setReportsRange('week');
-    });
-
-    btnDay.addEventListener('click', () => {
-      resetRangeActive();
-      btnDay.classList.add('active');
-      setReportsRange('day');
-    });
-
-    // تعيين الشهر كخيار افتراضي نشط فوريًا
-    btnMonth.classList.add('active');
-  </script>
 </body>
 </html>

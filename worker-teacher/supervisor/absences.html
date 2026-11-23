@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>سبيل - سجل الغياب الموثق</title>
+
+  <script>
+    try {
+      if (localStorage.getItem('academy_dark_mode') === 'true' || localStorage.getItem('sabeel_theme') === 'dark') {
+        document.documentElement.classList.add('dark-theme');
+      }
+    } catch (e) {}
+  </script>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <script type="module" crossorigin src="/assets/supervisor_absences-W3YCFb1r.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/rbacService-D2RrsA9d.js">
+  <link rel="modulepreload" crossorigin href="/assets/activityLogger-BK9d5021.js">
+  <link rel="modulepreload" crossorigin href="/assets/authService-CtWWGArP.js">
+  <link rel="modulepreload" crossorigin href="/assets/navbar-BWutcREu.js">
+  <link rel="modulepreload" crossorigin href="/assets/supervisorPageShell-B-wFzxgu.js">
+  <link rel="stylesheet" crossorigin href="/assets/rbacService-CHOdNZNU.css">
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <header class="navbar" id="appNavbar"></header>
+
+      <main class="content-body">
+        <div class="card" style="margin-bottom: 1.25rem; border-right: 4px solid var(--warning);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+              <h1 style="font-size: 1.15rem; font-weight: 800; margin: 0;">سجل الغياب الموثق (قراءة فقط)</h1>
+              <p style="margin: 0.25rem 0 0; font-size: 0.82rem; color: var(--text-secondary);">عرض دائم وغير قابل للتعديل أو الحذف لجميع حالات غياب الطلاب والمعلمين.</p>
+            </div>
+            <span class="badge badge-warning">سجل محفوظ من التعديل</span>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;" id="statsCardsContainer">
+          <div class="op-metric-card">
+            <span class="metric-label">إجمالي سجلات الغياب</span>
+            <div class="metric-value tabular-nums" id="kpiTotalAbsences">0</div>
+          </div>
+          <div class="op-metric-card">
+            <span class="metric-label">غياب الطلاب</span>
+            <div class="metric-value tabular-nums" id="kpiStudentAbsences">0</div>
+          </div>
+          <div class="op-metric-card">
+            <span class="metric-label">غياب المعلمين</span>
+            <div class="metric-value tabular-nums" id="kpiTeacherAbsences">0</div>
+          </div>
+          <div class="op-metric-card">
+            <span class="metric-label">غياب بعذر / بدون عذر</span>
+            <div class="metric-value tabular-nums" id="kpiAbsenceBreakdown">0 / 0</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 1.25rem;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 0.75rem;">
+            <div class="form-group" style="margin: 0;">
+              <label for="filterSubject">الطرف الغائب</label>
+              <select id="filterSubject" class="form-control">
+                <option value="all">الطلاب والمعلمون</option>
+                <option value="student">غياب الطلاب</option>
+                <option value="teacher">غياب المعلمين</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label for="filterAbsenceType">نوع الغياب</label>
+              <select id="filterAbsenceType" class="form-control">
+                <option value="all">جميع التصنيفات</option>
+                <option value="excused">بعذر</option>
+                <option value="unexcused">بدون عذر</option>
+                <option value="teacher_absence">غياب معلم</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label for="filterFromDate">من تاريخ</label>
+              <input type="date" id="filterFromDate" class="form-control">
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label for="filterToDate">إلى تاريخ</label>
+              <input type="date" id="filterToDate" class="form-control">
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label for="filterAbsenceSearch">بحث بالاسم أو السبب</label>
+              <input type="search" id="filterAbsenceSearch" class="form-control" placeholder="اسم الطالب، المعلم، أو السبب...">
+            </div>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>التاريخ والوقت</th>
+                <th>الطرف الغائب</th>
+                <th>الطالب</th>
+                <th>المعلم</th>
+                <th>التصنيف</th>
+                <th>السبب المسجل</th>
+                <th>المُسجِّل</th>
+              </tr>
+            </thead>
+            <tbody id="absencesTableBody">
+              <tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-muted);">جاري تحميل سجل الغياب...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+</body>
+</html>

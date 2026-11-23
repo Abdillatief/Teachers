@@ -2,73 +2,201 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>أكاديمية سبيل - تسجيل معلم جديد</title>
   
-  <link rel="stylesheet" href="assets/css/variables.css">
-  <link rel="stylesheet" href="assets/css/main.css">
-  <link rel="stylesheet" href="assets/css/components.css">
+  <script>
+    // Universal Anti-Cyclic JSON Protection (prevents "TypeError: cyclic object value")
+    (function() {
+      if (typeof window !== 'undefined' && !window.__sabeel_json_shield_active) {
+        window.__sabeel_json_shield_active = true;
+        const origStringify = JSON.stringify;
+        JSON.stringify = function(value, replacer, space) {
+          const seen = new WeakSet();
+          const cycleReplacer = function(key, val) {
+            if (typeof val === 'object' && val !== null) {
+              if (val instanceof Error) {
+                return { name: val.name, message: val.message, stack: val.stack };
+              }
+              if (typeof Node !== 'undefined' && val instanceof Node) {
+                return '[DOMNode ' + (val.nodeName || 'Element') + ']';
+              }
+              if (typeof Window !== 'undefined' && val instanceof Window) {
+                return '[Window]';
+              }
+              if (seen.has(val)) {
+                return '[Circular]';
+              }
+              seen.add(val);
+            }
+            if (typeof replacer === 'function') {
+              return replacer.call(this, key, val);
+            }
+            return val;
+          };
+          try {
+            return origStringify(value, (typeof replacer === 'function' || !Array.isArray(replacer)) ? cycleReplacer : replacer, space);
+          } catch (err) {
+            if (err instanceof TypeError || String(err).includes('cyclic') || String(err).includes('circular')) {
+              try {
+                return origStringify(value, cycleReplacer, space);
+              } catch {
+                return '"[Circular]"';
+              }
+            }
+            throw err;
+          }
+        };
+      }
+    })();
+
+    if (localStorage.getItem('academy_dark_mode') === 'true') {
+      document.documentElement.classList.add('dark-theme');
+    }
+  </script>
+
   
   <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- PWA & Native Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" crossorigin src="/assets/register-BVn6puVf.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/rbacService-D2RrsA9d.js">
+  <link rel="modulepreload" crossorigin href="/assets/supervisorDomainService-BW5mzJbW.js">
+  <link rel="stylesheet" crossorigin href="/assets/rbacService-CHOdNZNU.css">
+  <link rel="stylesheet" crossorigin href="/assets/auth-CVLx824O.css">
 </head>
-<body style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background-color: var(--bg-primary); padding: 2rem 1rem;">
+<body class="auth-page-wrapper">
 
-  <!-- Language Switcher Bar -->
-  <div style="display: flex; justify-content: flex-end; width: 100%; max-width: 500px; margin-bottom: 0.75rem;">
-    <button type="button" id="langToggleBtn" class="btn btn-secondary" style="gap: 0.45rem; padding: 0.4rem 0.85rem; font-size: 0.85rem; font-weight: 700; border-radius: 20px; box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); background: var(--bg-card);">
-      <i data-lucide="globe" style="width:16px;height:16px; color: var(--primary-color);"></i>
-      <span id="langToggleText" data-i18n="languageSwitcher">English</span>
-    </button>
-  </div>
-
-  <div class="card" style="width: 100%; max-width: 500px; box-shadow: var(--shadow-lg);">
-    <div style="text-align: center; margin-bottom: 1.5rem;">
-      <div class="logo" style="justify-content: center; margin-bottom: 0.5rem; font-size: 2rem;">
-        <i data-lucide="user-plus" style="width:40px;height:40px;color:var(--primary-color);"></i>
-        <span style="font-weight:800;" data-i18n="registerHeader">انضم كمعلم</span>
+  <main class="auth-app-shell" style="max-width: 440px;">
+    
+    <!-- App Header Identity -->
+    <header class="auth-app-identity" style="margin-bottom: 1.25rem;">
+      <div class="auth-app-logo">
+        <img src="/icons/icon-192.png" alt="Sabeel Academy Logo" class="academy-logo-img">
       </div>
-      <p style="color: var(--text-secondary); font-size: 0.9rem;" data-i18n="registerSubHeader">سجل حسابك وسيقوم المسؤول بمراجعته وتفعيله</p>
-    </div>
+      <h1 class="auth-app-name">أكاديمية سَبِيل</h1>
+      <p class="auth-app-tagline" id="registerSubtitle">بوابة انضمام الكوادر التعليمية والإدارية</p>
+    </header>
 
-    <form id="registerForm">
-      <div class="form-group">
-        <label for="name" data-i18n="fullNameLabel">الاسم الكامل</label>
-        <input type="text" id="name" class="form-control" placeholder="أدخل اسمك الثلاثي أو الرباعي" data-i18n-placeholder="fullNamePlaceholder" required>
-      </div>
-
-      <div class="form-group">
-        <label for="phone" data-i18n="phoneLabel">رقم الهاتف</label>
-        <input type="tel" id="phone" class="form-control" placeholder="05xxxxxxxx" data-i18n-placeholder="phonePlaceholder" required>
+    <section class="auth-app-card">
+      
+      <!-- Role Selection Tabs -->
+      <div class="role-selector-tabs" style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem; background: var(--bg-primary, #f1f5f9); padding: 0.25rem; border-radius: 10px; border: 1px solid var(--border-color, #e2e8f0);">
+        <button type="button" id="roleTeacherBtn" class="role-tab-btn active" style="flex: 1; padding: 0.6rem 0.5rem; border-radius: 8px; border: none; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem; transition: all 0.2s ease; background: var(--primary-color, #0d9488); color: #ffffff;">
+          <i data-lucide="graduation-cap" style="width: 16px; height: 16px;"></i>
+          <span>انضمام كمعلم</span>
+        </button>
+        <button type="button" id="roleSupervisorBtn" class="role-tab-btn" style="flex: 1; padding: 0.6rem 0.5rem; border-radius: 8px; border: none; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem; transition: all 0.2s ease; background: transparent; color: var(--text-secondary, #64748b);">
+          <i data-lucide="shield-check" style="width: 16px; height: 16px;"></i>
+          <span>طلب حساب مشرف</span>
+        </button>
       </div>
 
-      <div class="form-group">
-        <label for="emailPrefix" data-i18n="emailTeacherLabel">البريد الإلكتروني للمعلم</label>
-        <div style="display: flex; align-items: stretch; position: relative; direction: ltr;">
-          <input type="text" id="emailPrefix" class="form-control" placeholder="أدخل اسم الحساب فقط (مثال: ahmed123)" data-i18n-placeholder="emailTeacherPlaceholder" required style="border-top-right-radius: 0; border-bottom-right-radius: 0; text-align: left; direction: ltr; font-weight: 600;">
-          <span style="background: var(--bg-primary); color: var(--primary-color); border: 1px solid var(--border-color); border-left: none; border-top-right-radius: 8px; border-bottom-right-radius: 8px; padding: 0.625rem 0.85rem; font-weight: 800; font-size: 0.9rem; user-select: none; display: flex; align-items: center; justify-content: center; white-space: nowrap;">@gmail.com</span>
+      <div class="auth-card-top-tag" id="cardTopTag">
+        <i data-lucide="user-plus" style="width: 13px; height: 13px;"></i>
+        <span id="cardTagText">طلب انضمام لهيئة التدريس</span>
+      </div>
+
+      <form id="registerForm" novalidate>
+        <input type="hidden" id="selectedRole" value="teacher">
+
+        <div class="auth-form-group">
+          <label for="name" class="auth-label">الاسم الكامل</label>
+          <div class="auth-input-wrapper">
+            <i data-lucide="user" class="auth-input-icon"></i>
+            <input type="text" id="name" class="auth-input auth-input-with-icon" placeholder="أدخل اسمك الثلاثي أو الرباعي" required autocomplete="name">
+          </div>
         </div>
-        <small style="color: var(--text-muted); font-size: 0.78rem; margin-top: 0.25rem; display: block;" data-i18n="emailHelpText">البريد الإلكتروني ينتهي تلقائياً بـ @gmail.com</small>
+
+        <div class="auth-form-group">
+          <label for="phone" class="auth-label">رقم الهاتف أو الواتساب</label>
+          <div class="auth-input-wrapper">
+            <i data-lucide="phone" class="auth-input-icon"></i>
+            <input type="tel" id="phone" class="auth-input auth-input-with-icon" placeholder="05xxxxxxxx" required style="direction: ltr; text-align: left;" autocomplete="tel">
+          </div>
+        </div>
+
+        <!-- Supervisor-specific Department / Field Selection -->
+        <div class="auth-form-group" id="supervisorDeptGroup" style="display: none;">
+          <label for="supervisorDept" class="auth-label">تخصص أو قسم الإشراف المطلوب</label>
+          <div class="auth-input-wrapper">
+            <i data-lucide="briefcase" class="auth-input-icon"></i>
+            <select id="supervisorDept" class="auth-input auth-input-with-icon" style="background-color: var(--bg-surface, #ffffff);">
+              <option value="إشراف عام وتنسيق">إشراف عام وتنسيق إداري</option>
+              <option value="شؤون الطلاب والاشتراكات">شؤون الطلاب والاشتراكات</option>
+              <option value="شؤون المعلمين والحصص">شؤون المعلمين ومتابعة الحصص</option>
+              <option value="الإشراف المالي والأجور">الإشراف المالي ومتابعة الرواتب</option>
+              <option value="إدارة الجداول والمواعيد">إدارة الجداول والشواغر الدراسية</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Supervisor-specific Notes -->
+        <div class="auth-form-group" id="supervisorNotesGroup" style="display: none;">
+          <label for="supervisorNotes" class="auth-label">نبذة عن الخبرة أو ملاحظات إضافية (اختياري)</label>
+          <div class="auth-input-wrapper">
+            <i data-lucide="file-text" class="auth-input-icon"></i>
+            <input type="text" id="supervisorNotes" class="auth-input auth-input-with-icon" placeholder="خبرات سابقة في الإدارة أو الإشراف التعليمي...">
+          </div>
+        </div>
+
+        <div class="auth-form-group">
+          <label for="emailPrefix" class="auth-label">اسم الحساب المقترح</label>
+          <div class="auth-input-wrapper" style="direction: ltr;">
+            <input 
+              type="text" 
+              id="emailPrefix" 
+              class="auth-input auth-email-input" 
+              placeholder="اسم الحساب (مثال: ahmed123)" 
+              required 
+              autocomplete="username"
+              spellcheck="false"
+              autocapitalize="none"
+            >
+            <span class="auth-email-domain-badge">@gmail.com</span>
+          </div>
+        </div>
+
+        <div class="auth-form-group">
+          <label for="password" class="auth-label">كلمة المرور (8 رموز أو أكثر)</label>
+          <div class="auth-input-wrapper">
+            <i data-lucide="lock" class="auth-input-icon"></i>
+            <input type="password" id="password" class="auth-input auth-input-with-icon" placeholder="••••••••" minlength="8" required autocomplete="new-password">
+          </div>
+        </div>
+
+        <button type="submit" id="submitBtn" class="auth-submit-btn" style="margin-top: 1.25rem;">
+          <i data-lucide="send" style="width: 18px; height: 18px;"></i>
+          <span id="submitBtnText">إرسال طلب الانضمام كمعلم</span>
+        </button>
+      </form>
+
+      <div class="auth-footer-prompt">
+        <span>لديك حساب بالفعل؟</span>
+        <a href="index.html" class="auth-link" style="margin-right: 0.25rem;">تسجيل الدخول</a>
       </div>
+    </section>
 
-      <div class="form-group">
-        <label for="password" data-i18n="passwordLabel">كلمة المرور</label>
-        <input type="password" id="password" class="form-control" placeholder="••••••••" data-i18n-placeholder="passwordPlaceholder" minlength="8" required>
-      </div>
+    <footer class="auth-page-footer">
+      <span>نظام سَبِيل &bull; تطوير </span>
+      <span style="color: var(--primary-color); font-weight: 700;">Sabilix</span>
+    </footer>
 
-      <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem; gap: 0.5rem; font-weight:700;">
-        <i data-lucide="send"></i> <span data-i18n="submitRegisterBtn">إرسال طلب الانضمام</span>
-      </button>
-    </form>
-
-    <div style="margin-top: 1.5rem; text-align: center; font-size: 0.9rem; color: var(--text-secondary);">
-      <span data-i18n="alreadyHaveAccount">لديك حساب بالفعل؟</span>
-      <a href="index.html" style="color: var(--primary-color); text-decoration: none; font-weight: 600; margin-right: 0.25rem;" data-i18n="loginLink">تسجيل الدخول</a>
-    </div>
-  </div>
+  </main>
 
   <div id="toast-container"></div>
 
-  <script type="module" src="assets/js/features/auth/registerController.js"></script>
 
   <script>
     if (window.lucide) {

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>سبيل - الملف الشخصي والصلاحيات</title>
+
+  <script>
+    try {
+      if (localStorage.getItem('academy_dark_mode') === 'true' || localStorage.getItem('sabeel_theme') === 'dark') {
+        document.documentElement.classList.add('dark-theme');
+      }
+    } catch (e) {}
+  </script>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <script type="module" crossorigin src="/assets/supervisor_profile-D0Dgdk5T.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/rbacService-D2RrsA9d.js">
+  <link rel="modulepreload" crossorigin href="/assets/activityLogger-BK9d5021.js">
+  <link rel="modulepreload" crossorigin href="/assets/authService-CtWWGArP.js">
+  <link rel="modulepreload" crossorigin href="/assets/navbar-BWutcREu.js">
+  <link rel="modulepreload" crossorigin href="/assets/supervisorPageShell-B-wFzxgu.js">
+  <link rel="stylesheet" crossorigin href="/assets/rbacService-CHOdNZNU.css">
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <header class="navbar" id="appNavbar"></header>
+
+      <main class="content-body">
+        <div class="dashboard-main-grid" style="display: grid; grid-template-columns: 1fr 1.4fr; gap: 1.25rem; align-items: start;">
+          <!-- Profile Identity Card -->
+          <div class="card">
+            <div class="card-header">
+              <h1 style="font-size: 1rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="user-circle" style="width: 18px; height: 18px; color: var(--primary-color);"></i>
+                بيانات حساب المشرف
+              </h1>
+              <span class="badge badge-primary">مشرف تشغيلي</span>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+              <div style="padding: 0.75rem; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm);">
+                <div style="font-size: 0.74rem; color: var(--text-muted);">الاسم الكامل</div>
+                <strong id="profileName" style="font-size: 0.95rem;">-</strong>
+              </div>
+              <div style="padding: 0.75rem; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm);">
+                <div style="font-size: 0.74rem; color: var(--text-muted);">البريد الإلكتروني</div>
+                <strong id="profileEmail" style="font-size: 0.88rem;" class="tabular-nums">-</strong>
+              </div>
+              <div style="padding: 0.75rem; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm);">
+                <div style="font-size: 0.74rem; color: var(--text-muted);">المسمى / القسم</div>
+                <strong id="profileTitle" style="font-size: 0.9rem;">-</strong>
+              </div>
+
+              <div style="padding: 0.85rem; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <div style="font-weight: 700; font-size: 0.86rem;">الوضع الداكن (Matte Black)</div>
+                  <div style="font-size: 0.75rem; color: var(--text-muted);">يتم حفظ المظهر تلقائياً في جميع الصفحات</div>
+                </div>
+                <button type="button" id="profileThemeToggleBtn" class="btn btn-secondary btn-sm">تبديل المظهر</button>
+              </div>
+
+              <button type="button" id="btnSendPasswordReset" class="btn btn-outline" style="width: 100%;">
+                <i data-lucide="key-round" style="width: 16px; height: 16px;"></i>
+                إرسال رابط تغيير كلمة المرور للبريد
+              </button>
+            </div>
+          </div>
+
+          <!-- Live Read-Only Permissions Matrix -->
+          <div class="card">
+            <div class="card-header">
+              <h2 style="font-size: 1rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="shield-check" style="width: 18px; height: 18px; color: var(--primary-color);"></i>
+                مصفوفة الصلاحيات النشطة لحسابك
+              </h2>
+              <span class="badge badge-info" id="activePermsCountBadge">0 من 12</span>
+            </div>
+            <p style="margin: 0 0 1rem; font-size: 0.82rem; color: var(--text-secondary);">تُحدَّث هذه الصلاحيات مباشرة من الإدارة العامة وتنعكس فورياً على القائمة الجانبية والوصول للبيانات.</p>
+            <div id="permissionsMatrixGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem;"></div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+</body>
+</html>

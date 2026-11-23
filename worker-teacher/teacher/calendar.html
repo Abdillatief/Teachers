@@ -4,14 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>سبيل - التقويم الشهري</title>
-  <link rel="stylesheet" href="../assets/css/variables.css">
-  <link rel="stylesheet" href="../assets/css/main.css">
-  <link rel="stylesheet" href="../assets/css/components.css">
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     @keyframes calendarFadeIn {
       from { opacity: 0; transform: translateY(10px) scale(0.98); }
       to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .calendar-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 0.5rem;
     }
     .calendar-container {
       display: grid;
@@ -19,6 +22,7 @@
       gap: 0.6rem;
       margin-top: 1rem;
       width: 100%;
+      min-width: 750px;
     }
     .calendar-header-cell {
       text-align: center;
@@ -35,7 +39,6 @@
       background-color: var(--bg-secondary);
       border: 1px solid var(--border-color);
       border-radius: 12px;
-      aspect-ratio: 1.1 / 1;
       min-height: 125px;
       padding: 0.6rem;
       display: flex;
@@ -49,7 +52,7 @@
     }
     .calendar-day-cell:hover {
       background-color: var(--bg-secondary);
-      transform: translateY(-4px);
+      transform: translateY(-2px);
       border-color: var(--primary-color);
       box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.12), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
       z-index: 10;
@@ -59,7 +62,6 @@
       border: 1px dashed var(--border-color);
       opacity: 0.45;
       pointer-events: none;
-      aspect-ratio: 1.1 / 1;
       min-height: 125px;
     }
     .calendar-day-cell.today {
@@ -131,54 +133,67 @@
       box-shadow: 0 2px 4px rgba(0,0,0,0.04);
     }
     .session-completed {
-      background-color: rgba(34, 197, 94, 0.08);
-      color: #16a34a;
-      border-color: rgba(34, 197, 94, 0.2);
-    }
-    [data-theme="dark"] .session-completed {
-      background-color: rgba(34, 197, 94, 0.15);
-      color: #4ade80;
+      background-color: rgba(34, 197, 94, 0.1);
+      color: #15803d;
       border-color: rgba(34, 197, 94, 0.3);
     }
-    .session-absent-unexcused {
-      background-color: rgba(239, 68, 68, 0.08);
-      color: #dc2626;
-      border-color: rgba(239, 68, 68, 0.2);
+    .dark-theme .session-completed, [data-theme="dark"] .session-completed {
+      background-color: rgba(34, 197, 94, 0.2);
+      color: #4ade80;
+      border-color: rgba(34, 197, 94, 0.4);
     }
-    [data-theme="dark"] .session-absent-unexcused {
-      background-color: rgba(239, 68, 68, 0.15);
-      color: #f87171;
+    .session-absent-unexcused {
+      background-color: rgba(239, 68, 68, 0.1);
+      color: #b91c1c;
       border-color: rgba(239, 68, 68, 0.3);
     }
-    .session-absent-excused {
-      background-color: rgba(217, 119, 6, 0.08);
-      color: #d97706;
-      border-color: rgba(217, 119, 6, 0.2);
+    .dark-theme .session-absent-unexcused, [data-theme="dark"] .session-absent-unexcused {
+      background-color: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      border-color: rgba(239, 68, 68, 0.4);
     }
-    [data-theme="dark"] .session-absent-excused {
-      background-color: rgba(217, 119, 6, 0.15);
-      color: #fbbf24;
+    .session-absent-excused {
+      background-color: rgba(217, 119, 6, 0.1);
+      color: #b45309;
       border-color: rgba(217, 119, 6, 0.3);
     }
-    .session-delayed {
-      background-color: rgba(37, 99, 235, 0.08);
-      color: #2563eb;
-      border-color: rgba(37, 99, 235, 0.2);
+    .dark-theme .session-absent-excused, [data-theme="dark"] .session-absent-excused {
+      background-color: rgba(217, 119, 6, 0.2);
+      color: #fbbf24;
+      border-color: rgba(217, 119, 6, 0.4);
     }
-    [data-theme="dark"] .session-delayed {
-      background-color: rgba(37, 99, 235, 0.15);
-      color: #60a5fa;
+    .session-delayed {
+      background-color: rgba(37, 99, 235, 0.1);
+      color: #1d4ed8;
       border-color: rgba(37, 99, 235, 0.3);
     }
-    .session-cancelled {
-      background-color: rgba(107, 114, 128, 0.08);
-      color: #4b5563;
-      border-color: rgba(107, 114, 128, 0.2);
+    .dark-theme .session-delayed, [data-theme="dark"] .session-delayed {
+      background-color: rgba(37, 99, 235, 0.2);
+      color: #60a5fa;
+      border-color: rgba(37, 99, 235, 0.4);
     }
-    [data-theme="dark"] .session-cancelled {
-      background-color: rgba(107, 114, 128, 0.15);
-      color: #9ca3af;
+    .session-cancelled {
+      background-color: rgba(107, 114, 128, 0.1);
+      color: #374151;
       border-color: rgba(107, 114, 128, 0.3);
+    }
+    .dark-theme .session-cancelled, [data-theme="dark"] .session-cancelled {
+      background-color: rgba(107, 114, 128, 0.2);
+      color: #9ca3af;
+      border-color: rgba(107, 114, 128, 0.4);
+    }
+    .calendar-layer-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all var(--transition-fast);
+      border-radius: var(--border-radius-sm, 8px);
+    }
+    .calendar-layer-btn.active {
+      background-color: var(--primary-color) !important;
+      color: #ffffff !important;
+      border-color: var(--primary-hover) !important;
+      box-shadow: 0 2px 4px rgba(13, 148, 136, 0.25) !important;
     }
 
     /* استجابة الشاشات الصغيرة للهواتف والتابلت */
@@ -226,6 +241,26 @@
       animation: calendarFadeIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     }
   </style>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+  <script type="module" crossorigin src="/assets/teacher_calendar-j5P-_saB.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/rbacService-D2RrsA9d.js">
+  <link rel="modulepreload" crossorigin href="/assets/activityLogger-BK9d5021.js">
+  <link rel="modulepreload" crossorigin href="/assets/authService-CtWWGArP.js">
+  <link rel="modulepreload" crossorigin href="/assets/navbar-BWutcREu.js">
+  <link rel="stylesheet" crossorigin href="/assets/rbacService-CHOdNZNU.css">
 </head>
 <body>
 
@@ -251,31 +286,36 @@
           </div>
         </div>
 
-        <!-- دليل الألوان والرموز للحالات -->
-        <div class="card" style="margin-bottom: 1.5rem; padding: 0.85rem 1.25rem;">
-          <div style="display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: center; font-size: 0.8rem; font-weight: 700;">
-            <span style="color: var(--text-muted);">دليل الحالات:</span>
-            <span style="display: flex; align-items: center; gap: 0.35rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background-color: #22c55e; display: inline-block;"></span> حاضر ومكتمل</span>
-            <span style="display: flex; align-items: center; gap: 0.35rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background-color: #ef4444; display: inline-block;"></span> غياب بدون عذر</span>
-            <span style="display: flex; align-items: center; gap: 0.35rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background-color: #eab308; display: inline-block;"></span> غياب بعذر مقبول</span>
-            <span style="display: flex; align-items: center; gap: 0.35rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background-color: #3b82f6; display: inline-block;"></span> حصة مؤجلة</span>
-            <span style="display: flex; align-items: center; gap: 0.35rem;"><span style="width: 10px; height: 10px; border-radius: 50%; background-color: #6b7280; display: inline-block;"></span> حصة ملغاة</span>
+        <!-- فلترة وتحديد طبقات الحصص دليلياً -->
+        <div class="card" style="margin-bottom: 1.25rem; padding: 0.85rem 1.25rem;">
+          <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+              <span style="color: var(--text-muted); font-size: 0.82rem; font-weight: 700; margin-left: 0.5rem;">تصفية طبقات الحصص:</span>
+              <button class="btn btn-primary calendar-layer-btn active" data-layer="all" style="padding: 0.35rem 0.75rem; font-size: 0.78rem;">كافة الحصص (الكل)</button>
+              <button class="btn btn-secondary calendar-layer-btn" data-layer="completed" style="padding: 0.35rem 0.75rem; font-size: 0.78rem;"><span style="width: 8px; height: 8px; border-radius: 50%; background-color: #22c55e; display: inline-block;"></span> حاضر ومكتمل</button>
+              <button class="btn btn-secondary calendar-layer-btn" data-layer="unexcused" style="padding: 0.35rem 0.75rem; font-size: 0.78rem;"><span style="width: 8px; height: 8px; border-radius: 50%; background-color: #ef4444; display: inline-block;"></span> غياب بدون عذر</button>
+              <button class="btn btn-secondary calendar-layer-btn" data-layer="excused" style="padding: 0.35rem 0.75rem; font-size: 0.78rem;"><span style="width: 8px; height: 8px; border-radius: 50%; background-color: #eab308; display: inline-block;"></span> غياب بعذر</button>
+              <button class="btn btn-secondary calendar-layer-btn" data-layer="delayed" style="padding: 0.35rem 0.75rem; font-size: 0.78rem;"><span style="width: 8px; height: 8px; border-radius: 50%; background-color: #3b82f6; display: inline-block;"></span> حصة مؤجلة</button>
+              <button class="btn btn-secondary calendar-layer-btn" data-layer="cancelled" style="padding: 0.35rem 0.75rem; font-size: 0.78rem;"><span style="width: 8px; height: 8px; border-radius: 50%; background-color: #6b7280; display: inline-block;"></span> ملغاة</button>
+            </div>
           </div>
         </div>
 
         <div class="card" style="padding: 1rem;">
-          <!-- أسماء أيام الأسبوع -->
-          <div class="calendar-container" style="margin-top: 0; margin-bottom: 0.5rem;">
-            <div class="calendar-header-cell">الأحد</div>
-            <div class="calendar-header-cell">الاثنين</div>
-            <div class="calendar-header-cell">الثلاثاء</div>
-            <div class="calendar-header-cell">الأربعاء</div>
-            <div class="calendar-header-cell">الخميس</div>
-            <div class="calendar-header-cell">الجمعة</div>
-            <div class="calendar-header-cell">السبت</div>
+          <div class="calendar-wrapper">
+            <!-- أسماء أيام الأسبوع -->
+            <div class="calendar-container" style="margin-top: 0; margin-bottom: 0.5rem;">
+              <div class="calendar-header-cell">الأحد</div>
+              <div class="calendar-header-cell">الاثنين</div>
+              <div class="calendar-header-cell">الثلاثاء</div>
+              <div class="calendar-header-cell">الأربعاء</div>
+              <div class="calendar-header-cell">الخميس</div>
+              <div class="calendar-header-cell">الجمعة</div>
+              <div class="calendar-header-cell">السبت</div>
+            </div>
+            <!-- شبكة الأيام المبنية ديناميكيًا -->
+            <div class="calendar-container" id="calendarDaysGrid" style="margin-top: 0;"></div>
           </div>
-          <!-- شبكة الأيام المبنية ديناميكيًا -->
-          <div class="calendar-container" id="calendarDaysGrid" style="margin-top: 0;"></div>
         </div>
 
       </main>
@@ -331,215 +371,5 @@
 
   <div id="toast-container"></div>
 
-  <script type="module">
-    import { auth, db } from '../assets/js/config/firebase.js';
-    import { protectRoute } from '../assets/js/features/auth/authService.js';
-    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
-    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
-    import { collection, onSnapshot, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-    protectRoute('teacher');
-
-    let sessionsCached = [];
-    let currentMonth = new Date().getMonth();
-    let currentYear = new Date().getFullYear();
-
-    const monthsArabic = [
-      "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
-      "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
-    ];
-
-    auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        try {
-          const userDoc = await getDoc(doc(db, "users", user.uid));
-          const name = userDoc.exists() ? userDoc.data().name : 'المعلم المعتمد';
-          
-          renderSidebar('calendar', 'teacher');
-          renderNavbar('التقويم الدراسي الشهري', { name, roleName: 'معلم' });
-          
-          initTeacherCalendarListener(user.uid);
-        } catch (err) {
-          console.error(err);
-        }
-      }
-    });
-
-    function initTeacherCalendarListener(teacherId) {
-      const q = query(collection(db, "sessions"), where("teacherId", "==", teacherId));
-
-      onSnapshot(q, (snapshot) => {
-        sessionsCached = [];
-        snapshot.forEach(docSnap => {
-          sessionsCached.push({ id: docSnap.id, ...docSnap.data() });
-        });
-
-        renderCalendar();
-      });
-    }
-
-    function renderCalendar() {
-      const grid = document.getElementById('calendarDaysGrid');
-      const label = document.getElementById('calendarMonthLabel');
-      if (!grid || !label) return;
-
-      label.textContent = `${monthsArabic[currentMonth]} ${currentYear}`;
-
-      // حساب أيام الشهر واليوم الأول
-      const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
-      const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
-
-      let gridHtml = "";
-
-      // 1. توليد الخانات الفارغة قبل بداية الشهر
-      for (let i = 0; i < firstDayIndex; i++) {
-        gridHtml += `<div class="calendar-day-cell empty"></div>`;
-      }
-
-      const today = new Date();
-      const todayDateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-
-      // 2. توليد أيام الشهر الفعالة
-      for (let day = 1; day <= totalDays; day++) {
-        const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const isToday = (dateStr === todayDateStr);
-
-        // جلب الحصص المسجلة في هذا التاريخ المحدد
-        const daySessions = sessionsCached.filter(sess => sess.date === dateStr);
-
-        const badgesHtml = daySessions.map(sess => {
-          let badgeClass = "session-completed";
-          let statusName = "حاضر";
-
-          if (sess.status === "student_absent") {
-            if (sess.absenceType === "unexcused") {
-              badgeClass = "session-absent-unexcused";
-              statusName = "غياب مخصوم";
-            } else {
-              badgeClass = "session-absent-excused";
-              statusName = "غياب بعذر";
-            }
-          } else if (sess.status === "delayed") {
-            badgeClass = "session-delayed";
-            statusName = "مؤجل";
-          } else if (sess.status === "cancelled") {
-            badgeClass = "session-cancelled";
-            statusName = "ملغي";
-          }
-
-          return `
-            <div class="calendar-session-badge ${badgeClass}" data-id="${sess.id}" title="${sess.studentName} - ${statusName}">
-              ${sess.studentName}
-            </div>
-          `;
-        }).join('');
-
-        gridHtml += `
-          <div class="calendar-day-cell ${isToday ? 'today' : ''}">
-            <div class="day-cell-header">
-              <span class="day-number">${day}</span>
-              ${daySessions.length > 0 ? `<span style="font-size: 0.68rem; font-weight: 700; color: var(--text-muted); background-color: var(--bg-primary); padding: 0.1rem 0.35rem; border-radius: 4px; border: 1px solid var(--border-color);">${daySessions.length} حصص</span>` : ''}
-            </div>
-            <div class="sessions-list">
-              ${badgesHtml}
-            </div>
-          </div>
-        `;
-      }
-
-      // 3. توليد الخانات الفارغة بعد نهاية الشهر لتكتمل الشبكة بشكل مثالي متناسق تماماً
-      const totalCells = firstDayIndex + totalDays;
-      const remainingCells = (7 - (totalCells % 7)) % 7;
-      for (let i = 0; i < remainingCells; i++) {
-        gridHtml += `<div class="calendar-day-cell empty"></div>`;
-      }
-
-      grid.innerHTML = gridHtml;
-
-      if (window.lucide) {
-        window.lucide.createIcons();
-      }
-
-      // ربط أحداث النقر لعرض تفاصيل الحصص
-      document.querySelectorAll('.calendar-session-badge').forEach(badge => {
-        badge.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const id = e.currentTarget.dataset.id;
-          const session = sessionsCached.find(s => s.id === id);
-          if (session) {
-            openSessionDetailPopup(session);
-          }
-        });
-      });
-    }
-
-    // إدارة مفاتيح التنقل بين الشهور
-    document.getElementById('btnPrevMonth').addEventListener('click', () => {
-      currentMonth--;
-      if (currentMonth < 0) {
-        currentMonth = 11;
-        currentYear--;
-      }
-      renderCalendar();
-    });
-
-    document.getElementById('btnNextMonth').addEventListener('click', () => {
-      currentMonth++;
-      if (currentMonth > 11) {
-        currentMonth = 0;
-        currentYear++;
-      }
-      renderCalendar();
-    });
-
-    // إدارة البوب اب
-    const popup = document.getElementById('sessionDetailPopup');
-    
-    function openSessionDetailPopup(sess) {
-      document.getElementById('popStudentName').textContent = sess.studentName;
-      document.getElementById('popDateTime').textContent = `📅 ${sess.date} | 🕒 ${sess.time}`;
-      document.getElementById('popTypeDuration').textContent = `⏱️ ${sess.duration} دقيقة | 🏫 ${sess.type === 'group' ? 'مجموعة جماعية' : 'درس فردي'}`;
-      
-      const ratingStars = "⭐".repeat(Math.round(sess.rating || 5));
-      document.getElementById('popRating').textContent = `${ratingStars} (${sess.rating || 5}/5)`;
-      document.getElementById('popNotes').textContent = sess.notes || "لا توجد ملاحظات أو واجبات مسجلة للحصة.";
-
-      const statusBadge = document.getElementById('popStatusBadge');
-      statusBadge.textContent = getStatusLabel(sess.status, sess.absenceType);
-      statusBadge.className = "badge";
-      statusBadge.style.backgroundColor = getStatusColor(sess.status, sess.absenceType);
-      statusBadge.style.color = "#ffffff";
-
-      popup.style.display = 'flex';
-    }
-
-    function closeSessionDetailPopup() {
-      popup.style.display = 'none';
-    }
-
-    document.getElementById('btnClosePopupBtn').addEventListener('click', closeSessionDetailPopup);
-    document.getElementById('btnClosePopupActionBtn').addEventListener('click', closeSessionDetailPopup);
-
-    function getStatusLabel(status, absenceType) {
-      if (status === "completed") return "حاضر ومكتمل ✅";
-      if (status === "student_absent") {
-        return absenceType === "unexcused" ? "غياب بدون عذر 🔴" : "غياب بعذر مقبول 🟢";
-      }
-      if (status === "delayed") return "حصة مؤجلة ⏳";
-      if (status === "cancelled") return "ملغاة من الأكاديمية ❌";
-      return "غير محدد";
-    }
-
-    function getStatusColor(status, absenceType) {
-      if (status === "completed") return "#22c55e";
-      if (status === "student_absent") {
-        return absenceType === "unexcused" ? "#ef4444" : "#eab308";
-      }
-      if (status === "delayed") return "#3b82f6";
-      if (status === "cancelled") return "#6b7280";
-      return "#9ca3af";
-    }
-
-  </script>
 </body>
 </html>

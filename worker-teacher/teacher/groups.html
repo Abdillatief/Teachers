@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - المجموعات والجماعي</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(0,0,0,0.6); z-index: 10000; align-items: center; justify-content: center; padding: 1rem;
+      backdrop-filter: blur(4px);
+    }
+    .modal-card {
+      background-color: var(--bg-secondary); border-radius: var(--border-radius);
+      border: 1px solid var(--border-color); width: 100%; max-width: 580px; padding: 1.75rem;
+      max-height: 90vh; overflow-y: auto; box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+    }
+    .group-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 1rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .group-card:hover {
+      border-color: var(--primary-color);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    .student-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .edit-modal-section {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 1.1rem;
+      margin-bottom: 1.25rem;
+    }
+    .edit-modal-section-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin: 0 0 0.85rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .student-manage-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.6rem 0.85rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.85rem;
+    }
+  </style>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+  <script type="module" crossorigin src="/assets/teacher_groups-ENuH5lQ7.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/rbacService-D2RrsA9d.js">
+  <link rel="modulepreload" crossorigin href="/assets/activityLogger-BK9d5021.js">
+  <link rel="modulepreload" crossorigin href="/assets/authService-CtWWGArP.js">
+  <link rel="modulepreload" crossorigin href="/assets/navbar-BWutcREu.js">
+  <link rel="modulepreload" crossorigin href="/assets/newGroupsService-nXFU0cvk.js">
+  <link rel="stylesheet" crossorigin href="/assets/rbacService-CHOdNZNU.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        
+        <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="users-round" style="color: var(--primary-color);"></i>
+              المجموعات الجماعية الخاصة بي
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">
+              استعراض المجموعات المخصصة لك، تعديل مواعيد الحصص، وإرسال طلبات إضافة أو إزالة الطلاب للإدارة.
+            </p>
+          </div>
+        </div>
+
+        <!-- Pending Requests Banner -->
+        <div id="teacherPendingGroupRequestsContainer" style="margin-bottom: 1.5rem; display: none;"></div>
+
+        <!-- Groups Grid -->
+        <div id="teacherGroupsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.25rem;">
+          <p style="text-align: center; color: var(--text-muted); padding: 2rem; grid-column: 1 / -1;">جاري تحميل المجموعات الخاصة بك...</p>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal: Edit Group (Schedule & Student Requests) -->
+  <div id="editGroupModal" class="modal-overlay">
+    <div class="modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+        <div>
+          <h3 style="font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;" id="editGroupModalTitle">
+            <i data-lucide="edit-3" style="color: var(--primary-color);"></i> تعديل المجموعة
+          </h3>
+          <span style="font-size: 0.8rem; color: var(--text-secondary);" id="editGroupModalSubtitle">تعديل موعد الحصة وإرسال طلبات إضافة وإزالة الطلاب</span>
+        </div>
+        <span class="btn-close-modal" id="btnCloseEditGroupModal" style="cursor: pointer; padding: 0.25rem;"><i data-lucide="x"></i></span>
+      </div>
+
+      <input type="hidden" id="editingGroupId">
+
+      <!-- Section 1: Schedule & Notes Modification -->
+      <form id="editScheduleForm" class="edit-modal-section">
+        <div class="edit-modal-section-title">
+          <i data-lucide="calendar-clock" style="color: var(--primary-color); width: 18px; height: 18px;"></i>
+          <span>1. تعديل موعد الحصة والملاحظات</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-bottom: 0.85rem;">
+          <div class="form-group" style="margin: 0;">
+            <label for="inputEditGroupDay" style="font-weight: 700; font-size: 0.82rem; margin-bottom: 0.35rem; display: block;">يوم الحصة</label>
+            <select id="inputEditGroupDay" class="form-control" required style="font-weight: 600;">
+              <option value="السبت">السبت</option>
+              <option value="الأحد">الأحد</option>
+              <option value="الاثنين">الاثنين</option>
+              <option value="الثلاثاء">الثلاثاء</option>
+              <option value="الأربعاء">الأربعاء</option>
+              <option value="الخميس">الخميس</option>
+              <option value="الجمعة">الجمعة</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="margin: 0;">
+            <label for="inputEditGroupTime" style="font-weight: 700; font-size: 0.82rem; margin-bottom: 0.35rem; display: block;">توقيت الحصة</label>
+            <select id="inputEditGroupTime" class="form-control" required style="font-weight: 600;">
+              <option value="08:00 صباحاً">08:00 صباحاً</option>
+              <option value="08:30 صباحاً">08:30 صباحاً</option>
+              <option value="09:00 صباحاً">09:00 صباحاً</option>
+              <option value="09:30 صباحاً">09:30 صباحاً</option>
+              <option value="10:00 صباحاً">10:00 صباحاً</option>
+              <option value="10:30 صباحاً">10:30 صباحاً</option>
+              <option value="11:00 صباحاً">11:00 صباحاً</option>
+              <option value="11:30 صباحاً">11:30 صباحاً</option>
+              <option value="12:00 مساءً">12:00 مساءً</option>
+              <option value="12:30 مساءً">12:30 مساءً</option>
+              <option value="01:00 مساءً">01:00 مساءً</option>
+              <option value="01:30 مساءً">01:30 مساءً</option>
+              <option value="02:00 مساءً">02:00 مساءً</option>
+              <option value="02:30 مساءً">02:30 مساءً</option>
+              <option value="03:00 مساءً">03:00 مساءً</option>
+              <option value="03:30 مساءً">03:30 مساءً</option>
+              <option value="04:00 مساءً">04:00 مساءً</option>
+              <option value="04:30 مساءً">04:30 مساءً</option>
+              <option value="05:00 مساءً">05:00 مساءً</option>
+              <option value="05:30 مساءً">05:30 مساءً</option>
+              <option value="06:00 مساءً">06:00 مساءً</option>
+              <option value="06:30 مساءً">06:30 مساءً</option>
+              <option value="07:00 مساءً">07:00 مساءً</option>
+              <option value="07:30 مساءً">07:30 مساءً</option>
+              <option value="08:00 مساءً">08:00 مساءً</option>
+              <option value="08:30 مساءً">08:30 مساءً</option>
+              <option value="09:00 مساءً">09:00 مساءً</option>
+              <option value="09:30 مساءً">09:30 مساءً</option>
+              <option value="10:00 مساءً">10:00 مساءً</option>
+              <option value="10:30 مساءً">10:30 مساءً</option>
+              <option value="11:00 مساءً">11:00 مساءً</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 0.85rem;">
+          <label for="inputEditGroupNotes" style="font-weight: 700; font-size: 0.82rem; margin-bottom: 0.35rem; display: block;">ملاحظات المجموعة (اختياري)</label>
+          <textarea id="inputEditGroupNotes" class="form-control" rows="2" placeholder="المستوى أو ملاحظات الموعد..."></textarea>
+        </div>
+
+        <button type="submit" id="btnSaveSchedule" class="btn btn-primary" style="width: 100%; font-weight: 700; gap: 0.5rem; font-size: 0.85rem;">
+          <i data-lucide="check"></i> حفظ تعديل الموعد والملاحظات
+        </button>
+      </form>
+
+      <!-- Section 2: Current Students & Removal Requests -->
+      <div class="edit-modal-section">
+        <div class="edit-modal-section-title">
+          <i data-lucide="users" style="color: var(--primary-color); width: 18px; height: 18px;"></i>
+          <span>2. طلاب المجموعة الحاليين (طلب إزالة طالب)</span>
+        </div>
+        <div id="modalCurrentStudentsList" style="max-height: 180px; overflow-y: auto;">
+          <p style="font-size: 0.82rem; color: var(--text-muted); text-align: center; margin: 0.5rem 0;">جاري تحميل الطلاب...</p>
+        </div>
+      </div>
+
+      <!-- Section 3: Request Adding a Student -->
+      <div class="edit-modal-section">
+        <div class="edit-modal-section-title">
+          <i data-lucide="user-plus" style="color: var(--primary-color); width: 18px; height: 18px;"></i>
+          <span>3. طلب إضافة طالب جديد للمجموعة</span>
+        </div>
+        <form id="modalAddStudentRequestForm" style="display: flex; flex-direction: column; gap: 0.75rem;">
+          <div class="form-group" style="margin: 0;">
+            <label for="modalSelectStudentToAdd" style="font-weight: 700; font-size: 0.82rem; margin-bottom: 0.35rem; display: block;">اختر الطالب من طلاب الأكاديمية</label>
+            <select id="modalSelectStudentToAdd" class="form-control" required style="font-weight: 600;">
+              <option value="">-- اختر الطالب المراد إضافته --</option>
+            </select>
+          </div>
+          <button type="submit" id="btnSubmitAddStudentReq" class="btn btn-secondary" style="font-weight: 700; gap: 0.5rem; font-size: 0.85rem; color: var(--primary-color); border-color: var(--primary-color);">
+            <i data-lucide="send"></i> إرسال طلب إضافة الطالب للإدارة ➕
+          </button>
+        </form>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+        <button type="button" class="btn btn-secondary" id="btnCancelEditGroupModal">إغلاق النافذة</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+</body>
+</html>

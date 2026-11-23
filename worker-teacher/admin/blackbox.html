@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - السجل التاريخي الشامل (بلاك بوكس)</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat-card {
+      background: var(--bg-surface, #ffffff);
+      border: 1px solid var(--border-color, #e5e7eb);
+      border-radius: 12px;
+      padding: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+    .badge-active { background: rgba(16, 185, 129, 0.12); color: #059669; }
+    .badge-archived { background: rgba(245, 158, 11, 0.12); color: #d97706; }
+    .badge-suspended { background: rgba(239, 68, 68, 0.12); color: #dc2626; }
+    .badge-pending { background: rgba(99, 102, 241, 0.12); color: #4f46e5; }
+    .badge-trash { background: rgba(107, 114, 128, 0.15); color: #4b5563; }
+
+    .danger-action-btn {
+      background-color: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+      border-radius: 6px;
+      padding: 0.35rem 0.65rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.2s ease;
+    }
+    .danger-action-btn:hover {
+      background-color: #dc2626;
+      color: #ffffff;
+      border-color: #dc2626;
+    }
+
+    .detail-btn {
+      background-color: var(--primary-light, rgba(13, 148, 136, 0.1));
+      color: var(--primary-color, #0d9488);
+      border: 1px solid rgba(13, 148, 136, 0.2);
+      border-radius: 6px;
+      padding: 0.35rem 0.65rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.2s ease;
+    }
+    .detail-btn:hover {
+      background-color: var(--primary-color, #0d9488);
+      color: #ffffff;
+    }
+
+    /* Modal Styling */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 1rem;
+    }
+    .modal-card {
+      background: #ffffff;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 650px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      border: 1px solid var(--border-color, #e2e8f0);
+    }
+    .modal-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border-color, #e2e8f0);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-body {
+      padding: 1.5rem;
+    }
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.6rem 0;
+      border-bottom: 1px dashed var(--border-color, #e2e8f0);
+      font-size: 0.88rem;
+    }
+    .detail-row:last-child {
+      border-bottom: none;
+    }
+    .detail-label {
+      color: var(--text-secondary, #64748b);
+      font-weight: 600;
+    }
+    .detail-value {
+      color: var(--text-primary, #0f172a);
+      font-weight: 700;
+    }
+  </style>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+  <script type="module" crossorigin src="/assets/admin_blackbox-BdzCyHuz.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/rbacService-D2RrsA9d.js">
+  <link rel="modulepreload" crossorigin href="/assets/activityLogger-BK9d5021.js">
+  <link rel="modulepreload" crossorigin href="/assets/authService-CtWWGArP.js">
+  <link rel="modulepreload" crossorigin href="/assets/navbar-BWutcREu.js">
+  <link rel="stylesheet" crossorigin href="/assets/rbacService-CHOdNZNU.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        <!-- Header -->
+        <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+              <span>📦 السجل التاريخي الشامل (بلاك بوكس)</span>
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">
+              الأرشيف المركزي لكافة الطلاب المسجلين في تاريخ الأكاديمية (النشطين، الموقوفين، المؤرشفين، والمحذوفين)، مع إمكانية الحذف النهائى الشامل وتصفية الحسابات.
+            </p>
+          </div>
+        </div>
+
+        <!-- Metrics Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(99, 102, 241, 0.12); color: #4f46e5;">
+              <i data-lucide="users" style="width:24px;height:24px;"></i>
+            </div>
+            <div>
+              <p style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin: 0;">إجمالي السجلات التاريخية</p>
+              <h3 id="statTotalStudents" style="font-size: 1.35rem; font-weight: 800; margin: 0.2rem 0 0 0; color: var(--text-primary);">0</h3>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(16, 185, 129, 0.12); color: #059669;">
+              <i data-lucide="check-circle" style="width:24px;height:24px;"></i>
+            </div>
+            <div>
+              <p style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin: 0;">طلاب نشطون حالياً</p>
+              <h3 id="statActiveStudents" style="font-size: 1.35rem; font-weight: 800; margin: 0.2rem 0 0 0; color: #059669;">0</h3>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(245, 158, 11, 0.12); color: #d97706;">
+              <i data-lucide="archive" style="width:24px;height:24px;"></i>
+            </div>
+            <div>
+              <p style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin: 0;">مؤرشفون وموقوفون</p>
+              <h3 id="statArchivedStudents" style="font-size: 1.35rem; font-weight: 800; margin: 0.2rem 0 0 0; color: #d97706;">0</h3>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(239, 68, 68, 0.12); color: #dc2626;">
+              <i data-lucide="trash-2" style="width:24px;height:24px;"></i>
+            </div>
+            <div>
+              <p style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin: 0;">في سلة المحذوفات</p>
+              <h3 id="statTrashStudents" style="font-size: 1.35rem; font-weight: 800; margin: 0.2rem 0 0 0; color: #dc2626;">0</h3>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filters & Search -->
+        <div class="card" style="margin-bottom: 1.5rem; padding: 1.25rem;">
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; align-items: center;">
+            <div>
+              <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.35rem; display: block;">البحث الفوري في البلاك بوكس</label>
+              <div style="position: relative;">
+                <input type="text" id="searchInput" class="form-control" placeholder="ابحث باسم الطالب، هاتف ولي الأمر، اسم المعلم، أو معرف الطالب..." style="padding-right: 2.25rem;">
+                <i data-lucide="search" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-muted);"></i>
+              </div>
+            </div>
+
+            <div>
+              <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.35rem; display: block;">تصفية حسب حالة الطالب</label>
+              <select id="statusFilter" class="form-control" style="width: 100%;">
+                <option value="all">جميع الحالات (سجل شامل)</option>
+                <option value="active">طلاب نشطون ومشتركون ✅</option>
+                <option value="suspended">طلاب موقوفون ⛔</option>
+                <option value="archived">طلاب مؤرشفون 📦</option>
+                <option value="pending">بانتظار الموافقة ⏳</option>
+                <option value="trash">في سلة المحذوفات 🗑️</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="card">
+          <div class="table-container" style="margin-top: 0;">
+            <table>
+              <thead>
+                <tr>
+                  <th>بيانات الطالب والدارس</th>
+                  <th>المعلم المشرف</th>
+                  <th>الباقة / نوع الاشتراك</th>
+                  <th>تاريخ التسجيل</th>
+                  <th>حالة الطالب الحالية</th>
+                  <th>سجل الحصص والمدفوعات</th>
+                  <th>إجراءات التحكم الشامل</th>
+                </tr>
+              </thead>
+              <tbody id="blackboxTableBody">
+                <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">جاري مسح وفهرسة كافة السجلات التاريخية للطلاب...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Student Details Modal -->
+  <div id="studentDetailModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="user" style="color: var(--primary-color);"></i>
+          <span>بطاقة البيانات الشاملة للطالب</span>
+        </h3>
+        <button id="closeDetailModalBtn" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+      </div>
+      <div class="modal-body" id="studentDetailModalBody">
+        <!-- Injected dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+</body>
+</html>

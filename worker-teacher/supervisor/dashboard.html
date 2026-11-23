@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>سبيل - لوحة المشرف التشغيلي</title>
+
+  <script>
+    try {
+      if (localStorage.getItem('academy_dark_mode') === 'true' || localStorage.getItem('sabeel_theme') === 'dark') {
+        document.documentElement.classList.add('dark-theme');
+      }
+    } catch (e) {}
+  </script>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" crossorigin src="/assets/supervisor_dashboard-k-W9ZsS9.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/rbacService-D2RrsA9d.js">
+  <link rel="modulepreload" crossorigin href="/assets/activityLogger-BK9d5021.js">
+  <link rel="modulepreload" crossorigin href="/assets/authService-CtWWGArP.js">
+  <link rel="modulepreload" crossorigin href="/assets/navbar-BWutcREu.js">
+  <link rel="modulepreload" crossorigin href="/assets/supervisorPageShell-B-wFzxgu.js">
+  <link rel="modulepreload" crossorigin href="/assets/supervisorDomainService-BW5mzJbW.js">
+  <link rel="stylesheet" crossorigin href="/assets/rbacService-CHOdNZNU.css">
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <header class="navbar" id="appNavbar"></header>
+
+      <main class="content-body">
+        <div class="card" style="margin-bottom: 1.5rem; border-right: 4px solid var(--primary-color);">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            <div>
+              <h1 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.25rem;" id="welcomeTitle">مركز المتابعة التشغيلية</h1>
+              <p style="margin: 0; font-size: 0.85rem; color: var(--text-secondary);" id="welcomeSubtitle">نظرة فورية على حصص اليوم والطلاب وحالات التأجيل والغياب وفق صلاحياتك.</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;" id="dashboardDateBadge"></div>
+          </div>
+        </div>
+
+        <!-- 4 Operational KPI Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;" id="statsCardsContainer">
+          <div class="op-metric-card">
+            <span class="metric-label"><i data-lucide="calendar-check" style="width: 15px; height: 15px; color: var(--primary-color);"></i> حصص اليوم المجدولة</span>
+            <div class="metric-value tabular-nums" id="kpiTodaySessions">0</div>
+            <span class="metric-footer" id="kpiTodayCompletedHint">0 مكتملة حتى الآن</span>
+          </div>
+          <div class="op-metric-card">
+            <span class="metric-label"><i data-lucide="graduation-cap" style="width: 15px; height: 15px; color: var(--success);"></i> الطلاب النشطون</span>
+            <div class="metric-value tabular-nums" id="kpiActiveStudents">0</div>
+            <span class="metric-footer" id="kpiTotalStudentsHint">إجمالي المسجلين: 0</span>
+          </div>
+          <div class="op-metric-card">
+            <span class="metric-label"><i data-lucide="clock" style="width: 15px; height: 15px; color: var(--warning);"></i> مؤجلة بانتظار التعويض</span>
+            <div class="metric-value tabular-nums" id="kpiPendingPostponed">0</div>
+            <span class="metric-footer">تحتاج متابعة أو تعيين موعد بديل</span>
+          </div>
+          <div class="op-metric-card">
+            <span class="metric-label"><i data-lucide="send" style="width: 15px; height: 15px; color: var(--info);"></i> طلباتي الإدارية المعلقة</span>
+            <div class="metric-value tabular-nums" id="kpiPendingRequests">0</div>
+            <span class="metric-footer" id="kpiAbsencesTodayHint">حالات الغياب اليوم: 0</span>
+          </div>
+        </div>
+
+        <!-- Quick Operational Actions (Filtered by Active RBAC Permissions) -->
+        <div class="card" style="margin-bottom: 1.5rem;">
+          <div class="card-header">
+            <h2 style="font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="compass" style="width: 18px; height: 18px; color: var(--primary-color);"></i>
+              الوصول السريع للأقسام المصرح بها
+            </h2>
+          </div>
+          <div id="quickActionsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem;"></div>
+        </div>
+
+        <!-- Two-Column Live Feed: Today Lessons + Activity & Absences -->
+        <div class="dashboard-main-grid" style="display: grid; grid-template-columns: 1.35fr 1fr; gap: 1.25rem;">
+          <div class="card">
+            <div class="card-header">
+              <h2 style="font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="play-circle" style="width: 18px; height: 18px; color: var(--primary-color);"></i>
+                جدول وحالة حصص اليوم
+              </h2>
+              <select id="todayStatusFilter" class="form-control" style="width: auto; min-width: 145px; height: 32px; font-size: 0.78rem;">
+                <option value="all">كل الحالات</option>
+                <option value="scheduled">مجدولة (لم تسجل بعد)</option>
+                <option value="completed">مكتملة</option>
+                <option value="delayed">مؤجلة</option>
+                <option value="absent">حالات الغياب</option>
+              </select>
+            </div>
+            <div id="todayLessonsList" style="display: flex; flex-direction: column; gap: 0.65rem; max-height: 430px; overflow-y: auto;">
+              <div class="empty-state"><p class="empty-state-description">جاري تحميل حصص اليوم...</p></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h2 style="font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="activity" style="width: 18px; height: 18px; color: var(--primary-color);"></i>
+                أحدث الغيابات والأنشطة التشغيلية
+              </h2>
+            </div>
+            <div id="recentOpsFeed" style="display: flex; flex-direction: column; gap: 0.6rem; max-height: 430px; overflow-y: auto;">
+              <div class="empty-state"><p class="empty-state-description">جاري تحميل النشاط التشغيلي...</p></div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+</body>
+</html>

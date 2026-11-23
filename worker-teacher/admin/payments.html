@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>سبيل - إدارة المدفوعات والمالية</title>
-  <link rel="stylesheet" href="../assets/css/variables.css">
-  <link rel="stylesheet" href="../assets/css/main.css">
-  <link rel="stylesheet" href="../assets/css/components.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     .modal-overlay {
@@ -45,7 +45,56 @@
       align-items: center;
       justify-content: center;
     }
+
+    /* أنماط طباعة سند القبض المالي */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #receiptPrintContainer, #receiptPrintContainer * {
+        visibility: visible;
+      }
+      #receiptPrintContainer {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 20px;
+        background: #fff !important;
+        color: #000 !important;
+        display: block !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
   </style>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+  <script type="module" crossorigin src="/assets/admin_payments-CyLPMBfU.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/rbacService-D2RrsA9d.js">
+  <link rel="modulepreload" crossorigin href="/assets/activityLogger-BK9d5021.js">
+  <link rel="modulepreload" crossorigin href="/assets/authService-CtWWGArP.js">
+  <link rel="modulepreload" crossorigin href="/assets/navbar-BWutcREu.js">
+  <link rel="modulepreload" crossorigin href="/assets/trashService-17CPxIjU.js">
+  <link rel="modulepreload" crossorigin href="/assets/supervisorDomainService-BW5mzJbW.js">
+  <link rel="modulepreload" crossorigin href="/assets/creditManager-CewcMcqw.js">
+  <link rel="modulepreload" crossorigin href="/assets/whatsappWidget-BgZo_pma.js">
+  <link rel="modulepreload" crossorigin href="/assets/receiptService-Da2FAYPN.js">
+  <link rel="stylesheet" crossorigin href="/assets/rbacService-CHOdNZNU.css">
 </head>
 <body>
 
@@ -119,21 +168,28 @@
 
         <!-- القسم الأول: سجل إيصالات المقبوضات والعمليات -->
         <div id="sectionPaymentsLog">
-          <!-- فلاتر البحث والفرز المالي -->
+          <!-- فلاتر البحث والفرز المالي وأزرار التصدير -->
           <div class="card" style="margin-bottom: 1.5rem; padding: 1.25rem;">
-            <div style="display: grid; grid-template-columns: 1fr 220px; gap: 1rem; align-items: center;">
-              <div style="display: flex; gap: 0.75rem; align-items: center; border: 1px solid var(--border-color); padding: 0.5rem 0.75rem; border-radius: var(--border-radius); background: var(--bg-primary);">
-                <i data-lucide="search" style="color: var(--text-muted); width: 18px; height: 18px;"></i>
-                <input type="text" id="financialSearchInput" placeholder="البحث برقم الإيصال أو باسم الدارس..." style="border: none; outline: none; background: transparent; width: 100%; font-size: 0.85rem; color: var(--text-primary);">
+            <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between;">
+              <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; flex: 1; min-width: 300px;">
+                <div style="display: flex; gap: 0.75rem; align-items: center; border: 1px solid var(--border-color); padding: 0.5rem 0.75rem; border-radius: var(--border-radius); background: var(--bg-primary); flex: 1; min-width: 200px;">
+                  <i data-lucide="search" style="color: var(--text-muted); width: 18px; height: 18px;"></i>
+                  <input type="text" id="financialSearchInput" placeholder="البحث برقم الإيصال أو باسم الدارس أو الملاحظات..." style="border: none; outline: none; background: transparent; width: 100%; font-size: 0.85rem; color: var(--text-primary);">
+                </div>
+                <select id="financialMethodFilter" class="form-control" style="border: 1px solid var(--border-color); margin: 0; width: auto; min-width: 180px;">
+                  <option value="">-- جميع طرق الدفع --</option>
+                  <option value="Vodafone Cash">فودافون كاش (Vodafone Cash)</option>
+                  <option value="WE Pay">وي باي (WE Pay)</option>
+                  <option value="InstaPay">إنستا باي (InstaPay)</option>
+                  <option value="تحويل بنكي">تحويل بنكي مباشر</option>
+                  <option value="نقدي">دفع نقدي (كاش)</option>
+                </select>
               </div>
-              <select id="financialMethodFilter" class="form-control" style="border: 1px solid var(--border-color); margin: 0;">
-                <option value="">-- جميع طرق الدفع --</option>
-                <option value="Vodafone Cash">فودافون كاش (Vodafone Cash)</option>
-                <option value="WE Pay">وي باي (WE Pay)</option>
-                <option value="InstaPay">إنستا باي (InstaPay)</option>
-                <option value="تحويل بنكي">تحويل بنكي مباشر</option>
-                <option value="نقدي">دفع نقدي (كاش)</option>
-              </select>
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <button type="button" class="btn btn-secondary" id="btnExportPaymentsCsv" style="gap: 0.35rem; font-size: 0.85rem; font-weight: 700; color: #10b981; border-color: #10b981;" title="تصدير السجل المالي إلى Excel / CSV">
+                  <i data-lucide="file-spreadsheet" style="width: 16px; height: 16px;"></i> تصدير إكسيل (Excel / CSV)
+                </button>
+              </div>
             </div>
           </div>
 
@@ -160,11 +216,23 @@
 
         <!-- القسم الثاني: الموقف المالي العام للدارسين -->
         <div id="sectionStudentsStatus" style="display: none;">
-          <!-- شريط بحث فوري للطلاب -->
+          <!-- شريط بحث وفلترة فوري للموقف المالي للطلاب -->
           <div class="card" style="margin-bottom: 1.5rem; padding: 1rem;">
-            <div style="display: flex; gap: 0.75rem; align-items: center;">
-              <i data-lucide="search" style="color: var(--text-muted); width: 20px; height: 20px; flex-shrink: 0;"></i>
-              <input type="text" id="studentsStatusSearchInput" class="form-control" placeholder="ابحث فوريًا عن الطالب لتفقد موقفه المالي..." style="margin: 0; font-size: 0.9rem; border: none; outline: none; background: transparent; width: 100%;">
+            <div style="display: grid; grid-template-columns: 1fr 250px; gap: 1rem; align-items: center;">
+              <div style="display: flex; gap: 0.75rem; align-items: center; border: 1px solid var(--border-color); padding: 0.5rem 0.75rem; border-radius: var(--border-radius); background: var(--bg-primary);">
+                <i data-lucide="search" style="color: var(--text-muted); width: 18px; height: 18px;"></i>
+                <input type="text" id="studentsStatusSearchInput" placeholder="ابحث فوريًا باسم الطالب لتفقد موقفه المالي..." style="border: none; outline: none; background: transparent; width: 100%; font-size: 0.85rem; color: var(--text-primary);">
+              </div>
+              <div>
+                <select id="studentsStatusPaymentFilter" class="form-control" style="border: 1px solid var(--border-color); margin: 0; font-size: 0.85rem;">
+                  <option value="all">-- جميع حالات الدفع ورصيد الحصص --</option>
+                  <option value="overdraft">دين حصص / رصيد سالب (&lt; 0) 🔴</option>
+                  <option value="empty">نفد الرصيد تماماً (0 حصة) ⚠️</option>
+                  <option value="unpaid">غير مدفوع (شامل نفاد الحصص والديون) ❌</option>
+                  <option value="partially">مسدد جزئياً ⏳</option>
+                  <option value="paid">المدفوع (رصيد ساري ومسدد بالكامل) ✅</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -213,19 +281,94 @@
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
           <div class="form-group">
-            <label for="payAmount">المبلغ المالي المحصل (ج.م)</label>
-            <input type="number" id="payAmount" class="form-control" required placeholder="مثال: 450" min="1">
+            <label for="payParentName">اسم ولي الأمر</label>
+            <input type="text" id="payParentName" class="form-control" placeholder="اسم ولي أمر الطالب" style="border: 1px solid var(--border-color); width: 100%;">
           </div>
           <div class="form-group">
-            <label for="payMethod">وسيلة الدفع ومزود الخدمة</label>
-            <select id="payMethod" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
-              <option value="فودافون كاش (Vodafone Cash)">فودافون كاش (Vodafone Cash)</option>
-              <option value="إنستا باي (InstaPay)">إنستا باي (InstaPay)</option>
-              <option value="وي باي (WE Pay)">وي باي (WE Pay)</option>
-              <option value="تحويل بنكي مباشر">تحويل بنكي مباشر</option>
-              <option value="نقدي (كاش) ليد المشرف">نقدي (كاش) ليد المشرف</option>
+            <label for="payReceivedBy">تم الاستلام بواسطة *</label>
+            <select id="payReceivedBy" class="form-control" required style="border: 1px solid var(--border-color); width: 100%; font-weight: 700;">
+              <option value="محمد عادل">محمد عادل</option>
+              <option value="عبداللطيف فتحي">عبداللطيف فتحي</option>
             </select>
           </div>
+        </div>
+
+        <!-- بطاقة فحص موقف رصيد الحصص والتجديد التلقائي -->
+        <div id="studentCreditInfoBox" style="display: none; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem; margin-top: 1rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary);" id="modalStudentCreditTitle">رصيد الحصص للدارس:</span>
+            <span id="modalStudentCreditBadge" class="badge" style="font-weight: 800; font-size: 0.8rem; position: static;">0 حصة</span>
+          </div>
+          <div id="modalStudentCreditNotice" style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.35rem; line-height: 1.4;"></div>
+
+          <!-- خيار التجديد والشحن التلقائي فور السداد -->
+          <div style="border-top: 1px dashed var(--border-color); margin-top: 0.75rem; padding-top: 0.75rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 700; font-size: 0.85rem; color: var(--primary-color);">
+              <input type="checkbox" id="chkAutoRenewPackage" style="accent-color: var(--primary-color); width: 16px; height: 16px;">
+              <span>شحن وتجديد باقة الحصص تلقائياً للطالب فور السداد ⚡</span>
+            </label>
+
+            <div id="autoRenewOptions" style="display: none; margin-top: 0.75rem; background: rgba(13,148,136,0.05); padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(13,148,136,0.2);">
+              <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary-color); margin-bottom: 0.5rem;">
+                بيانات الباقة المراد شحنها وتسوية الحصص المستهلكة منها:
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
+                <div>
+                  <label style="font-size: 0.72rem; font-weight: 700;">اسم الباقة *</label>
+                  <input type="text" id="renewPkgName" class="form-control" style="font-size: 0.82rem; padding: 0.35rem 0.5rem;" placeholder="مثال: باقة 8 حصص تجويد">
+                </div>
+                <div>
+                  <label style="font-size: 0.72rem; font-weight: 700;">عدد الحصص *</label>
+                  <input type="number" id="renewPkgTotalLessons" class="form-control" style="font-weight: 800; font-size: 0.82rem; padding: 0.35rem 0.5rem;" value="8" min="1">
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; margin-top: 0.5rem;">
+                <div>
+                  <label style="font-size: 0.72rem; font-weight: 700;">مدة الحصة (دقيقة) *</label>
+                  <select id="renewPkgDuration" class="form-control" style="font-size: 0.82rem; padding: 0.35rem 0.5rem;">
+                    <option value="30">30 دقيقة</option>
+                    <option value="45">45 دقيقة</option>
+                    <option value="60">60 دقيقة (ساعة)</option>
+                    <option value="90">90 دقيقة</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-size: 0.72rem; font-weight: 700;">قالب باقة جاهز (اختياري)</label>
+                  <select id="renewPkgTemplateSelect" class="form-control" style="font-size: 0.82rem; padding: 0.35rem 0.5rem;">
+                    <option value="">-- باقة مخصصة --</option>
+                  </select>
+                </div>
+              </div>
+              <div style="margin-top: 0.65rem; padding-top: 0.5rem; border-top: 1px dashed rgba(13,148,136,0.3); display: flex; align-items: center; gap: 0.4rem;">
+                <input type="checkbox" id="chkAllowPartialActivation" checked style="accent-color: var(--primary-color); width: 16px; height: 16px; cursor: pointer;">
+                <label for="chkAllowPartialActivation" style="font-size: 0.76rem; font-weight: 700; color: var(--text-primary); cursor: pointer; margin-bottom: 0;">
+                  السماح بتفعيل الباقة وشحن الحصص فورًا عند السداد الجزئي (تنشيط الباقة)
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+          <div class="form-group">
+            <label for="payMonth">تحصيل عن شهر</label>
+            <input type="month" id="payMonth" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
+          </div>
+          <div class="form-group">
+            <label for="payAmount">المبلغ المالي المحصل (ج.م)</label>
+            <input type="number" id="payAmount" class="form-control" required placeholder="سعر الباقة تلقائيًا" min="1">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 1rem;">
+          <label for="payMethod">وسيلة الدفع ومزود الخدمة</label>
+          <select id="payMethod" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
+            <option value="فودافون كاش (Vodafone Cash)">فودافون كاش (Vodafone Cash)</option>
+            <option value="إنستا باي (InstaPay)">إنستا باي (InstaPay)</option>
+            <option value="وي باي (WE Pay)">وي باي (WE Pay)</option>
+            <option value="تحويل بنكي مباشر">تحويل بنكي مباشر</option>
+            <option value="نقدي (كاش) ليد المشرف">نقدي (كاش) ليد المشرف</option>
+          </select>
         </div>
 
         <div class="form-group" style="margin-top: 1rem;">
@@ -260,19 +403,38 @@
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
           <div class="form-group">
+            <label for="editPayParentName">اسم ولي الأمر</label>
+            <input type="text" id="editPayParentName" class="form-control" placeholder="اسم ولي الأمر" style="border: 1px solid var(--border-color); width: 100%;">
+          </div>
+          <div class="form-group">
+            <label for="editPayReceivedBy">تم الاستلام بواسطة *</label>
+            <select id="editPayReceivedBy" class="form-control" required style="border: 1px solid var(--border-color); width: 100%; font-weight: 700;">
+              <option value="محمد عادل">محمد عادل</option>
+              <option value="عبداللطيف فتحي">عبداللطيف فتحي</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+          <div class="form-group">
+            <label for="editPayMonth">تحصيل عن شهر</label>
+            <input type="month" id="editPayMonth" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
+          </div>
+          <div class="form-group">
             <label for="editPayAmount">المبلغ المالي المحصل (ج.م)</label>
             <input type="number" id="editPayAmount" class="form-control" required placeholder="السعر" min="1">
           </div>
-          <div class="form-group">
-            <label for="editPayMethod">وسيلة الدفع ومزود الخدمة</label>
-            <select id="editPayMethod" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
-              <option value="فودافون كاش (Vodafone Cash)">فودافون كاش (Vodafone Cash)</option>
-              <option value="إنستا باي (InstaPay)">إنستا باي (InstaPay)</option>
-              <option value="وي باي (WE Pay)">وي باي (WE Pay)</option>
-              <option value="تحويل بنكي مباشر">تحويل بنكي مباشر</option>
-              <option value="نقدي (كاش) ليد المشرف">نقدي (كاش) ليد المشرف</option>
-            </select>
-          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 1rem;">
+          <label for="editPayMethod">وسيلة الدفع ومزود الخدمة</label>
+          <select id="editPayMethod" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
+            <option value="فودافون كاش (Vodafone Cash)">فودافون كاش (Vodafone Cash)</option>
+            <option value="إنستا باي (InstaPay)">إنستا باي (InstaPay)</option>
+            <option value="وي باي (WE Pay)">وي باي (WE Pay)</option>
+            <option value="تحويل بنكي مباشر">تحويل بنكي مباشر</option>
+            <option value="نقدي (كاش) ليد المشرف">نقدي (كاش) ليد المشرف</option>
+          </select>
         </div>
 
         <div class="form-group" style="margin-top: 1rem;">
@@ -288,419 +450,138 @@
     </div>
   </div>
 
+  <!-- مودال استعراض وطباعة سند القبض المالي (Feature 1: Receipt / Invoice) -->
+  <div id="receiptModal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 600px; padding: 0; overflow: hidden;">
+      <!-- شريط تحكم رأس المودال -->
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; background: var(--bg-primary); border-bottom: 1px solid var(--border-color);">
+        <h3 style="font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem; font-size: 1.05rem;">
+          <i data-lucide="printer" style="color: var(--primary-color);"></i> سند قبض مالي رسمي
+        </h3>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <button type="button" class="btn btn-primary" id="btnPrintReceiptBtn" style="padding: 0.4rem 0.85rem; font-size: 0.85rem; font-weight: 700; gap: 0.35rem;">
+            <i data-lucide="printer" style="width: 15px; height: 15px;"></i> طباعة السند (Print / PDF)
+          </button>
+          <span id="btnCloseReceiptModal" style="cursor: pointer; padding: 0.25rem; display: flex; align-items: center; justify-content: center;">
+            <i data-lucide="x" style="color: var(--text-muted);"></i>
+          </span>
+        </div>
+      </div>
+
+      <!-- محتوى السند الرسمي القابل للعرض والطباعة -->
+      <div style="padding: 1.75rem; background: #ffffff; color: #1e293b;" id="receiptModalContent">
+        <!-- ترويسة السند -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0d9488; padding-bottom: 1rem; margin-bottom: 1.25rem;">
+          <div>
+            <div style="font-size: 1.35rem; font-weight: 900; color: #0f766e; display: flex; align-items: center; gap: 0.4rem;">
+              <span>📖</span>
+              <span>أكاديمية سبيل لعلوم القرآن الكريم</span>
+            </div>
+            <p style="font-size: 0.8rem; color: #64748b; margin: 0.2rem 0 0 0;">منصة التعليم والتحفيظ القرآني الشامل</p>
+          </div>
+          <div style="text-align: left;">
+            <div style="display: inline-block; background: #f0fdf4; border: 1px solid #86efac; color: #166534; font-weight: 800; font-size: 0.82rem; padding: 0.25rem 0.75rem; border-radius: 6px;">
+              سند قبض مالي معتمد ✅
+            </div>
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.3rem;" id="receiptNumberDisplay">رقم السند: #REC-0000</div>
+          </div>
+        </div>
+
+        <!-- ملخص القيمة والبيانات الأساسية -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem;">
+          <div>
+            <span style="font-size: 0.75rem; color: #64748b; display: block; margin-bottom: 0.2rem;">استلمنا من الطالب الكرم:</span>
+            <strong style="font-size: 1rem; color: #0f172a;" id="receiptStudentNameDisplay">-</strong>
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;" id="receiptTeacherDisplay">المعلم المشرف: -</div>
+          </div>
+          <div style="text-align: left;">
+            <span style="font-size: 0.75rem; color: #64748b; display: block; margin-bottom: 0.2rem;">المبلغ الإجمالي المحصل:</span>
+            <strong style="font-size: 1.4rem; color: #059669; font-weight: 900;" id="receiptAmountDisplay">0 ج.م</strong>
+          </div>
+        </div>
+
+        <!-- جدول تفاصيل المعاملة -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 1.25rem; font-size: 0.85rem;">
+          <tbody>
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 0.6rem 0.5rem; color: #64748b; font-weight: 700; width: 35%;">تاريخ وتوقيت التحصيل:</td>
+              <td style="padding: 0.6rem 0.5rem; color: #0f172a; font-weight: 800;" id="receiptDateDisplay">-</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 0.6rem 0.5rem; color: #64748b; font-weight: 700;">الشهر المحاسبي:</td>
+              <td style="padding: 0.6rem 0.5rem; color: #0d9488; font-weight: 800;" id="receiptMonthDisplay">-</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 0.6rem 0.5rem; color: #64748b; font-weight: 700;">طريقة ومزود الدفع:</td>
+              <td style="padding: 0.6rem 0.5rem; color: #0f172a; font-weight: 800;" id="receiptMethodDisplay">-</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 0.6rem 0.5rem; color: #64748b; font-weight: 700;">باقة الحصص والرصيد:</td>
+              <td style="padding: 0.6rem 0.5rem; color: #0f172a; font-weight: 700;" id="receiptPackageDisplay">-</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 0.6rem 0.5rem; color: #64748b; font-weight: 700;">الموقف المالي الحالي:</td>
+              <td style="padding: 0.6rem 0.5rem; font-weight: 800;" id="receiptBalanceDisplay">-</td>
+            </tr>
+            <tr>
+              <td style="padding: 0.6rem 0.5rem; color: #64748b; font-weight: 700;">ملاحظات التحصيل:</td>
+              <td style="padding: 0.6rem 0.5rem; color: #475569;" id="receiptNotesDisplay">-</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- تذييل وتوقيع السند -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px dashed #cbd5e1; padding-top: 1rem; margin-top: 1rem; flex-wrap: wrap; gap: 0.75rem;">
+          <div>
+            <div style="font-size: 0.75rem; color: #64748b;">المسؤول المحصل:</div>
+            <strong style="font-size: 0.88rem; color: #0f172a;" id="receiptAdminDisplay">-</strong>
+            <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.25rem;">إيصال إلكتروني صادر وموثق نظامياً</div>
+          </div>
+          
+          <!-- ختم وتوقيع مدير الأكاديمية (Abdullatief fathy) -->
+          <div style="text-align: center;">
+            <div style="border: 2px dashed #1e3a8a; background: rgba(30, 58, 138, 0.03); border-radius: 12px; padding: 0.5rem 1rem; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(30, 58, 138, 0.08); transform: rotate(-2deg); min-width: 190px;">
+              <div style="font-size: 0.6rem; font-weight: 800; color: #1e3a8a; letter-spacing: 1.5px; border-bottom: 1px solid rgba(30, 58, 138, 0.2); padding-bottom: 0.15rem; width: 100%; text-transform: uppercase;">
+                ★ SABEEL ACADEMY ★
+              </div>
+              
+              <!-- توقيع انسيابي احترافي بسحبة قلم حبرية (Executive Director Signature Stroke) -->
+              <div style="margin: 0.2rem 0; display: flex; align-items: center; justify-content: center; height: 46px;">
+                <svg width="170" height="46" viewBox="0 0 170 46" fill="none" xmlns="http://www.w3.org/2000/svg" style="overflow: visible;">
+                  <!-- سحبة التوقيع الانسيابية بحرف A والحركات السريعة المميزة للمدير -->
+                  <path d="M12 36 C8 24 16 12 24 9 C31 6 34 18 28 28 C23 37 18 34 26 27 C36 18 48 30 58 22 C67 15 76 28 88 19 C98 12 110 24 122 17 C133 11 142 22 156 14" stroke="#1e3a8a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+                  <!-- العقدة العلوية والحركات الانسيابية -->
+                  <path d="M22 10 C26 4 32 3 35 8 C38 14 30 22 20 25" stroke="#1e3a8a" stroke-width="1.8" stroke-linecap="round" />
+                  <path d="M60 21 C65 14 70 14 73 19" stroke="#1e3a8a" stroke-width="1.6" stroke-linecap="round" />
+                  <path d="M92 18 C96 11 102 12 105 17" stroke="#1e3a8a" stroke-width="1.6" stroke-linecap="round" />
+                  <!-- سحبة الذيل السفلية الطويلة الممتدة تحت التوقيع -->
+                  <path d="M15 37 C45 42 85 41 148 31 C158 29 146 39 118 41 C82 43 40 40 18 36" stroke="#1e3a8a" stroke-width="2" stroke-linecap="round" />
+                  <!-- نقطة توكيد الاعتماد النهائي -->
+                  <circle cx="160" cy="16" r="2" fill="#1e3a8a" />
+                </svg>
+              </div>
+
+              <div style="font-size: 0.64rem; font-weight: 700; color: #1e3a8a; display: flex; align-items: center; justify-content: space-between; width: 100%; border-top: 1px solid rgba(30, 58, 138, 0.15); padding-top: 0.2rem;">
+                <span style="letter-spacing: 0.3px; font-family: sans-serif;">Abdullatief fathy</span>
+                <span style="background: #1e3a8a; color: #fff; font-size: 0.55rem; padding: 0.05rem 0.35rem; border-radius: 3px; font-weight: 800;">معتمد ✅</span>
+              </div>
+            </div>
+            <div style="font-size: 0.65rem; color: #64748b; margin-top: 0.25rem; font-weight: 600;">ختم وتوقيع مدير عام الأكاديمية</div>
+          </div>
+
+          <div style="text-align: left;">
+            <div style="font-size: 0.72rem; color: #64748b; font-weight: 600;">أكاديمية سبيل لعلوم القرآن</div>
+            <div style="font-size: 0.7rem; color: #059669; font-weight: 700; margin-top: 0.2rem;">✔ معتمد ورسمي</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- حاوية خاصة بالطباعة المباشرة لسند القبض المالي -->
+  <div id="receiptPrintContainer" style="display: none;"></div>
+
   <div id="toast-container"></div>
 
-  <script type="module">
-    import { auth, db } from '../assets/js/config/firebase.js';
-    import { protectRoute } from '../assets/js/features/auth/authService.js';
-    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
-    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
-    import { collection, onSnapshot, addDoc, doc, deleteDoc, getDocs, serverTimestamp, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import { Toast } from '../assets/js/shared/utils/toast.js';
-    import { animateTextCounter } from '../assets/js/shared/utils/helpers.js';
-
-    protectRoute('admin');
-
-    let currentAdminName = "مشرف النظام";
-    let allPayments = [];
-    let allStudents = [];
-    let allSubscriptions = [];
-    let currentEditingPayId = null;
-
-    auth.onAuthStateChanged((user) => {
-      if (user) {
-        currentAdminName = user.displayName || "مدير الأكاديمية";
-        renderSidebar('payments', 'admin');
-        renderNavbar('إدارة المدفوعات والمالية', { name: 'الإدارة العامة', roleName: 'مدير الأكاديمية' });
-        
-        // تشغيل الخدمات المالية والمتابعة اللحظية
-        initPaymentsRealtime();
-        initStudentsAndSubscriptionsRealtime();
-        setupFilters();
-        setupTabs();
-      }
-    });
-
-    // تبويب الشاشات التفاعلية
-    function setupTabs() {
-      const tabPaymentsLogBtn = document.getElementById('tabPaymentsLogBtn');
-      const tabStudentsStatusBtn = document.getElementById('tabStudentsStatusBtn');
-      const sectionPaymentsLog = document.getElementById('sectionPaymentsLog');
-      const sectionStudentsStatus = document.getElementById('sectionStudentsStatus');
-
-      tabPaymentsLogBtn?.addEventListener('click', () => {
-        sectionPaymentsLog.style.display = 'block';
-        sectionStudentsStatus.style.display = 'none';
-        
-        tabPaymentsLogBtn.style.background = 'var(--primary-color)';
-        tabPaymentsLogBtn.style.borderColor = 'var(--primary-color)';
-        tabPaymentsLogBtn.style.color = '#fff';
-
-        tabStudentsStatusBtn.style.background = 'transparent';
-        tabStudentsStatusBtn.style.borderColor = 'transparent';
-        tabStudentsStatusBtn.style.color = 'var(--text-secondary)';
-      });
-
-      tabStudentsStatusBtn?.addEventListener('click', () => {
-        sectionPaymentsLog.style.display = 'none';
-        sectionStudentsStatus.style.display = 'block';
-        
-        tabStudentsStatusBtn.style.background = 'var(--primary-color)';
-        tabStudentsStatusBtn.style.borderColor = 'var(--primary-color)';
-        tabStudentsStatusBtn.style.color = '#fff';
-
-        tabPaymentsLogBtn.style.background = 'transparent';
-        tabPaymentsLogBtn.style.borderColor = 'transparent';
-        tabPaymentsLogBtn.style.color = 'var(--text-secondary)';
-      });
-    }
-
-    // جلب الطلاب والاشتراكات في الوقت الحقيقي للمزامنة التامة
-    function initStudentsAndSubscriptionsRealtime() {
-      // 1. تتبع الطلاب لحظياً
-      onSnapshot(collection(db, "students"), (studentsSnap) => {
-        allStudents = [];
-        studentsSnap.forEach(d => {
-          allStudents.push({ id: d.id, ...d.data() });
-        });
-
-        // تحديث القائمة المنسدلة في المودال
-        preloadStudentsSelect();
-        
-        // عرض كشف الطلاب والموقف المالي
-        renderStudentsStatusTable();
-      });
-
-      // 2. تتبع خطط الاشتراكات لحظياً
-      onSnapshot(collection(db, "subscriptions"), (subsSnap) => {
-        allSubscriptions = [];
-        subsSnap.forEach(d => {
-          allSubscriptions.push({ id: d.id, ...d.data() });
-        });
-
-        // إعادة عرض جدول الموقف المالي للطلاب بالتفاصيل الجديدة
-        renderStudentsStatusTable();
-        
-        // تحديث عداد الإيرادات المتوقعة تلقائياً في الوقت الحقيقي
-        updateExpectedRevenue();
-      });
-    }
-
-    // حساب وتحديث الإيرادات المتوقعة من الاشتراكات النشطة
-    function updateExpectedRevenue() {
-      const activeSubs = allSubscriptions.filter(s => s.status === 'active');
-      const expectedRevenue = activeSubs.reduce((sum, s) => sum + (parseFloat(s.price) || 0), 0);
-      const el = document.getElementById('expectedRevenueVal');
-      if (el) {
-        animateTextCounter(el, `${expectedRevenue.toLocaleString('ar-EG')} ج.م`);
-      }
-    }
-
-    // جلب وتحديث خيارات اختيار الطالب بمودال التسجيل المالي
-    function preloadStudentsSelect() {
-      const select = document.getElementById('payStudentSelect');
-      if (select) {
-        select.innerHTML = '<option value="">-- اختر طالباً من الأكاديمية --</option>' +
-          allStudents.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-      }
-    }
-
-    // جلب الطلاب لملء الاختيارات في المودال (للعمل بالتوافق مع الأنظمة الأخرى)
-    async function preloadStudentsList() {
-      preloadStudentsSelect();
-    }
-
-    // عرض جدول الموقف المالي العام للدارسين
-    function renderStudentsStatusTable(filterText = "") {
-      const tbody = document.getElementById('studentsStatusTableBody');
-      if (!tbody) return;
-
-      const filtered = allStudents.filter(s => {
-        return !filterText || (s.name && s.name.toLowerCase().includes(filterText.toLowerCase()));
-      });
-
-      if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">سجل الطلاب فارغ أو لا توجد نتائج مطابقة للبحث.</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = filtered.map(s => {
-        // البحث عن خطة الاشتراك المرتبطة بهذا الطالب
-        const sub = allSubscriptions.find(x => x.studentId === s.id);
-        
-        let planName = 'لا توجد خطة نشطة ⚠️';
-        let priceLabel = '0 ج.م';
-        let validityLabel = 'غير محدد';
-        let statusBadge = '<span class="badge" style="position:static; background-color: var(--danger-light); color: var(--danger); font-weight:700;">غير مشترك ❌</span>';
-
-        if (sub) {
-          planName = sub.planName || 'خطة اشتراك مخصصة';
-          priceLabel = `${sub.price} ج.م`;
-          validityLabel = `من: ${sub.startDate || '-'} <br> إلى: ${sub.endDate || '-'}`;
-          
-          if (sub.status === 'active') {
-            statusBadge = '<span class="badge" style="position:static; background-color: var(--success-light); color: var(--success); font-weight:700;">نشط ومسدد ✅</span>';
-          } else if (sub.status === 'expired') {
-            statusBadge = '<span class="badge" style="position:static; background-color: var(--danger-light); color: var(--danger); font-weight:700;">منتهي الصلاحية ❌</span>';
-          } else {
-            statusBadge = '<span class="badge" style="position:static; background-color: var(--warning-light); color: var(--warning); font-weight:700;">معلق الدفع ⏳</span>';
-          }
-        }
-
-        return `
-          <tr>
-            <td><strong>${s.name}</strong></td>
-            <td><span class="badge" style="position:static; background-color: var(--primary-light); color: var(--primary-color); font-weight:700;">${planName}</span></td>
-            <td><strong style="color: var(--success); font-size:1rem;">${priceLabel}</strong></td>
-            <td style="font-size: 0.8rem; color: var(--text-secondary); line-height:1.4;">${validityLabel}</td>
-            <td>${statusBadge}</td>
-            <td>
-              <button class="btn btn-primary quick-pay-btn" data-id="${s.id}" style="padding:0.4rem 0.8rem; font-size:0.8rem; background: var(--success); border-color: var(--success); display:flex; align-items:center; gap:0.25rem;">
-                <i data-lucide="plus-circle" style="width:14px;height:14px;color:#fff;"></i> تسجيل تحصيل مالي
-              </button>
-            </td>
-          </tr>
-        `;
-      }).join('');
-
-      if (window.lucide) {
-        window.lucide.createIcons();
-      }
-
-      // ربط أزرار الدفع السريع المباشر من جدول الطلاب
-      tbody.querySelectorAll('.quick-pay-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const studentId = e.currentTarget.dataset.id;
-          document.getElementById('addPaymentForm').reset();
-          
-          const select = document.getElementById('payStudentSelect');
-          if (select) {
-            select.value = studentId;
-          }
-
-          // فتح المودال مباشرة
-          document.getElementById('addPaymentModal').style.display = 'flex';
-        });
-      });
-    }
-
-    // جلب ومعالجة المدفوعات في الوقت الحقيقي وتحديث الإحصائيات
-    function initPaymentsRealtime() {
-      const tbody = document.getElementById('paymentsTableBody');
-      if (!tbody) return;
-
-      onSnapshot(collection(db, "payments"), (snapshot) => {
-        allPayments = [];
-        snapshot.forEach(docSnap => {
-          allPayments.push({ id: docSnap.id, ...docSnap.data() });
-        });
-
-        // ترتيب من الأحدث للأقدم
-        allPayments.sort((a,b) => {
-          const timeA = a.createdAt?.seconds || 0;
-          const timeB = b.createdAt?.seconds || 0;
-          return timeB - timeA;
-        });
-
-        // تحديث إحصائيات KPI المالية
-        updateFinancialKPIs(allPayments);
-
-        // عرض الجدول الأصلي
-        renderPaymentsTable(allPayments);
-      });
-    }
-
-    // حساب وعرض مؤشرات KPI
-    function updateFinancialKPIs(list) {
-      const totalRevenue = list.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
-      const totalReceipts = list.length;
-      const avgReceipt = totalReceipts > 0 ? (totalRevenue / totalReceipts) : 0;
-
-      document.getElementById('totalRevenueVal').textContent = `${totalRevenue.toLocaleString('ar-EG')} ج.م`;
-      document.getElementById('totalReceiptsVal').textContent = totalReceipts.toLocaleString('ar-EG');
-      document.getElementById('avgReceiptVal').textContent = `${Math.round(avgReceipt).toLocaleString('ar-EG')} ج.م`;
-    }
-
-    // عرض جدول المدفوعات
-    function renderPaymentsTable(list) {
-      const tbody = document.getElementById('paymentsTableBody');
-      if (!tbody) return;
-
-      if (list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">سجل المقبوضات المالية فارغ أو لا توجد نتائج مطابقة للتصفية.</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = list.map(p => {
-        const dateStr = p.createdAt ? new Date(p.createdAt.seconds * 1000).toLocaleString('ar-EG') : 'غير مسجل';
-        return `
-          <tr>
-            <td><strong>${dateStr}</strong></td>
-            <td><strong>${p.studentName}</strong></td>
-            <td><strong style="color: var(--success); font-weight: 700; font-size:1rem;">${p.amount} ج.م</strong></td>
-            <td>
-              <span class="badge" style="position:static; background-color: var(--primary-light); color: var(--primary-color); font-weight:700;">${p.method}</span>
-              <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">${p.notes || ''}</div>
-            </td>
-            <td>${p.adminName || 'مشرف النظام'}</td>
-            <td>
-              <div style="display: flex; gap: 0.4rem;">
-                <button class="btn btn-primary edit-pay-btn" data-id="${p.id}" style="padding:0.4rem; background: var(--primary-color); border-color: var(--primary-color);" title="تعديل هذا الإيصال">
-                  <i data-lucide="edit-3" style="width:14px;height:14px;color:#fff;"></i>
-                </button>
-                <button class="btn btn-secondary delete-payment-btn" data-id="${p.id}" style="padding: 0.4rem; color: var(--danger);" title="حذف هذا الإيصال">
-                  <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
-                </button>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join('');
-
-      if (window.lucide) {
-        window.lucide.createIcons();
-      }
-      setupPaymentListeners();
-    }
-
-    // تفعيل فلاتر البحث والفرز الفوري
-    function setupFilters() {
-      const searchInput = document.getElementById('financialSearchInput');
-      const methodFilter = document.getElementById('financialMethodFilter');
-      const studentsStatusSearchInput = document.getElementById('studentsStatusSearchInput');
-
-      // تصفية إيصالات المقبوضات
-      const applyFilters = () => {
-        const queryText = searchInput.value.trim().toLowerCase();
-        const selectedMethod = methodFilter.value;
-
-        const filtered = allPayments.filter(p => {
-          const matchQuery = !queryText || 
-            (p.studentName && p.studentName.toLowerCase().includes(queryText)) ||
-            (p.notes && p.notes.toLowerCase().includes(queryText));
-
-          const matchMethod = !selectedMethod || 
-            (p.method && p.method.includes(selectedMethod));
-
-          return matchQuery && matchMethod;
-        });
-
-        renderPaymentsTable(filtered);
-      };
-
-      searchInput?.addEventListener('input', applyFilters);
-      methodFilter?.addEventListener('change', applyFilters);
-
-      // تصفية جدول الموقف المالي للطلاب
-      studentsStatusSearchInput?.addEventListener('input', (e) => {
-        const queryText = e.target.value.trim();
-        renderStudentsStatusTable(queryText);
-      });
-    }
-
-    // ربط عمليات التعديل والحذف لقيد مالي
-    function setupPaymentListeners() {
-      // حذف قيد مالي
-      document.querySelectorAll('.delete-payment-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-          const id = e.target.closest('.delete-payment-btn').dataset.id;
-          const p = allPayments.find(item => item.id === id);
-          if (confirm(`هل أنت متأكد من رغبتك بحذف قيد المقبوضات بقيمة (${p?.amount} ج.م) للطالب (${p?.studentName}) نهائياً؟`)) {
-            await deleteDoc(doc(db, "payments", id));
-            Toast.danger("تم إزالة القيد المالي المحدد.");
-          }
-        });
-      });
-
-      // فتح مودال تعديل إيصال مالي
-      document.querySelectorAll('.edit-pay-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const id = e.target.closest('.edit-pay-btn').dataset.id;
-          const p = allPayments.find(item => item.id === id);
-          if (!p) return;
-
-          currentEditingPayId = id;
-          document.getElementById('editPayStudentName').value = p.studentName || '';
-          document.getElementById('editPayAmount').value = p.amount || '';
-          document.getElementById('editPayMethod').value = p.method || 'فودافون كاش (Vodafone Cash)';
-          document.getElementById('editPayNotes').value = p.notes || '';
-
-          document.getElementById('editPaymentModal').style.display = 'flex';
-        });
-      });
-    }
-
-    // --- مودال تسجيل عملية تحصيل جديدة ---
-    const addPayModal = document.getElementById('addPaymentModal');
-    document.getElementById('addNewPaymentBtn')?.addEventListener('click', async () => {
-      await preloadStudentsSelect();
-      document.getElementById('addPaymentForm').reset();
-      addPayModal.style.display = 'flex';
-    });
-
-    document.getElementById('btnCloseAddPayModal')?.addEventListener('click', () => { addPayModal.style.display = 'none'; });
-    document.getElementById('btnCancelAddPayModal')?.addEventListener('click', () => { addPayModal.style.display = 'none'; });
-
-    document.getElementById('addPaymentForm')?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const studentId = document.getElementById('payStudentSelect').value;
-      const student = allStudents.find(s => s.id === studentId);
-      if (!student) {
-        Toast.warning("يرجى اختيار طالب أولاً.");
-        return;
-      }
-
-      const amount = parseFloat(document.getElementById('payAmount').value) || 0;
-      const method = document.getElementById('payMethod').value;
-      const notes = document.getElementById('payNotes').value.trim();
-
-      try {
-        await addDoc(collection(db, "payments"), {
-          studentId: student.id,
-          studentName: student.name,
-          amount,
-          method,
-          notes,
-          adminName: currentAdminName,
-          createdAt: serverTimestamp()
-        });
-
-        Toast.success("تم تسجيل عملية التحصيل وتوثيقها بالحسابات بنجاح ✅");
-        addPayModal.style.display = 'none';
-      } catch (err) {
-        console.error(err);
-        Toast.danger("عذرًا، فشل تسجيل العملية المالية.");
-      }
-    });
-
-    // --- مودال تعديل عملية تحصيل ---
-    const editPayModal = document.getElementById('editPaymentModal');
-    document.getElementById('btnCloseEditPayModal')?.addEventListener('click', () => { editPayModal.style.display = 'none'; });
-    document.getElementById('btnCancelEditPayModal')?.addEventListener('click', () => { editPayModal.style.display = 'none'; });
-
-    document.getElementById('editPaymentForm')?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (!currentEditingPayId) return;
-
-      const amount = parseFloat(document.getElementById('editPayAmount').value) || 0;
-      const method = document.getElementById('editPayMethod').value;
-      const notes = document.getElementById('editPayNotes').value.trim();
-
-      try {
-        const docRef = doc(db, "payments", currentEditingPayId);
-        await updateDoc(docRef, {
-          amount,
-          method,
-          notes
-        });
-
-        Toast.success("تم تعديل وحفظ إيصال القبض بنجاح ✅");
-        editPayModal.style.display = 'none';
-      } catch (err) {
-        console.error(err);
-        Toast.danger("عذرًا، فشل تعديل السند المالي.");
-      }
-    });
-  </script>
 </body>
 </html>
