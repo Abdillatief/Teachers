@@ -110,7 +110,7 @@ async function main() {
   const commit = await gh(`${API}/repos/${OWNER}/${REPO}/git/commits`, {
     method: 'POST',
     body: JSON.stringify({
-      message: 'Update Sabeel SYS: icon, download CTA, Capacitor/OneSignal prep',
+      message: process.env.GITHUB_COMMIT_MESSAGE || 'Fix admin modals/layout, notifications page, download APK path, and push error handling',
       tree: tree.sha,
       parents: [headSha]
     })

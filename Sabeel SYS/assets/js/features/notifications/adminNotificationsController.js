@@ -48,6 +48,7 @@ let cachedStudents = [];
 let cachedTemplates = [];
 let unsubscribeNotifications = null;
 let unsubscribeDevices = null;
+let cachedHistoryItems = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
   auth.onAuthStateChanged(async (user) => {
@@ -380,15 +381,19 @@ async function loadTemplatesTab() {
     container.innerHTML = `<div style="text-align: center; color: #ef4444; padding: 2rem;">تعذر تحميل القوالب: ${e.message}</div>`;
   }
 
-  // Restore Default Templates Button
-  document.getElementById('btnSeedTemplates')?.addEventListener('click', async () => {
-    showCustomConfirm('هل تريد استعادة جميع القوالب الافتراضية الثمانية المعيارية؟', async () => {
-      await seedDefaultTemplates();
-      cachedTemplates = await getAllTemplates();
-      renderTemplatesGrid(cachedTemplates);
-      Toast.success("تمت استعادة القوالب الافتراضية بنجاح.");
+  // Restore Default Templates Button (guard against duplicate listeners on refresh)
+  const seedBtn = document.getElementById('btnSeedTemplates');
+  if (seedBtn && !seedBtn.dataset.bound) {
+    seedBtn.dataset.bound = '1';
+    seedBtn.addEventListener('click', async () => {
+      showCustomConfirm('هل تريد استعادة جميع القوالب الافتراضية المعيارية؟', async () => {
+        await seedDefaultTemplates();
+        cachedTemplates = await getAllTemplates();
+        renderTemplatesGrid(cachedTemplates);
+        Toast.success("تمت استعادة القوالب الافتراضية بنجاح.");
+      });
     });
-  });
+  }
 }
 
 function renderTemplatesGrid(templates) {
@@ -520,6 +525,9 @@ document.getElementById('btnCloseEditTemplate')?.addEventListener('click', () =>
 document.getElementById('btnCancelEditTemplate')?.addEventListener('click', () => {
   document.getElementById('modalEditTemplate').style.display = 'none';
 });
+document.getElementById('modalEditTemplate')?.addEventListener('click', (e) => {
+  if (e.target.id === 'modalEditTemplate') e.currentTarget.style.display = 'none';
+});
 
 document.getElementById('formEditTemplate')?.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -580,13 +588,14 @@ function initHistoryListener() {
 }
 
 function renderHistoryTable(items) {
+  if (Array.isArray(items)) cachedHistoryItems = items;
   const tbody = document.getElementById('notifHistoryTableBody');
   const filterStatus = document.getElementById('filterHistoryStatus')?.value || 'all';
   if (!tbody) return;
 
-  let filtered = items;
+  let filtered = cachedHistoryItems;
   if (filterStatus !== 'all') {
-    filtered = items.filter(i => i.status === filterStatus);
+    filtered = cachedHistoryItems.filter(i => i.status === filterStatus);
   }
 
   if (filtered.length === 0) {
@@ -680,7 +689,7 @@ function renderHistoryTable(items) {
 }
 
 document.getElementById('filterHistoryStatus')?.addEventListener('change', () => {
-  initHistoryListener();
+  renderHistoryTable();
 });
 
 /**

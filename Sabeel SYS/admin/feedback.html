@@ -94,17 +94,13 @@
   </style>
 </head>
 <body class="admin-theme">
-  <div class="app-layout">
-    <!-- Sidebar -->
+  <div class="app-container">
     <aside class="sidebar" id="appSidebar"></aside>
 
-    <!-- Main Content -->
-    <main class="main-content">
-      <!-- Navbar -->
-      <header class="navbar" id="appNavbar"></header>
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
 
-      <!-- Page Content -->
-      <div class="content-container">
+      <main class="content-body">
         <!-- Page Header -->
         <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
           <div>
@@ -225,8 +221,8 @@
             <span>جاري تحميل آراء ومقترحات المعلمين...</span>
           </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   </div>
 
   <!-- Modal: Send New Feedback Request To Teachers -->

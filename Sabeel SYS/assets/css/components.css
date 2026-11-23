@@ -620,11 +620,15 @@ textarea.form-control {
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   z-index: var(--z-modal);
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   padding: 1.5rem 1rem;
   overflow-y: auto;
+}
+
+.modal-overlay.active, .modal-backdrop.active {
+  display: flex;
   animation: modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 

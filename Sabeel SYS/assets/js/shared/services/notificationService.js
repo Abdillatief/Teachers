@@ -451,7 +451,13 @@ export async function sendNotification({
 
     if (!isSuccess) {
       console.warn('[NotificationService Warning] Push dispatch returned error:', resJson);
-      return { success: false, notificationId: notifId, error: resJson?.errors || `Status ${response.status}` };
+      const rawErr = resJson?.errors ?? resJson?.error ?? resJson?.message ?? `Status ${response.status}`;
+      const errText = Array.isArray(rawErr) ? rawErr.filter(Boolean).join('; ') : (rawErr && typeof rawErr === 'object') ? JSON.stringify(rawErr) : String(rawErr || `Status ${response.status}`);
+      const lower = errText.toLowerCase();
+      if (lower.includes('all included players are not subscribed') || lower.includes('not subscribed') || lower.includes('no subscribed players')) {
+        return { success: false, notificationId: notifId, error: 'لا يوجد جهاز/اشتراك Push مُفعّل للمستلم. اطلب من المستخدم فتح الموقع/التطبيق والسماح بالإشعارات، ثم أعد المحاولة.', rawError: errText };
+      }
+      return { success: false, notificationId: notifId, error: errText };
     }
 
     console.log('[NotificationService Success] Dispatched successfully:', { notifId, cleanTitle, targets: targetExternalIds });

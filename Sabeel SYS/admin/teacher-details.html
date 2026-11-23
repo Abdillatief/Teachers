@@ -176,12 +176,13 @@
 
 </head>
 <body>
-  <div id="sidebar-container"></div>
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
 
-  <div class="main-content">
-    <div id="navbar-container"></div>
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
 
-    <div class="content-body">
+      <main class="content-body">
       <!-- Top Breadcrumb & Return Link -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
         <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: var(--text-secondary); font-weight: 700;">
@@ -693,6 +694,7 @@
     <div style="position: relative; max-width: 90vw; max-height: 90vh;" onclick="event.stopPropagation()">
       <button onclick="closeImgModal()" style="position: absolute; top: -15px; left: -15px; background: red; color: white; border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-weight: bold; font-size: 16px;">✕</button>
       <img id="imgPreviewTarget" src="" style="max-width: 100%; max-height: 85vh; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);" alt="إيصال التحويل">
+    </main>
     </div>
   </div>
 
