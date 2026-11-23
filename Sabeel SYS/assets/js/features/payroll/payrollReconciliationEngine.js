@@ -158,12 +158,10 @@ export function reconcileTeacherCurrentSalary(teacher, allSessions, groups, stud
   const deductions = parseFloat(teacher.salaryDeductions || 0);
 
   // 1. Filter sessions strictly associated with this teacher
-  const teacherSessions = (allSessions || []).filter(s => {
-    return s.teacherId === teacherId ||
-      s.teacherUid === teacherId ||
-      (s.teacherName && teacher.name && s.teacherName.trim().toLowerCase() === teacher.name.trim().toLowerCase()) ||
-      (s.teacherEmail && teacher.email && s.teacherEmail.trim().toLowerCase() === teacher.email.trim().toLowerCase());
-  });
+  const all = (allSessions || []);
+  const direct = all.filter(s => s.teacherId === teacherId || s.teacherUid === teacherId || (s.teacherName && teacher.name && s.teacherName.trim().toLowerCase() === teacher.name.trim().toLowerCase()) || (s.teacherEmail && teacher.email && s.teacherEmail.trim().toLowerCase() === teacher.email.trim().toLowerCase()));
+  // If caller already passed teacher-specific sessions and direct match failed due id mismatch, fallback safely
+  const teacherSessions = direct.length > 0 ? direct : (all.length > 0 && all.every(s => !s.teacherId || s.teacherId === teacherId || s.teacherUid === teacherId) ? all : direct);
 
   // Filter only sessions matching target month date
   const monthSessions = teacherSessions.filter(s => s.date && s.date.startsWith(ym));
