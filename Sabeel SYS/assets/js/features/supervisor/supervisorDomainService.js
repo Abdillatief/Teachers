@@ -133,6 +133,8 @@ export function getStudentDefaultDuration(student) {
   const pkgStr = String(student.packageName || student.package || student.planName || '').toLowerCase();
   if (pkgStr.includes('30') || pkgStr.includes('نصف ساعة') || pkgStr.includes('ثلاثون')) return '30';
   if (pkgStr.includes('45') || pkgStr.includes('ساعة الا ربع') || pkgStr.includes('ساعة إلا ربع')) return '45';
+  // "ساعة وربع" = 75 minutes (distinct from "ساعة إلا ربع" = 45). Check before the generic "ساعة" branch.
+  if (pkgStr.includes('75') || pkgStr.includes('ساعة وربع') || pkgStr.includes('ساعة و ربع') || pkgStr.includes('ساعه وربع')) return '75';
   if (pkgStr.includes('90') || pkgStr.includes('ساعة ونصف') || pkgStr.includes('ساعة و نصف')) return '90';
   if (pkgStr.includes('120') || pkgStr.includes('ساعتان') || pkgStr.includes('ساعتين')) return '120';
   if (pkgStr.includes('60') || pkgStr.includes('ساعة')) return '60';
@@ -332,20 +334,22 @@ export function computeTeacherAvailableSlots({
     (k) => normalizeArabicDay(k) === normTargetDay
   );
 
-  if (matchedDayKey && Array.isArray(weeklySchedule[matchedDayKey]) && weeklySchedule[matchedDayKey].length > 0) {
+  if (matchedDayKey) {
+    // A schedule exists for this weekday: never silently fall back to generic hours,
+    // even when its windows are empty or malformed.
     hasConfiguredSchedule = true;
-    weeklySchedule[matchedDayKey].forEach((win) => {
-      const startM = parseTimeToMinutes(win.start || win.from);
-      const endM = parseTimeToMinutes(win.end || win.to);
-      if (startM < 9999 && endM < 9999 && endM > startM) {
-        workIntervals.push([startM, endM]);
-      }
-    });
-  } else if (matchedDayKey && weeklySchedule[matchedDayKey]?.enabled === false) {
-    return { targetDayName, hasConfiguredSchedule: true, slots: [], busyIntervals: [] };
+    if (Array.isArray(weeklySchedule[matchedDayKey]) && weeklySchedule[matchedDayKey].length > 0) {
+      weeklySchedule[matchedDayKey].forEach((win) => {
+        const startM = parseTimeToMinutes(win.start || win.from);
+        const endM = parseTimeToMinutes(win.end || win.to);
+        if (startM < 9999 && endM < 9999 && endM > startM) {
+          workIntervals.push([startM, endM]);
+        }
+      });
+    }
   }
 
-  if (workIntervals.length === 0) {
+  if (workIntervals.length === 0 && !hasConfiguredSchedule) {
     // Default operational academy hours: 08:00 AM to 11:00 PM
     workIntervals = [[8 * 60, 23 * 60]];
   }
@@ -513,6 +517,13 @@ export async function recordLessonWithWorkflow(payload, actor = {}) {
     status === LESSON_STATUSES.COMPENSATORY ||
     (status === LESSON_STATUSES.STUDENT_ABSENT && absenceType === 'unexcused');
 
+  const isSupervisor = actor.role === 'supervisor';
+  // Supervisors may only create unapproved sessions. NEVER write approval/financial
+  // flags on an update: those remain owned by the admin/teacher workflow.
+  const resolvedApproved = isSupervisor
+    ? false
+    : (approved !== undefined ? approved : (actor.role === 'admin' || (actor.role === 'teacher' && !isTrial)));
+
   const sessionData = {
     studentId: studentId || '',
     studentName: isTrial ? (trialStudentName || studentName || 'طالب تجريبي') : (studentName || studentSnapData?.name || ''),
@@ -530,7 +541,7 @@ export async function recordLessonWithWorkflow(payload, actor = {}) {
     actualSurahName: actualSurahName || surahName || '',
     actualVerse: Number(actualVerse || 0),
     memorizationDirection: memorizationDirection || 'ascending',
-    approved: approved !== undefined ? approved : (actor.role === 'admin' || (actor.role === 'teacher' && !isTrial)),
+    approved: resolvedApproved,
     salaryCalculated: salaryCalculated !== undefined ? salaryCalculated : (!isTrial && isCompensableStatus),
     isCalculated: isCalculated !== undefined ? isCalculated : (!isTrial && isCompensableStatus),
     trialStatus: isTrial ? (trialStatus || 'pending') : null,
@@ -573,7 +584,16 @@ export async function recordLessonWithWorkflow(payload, actor = {}) {
     } catch (prevErr) {
       console.warn('Could not read previous session snapshot:', prevErr?.message || prevErr);
     }
-    await updateDoc(doc(db, 'sessions', existingSessionId), sessionData);
+
+    const updateData = { ...sessionData };
+    // Keep the stored approval/financial decision untouched on updates.
+    delete updateData.approved;
+    delete updateData.salaryCalculated;
+    delete updateData.isCalculated;
+    if (oldSnapshot && Object.prototype.hasOwnProperty.call(oldSnapshot, 'approved')) {
+      updateData.approvalStatus = oldSnapshot.approved === true ? 'approved' : 'pending';
+    }
+    await updateDoc(doc(db, 'sessions', existingSessionId), updateData);
   } else {
     sessionData.createdBy = actor.uid || teacherId;
     sessionData.createdByRole = actor.role || 'teacher';
@@ -620,6 +640,7 @@ export async function recordLessonWithWorkflow(payload, actor = {}) {
       postponedFrom: date,
       teacherNotes: teacherNotes || '',
       notes: `حصة تعويضية عن حصة مؤجلة بتاريخ ${date}`,
+      approved: false,
       approvalStatus: 'pending',
       createdBy: actor.uid || teacherId,
       createdByRole: actor.role || 'teacher',
@@ -792,6 +813,9 @@ export async function approveAndExecuteSupervisorRequest(req, adminNote = '', ac
   const payload = req.payload || {};
   const targetId = req.targetId || payload.targetId || payload.studentId || payload.teacherId || payload.sessionId || '';
 
+  // A request is only marked approved/executed after a concrete write branch succeeds.
+  let executed = false;
+
   if (req.type === 'student_schedule_change' && targetId && payload.schedule) {
     await updateDoc(doc(db, 'students', targetId), {
       schedule: payload.schedule,
@@ -801,6 +825,7 @@ export async function approveAndExecuteSupervisorRequest(req, adminNote = '', ac
       updatedAt: serverTimestamp()
     });
     await syncStudentOperationalSummary(targetId);
+    executed = true;
   } else if (req.type === 'teacher_replacement' && targetId && payload.newTeacherId) {
     await updateDoc(doc(db, 'students', targetId), {
       teacherId: payload.newTeacherId,
@@ -808,6 +833,7 @@ export async function approveAndExecuteSupervisorRequest(req, adminNote = '', ac
       updatedAt: serverTimestamp()
     });
     await syncStudentOperationalSummary(targetId);
+    executed = true;
   } else if (req.type === 'lesson_cancellation' && targetId) {
     await updateDoc(doc(db, 'sessions', targetId), {
       status: LESSON_STATUSES.CANCELLED,
@@ -815,7 +841,11 @@ export async function approveAndExecuteSupervisorRequest(req, adminNote = '', ac
       cancellationResponsibility: payload.responsibility || 'academy',
       updatedAt: serverTimestamp()
     });
-  } else if (req.type === 'package_change' && targetId) {
+    executed = true;
+  } else if (req.type === 'package_change' && targetId && (
+    payload.packageName || payload.sessionDuration !== undefined ||
+    payload.totalLessons !== undefined || payload.remainingSessions !== undefined
+  )) {
     const updateFields = { updatedAt: serverTimestamp() };
     if (payload.packageName) updateFields.packageName = payload.packageName;
     if (payload.sessionDuration) updateFields.sessionDuration = Number(payload.sessionDuration);
@@ -826,20 +856,30 @@ export async function approveAndExecuteSupervisorRequest(req, adminNote = '', ac
     }
     await updateDoc(doc(db, 'students', targetId), updateFields);
     await syncStudentOperationalSummary(targetId);
+    executed = true;
   } else if (req.type === 'suspend_teacher' && targetId) {
     await updateDoc(doc(db, 'users', targetId), {
       status: 'suspended',
       updatedAt: serverTimestamp()
     });
     await syncTeacherOperationalProfile(targetId);
+    executed = true;
   } else if (req.type === 'delete_student' && targetId) {
     await updateDoc(doc(db, 'students', targetId), {
       status: 'archived',
       updatedAt: serverTimestamp()
     });
     await syncStudentOperationalSummary(targetId);
+    executed = true;
   } else if (req.type === 'delete_session' && targetId) {
     await deleteDoc(doc(db, 'sessions', targetId));
+    executed = true;
+  }
+
+  if (!executed) {
+    const reason = 'لم يتحقق أي فرع تنفيذي صالح لهذا الطلب، ولذلك لم يتم اعتماده.';
+    console.warn('approveAndExecuteSupervisorRequest:', reason, req.type);
+    return { executed: false, reason };
   }
 
   await updateDoc(reqRef, {
@@ -862,6 +902,8 @@ export async function approveAndExecuteSupervisorRequest(req, adminNote = '', ac
     summary: `اعتماد وتنفيذ طلب المشرف: ${req.title || getRequestTypeLabel(req.type)}`,
     reason: adminNote || ''
   });
+
+  return { executed: true };
 }
 
 export async function rejectSupervisorRequest(reqId, req, adminNote = '', actor = {}) {

@@ -75,6 +75,43 @@
 
     let currentAdminName = "مشرف النظام";
 
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // Accepts Firestore Timestamp, ISO string, epoch number or {seconds} object.
+    function toMillis(value) {
+      if (!value) return null;
+      if (typeof value.toDate === 'function') {
+        const d = value.toDate();
+        return d instanceof Date && !Number.isNaN(d.getTime()) ? d.getTime() : null;
+      }
+      if (typeof value === 'number') {
+        const ms = value > 1e12 ? value : value * 1000;
+        return Number.isFinite(ms) ? ms : null;
+      }
+      if (typeof value === 'string') {
+        const ms = Date.parse(value);
+        return Number.isFinite(ms) ? ms : null;
+      }
+      if (typeof value.seconds === 'number') {
+        const ms = value.seconds * 1000 + Math.floor((value.nanoseconds || 0) / 1e6);
+        return Number.isFinite(ms) ? ms : null;
+      }
+      return null;
+    }
+
+    // Single local formatter: Arabic date/time, or "—" for missing/invalid dates.
+    function formatDateSafe(value) {
+      const ms = toMillis(value);
+      return ms === null ? '—' : new Date(ms).toLocaleString('ar-EG');
+    }
+
     auth.onAuthStateChanged((user) => {
       if (user) {
         currentAdminName = user.displayName || "مدير الأكاديمية";
@@ -99,28 +136,28 @@
           list.push({ id: docSnap.id, ...docSnap.data() });
         });
 
-        // فرز من الأحدث للأقدم
-        list.sort((a, b) => {
-          const dateA = a.deletedAt?.seconds || 0;
-          const dateB = b.deletedAt?.seconds || 0;
-          return dateB - dateA;
-        });
+        // فرز من الأحدث للأقدم (يتوافق مع كل أشكال الطابع الزمني)
+        list.sort((a, b) => (toMillis(b.deletedAt) ?? 0) - (toMillis(a.deletedAt) ?? 0));
 
         tbody.innerHTML = list.map(item => {
-          const dateStr = item.deletedAt ? new Date(item.deletedAt.seconds * 1000).toLocaleString('ar-EG') : 'غير محدد';
+          const dateStr = escapeHtml(formatDateSafe(item.deletedAt));
           const payloadData = item.data || {};
-          const label = payloadData.name || payloadData.studentName || item.originalId || "مستند مبهم";
+          const label = escapeHtml(payloadData.name || payloadData.studentName || item.originalId || "مستند مبهم");
+          const originalId = escapeHtml(item.originalId ?? '');
+          const reason = escapeHtml(item.deletionReason || item.description || 'حذف معلق');
+          const deletedBy = escapeHtml(item.deletedByName || 'مدير عام');
+          const docId = escapeHtml(item.id);
           
           return `
             <tr>
-              <td><strong>${label}</strong><div style="font-size: 0.75rem; color: var(--text-muted);">ID: ${item.originalId}</div></td>
+              <td><strong>${label}</strong><div style="font-size: 0.75rem; color: var(--text-muted);">ID: ${originalId}</div></td>
               <td><span class="badge" style="position: static; background-color: var(--primary-light); color: var(--primary-color);">${item.originalCollection === 'users' ? 'معلم 👤' : 'طالب / حصة 📅'}</span></td>
-              <td>${dateStr}<div style="font-size: 0.75rem; color: var(--danger); font-weight: 600;">السبب: ${item.deletionReason || 'حذف معلق'}</div></td>
-              <td>${item.deletedByName || 'مدير عام'}</td>
+              <td>${dateStr}<div style="font-size: 0.75rem; color: var(--danger); font-weight: 600;">السبب: ${reason}</div></td>
+              <td>${deletedBy}</td>
               <td>
                 <div style="display: flex; gap: 0.5rem;">
-                  <button class="btn btn-primary restore-btn" data-id="${item.id}" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;"><i data-lucide="rotate-ccw" style="width:14px;height:14px;"></i> استعادة</button>
-                  <button class="btn btn-secondary delete-final-btn" data-id="${item.id}" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; color: var(--danger);"><i data-lucide="trash-2" style="width:14px;height:14px;"></i> إتلاف</button>
+                  <button class="btn btn-primary restore-btn" data-id="${docId}" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;"><i data-lucide="rotate-ccw" style="width:14px;height:14px;"></i> استعادة</button>
+                  <button class="btn btn-secondary delete-final-btn" data-id="${docId}" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; color: var(--danger);"><i data-lucide="trash-2" style="width:14px;height:14px;"></i> إتلاف</button>
                 </div>
               </td>
             </tr>
@@ -142,7 +179,7 @@
           const record = list.find(r => r.id === id);
           if (!record) return;
 
-          showCustomConfirm(`هل تريد استعادة السجل المحذوف (${record.data?.name || record.data?.studentName || 'المستند'}) وإعادته لمكانه المعتمد فوراً؟`, async () => {
+          showCustomConfirm(`هل تريد استعادة السجل المحذوف (${escapeHtml(record.data?.name || record.data?.studentName || 'المستند')}) وإعادته لمكانه المعتمد فوراً؟`, async () => {
             try {
               // 1. إعادة المستند لجدوله الأصلي
               await setDoc(doc(db, record.originalCollection, record.originalId), record.data);
@@ -166,7 +203,7 @@
           showCustomConfirm("🚨 تنبيه: هل تريد إتلاف وإزالة هذا السجل نهائياً تماماً من الخادم وقاعدة البيانات؟ لا يمكن التراجع!", async () => {
             try {
               await deleteDoc(doc(db, "trash", id));
-              Toast.danger("تم إتلاف وإزالة السجل نهائياً.");
+              Toast.success("تم إتلاف وإزالة السجل نهائياً.");
             } catch (err) {
               console.error(err);
               Toast.danger("فشل إتلاف السجل.");

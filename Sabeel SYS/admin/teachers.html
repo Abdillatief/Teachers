@@ -288,8 +288,8 @@
               <h4 style="font-weight: 800; margin-bottom: 1rem;"><i data-lucide="calculator"></i> حسابات الدورة المالية الجارية</h4>
               <div class="card" style="padding: 1.25rem; background-color: var(--bg-primary);">
                 <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.9rem;">
-                  <div style="display: flex; justify-content: space-between;"><span>سعر الساعة الفردية:</span><strong><span id="payrollHourlyRateInd">-</span> ج.م</strong></div>
-                  <div style="display: flex; justify-content: space-between;"><span>سعر الساعة الجماعية:</span><strong><span id="payrollHourlyRateGrp">-</span> ج.م</strong></div>
+                  <div style="display: flex; justify-content: space-between;"><span>سعر الساعة الفردية:</span><strong><span id="payrollHourlyRateInd">جار التحميل…</span></strong></div>
+                  <div style="display: flex; justify-content: space-between;"><span>سعر الساعة الجماعية:</span><strong><span id="payrollHourlyRateGrp">جار التحميل…</span></strong></div>
                   <div style="display: flex; justify-content: space-between; align-items: center;">
                     <span>الهدف الشهري للساعات:</span>
                     <div style="display: flex; align-items: center; gap: 0.4rem;">
@@ -460,9 +460,10 @@
     import { protectRoute } from '../assets/js/features/auth/authService.js';
     import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
     import { renderNavbar } from '../assets/js/shared/components/navbar.js';
-    import { collection, onSnapshot, doc, getDoc, updateDoc, deleteDoc, setDoc, query, where, getDocs, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+    import { collection, onSnapshot, doc, getDoc, updateDoc, deleteDoc, addDoc, setDoc, query, where, getDocs, orderBy, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
     import { Toast } from '../assets/js/shared/utils/toast.js';
     import { calculateExpectedTeacherSalary } from '../assets/js/shared/utils/helpers.js';
+    import { reconcileTeacherCurrentSalary } from '../assets/js/features/payroll/payrollReconciliationEngine.js';
     import { writeAuditLog } from '../assets/js/features/audit/auditService.js';
     import { checkAndAutoArchivePreviousMonth } from '../assets/js/features/teachers/teachersController.js';
     import { softDeleteToTrash } from '../assets/js/features/trash/trashService.js';
@@ -477,6 +478,8 @@
     let activeTeacher = null;
     let activeTeacherId = "";
     let activeTeacherSessions = [];
+    let cachedAllSessions = [];
+    let reconCache = new Map();
     let currentAdminName = "مدير الأكاديمية";
 
     auth.onAuthStateChanged(async (user) => {
@@ -503,6 +506,13 @@
         snapshot.forEach(docSnap => cachedGroups.push({ id: docSnap.id, ...docSnap.data() }));
         renderTeachersView();
       }, (err) => console.warn("Teachers list groups listener warning:", err));
+
+      // مزامنة الحصص لتغذية حساب المستحق الفعلي من محرك المطابقة
+      onSnapshot(collection(db, "sessions"), (snapshot) => {
+        cachedAllSessions = [];
+        snapshot.forEach(docSnap => cachedAllSessions.push(docSnap.data()));
+        renderTeachersView();
+      }, (err) => console.warn("Teachers list sessions listener warning:", err));
 
       // مزامنة المعلمين
       onSnapshot(collection(db, "users"), (snapshot) => {
@@ -564,10 +574,24 @@
 
     let currentStatusFilter = 'all';
 
+    function getTeacherRecon(t) {
+      const key = t.uid || t.id;
+      if (!reconCache.has(key)) {
+        reconCache.set(key, reconcileTeacherCurrentSalary(t, cachedAllSessions, cachedGroups, cachedStudents, currentMonthKey()));
+      }
+      return reconCache.get(key);
+    }
+
+    function currentMonthKey() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    }
+
     function renderTeachersView() {
       const displayArea = document.getElementById('teachersDisplayArea');
       const viewMode = localStorage.getItem('teachersViewPreference') || 'grid';
-      const currentYearMonth = new Date().toISOString().substring(0, 7);
+      const currentYearMonth = currentMonthKey();
+      reconCache.clear();
 
       // تحديث شارة التنبيه وشريط الطلبات المعلقة
       const pendingCount = cachedTeachers.filter(t => t.status === 'pending').length;
@@ -628,7 +652,7 @@
                   <th>الهاتف</th>
                   <th>سعر الساعة الفردية</th>
                   <th>سعر الساعة الجماعية</th>
-                  <th>المرتب المتوقع (الشهر)</th>
+                  <th>المستحق الفعلي (الشهر)</th>
                   <th>آخر تسجيل دخول</th>
                   <th>الحالة</th>
                   <th>خيارات الحساب</th>
@@ -639,7 +663,7 @@
                   const lastLoginTime = t.lastLogin ? new Date(t.lastLogin.seconds ? t.lastLogin.seconds * 1000 : t.lastLogin).toLocaleString('ar-EG') : 'لم يسجل دخول بعد';
                   const tStudents = cachedStudents.filter(s => s.teacherId === t.uid || s.teacherUid === t.uid);
                   const tGroups = cachedGroups.filter(g => g.teacherId === t.uid || g.teacherUid === t.uid);
-                  const forecast = calculateExpectedTeacherSalary(t, tStudents, tGroups, currentYearMonth);
+                  const recon = getTeacherRecon(t);
                   const isPending = t.status === 'pending';
                   const isSuspended = t.status === 'suspended';
                   
@@ -655,7 +679,7 @@
                         <strong>${t.name}</strong>
                         <div style="font-size: 0.75rem; color: var(--text-muted);">${t.email}</div>
                         <div style="font-size: 0.72rem; color: var(--primary-color); font-weight: 700; margin-top: 0.2rem;">
-                          ${forecast.scheduledStudentsCount} طالب فردي • ${forecast.scheduledGroupsCount} مجموعة
+                          ${recon.includedSessionsCount} حصة منفذة • ${recon.expectedSessionsCount} متوقعة
                         </div>
                       </td>
                       <td>${t.phone || 'غير مسجل'}</td>
@@ -663,8 +687,8 @@
                       <td><strong>${t.hourlyRateGroup || 0} ج.م</strong></td>
                       <td>
                         <div style="background: rgba(14, 165, 233, 0.08); padding: 0.35rem 0.6rem; border-radius: 6px; border: 1px solid rgba(14, 165, 233, 0.2); display: inline-block;">
-                          <strong style="color: var(--primary-color); font-family: monospace; font-size: 0.95rem;">${forecast.expectedSalary.toFixed(2)} ج.م</strong>
-                          <div style="font-size: 0.7rem; color: var(--text-muted);">${forecast.expectedTotalHours.toFixed(1)} س (${forecast.expectedSessionsCount} حصة) • هدف: ${t.monthlyTargetHours || t.targetHours || 40} س</div>
+                          <strong style="color: var(--primary-color); font-family: monospace; font-size: 0.95rem;">${Number(recon.netCalculatedSalary || 0).toLocaleString('ar-EG')} ج.م</strong>
+                          <div style="font-size: 0.7rem; color: var(--text-muted);">${Number(recon.includedHours || 0).toFixed(1)} س منفذة • هدف: ${t.monthlyTargetHours || t.targetHours || 40} س</div>
                         </div>
                       </td>
                       <td><span style="font-size:0.8rem; color:var(--text-secondary);">${lastLoginTime}</span></td>
@@ -700,7 +724,7 @@
             ${filteredTeachers.map(t => {
               const tStudents = cachedStudents.filter(s => s.teacherId === t.uid || s.teacherUid === t.uid);
               const tGroups = cachedGroups.filter(g => g.teacherId === t.uid || g.teacherUid === t.uid);
-              const forecast = calculateExpectedTeacherSalary(t, tStudents, tGroups, currentYearMonth);
+              const recon = getTeacherRecon(t);
               const isPending = t.status === 'pending';
               const isSuspended = t.status === 'suspended';
 
@@ -721,10 +745,10 @@
                 <div class="meta-item" style="color: var(--primary-color);">الهدف الشهري للساعات: <strong>${t.monthlyTargetHours || t.targetHours || 40} ساعة</strong></div>
 
                 <div style="margin: 0.85rem 0; padding: 0.6rem; background: rgba(14, 165, 233, 0.06); border: 1px solid rgba(14, 165, 233, 0.2); border-radius: 8px;">
-                  <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.2rem;">المرتب المتوقع بنهاية الشهر:</div>
-                  <div style="font-size: 1.15rem; font-weight: 900; color: var(--primary-color); font-family: monospace;">${forecast.expectedSalary.toFixed(2)} ج.م</div>
+                  <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.2rem;">المستحق الفعلي هذا الشهر:</div>
+                  <div style="font-size: 1.15rem; font-weight: 900; color: var(--primary-color); font-family: monospace;">${Number(recon.netCalculatedSalary || 0).toLocaleString('ar-EG')} ج.م</div>
                   <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.2rem;">
-                    ${forecast.expectedTotalHours.toFixed(1)} ساعة • ${forecast.expectedSessionsCount} حصة (${forecast.scheduledStudentsCount} طالب)
+                    ${Number(recon.includedHours || 0).toFixed(1)} ساعة منفذة • ${recon.includedSessionsCount} حصة (متوقع ${Number(recon.expectedSalary || 0).toLocaleString('ar-EG')} ج.م)
                   </div>
                 </div>
                 
@@ -948,9 +972,6 @@
         const completedSess = activeUnarchivedSessions.filter(s => s.status === "completed" || (s.status === "student_absent" && s.absenceType === "unexcused"));
         const totalHours = completedSess.reduce((acc, curr) => acc + (parseFloat(curr.duration || 0) / 60), 0);
         
-        document.getElementById('statTotalSessions').textContent = completedSess.length;
-        document.getElementById('statTotalHours').textContent = `${totalHours.toFixed(1)} ساعة`;
-        
         const avgDuration = completedSess.length > 0 ? (totalHours * 60 / completedSess.length).toFixed(0) : 0;
         document.getElementById('statAvgDuration').textContent = `${avgDuration} د`;
 
@@ -980,6 +1001,13 @@
           grpSnap.docs.forEach(d => groupsList.push({ id: d.id, ...d.data() }));
         }
 
+        // مصدر واحد للحقيقة: محرك مطابقة الرواتب (نفس مصدر الداشبورد وصفحة المطابقة)
+        const currentYmLocal = currentMonthKey();
+        const recon = reconcileTeacherCurrentSalary(activeTeacher, activeTeacherSessions, groupsList, studentsList, currentYmLocal);
+
+        document.getElementById('statTotalSessions').textContent = recon.includedSessionsCount;
+        document.getElementById('statTotalHours').textContent = `${Number(recon.includedHours || 0).toFixed(1)} ساعة`;
+
         // حساب المستحقات المالية الفعالة
         const rateInd = parseFloat(activeTeacher.hourlyRateIndividual || activeTeacher.hourlyRate || 0);
         const rateGrp = parseFloat(activeTeacher.hourlyRateGroup || 0);
@@ -997,8 +1025,9 @@
         const grossSalary = (indHours * rateInd) + (groupHours * rateGrp);
         const netSalary = grossSalary + bonuses - deductions;
 
-        document.getElementById('payrollHourlyRateInd').textContent = rateInd;
-        document.getElementById('payrollHourlyRateGrp').textContent = rateGrp;
+        const rateLabel = (v) => v > 0 ? `${v} ج.م/س` : 'غير محدد';
+        document.getElementById('payrollHourlyRateInd').textContent = rateLabel(rateInd);
+        document.getElementById('payrollHourlyRateGrp').textContent = rateLabel(rateGrp);
         
         const targetHours = activeTeacher.monthlyTargetHours || activeTeacher.targetHours || 40;
         const targetHoursEl = document.getElementById('payrollTargetHours');
@@ -1028,7 +1057,7 @@
                 cachedTeachers[cachedIdx].monthlyTargetHours = newVal;
                 cachedTeachers[cachedIdx].targetHours = newVal;
               }
-              renderTeachersList();
+              renderTeachersView();
               Toast.success(`تم تحديث الهدف الشهري إلى ${newVal} ساعة بنجاح! 🎯`);
             } catch (err) {
               console.error("Error updating teacher target hours:", err);
@@ -1038,21 +1067,21 @@
         }
 
         document.getElementById('payrollPeriod').textContent = `${activeTeacher.salaryStart || '-'} إلى ${activeTeacher.salaryEnd || '-'}`;
-        document.getElementById('payrollIndHours').textContent = indHours.toFixed(1);
-        document.getElementById('payrollGrpHours').textContent = groupHours.toFixed(1);
-        document.getElementById('payrollBonuses').textContent = bonuses;
-        document.getElementById('payrollDeductions').textContent = deductions;
-        document.getElementById('payrollNetSalary').textContent = netSalary.toFixed(2);
+        document.getElementById('payrollIndHours').textContent = Number(recon.includedIndividualHours || 0).toFixed(1);
+        document.getElementById('payrollGrpHours').textContent = Number(recon.includedGroupHours || 0).toFixed(1);
+        document.getElementById('payrollBonuses').textContent = Number(recon.bonuses || 0).toLocaleString('ar-EG');
+        document.getElementById('payrollDeductions').textContent = Number(recon.deductions || 0).toLocaleString('ar-EG');
+        document.getElementById('payrollNetSalary').textContent = Number(recon.netCalculatedSalary || 0).toLocaleString('ar-EG');
 
         // احتساب وتحديث المرتب المتوقع لهذا الشهر بناءً على جدول الحضور 100%
-        const currentYm = new Date().toISOString().substring(0, 7);
-        const expectedCalc = calculateExpectedTeacherSalary(activeTeacher, studentsList, groupsList, currentYm);
+        const currentYm = currentMonthKey();
+        const expectedCalc = recon;
 
         if (document.getElementById('payrollExpectedSalary')) {
           document.getElementById('payrollExpectedSalary').textContent = Math.round(expectedCalc.expectedSalary).toLocaleString();
         }
         if (document.getElementById('payrollExpectedHours')) {
-          document.getElementById('payrollExpectedHours').textContent = `${expectedCalc.expectedTotalHours.toFixed(1)} ساعة (${expectedCalc.expectedIndHours.toFixed(1)} فردي | ${expectedCalc.expectedGrpHours.toFixed(1)} جماعي)`;
+          document.getElementById('payrollExpectedHours').textContent = `${expectedCalc.expectedHours.toFixed(1)} ساعة (${expectedCalc.includedIndividualHours.toFixed(1)} فردي | ${expectedCalc.includedGroupHours.toFixed(1)} جماعي)`;
         }
         if (document.getElementById('payrollExpectedSessions')) {
           document.getElementById('payrollExpectedSessions').textContent = expectedCalc.expectedSessionsCount;

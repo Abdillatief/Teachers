@@ -545,8 +545,12 @@
 
       try {
         if (selectedDecisionMode === 'approve') {
-          await approveAndExecuteSupervisorRequest(selectedRequestForDecision, note, actor);
-          Toast.success('تمت الموافقة على الطلب وتنفيذه بنجاح.');
+          const execResult = await approveAndExecuteSupervisorRequest(selectedRequestForDecision, note, actor);
+          if (execResult && execResult.executed === false) {
+            Toast.warning(`تم اعتماد الطلب لكن التنفيذ لم يكتمل: ${execResult.reason || 'سبب غير محدد'}`);
+          } else {
+            Toast.success('تمت الموافقة على الطلب وتنفيذه بنجاح.');
+          }
         } else if (selectedDecisionMode === 'keep_pending') {
           await keepPendingSupervisorRequest(selectedRequestForDecision.id, selectedRequestForDecision, note, actor);
           Toast.info('تم إبقاء الطلب معلقاً مع حفظ الملاحظة.');

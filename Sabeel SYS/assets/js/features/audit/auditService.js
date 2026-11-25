@@ -18,7 +18,11 @@ export async function writeAuditLog(actorId, actorName, action, targetId = null,
       action,
       targetId,
       details: typeof details === 'object' ? safeStringify(details) : details,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      // Legacy field names kept in sync so older admin readers keep working.
+      userId: actorId,
+      userName: actorName,
+      actionType: action
     };
 
     await addDoc(collection(db, "auditLogs"), logData);

@@ -3,6 +3,28 @@ dist/
 .wrangler/
 .env
 .env.*
+!.env.example
 *.log
 .DS_Store
 Thumbs.db
+
+# temp/agent artifacts
+.freebuff/
+tmp-icon-preview/
+.aistudio/
+dev.log
+firestore-debug.log
+
+# Android build outputs (keep source only)
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/.idea/
+*.apk
+*.aab
+
+# temp git push workspace
+.gh-push-tmp/
+android/capacitor-cordova-android-plugins/build/
+google-services.json

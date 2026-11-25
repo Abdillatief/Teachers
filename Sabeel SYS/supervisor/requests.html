@@ -114,9 +114,9 @@
     let requestsCache = [];
 
     const urlParams = new URLSearchParams(window.location.search);
-    const initialType = urlParams.get('type');
+    let initialType = urlParams.get('type');
     const initialTargetId = urlParams.get('targetId');
-    const initialTargetName = urlParams.get('targetName');
+    let initialTargetName = urlParams.get('targetName');
 
     initSupervisorPage({
       pageId: 'requests',
@@ -155,7 +155,11 @@
       sel.innerHTML = Object.entries(SUPERVISOR_REQUEST_TYPES)
         .map(([k, label]) => `<option value="${escapeHtml(k)}">${escapeHtml(label)}</option>`)
         .join('');
-      if (initialType && SUPERVISOR_REQUEST_TYPES[initialType]) {
+      // Student "رفع طلب إداري" links carry type=teacher_replacement with a targetId;
+      // that link must open the form without forcing a request type.
+      const shouldPinType = Boolean(initialType) && SUPERVISOR_REQUEST_TYPES[initialType] &&
+        !(initialType === 'teacher_replacement' && initialTargetId);
+      if (shouldPinType) {
         sel.value = initialType;
       }
       if (initialTargetName) {
@@ -272,6 +276,8 @@
 
         Toast.success('تم إرسال الطلب إلى المدير العام بنجاح.');
         document.getElementById('createRequestForm').reset();
+        initialType = null;
+        initialTargetName = '';
         populateRequestTypes();
       } catch (err) {
         console.error(err);

@@ -488,7 +488,12 @@
       const durSel = document.getElementById('formLessonDuration');
       const lockNotice = document.getElementById('durationLockNotice');
       const canEditDuration = actorCtx?.hasPerm(PERMISSIONS.EDIT_LESSON_DURATION);
-      const targetDur = st ? getStudentDefaultDuration(st) : String(explicitDuration || '60');
+      const hasExplicitDuration = explicitDuration !== null && explicitDuration !== undefined &&
+        typeof explicitDuration !== 'object' && String(explicitDuration).trim() !== '';
+      // On edit always keep the stored lesson duration; package duration is only a creation default.
+      const targetDur = (st && !hasExplicitDuration)
+        ? getStudentDefaultDuration(st)
+        : String(hasExplicitDuration ? explicitDuration : '60');
 
       if (!Array.from(durSel.options).some((o) => o.value === targetDur)) {
         const opt = document.createElement('option');
@@ -497,12 +502,7 @@
         durSel.appendChild(opt);
       }
 
-      if (!canEditDuration || !explicitDuration || typeof explicitDuration === 'object') {
-        durSel.value = targetDur;
-      } else {
-        durSel.value = String(explicitDuration);
-      }
-
+      durSel.value = targetDur;
       durSel.disabled = !canEditDuration;
       if (lockNotice) lockNotice.style.display = canEditDuration ? 'none' : 'block';
 
@@ -579,6 +579,8 @@
       const studentObj = studentsCache.find((s) => s.id === studentId);
       const teacherObj = teachersCache.find((t) => (t.uid || t.id) === teacherId);
       const status = document.getElementById('formLessonStatus').value;
+      const currentSession = existingSessionId ? sessionsCache.find((s) => s.id === existingSessionId) : null;
+      const hasCompensatoryLink = Boolean(currentSession?.compensatedBySessionId);
 
       if (!studentId || !teacherId) {
         Toast.warning('يرجى تحديد الطالب والمعلم.');
@@ -611,7 +613,7 @@
           makeupTime: document.getElementById('formMakeupTime').value,
           teacherNotes: document.getElementById('formTeacherDelayNotes').value.trim(),
           slotSelectionReason: document.getElementById('formSlotSelectionReason').value.trim(),
-          createMakeupSession: Boolean(!existingSessionId && status === 'delayed' && makeupDate),
+          createMakeupSession: Boolean(status === 'delayed' && makeupDate && !hasCompensatoryLink),
           originalLessonId: document.getElementById('formOriginalLessonId').value,
           cancellationResponsibility: document.getElementById('formCancelResponsibility').value,
           cancellationReason: document.getElementById('formCancelReason').value.trim()

@@ -24,6 +24,7 @@ const headers = {
 
 const EXCLUDE_DIRS = new Set([
   'node_modules', 'dist', '.wrangler', '.git', '.gradle', '.idea', '.vscode',
+  'scripts', // may contain env-driven diagnostic scripts and credentials in local env files
   'android/.gradle', 'android/build', 'android/app/build', 'android/capacitor-cordova-android-plugins/build',
   'android/app/.cxx', 'android/local.properties', 'tmp-icon-preview'
 ]);

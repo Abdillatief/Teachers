@@ -183,7 +183,7 @@
             </div>
             <div>
               <div style="font-size: 0.78rem; color: var(--text-secondary); font-weight: 700;">الباقات النشطة حالياً</div>
-              <div id="kpiActivePackages" style="font-size: 1.35rem; font-weight: 800; color: var(--text-primary);">0 باقة</div>
+              <div id="kpiActivePackages" style="font-size: 1.35rem; font-weight: 800; color: var(--text-primary);">جار التحميل…</div>
             </div>
           </div>
           <div class="stat-kpi-card" style="border-right: 4px solid var(--success);">
@@ -192,7 +192,7 @@
             </div>
             <div>
               <div style="font-size: 0.78rem; color: var(--text-secondary); font-weight: 700;">إجمالي الحصص المتبقية</div>
-              <div id="kpiTotalRemainingLessons" style="font-size: 1.35rem; font-weight: 800; color: var(--success);">0 حصة</div>
+              <div id="kpiTotalRemainingLessons" style="font-size: 1.35rem; font-weight: 800; color: var(--success);">جار التحميل…</div>
             </div>
           </div>
           <div class="stat-kpi-card" style="border-right: 4px solid #ef4444;">
@@ -201,7 +201,7 @@
             </div>
             <div>
               <div style="font-size: 0.78rem; color: var(--text-secondary); font-weight: 700;">دين حصص (رصيد سالب &lt; 0)</div>
-              <div id="kpiOverdraftCount" style="font-size: 1.35rem; font-weight: 800; color: var(--danger);">0 طلاب</div>
+              <div id="kpiOverdraftCount" style="font-size: 1.35rem; font-weight: 800; color: var(--danger);">جار التحميل…</div>
             </div>
           </div>
           <div class="stat-kpi-card" style="border-right: 4px solid #f97316;">
@@ -210,7 +210,7 @@
             </div>
             <div>
               <div style="font-size: 0.78rem; color: var(--text-secondary); font-weight: 700;">يستحق الدفع (0 متبقي)</div>
-              <div id="kpiDuePaymentCount" style="font-size: 1.35rem; font-weight: 800; color: #ea580c;">0 طلاب</div>
+              <div id="kpiDuePaymentCount" style="font-size: 1.35rem; font-weight: 800; color: #ea580c;">جار التحميل…</div>
             </div>
           </div>
           <div class="stat-kpi-card" style="border-right: 4px solid #eab308;">
@@ -219,7 +219,7 @@
             </div>
             <div>
               <div style="font-size: 0.78rem; color: var(--text-secondary); font-weight: 700;">قارب على الانتهاء (حصة واحدة)</div>
-              <div id="kpiLowCreditsCount" style="font-size: 1.35rem; font-weight: 800; color: #b45309;">0 طلاب</div>
+              <div id="kpiLowCreditsCount" style="font-size: 1.35rem; font-weight: 800; color: #b45309;">جار التحميل…</div>
             </div>
           </div>
           <div class="stat-kpi-card" style="border-right: 4px solid #8b5cf6;">
@@ -228,7 +228,7 @@
             </div>
             <div>
               <div style="font-size: 0.78rem; color: var(--text-secondary); font-weight: 700;">طلاب بدون مدفوعات ⚠️</div>
-              <div id="kpiUnpaidCount" style="font-size: 1.35rem; font-weight: 800; color: #8b5cf6;">0 طلاب</div>
+              <div id="kpiUnpaidCount" style="font-size: 1.35rem; font-weight: 800; color: #8b5cf6;">جار التحميل…</div>
             </div>
           </div>
           <div class="stat-kpi-card" style="border-right: 4px solid #3b82f6;">
@@ -237,7 +237,7 @@
             </div>
             <div>
               <div style="font-size: 0.78rem; color: var(--text-secondary); font-weight: 700;">إجمالي مبالغ الباقات المحصلة</div>
-              <div id="kpiTotalRevenue" style="font-size: 1.35rem; font-weight: 800; color: var(--text-primary);">0 ج.م</div>
+              <div id="kpiTotalRevenue" style="font-size: 1.35rem; font-weight: 800; color: var(--text-primary);">جار التحميل…</div>
             </div>
           </div>
         </div>
@@ -763,9 +763,6 @@
       </form>
     </div>
   </div>
-      </main>
-    </div>
-  </div>
 
   <!-- مودال إسناد باقة جديدة لطالب -->
   <div id="assignPackageModal" class="modal-overlay">
@@ -1225,6 +1222,82 @@
     let allPackageArchives = [];
     let activeViewingStudentId = null;
 
+    // تواريخ محلية (توقيت مصر): لا نستخدم toISOString() لتوليد مفاتيح التاريخ
+    const pad2 = n => String(n).padStart(2, '0');
+    const localDate = (value) => {
+      if (value === null || value === undefined || value === '') return '';
+      let d;
+      try {
+        if (typeof value === 'string') {
+          const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+          if (match) return `${match[1]}-${match[2]}-${match[3]}`;
+          d = new Date(value);
+        } else if (value instanceof Date) {
+          d = value;
+        } else if (typeof value?.toDate === 'function') {
+          d = value.toDate();
+        } else if (typeof value?.seconds === 'number') {
+          d = new Date(value.seconds * 1000);
+        } else {
+          d = new Date(value);
+        }
+      } catch (_) {
+        return '';
+      }
+      if (!d || isNaN(d.getTime())) return '';
+      return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+    };
+    const localMonthKey = (value) => {
+      const key = localDate(value);
+      return key ? key.slice(0, 7) : '';
+    };
+    const escapeHtml = (value) => {
+      if (value === null || value === undefined) return '';
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    };
+
+    // منطق التحصيل مطابق لأسلوب assets/js/shared/utils/subscriptionHelpers.js
+    const NON_SETTLING_PAYMENT_STATUSES = ['refunded', 'cancelled', 'canceled', 'void', 'failed', 'rejected'];
+    const isNonSettlingPayment = (payment) => {
+      if (!payment) return false;
+      const status = String(payment.paymentStatus || payment.status || '').trim().toLowerCase();
+      return NON_SETTLING_PAYMENT_STATUSES.includes(status) ||
+        payment.isRefunded === true || payment.refunded === true;
+    };
+    const isSettledPayment = (payment) =>
+      Boolean(payment) && !isNonSettlingPayment(payment) && (parseFloat(payment.amount) || 0) > 0;
+    const isPaymentLinkedToPackage = (pay, pkg) => {
+      if (!pay || !pkg) return false;
+      const matchDocId = (pay.packageId && (pay.packageId === pkg.id || pay.packageId === pkg.packageId)) ||
+        (pay.studentPackageId && (pay.studentPackageId === pkg.id || pay.studentPackageId === pkg.packageId)) ||
+        (pay.subscriptionId && pay.subscriptionId === pkg.id);
+      const matchStudentPkg = pay.studentId === pkg.studentId && pay.packageName && pay.packageName === pkg.packageName;
+      return Boolean(matchDocId || matchStudentPkg);
+    };
+    const getLinkedPaymentsForPackage = (pkg) => allPayments.filter(pay => isPaymentLinkedToPackage(pay, pkg));
+    const getSettledPaidForPackage = (pkg) => {
+      const linked = getLinkedPaymentsForPackage(pkg);
+      if (linked.length > 0) {
+        return linked.reduce((sum, pay) => sum + (isSettledPayment(pay) ? (parseFloat(pay.amount) || 0) : 0), 0);
+      }
+      // لا توجد قيود مدفوعات: نعتمد على حقل الباقة فقط إن لم يكن هناك استرداد/إلغاء
+      const pkgStatus = String(pkg?.paymentStatus || '').trim().toLowerCase();
+      if (NON_SETTLING_PAYMENT_STATUSES.includes(pkgStatus) || pkg?.isRefunded === true) return 0;
+      return parseFloat(pkg?.totalPaid) || 0;
+    };
+    const getCurrentMonthPackages = () => {
+      const monthKey = localMonthKey(new Date());
+      return allStudentPackages.filter(pkg => {
+        if (pkg.status === 'archived' || pkg.status === 'cancelled') return false;
+        return localMonthKey(pkg.startDate) === monthKey || localMonthKey(pkg.createdAt) === monthKey;
+      });
+    };
+
     auth.onAuthStateChanged(async (user) => {
       if (user) {
         renderSidebar('subscriptions', 'admin');
@@ -1263,12 +1336,8 @@
       onSnapshot(collection(db, "packageArchives"), (snap) => {
         allPackageArchives = [];
         snap.forEach(d => allPackageArchives.push({ id: d.id, ...d.data() }));
-        // فرز من الأحدث للأقدم
-        allPackageArchives.sort((a, b) => {
-          const tA = a.createdAt?.seconds || (a.createdAt ? new Date(a.createdAt).getTime() / 1000 : 0);
-          const tB = b.createdAt?.seconds || (b.createdAt ? new Date(b.createdAt).getTime() / 1000 : 0);
-          return tB - tA;
-        });
+        // فرز آمن من الأحدث للأقدم: تحويل أي قيمة إلى مفتاح YYYY-MM-DD قبل المقارنة
+        allPackageArchives.sort((a, b) => localDate(b.createdAt).localeCompare(localDate(a.createdAt)));
         renderPackageArchivesTable();
       }, (err) => console.warn("Subscriptions packageArchives listener warning:", err));
 
@@ -1314,7 +1383,7 @@
       select.innerHTML = '<option value="">-- جميع المعلمين --</option>' +
         allTeachers.map(t => {
           const name = t.name || t.fullName || t.displayName || 'معلم';
-          return `<option value="${name}">${name}</option>`;
+          return `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`;
         }).join('');
       select.value = currentVal;
     }
@@ -1328,7 +1397,8 @@
         const r = parseInt(p.remainingLessons) || 0;
         return r === 1;
       }).length;
-      const totalRevenue = allStudentPackages.reduce((sum, p) => sum + (parseFloat(p.totalPaid) || 0), 0);
+      // المدفوعات المستردة/الفاشلة/الملغاة لا تُحتسب ضمن التحصيل
+      const totalRevenue = allStudentPackages.reduce((sum, p) => sum + getSettledPaidForPackage(p), 0);
 
       const unpaidList = getUnpaidStudentPackagesList();
       const unpaidCountEl = document.getElementById('kpiUnpaidCount');
@@ -1358,23 +1428,21 @@
     function getUnpaidStudentPackagesList() {
       return allStudentPackages.filter(pkg => {
         if (pkg.status === 'archived' || pkg.status === 'cancelled') return false;
-        
-        // 1. التحقق من وجود دفع مسجل في payments
-        const hasPayment = allPayments.some(pay => {
-          const amt = parseFloat(pay.amount) || 0;
-          if (amt <= 0) return false;
-          
-          const matchDocId = (pay.packageId && (pay.packageId === pkg.id || pay.packageId === pkg.packageId)) ||
-                             (pay.studentPackageId && (pay.studentPackageId === pkg.id || pay.studentPackageId === pkg.packageId)) ||
-                             (pay.subscriptionId && pay.subscriptionId === pkg.id);
-          const matchStudentPkg = pay.studentId === pkg.studentId && pay.packageName && pay.packageName === pkg.packageName;
-          return matchDocId || matchStudentPkg;
-        });
 
-        // 2. التحقق من حالة الدفع المسجلة على الباقة
-        const isPaidOnPackage = (parseFloat(pkg.totalPaid) || 0) > 0 || pkg.paymentStatus === 'paid';
+        // 1. المدفوعات المؤثرة فقط: نستبعد المستردة/الفاشلة/الملغاة/المرفوضة
+        const linkedPayments = getLinkedPaymentsForPackage(pkg);
+        const hasSettledPayment = linkedPayments.some(isSettledPayment);
 
-        return !hasPayment && !isPaidOnPackage;
+        // 2. حالة الدفع على الباقة نفسها لا تُعد سداداً إذا كانت مستردة أو ملغاة
+        const pkgPayStatus = String(pkg.paymentStatus || '').trim().toLowerCase();
+        const packagePaymentInvalid = NON_SETTLING_PAYMENT_STATUSES.includes(pkgPayStatus) || pkg.isRefunded === true;
+        const isPaidOnPackage = !packagePaymentInvalid && (
+          hasSettledPayment ||
+          pkgPayStatus === 'paid' ||
+          (linkedPayments.length === 0 && (parseFloat(pkg.totalPaid) || 0) > 0)
+        );
+
+        return !hasSettledPayment && !isPaidOnPackage;
       });
     }
 
@@ -1412,8 +1480,9 @@
           if (pA !== pB) return pA - pB;
         }
 
-        const dateA = a.startDate || a.createdAt || '';
-        const dateB = b.startDate || b.createdAt || '';
+        // تحويل Timestamp/Date/نص إلى YYYY-MM-DD قبل المقارنة (يمنع localeCompare is not a function)
+        const dateA = localDate(a.startDate || a.createdAt);
+        const dateB = localDate(b.startDate || b.createdAt);
         if (sortDate === 'asc') {
           return dateA.localeCompare(dateB);
         } else {
@@ -1787,14 +1856,35 @@
     // ==========================================
     // Feature 2: تذكيرات ورسائل واتساب للطلاب
     // ==========================================
-    const waSubModal = document.getElementById('whatsappSubModal');
+    let waSubModal = document.getElementById('whatsappSubModal');
+    if (!waSubModal) {
+      waSubModal = document.createElement('div');
+      waSubModal.id = 'whatsappSubModal';
+      waSubModal.className = 'modal-overlay';
+      waSubModal.innerHTML = `
+        <div class="modal-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:1rem;">
+            <h3 style="margin:0;font-weight:800;">إرسال تذكير واتساب للطالب</h3>
+            <button type="button" class="btn btn-secondary" id="btnCloseWaSubModal">إغلاق</button>
+          </div>
+          <div class="form-group mb-3"><label>اسم الطالب</label><input id="waSubStudentName" class="form-control" readonly></div>
+          <div class="form-group mb-3"><label>رقم الهاتف</label><input id="waSubPhoneInput" class="form-control" dir="ltr"></div>
+          <div class="form-group mb-3"><label>نوع الرسالة</label><select id="waSubTemplateSelect" class="form-control"><option value="reminder">تذكير</option><option value="overdraft">تنبيه رصيد</option></select></div>
+          <div class="form-group mb-3"><label>الرسالة</label><textarea id="waSubMessagePreview" class="form-control" rows="6"></textarea></div>
+          <div style="display:flex;gap:.5rem;justify-content:flex-end;">
+            <button type="button" class="btn btn-secondary" id="btnCancelWaSubModal">إلغاء</button>
+            <button type="button" class="btn btn-primary" id="btnSendWaSub">إرسال عبر واتساب</button>
+          </div>
+        </div>`;
+      document.body.appendChild(waSubModal);
+    }
     let currentWaSubStudentId = null;
 
     function openWaSubModal(studentId, studentName) {
       currentWaSubStudentId = studentId;
       const student = allStudents.find(s => s.id === studentId);
       const pkg = allStudentPackages.find(p => p.studentId === studentId && p.status === 'active') || allStudentPackages.find(p => p.studentId === studentId);
-      const bal = allStudentBalances.find(b => b.id === studentId || b.studentId === studentId);
+      const bal = allStudents.find(b => b.id === studentId || b.studentId === studentId);
       const phone = student?.parentPhone || student?.phone || student?.whatsapp || '';
 
       document.getElementById('waSubStudentName').value = studentName || student?.name || 'طالب الأكاديمية';
@@ -1832,7 +1922,7 @@
       if (!currentWaSubStudentId) return;
       const student = allStudents.find(s => s.id === currentWaSubStudentId);
       const pkg = allStudentPackages.find(p => p.studentId === currentWaSubStudentId && p.status === 'active') || allStudentPackages.find(p => p.studentId === currentWaSubStudentId);
-      const bal = allStudentBalances.find(b => b.id === currentWaSubStudentId || b.studentId === currentWaSubStudentId);
+      const bal = allStudents.find(b => b.id === currentWaSubStudentId || b.studentId === currentWaSubStudentId);
       updateWaSubMessage(student, pkg, bal);
     });
 

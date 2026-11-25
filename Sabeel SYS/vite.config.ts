@@ -20,9 +20,88 @@ const cssDirectLinks = {
   }
 };
 
+/**
+ * Local /api/tts endpoint for the Egyptian text-to-speech tool.
+ * Mirrors the production Cloudflare function (functions/api/tts.ts) so the
+ * downloadable Arabic audio works in `npm run dev` without an API key.
+ */
+const arabicTtsApi = () => ({
+  name: 'sabeel-arabic-tts-api',
+  configureServer(server: any) {
+    server.middlewares.use('/api/tts', async (req: any, res: any) => {
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      if (req.method !== 'POST') {
+        res.statusCode = 405;
+        res.end(JSON.stringify({ success: false, error: 'Method not allowed' }));
+        return;
+      }
+      let raw = '';
+      req.on('data', (chunk: any) => { raw += chunk; });
+      req.on('end', async () => {
+        try {
+          const { text } = JSON.parse(raw || '{}');
+          const clean = String(text || '').replace(/[\r\n]+/g, ' ').trim();
+          if (!clean) throw new Error('Empty text');
+
+          // Split into Google Translate TTS sized chunks, preferring sentence boundaries.
+          const chunks: string[] = [];
+          const parts = clean.split(/([.!؟،,;]+)/);
+          let current = '';
+          for (const part of parts) {
+            if (!part) continue;
+            if ((current + part).length > 130) {
+              if (current.trim()) chunks.push(current.trim());
+              if (part.length > 130) {
+                let sub = '';
+                for (const word of part.split(/\s+/)) {
+                  if ((sub + ' ' + word).length > 130) {
+                    if (sub.trim()) chunks.push(sub.trim());
+                    sub = word;
+                  } else {
+                    sub = sub ? `${sub} ${word}` : word;
+                  }
+                }
+                current = sub;
+              } else {
+                current = part;
+              }
+            } else {
+              current += part;
+            }
+          }
+          if (current.trim()) chunks.push(current.trim());
+
+          const buffers: Buffer[] = [];
+          for (const chunk of chunks) {
+            const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(chunk)}&tl=ar&client=tw-ob`;
+            const response = await fetch(url, {
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                Accept: 'audio/mpeg, audio/*;q=0.9',
+              },
+            });
+            if (!response.ok) throw new Error(`Arabic TTS service returned ${response.status}`);
+            buffers.push(Buffer.from(await response.arrayBuffer()));
+          }
+
+          res.end(JSON.stringify({
+            success: true,
+            base64Audio: Buffer.concat(buffers).toString('base64'),
+            mimeType: 'audio/mpeg',
+            provider: 'محرك النطق العربي — صوت عربي حقيقي',
+          }));
+        } catch (error: any) {
+          res.statusCode = 502;
+          res.end(JSON.stringify({ success: false, error: String(error?.message || error) }));
+        }
+      });
+    });
+  },
+});
+
 export default defineConfig(({ command }) => {
   return {
-    plugins: [react(), tailwindcss(), ...(command === 'serve' ? [cssDirectLinks] : [])],
+    plugins: [react(), tailwindcss(), arabicTtsApi(), ...(command === 'serve' ? [cssDirectLinks] : [])],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
@@ -33,6 +112,7 @@ export default defineConfig(({ command }) => {
         input: {
           main: path.resolve(__dirname, 'index.html'),
           register: path.resolve(__dirname, 'register.html'),
+          tool_text_to_speech: path.resolve(__dirname, 'tools/text-to-speech.html'),
           admin_dashboard: path.resolve(__dirname, 'admin/dashboard.html'),
           admin_teachers: path.resolve(__dirname, 'admin/teachers.html'),
           admin_teacher_details: path.resolve(__dirname, 'admin/teacher-details.html'),

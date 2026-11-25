@@ -160,6 +160,7 @@ export function protectRoute(requiredRole, requiredPermission = null) {
       const userData = userSnap.data();
       const userRoleDoc = roleSnap.exists() ? roleSnap.data() : null;
       const effectiveRole = resolveEffectiveRole(userData, userRoleDoc);
+      if (typeof window !== 'undefined') window.__sabeelEffectiveRole = effectiveRole;
       const effectivePermissions = resolveEffectivePermissions(userData, userRoleDoc);
       const effectiveStatus = userRoleDoc?.status && userData.status === 'approved'
         ? userRoleDoc.status

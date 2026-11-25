@@ -84,12 +84,17 @@
       }
     });
 
+    function escapeHtml(value) {
+      if (value === null || value === undefined) return '';
+      return String(value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[ch]));
+    }
+
     function initStudentArchiveRealtime() {
       const tbody = document.getElementById('archiveStudentsTableBody');
       if (!tbody) return;
 
       // تصفية الطلاب الحائزين على حالة archived أو Suspended أو غير نشطين
-      const q = query(collection(db, "students"), where("status", "in", ["archived", "Suspended"]));
+      const q = query(collection(db, "students"), where("status", "in", ["archived", "Suspended", "suspended", "paused", "frozen"]));
 
       onSnapshot(q, (snapshot) => {
         if (snapshot.empty) {
@@ -104,11 +109,11 @@
 
         tbody.innerHTML = list.map(student => `
           <tr>
-            <td><strong>${student.name}</strong></td>
-            <td>${student.age} سنة</td>
-            <td>${student.teacherName || 'غير مسجل'}</td>
-            <td>${student.sessionsCount || 0} حصة</td>
-            <td style="max-width: 200px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${student.notes || ''}</td>
+            <td><strong>${escapeHtml(student.name)}</strong></td>
+            <td>${escapeHtml(student.age ?? '—')} سنة</td>
+            <td>${escapeHtml(student.teacherName || 'غير مسجل')}</td>
+            <td>${student.sessionsCount ?? '—'} حصة</td>
+            <td style="max-width: 200px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${escapeHtml(student.notes || '')}</td>
             <td>
               <div style="display: flex; align-items: center; gap: 0.25rem; color: var(--warning);">
                 <i data-lucide="star" style="width: 14px; height: 14px; fill: var(--warning);"></i>

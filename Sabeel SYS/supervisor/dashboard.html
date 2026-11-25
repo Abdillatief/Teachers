@@ -225,12 +225,20 @@
       if (window.lucide) window.lucide.createIcons({ root: container });
     }
 
+    // Unified with the other supervisor pages: status is case-insensitive and the
+    // same inactive set applies (including paused/frozen from the operational domain service).
+    function normalizeStudentStatus(status) {
+      return String(status || '').trim().toLowerCase();
+    }
+
+    const INACTIVE_STUDENT_STATUSES = ['archived', 'suspended', 'pending_approval', 'paused', 'frozen'];
+
     function renderDashboard() {
       const todayStr = getTodayIsoDate();
       const todayNorm = normalizeArabicDay(getArabicDayFromDate(todayStr));
 
       const activeStudents = studentsCache.filter(
-        (s) => !['archived', 'Suspended', 'suspended', 'pending_approval'].includes(s.status)
+        (s) => !INACTIVE_STUDENT_STATUSES.includes(normalizeStudentStatus(s.status))
       );
 
       const scheduledTodayStudents = activeStudents.filter((st) => {

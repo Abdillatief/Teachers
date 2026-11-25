@@ -42,6 +42,14 @@ import {
   cleanInactiveDevices 
 } from '../../shared/services/deviceService.js';
 
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, c => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+}[c]));
+
+const NOTIFICATION_DISPLAY_LIMIT = 60;
+const DEVICE_DISPLAY_LIMIT = 50;
+const DEVICE_ACTIVITY_DAYS = 90; // matches cleanInactiveDevices(90)
+
 let currentAdminUser = null;
 let cachedTeachers = [];
 let cachedStudents = [];
@@ -49,6 +57,27 @@ let cachedTemplates = [];
 let unsubscribeNotifications = null;
 let unsubscribeDevices = null;
 let cachedHistoryItems = [];
+
+function setStatText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = String(value);
+}
+
+function getTimestampMs(value) {
+  if (value === null || value === undefined || value === '') return null;
+  try {
+    const ms = typeof value.toDate === 'function' ? value.toDate().getTime() : new Date(value).getTime();
+    return Number.isFinite(ms) ? ms : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function formatDateTime(value) {
+  const ms = getTimestampMs(value);
+  if (ms === null) return null;
+  return new Date(ms).toLocaleString('ar-EG');
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
   auth.onAuthStateChanged(async (user) => {
@@ -109,7 +138,7 @@ async function initTargetData() {
     const teacherSelect = document.getElementById('selectSpecificTeacher');
     if (teacherSelect) {
       teacherSelect.innerHTML = `<option value="">-- اختر المعلم --</option>` + 
-        cachedTeachers.map(t => `<option value="${t.id}">${t.name || t.email} (${t.phone || 'بدون هاتف'})</option>`).join('');
+        cachedTeachers.map(t => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.name || t.email)} (${escapeHtml(t.phone || 'بدون هاتف')})</option>`).join('');
     }
 
     // Students
@@ -119,7 +148,7 @@ async function initTargetData() {
     const studentSelect = document.getElementById('selectSpecificStudent');
     if (studentSelect) {
       studentSelect.innerHTML = `<option value="">-- اختر الطالب --</option>` + 
-        cachedStudents.map(s => `<option value="${s.id}">${s.name || 'طالب'} (${s.phone || s.parentPhone || 'بدون هاتف'})</option>`).join('');
+        cachedStudents.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name || 'طالب')} (${escapeHtml(s.phone || s.parentPhone || 'بدون هاتف')})</option>`).join('');
     }
   } catch (err) {
     console.warn("Error loading targets:", err);
@@ -192,7 +221,7 @@ function initFormHandlers() {
       if (soundSelect && tpl.sound) soundSelect.value = tpl.sound;
 
       updatePreview();
-      Toast.info(`تم تحميل قالب: ${tpl.name}`);
+      Toast.info(`تم تحميل قالب: ${escapeHtml(tpl.name)}`);
     }
   });
 
@@ -290,21 +319,25 @@ function initFormHandlers() {
       });
 
       if (res.success) {
-        if (isSchedule) {
+        if (res.duplicate) {
+          Toast.info("تم العثور على إشعار مطابق مسبقاً؛ لم يتم إنشاء إشعار جديد.");
+        } else if (res.status === 'scheduled' || isSchedule) {
           Toast.success("تمت جدولة الإشعار بنجاح للإرسال في الموعد المحدد.");
+        } else if (res.inAppOnly || res.pushSkipped) {
+          Toast.warning("تم حفظ الإشعار داخل النظام فقط، ولم يُرسل إشعار Push لعدم وجود مستلمين مؤهلين.");
         } else {
-          Toast.success("تم إرسال وتوجيه الإشعار بنجاح عبر النظام والـ Push.");
+          Toast.success("تم إرسال الإشعار عبر النظام والـ Push بنجاح.");
         }
         form.reset();
         updatePreview();
         if (scheduleWrapper) scheduleWrapper.style.display = 'none';
         if (submitBtnText) submitBtnText.textContent = 'إرسال الإشعار الآن';
       } else {
-        Toast.error("فشل إرسال الإشعار: " + (res.error || "خطأ غير معروف"));
+        Toast.error("فشل إرسال الإشعار: " + escapeHtml(res.error || "خطأ غير معروف"));
       }
     } catch (err) {
       console.error("Dispatch error:", err);
-      Toast.error("حدث خطأ أثناء الإرسال: " + err.message);
+      Toast.error("حدث خطأ أثناء الإرسال: " + escapeHtml(err.message));
     } finally {
       submitBtn.disabled = false;
       submitBtn.innerHTML = `<i data-lucide="send"></i> <span>${submitBtnText ? submitBtnText.textContent : 'إرسال الإشعار'}</span>`;
@@ -327,12 +360,18 @@ function initFormHandlers() {
         }
       );
       if (res.success) {
-        Toast.success("تم إرسال الإشعار التجريبي بنجاح!");
+        if (res.duplicate) {
+          Toast.info("تم العثور على إشعار تجريبي مطابق مسبقاً؛ لم يتم إرسال نسخة جديدة.");
+        } else if (res.inAppOnly || res.pushSkipped) {
+          Toast.warning("تم حفظ الإشعار التجريبي داخل النظام فقط، ولم يُرسل إشعار Push.");
+        } else {
+          Toast.success("تم إرسال الإشعار التجريبي عبر النظام والـ Push بنجاح!");
+        }
       } else {
-        Toast.warning("تم حفظ الإشعار داخلياً، ولكن تعذر إرسال Push: " + (res.error || ''));
+        Toast.warning("تعذر تأكيد إرسال Push للإشعار التجريبي: " + escapeHtml(res.error || 'خطأ غير معروف'));
       }
     } catch (e) {
-      Toast.error("خطأ: " + e.message);
+      Toast.error("خطأ: " + escapeHtml(e.message));
     }
   });
 
@@ -378,7 +417,7 @@ async function loadTemplatesTab() {
     cachedTemplates = await getAllTemplates();
     renderTemplatesGrid(cachedTemplates);
   } catch (e) {
-    container.innerHTML = `<div style="text-align: center; color: #ef4444; padding: 2rem;">تعذر تحميل القوالب: ${e.message}</div>`;
+    container.innerHTML = `<div style="text-align: center; color: #ef4444; padding: 2rem;">تعذر تحميل القوالب: ${escapeHtml(e.message)}</div>`;
   }
 
   // Restore Default Templates Button (guard against duplicate listeners on refresh)
@@ -406,38 +445,38 @@ function renderTemplatesGrid(templates) {
     const badgeBg = tpl.priority === 'urgent' ? 'rgba(239, 68, 68, 0.15)' : (tpl.priority === 'high' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)');
 
     return `
-      <div class="template-card" data-template-id="${tpl.id}" style="${isEnabled ? '' : 'opacity: 0.6; filter: grayscale(40%);'}">
+      <div class="template-card" data-template-id="${escapeHtml(tpl.id)}" style="${isEnabled ? '' : 'opacity: 0.6; filter: grayscale(40%);'}">
         <div>
           <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.65rem;">
             <div>
-              <span style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">${tpl.category || 'عام'}</span>
-              <h3 style="font-size: 0.95rem; font-weight: 800; color: var(--text-primary); margin: 0.15rem 0;">${tpl.name}</h3>
+              <span style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">${escapeHtml(tpl.category || 'عام')}</span>
+              <h3 style="font-size: 0.95rem; font-weight: 800; color: var(--text-primary); margin: 0.15rem 0;">${escapeHtml(tpl.name)}</h3>
             </div>
             <label class="switch-toggle" title="${isEnabled ? 'القالب مفعل' : 'القالب معطل'}">
-              <input type="checkbox" class="toggle-template-enabled" data-id="${tpl.id}" ${isEnabled ? 'checked' : ''}>
+              <input type="checkbox" class="toggle-template-enabled" data-id="${escapeHtml(tpl.id)}" ${isEnabled ? 'checked' : ''}>
               <span class="slider"></span>
             </label>
           </div>
 
           <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); padding: 0.65rem; margin-bottom: 0.75rem;">
-            <div style="font-size: 0.78rem; font-weight: 700; color: var(--primary-color); margin-bottom: 0.2rem;">${tpl.title}</div>
-            <p style="font-size: 0.74rem; color: var(--text-secondary); line-height: 1.4; margin: 0;">${tpl.body}</p>
+            <div style="font-size: 0.78rem; font-weight: 700; color: var(--primary-color); margin-bottom: 0.2rem;">${escapeHtml(tpl.title)}</div>
+            <p style="font-size: 0.74rem; color: var(--text-secondary); line-height: 1.4; margin: 0;">${escapeHtml(tpl.body)}</p>
           </div>
 
           <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted);">
             <span style="background: ${badgeBg}; color: ${badgeColor}; padding: 2px 7px; border-radius: 4px; font-weight: 700;">
               ${tpl.priority === 'urgent' ? 'عاجل' : (tpl.priority === 'high' ? 'هام' : 'عادي')}
             </span>
-            <span>نغمة: ${tpl.sound || 'افتراضي'}</span>
+            <span>نغمة: ${escapeHtml(tpl.sound || 'افتراضي')}</span>
           </div>
         </div>
 
         <div style="display: flex; gap: 0.5rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem; margin-top: 0.5rem;">
-          <button class="btn btn-sm btn-secondary btn-edit-template" data-id="${tpl.id}" style="flex: 1; font-size: 0.76rem; font-weight: 700;">
+          <button class="btn btn-sm btn-secondary btn-edit-template" data-id="${escapeHtml(tpl.id)}" style="flex: 1; font-size: 0.76rem; font-weight: 700;">
             <i data-lucide="edit"></i>
             تعديل
           </button>
-          <button class="btn btn-sm btn-secondary btn-test-template" data-id="${tpl.id}" style="flex: 1; font-size: 0.76rem; font-weight: 700; color: var(--primary-color);">
+          <button class="btn btn-sm btn-secondary btn-test-template" data-id="${escapeHtml(tpl.id)}" style="flex: 1; font-size: 0.76rem; font-weight: 700; color: var(--primary-color);">
             <i data-lucide="play"></i>
             تجربة
           </button>
@@ -462,7 +501,7 @@ function renderTemplatesGrid(templates) {
           card.style.filter = isChecked ? 'none' : 'grayscale(40%)';
         }
       } catch (err) {
-        Toast.error("فشل تحديث القالب: " + err.message);
+        Toast.error("فشل تحديث القالب: " + escapeHtml(err.message));
         checkbox.checked = !isChecked;
       }
     });
@@ -495,24 +534,30 @@ function renderTemplatesGrid(templates) {
       const tpl = cachedTemplates.find(t => t.id === tId) || DEFAULT_TEMPLATES.find(t => t.id === tId);
       if (!tpl || !currentAdminUser) return;
 
+      // القيم أدناه وهمية للاختبار فقط، وموسومة صراحةً كمثال توضيحي.
+      const exampleLabel = 'مثال توضيحي';
       const rendered = renderTemplateContent(tpl, {
         teacherName: currentAdminUser.displayName || 'أستاذنا الفاضل',
-        studentName: 'عمر خالد',
-        month: 'سبتمبر 2026',
-        remainingLessons: '2',
-        message: 'توجيه إداري تجريبي لاختبار القالب'
+        studentName: `${exampleLabel}: عمر خالد`,
+        month: `${exampleLabel}: سبتمبر 2026`,
+        remainingLessons: `2 (${exampleLabel})`,
+        message: `توجيه إداري تجريبي (${exampleLabel}) لاختبار القالب`
       });
 
-      Toast.info(`جاري اختبار إرسال قالب [${tpl.name}]...`);
+      Toast.info(`جاري اختبار إرسال قالب [${escapeHtml(tpl.name)}] (${exampleLabel})...`);
       const res = await sendNotificationToUser(currentAdminUser.uid, rendered.title, rendered.body, {
         priority: tpl.priority || 'normal',
         deepLink: tpl.deepLink || '/admin/notifications.html'
       });
 
       if (res.success) {
-        Toast.success("تم إرسال نموذج القالب بنجاح!");
+        if (res.inAppOnly || res.pushSkipped) {
+          Toast.warning("تم حفظ نموذج القالب داخل النظام فقط، ولم يُرسل Push.");
+        } else {
+          Toast.success(`تم إرسال نموذج القالب بنجاح (${exampleLabel}).`);
+        }
       } else {
-        Toast.warning("تم حفظ القالب، وتعذر إرسال Push: " + (res.error || ''));
+        Toast.warning("تعذر تأكيد إرسال Push لنموذج القالب: " + escapeHtml(res.error || 'خطأ غير معروف'));
       }
     });
   });
@@ -545,7 +590,7 @@ document.getElementById('formEditTemplate')?.addEventListener('submit', async (e
     cachedTemplates = await getAllTemplates();
     renderTemplatesGrid(cachedTemplates);
   } catch (err) {
-    Toast.error("حدث خطأ أثناء تعديل القالب: " + err.message);
+    Toast.error("حدث خطأ أثناء تعديل القالب: " + escapeHtml(err.message));
   }
 });
 
@@ -561,30 +606,45 @@ function initHistoryListener() {
   const q = query(
     collection(db, "notifications"),
     orderBy("createdAt", "desc"),
-    limit(60)
+    limit(NOTIFICATION_DISPLAY_LIMIT)
   );
 
+  setStatText('statTotalSent', 'جار التحميل…');
+  setStatText('statScheduledCount', 'جار التحميل…');
+
+  // هذه القائمة للعرض فقط (آخر 60 سجلاً). الأرقام الإجمالية تُحسب في استعلام منفصل أدناه.
   unsubscribeNotifications = onSnapshot(q, (snapshot) => {
-    const totalCount = snapshot.size;
-    const statTotalSentEl = document.getElementById('statTotalSent');
-    if (statTotalSentEl) statTotalSentEl.textContent = totalCount;
-
-    let scheduledCount = 0;
     const historyItems = [];
-
     snapshot.forEach(docSnap => {
-      const data = { id: docSnap.id, ...docSnap.data() };
-      if (data.status === 'scheduled') scheduledCount++;
-      historyItems.push(data);
+      historyItems.push({ id: docSnap.id, ...docSnap.data() });
     });
-
-    const statScheduledEl = document.getElementById('statScheduledCount');
-    if (statScheduledEl) statScheduledEl.textContent = scheduledCount;
-
     renderHistoryTable(historyItems);
   }, (err) => {
     console.warn("Notifications history listener error:", err);
+    const tbody = document.getElementById('notifHistoryTableBody');
+    if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #ef4444; padding: 2rem;">تعذر تحميل سجل الإشعارات.</td></tr>`;
   });
+
+  loadNotificationTotals();
+}
+
+/**
+ * Real totals from a separate, unlimited query (display list is capped at 60).
+ */
+async function loadNotificationTotals() {
+  try {
+    const snap = await getDocs(collection(db, "notifications"));
+    let scheduled = 0;
+    snap.forEach(docSnap => {
+      if (docSnap.data()?.status === 'scheduled') scheduled++;
+    });
+    setStatText('statTotalSent', snap.size);
+    setStatText('statScheduledCount', scheduled);
+  } catch (err) {
+    console.warn("Notification totals error:", err);
+    setStatText('statTotalSent', 'غير متاح');
+    setStatText('statScheduledCount', 'غير متاح');
+  }
 }
 
 function renderHistoryTable(items) {
@@ -624,31 +684,32 @@ function renderHistoryTable(items) {
     }
 
     // Date
-    let timeText = item.createdAt ? new Date(item.createdAt).toLocaleString('ar-EG') : 'الآن';
-    if (item.scheduledAt) {
-      timeText += `<br><span style="font-size: 0.7rem; color: #0284c7;">مجدول: ${new Date(item.scheduledAt).toLocaleString('ar-EG')}</span>`;
+    let timeText = formatDateTime(item.createdAt) ? escapeHtml(formatDateTime(item.createdAt)) : 'الآن';
+    const scheduledText = formatDateTime(item.scheduledAt);
+    if (scheduledText) {
+      timeText += `<br><span style="font-size: 0.7rem; color: #0284c7;">مجدول: ${escapeHtml(scheduledText)}</span>`;
     }
 
     return `
       <tr>
         <td style="max-width: 250px;">
-          <strong style="color: var(--text-primary); display: block;">${item.title || 'بدون عنوان'}</strong>
+          <strong style="color: var(--text-primary); display: block;">${escapeHtml(item.title || 'بدون عنوان')}</strong>
           <span style="font-size: 0.75rem; color: var(--text-muted); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-            ${item.body || ''}
+            ${escapeHtml(item.body || '')}
           </span>
         </td>
-        <td><span style="font-size: 0.78rem; font-weight: 600;">${targetLabel}</span></td>
-        <td><span style="color: ${priorityColor}; font-weight: 700; font-size: 0.78rem;">${item.priority || 'عادي'}</span></td>
+        <td><span style="font-size: 0.78rem; font-weight: 600;">${escapeHtml(targetLabel)}</span></td>
+        <td><span style="color: ${priorityColor}; font-weight: 700; font-size: 0.78rem;">${escapeHtml(item.priority || 'عادي')}</span></td>
         <td>${statusBadge}</td>
         <td style="font-size: 0.74rem; color: var(--text-muted);">${timeText}</td>
         <td>
           <div style="display: flex; gap: 4px;">
             ${item.status === 'scheduled' ? `
-              <button class="btn btn-sm btn-secondary btn-cancel-scheduled" data-id="${item.id}" title="إلغاء الجدولة" style="padding: 4px 6px; color: #ef4444;">
+              <button class="btn btn-sm btn-secondary btn-cancel-scheduled" data-id="${escapeHtml(item.id)}" title="إلغاء الجدولة" style="padding: 4px 6px; color: #ef4444;">
                 <i data-lucide="x-circle" style="width: 14px; height: 14px;"></i>
               </button>
             ` : ''}
-            <button class="btn btn-sm btn-secondary btn-delete-history-notif" data-id="${item.id}" title="حذف السجل" style="padding: 4px 6px; color: var(--text-muted);">
+            <button class="btn btn-sm btn-secondary btn-delete-history-notif" data-id="${escapeHtml(item.id)}" title="حذف السجل" style="padding: 4px 6px; color: var(--text-muted);">
               <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
             </button>
           </div>
@@ -667,7 +728,7 @@ function renderHistoryTable(items) {
         await updateDoc(doc(db, "notifications", id), { status: 'cancelled' });
         Toast.success("تم إلغاء جدولة الإشعار.");
       } catch (e) {
-        Toast.error("فشل إلغاء الجدولة: " + e.message);
+        Toast.error("فشل إلغاء الجدولة: " + escapeHtml(e.message));
       }
     });
   });
@@ -681,7 +742,7 @@ function renderHistoryTable(items) {
           await deleteDoc(doc(db, "notifications", id));
           Toast.success("تم حذف الإشعار بنجاح.");
         } catch (e) {
-          Toast.error("فشل الحذف: " + e.message);
+          Toast.error("فشل الحذف: " + escapeHtml(e.message));
         }
       });
     });
@@ -725,17 +786,62 @@ async function loadSettingsTab() {
     if (res.success) {
       Toast.success("تم حفظ إعدادات الإشعارات العامة بنجاح.");
     } else {
-      Toast.error("فشل حفظ الإعدادات: " + res.error);
+      Toast.error("فشل حفظ الإعدادات: " + escapeHtml(res.error));
     }
   });
 
   // Clean inactive devices button
   document.getElementById('btnCleanDevices')?.addEventListener('click', async () => {
-    showCustomConfirm('هل تريد إزالة جميع الأجهزة غير النشطة لأكثر من 90 يوماً من قاعدة البيانات؟', async () => {
-      await cleanInactiveDevices(90);
-      Toast.success("تم تنظيف الأجهزة القديمة بنجاح.");
+    const cutoff = new Date(Date.now() - DEVICE_ACTIVITY_DAYS * 24 * 60 * 60 * 1000).toISOString();
+    let before = null;
+    try {
+      before = await countInactiveDevices(cutoff);
+    } catch (err) {
+      console.warn("Inactive device count error:", err);
+      Toast.error("تعذر التحقق من الأجهزة القديمة قبل التنظيف.");
+      return;
+    }
+
+    if (before === 0) {
+      Toast.info(`لا توجد أجهزة قديمة (أكثر من ${DEVICE_ACTIVITY_DAYS} يوماً) لتنظيفها.`);
+      return;
+    }
+
+    showCustomConfirm(`هل تريد إزالة الأجهزة غير النشطة لأكثر من ${DEVICE_ACTIVITY_DAYS} يوماً من قاعدة البيانات؟`, async () => {
+      try {
+        const result = await cleanInactiveDevices(DEVICE_ACTIVITY_DAYS);
+        let removed = null;
+        if (typeof result === 'number') {
+          removed = result;
+        } else if (typeof result?.deletedCount === 'number') {
+          removed = result.deletedCount;
+        } else {
+          // الخدمة لا تُعيد عدداً؛ نتحقق من العدد الفعلي بعد التنظيف.
+          const after = await countInactiveDevices(cutoff);
+          removed = Math.max(0, before - after);
+        }
+
+        if (removed > 0) {
+          Toast.success(`تم تنظيف ${removed} من ${before} جهاز غير نشط بنجاح.`);
+        } else {
+          Toast.warning("تعذر تأكيد تنظيف الأجهزة القديمة؛ لم يتغير عدد الأجهزة. يرجى المحاولة لاحقاً.");
+        }
+        loadDeviceTotals();
+      } catch (err) {
+        console.warn("Device cleanup confirmation error:", err);
+        Toast.error("تعذر تأكيد تنظيف الأجهزة القديمة: " + escapeHtml(err.message));
+      }
     });
   });
+}
+
+async function countInactiveDevices(cutoffIso) {
+  const q = query(
+    collection(db, "notification_devices"),
+    where("lastActive", "<", cutoffIso)
+  );
+  const snap = await getDocs(q);
+  return snap.size;
 }
 
 /**
@@ -750,13 +856,14 @@ function initDevicesListener() {
   const q = query(
     collection(db, "notification_devices"),
     orderBy("lastActive", "desc"),
-    limit(50)
+    limit(DEVICE_DISPLAY_LIMIT)
   );
 
-  unsubscribeDevices = onSnapshot(q, (snapshot) => {
-    const statActiveDevicesEl = document.getElementById('statActiveDevices');
-    if (statActiveDevicesEl) statActiveDevicesEl.textContent = snapshot.size;
+  setStatText('statActiveDevices', 'جار التحميل…');
+  setStatText('statActiveDevicesRecent', 'جار التحميل…');
 
+  // القائمة للعرض فقط (آخر 50 جهازاً). العدّادان أدناه من استعلام مستقل غير محدود.
+  unsubscribeDevices = onSnapshot(q, (snapshot) => {
     const container = document.getElementById('devicesListContainer');
     if (!container) return;
 
@@ -774,6 +881,8 @@ function initDevicesListener() {
       const platformIcon = d.platform?.includes('ios') ? 'apple' : (d.platform?.includes('android') ? 'smartphone' : 'monitor');
       const isMedian = Boolean(d.isMedian);
       const isPlayerActive = Boolean(d.oneSignalPlayerId);
+      const lastActiveMs = getTimestampMs(d.lastActive);
+      const lastActiveText = lastActiveMs === null ? 'غير مسجل' : escapeHtml(new Date(lastActiveMs).toLocaleDateString('ar-EG'));
 
       return `
         <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); padding: 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;">
@@ -783,11 +892,11 @@ function initDevicesListener() {
             </div>
             <div>
               <div style="font-size: 0.82rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 4px;">
-                <span>${d.platform || 'جهاز غير معروف'}</span>
+                <span>${escapeHtml(d.platform || 'جهاز غير معروف')}</span>
                 ${isMedian ? '<span class="badge" style="background: rgba(139, 92, 246, 0.15); color: #7c3aed; font-size: 0.65rem; padding: 1px 5px;">Median App</span>' : ''}
               </div>
               <div style="font-size: 0.7rem; color: var(--text-muted);">
-                معرف المستخدم: <code style="font-size: 0.68rem;">${d.userId ? d.userId.substring(0, 10) + '...' : 'غير محدد'}</code>
+                معرف المستخدم: <code style="font-size: 0.68rem;">${d.userId ? escapeHtml(String(d.userId).substring(0, 10) + '...') : 'غير محدد'}</code>
               </div>
             </div>
           </div>
@@ -797,7 +906,7 @@ function initDevicesListener() {
               ${isPlayerActive ? 'OneSignal متصل' : 'بانتظار الإذن'}
             </span>
             <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 2px;">
-              ${d.lastActive ? new Date(d.lastActive).toLocaleDateString('ar-EG') : 'غير مسجل'}
+              ${lastActiveText}
             </div>
           </div>
         </div>
@@ -807,5 +916,40 @@ function initDevicesListener() {
     if (window.lucide) window.lucide.createIcons();
   }, (err) => {
     console.warn("Devices listener error:", err);
+    const container = document.getElementById('devicesListContainer');
+    if (container) container.innerHTML = `<div style="text-align: center; color: #ef4444; padding: 2rem;">تعذر تحميل قائمة الأجهزة.</div>`;
   });
+
+  loadDeviceTotals();
+}
+
+/**
+ * Full, unlimited count for registered devices plus a real activity-based count.
+ * `lastActive` is the field written by deviceService.registerDevice().
+ */
+async function loadDeviceTotals() {
+  try {
+    const snap = await getDocs(collection(db, "notification_devices"));
+    setStatText('statActiveDevices', snap.size);
+
+    const cutoff = Date.now() - DEVICE_ACTIVITY_DAYS * 24 * 60 * 60 * 1000;
+    let withActivityField = 0;
+    let active = 0;
+    snap.forEach(docSnap => {
+      const ms = getTimestampMs(docSnap.data()?.lastActive);
+      if (ms !== null) {
+        withActivityField++;
+        if (ms >= cutoff) active++;
+      }
+    });
+
+    // غياب حقل النشاط يعني أننا لا نستطيع ادعاء عدد نشط.
+    setStatText('statActiveDevicesRecent', withActivityField === 0
+      ? 'غير متاح (لا يوجد حقل نشاط)'
+      : active);
+  } catch (err) {
+    console.warn("Device totals error:", err);
+    setStatText('statActiveDevices', 'غير متاح');
+    setStatText('statActiveDevicesRecent', 'غير متاح');
+  }
 }

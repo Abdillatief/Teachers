@@ -3,7 +3,7 @@ import { protectRoute } from '../auth/authService.js';
 import { renderSidebar } from '../../shared/components/sidebar.js';
 import { renderNavbar } from '../../shared/components/navbar.js';
 import { db } from '../../config/firebase.js';
-import { doc, getDoc, getDocs, collection, query, where, orderBy, limit, updateDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { doc, getDoc, getDocs, collection, query, where, orderBy, startAfter, limit, updateDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { reconcileTeacherCurrentSalary } from '../payroll/payrollReconciliationEngine.js';
 import { Toast } from '../../shared/utils/toast.js';
 
@@ -82,13 +82,42 @@ async function loadStudents(){
   }
 }
 
+// كل حصص المعلم بدون سقف ثابت: حدّ الـ200 حصة كان يبتر الشهر الحالي
+// فيطلع «صافي المستحقات» رقم ناقص. بنقرا كل الصفحات ثم نرتّب في الذاكرة.
 async function loadSessions(){
+  sessions = [];
+  const col = collection(db,'sessions');
+  const PAGE = 500;
   try {
-    const snap = await getDocs(query(collection(db,'sessions'), where('teacherId','==',teacherId), orderBy('date','desc'), limit(200)));
-    sessions = snap.docs.map(d=>({id:d.id,...d.data()}));
-  } catch {
-    try{ const snap=await getDocs(query(collection(db,'sessions'), where('teacherId','==',teacherId), limit(200))); sessions=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))); }catch{ sessions=[]; }
+    let cursor = null;
+    for (let page = 0; page < 40; page++) {
+      const base = [where('teacherId','==',teacherId)];
+      const q = cursor
+        ? query(col, ...base, orderBy('__name__'), startAfter(cursor), limit(PAGE))
+        : query(col, ...base, limit(PAGE));
+      const snap = await getDocs(q);
+      snap.docs.forEach(d=>sessions.push({id:d.id,...d.data()}));
+      if (snap.size < PAGE) break;
+      cursor = snap.docs[snap.size - 1];
+    }
+  } catch (err) {
+    console.error('[TeacherDetails] sessions load failed, falling back to full scan', err);
+    try {
+      const snap = await getDocs(collection(db,'sessions'));
+      sessions = snap.docs.map(d=>({id:d.id,...d.data()})).filter(s=>s.teacherId===teacherId);
+    } catch { sessions = []; }
   }
+
+  // الحصص القديمة اللي اتسجلت باسم المعلم بدون معرّف لازم تتحسب برضه،
+  // وإلا الملف المالي هنا يختلف عن الداشبورد.
+  if (teacher?.name) {
+    try {
+      const byName = await getDocs(query(col, where('teacherName','==', teacher.name)));
+      const seen = new Set(sessions.map(s => s.id));
+      byName.docs.forEach(d => { if (!seen.has(d.id)) sessions.push({ id: d.id, ...d.data() }); });
+    } catch { /* تجاهل: استعلام اختياري */ }
+  }
+  sessions.sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
 }
 
 
@@ -131,31 +160,32 @@ function renderAll(){
 }
 
 function renderFinance(){
-  const month = new Date().toISOString().slice(0,7);
+  const now = new Date();
+  const month = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
   const allSessions = sessions; // teacher sessions already loaded
   const recon = reconcileTeacherCurrentSalary(teacher || {}, allSessions, groups, students, month);
   const ms = allSessions.filter(s=>String(s.date||'').startsWith(month));
   const bonuses=parseFloat(teacher?.salaryBonuses||teacher?.bonuses||0);
   const deductions=parseFloat(teacher?.salaryDeductions||teacher?.deductions||0);
   const net = recon.netCalculatedSalary ?? 0;
-  const execH = (recon.includedMinutes||0)/60;
+  const execH = Number(recon.includedHours||0);
   const schedH = (recon.expectedHours ?? recon.expectedAnalytics?.expectedTotalHours ?? 0);
   const totalSessions = recon.includedSessionsCount ?? 0;
   const due = recon.rawCalculatedSalary ?? 0;
 
+  const indH=Number(recon.includedIndividualHours||0);
+  const grpH=Number(recon.includedGroupHours||0);
   setText('kpiNetSalary', fmt(net)+' ج.م');
   setText('kpiTotalHours', execH.toFixed(1)+' س');
-  setText('kpiSubHours', ((recon.excludedSessionsCount||0)) + ' مستبعدة');
-  setText('kpiTotalSessions', String(ms.length));
+  setText('kpiSubHours', `${indH.toFixed(1)} فردي | ${grpH.toFixed(1)} جماعي • ${recon.excludedSessionsCount||0} مستبعدة`);
+  setText('kpiTotalSessions', String(totalSessions));
   setText('kpiPreferredMethod', teacher?.paymentMethod||'-');
   setText('kpiLastUpdatedFinancial', teacher?.financialUpdatedAt ? String(teacher.financialUpdatedAt).slice(0,10) : '-');
   setText('kpiExpectedHours', Number(schedH).toFixed(1)+' س');
   setText('kpiExpectedSalary', fmt(recon.expectedSalary||0)+' ج.م');
 
-  const indRate=parseFloat(teacher?.hourlyRateIndividual||teacher?.hourlyRate||100);
-  const grpRate=parseFloat(teacher?.hourlyRateGroup||teacher?.hourlyRate||120);
-  const indH=(recon.includedIndividualMinutes||0)/60;
-  const grpH=(recon.includedGroupMinutes||0)/60;
+  const indRate=parseFloat(teacher?.hourlyRateIndividual||teacher?.hourlyRate||0);
+  const grpRate=parseFloat(teacher?.hourlyRateGroup||0);
   setText('tblRateInd', fmt(indRate)); setText('tblHoursInd', indH.toFixed(1)); setText('tblGrossInd', fmt(recon.individualCalculatedSalary||0));
   setText('tblRateGrp', fmt(grpRate)); setText('tblHoursGrp', grpH.toFixed(1)); setText('tblGrossGrp', fmt(recon.groupCalculatedSalary||0));
   setText('tblBonuses', fmt(bonuses)); setText('tblDeductions', fmt(deductions));
@@ -189,7 +219,7 @@ function renderPayouts(){
 }
 
 function renderAuditPlaceholder(){
-  const tb=$('tblAuditLog'); if(!tb) return;
+  const tb=$('tblAuditLogs'); if(!tb) return;
   tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:1rem;color:var(--text-muted)">سجل التدقيق التفصيلي سيظهر هنا عند توفر بيانات audit logs.</td></tr>';
   setText('auditStatHoursChange','--'); setText('auditStatAbsenceChange','--'); setText('auditStatGroupsChange','--'); setText('auditStatMaxConsecAbsence','--');
 }

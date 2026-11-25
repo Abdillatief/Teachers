@@ -16,8 +16,37 @@ import { ListenerManager, debounce, updateTargetIcons, paginateData, renderPagin
 import { assignPackageToStudent, getStudentPackagesArchive } from '../../shared/utils/creditManager.js';
 import { openWhatsAppReminderWidget, renderWarningCountBadge } from '../../shared/utils/whatsappWidget.js';
 import { syncStudentOperationalSummary, backfillOperationalProjectionsIfNeeded } from '../supervisor/supervisorDomainService.js';
+import { syncSubscriptionPayments } from '../../shared/utils/subscriptionHelpers.js';
 
 protectRoute('admin');
+
+function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function formatPackageArchiveDate(pkg) {
+  const raw = pkg?.lastPaymentDate || pkg?.archivedAt || pkg?.createdAt;
+  if (raw == null) return 'مسجل محاسبياً';
+  try {
+    let d;
+    if (typeof raw.toDate === 'function') d = raw.toDate();
+    else if (typeof raw.seconds === 'number') d = new Date(raw.seconds * 1000);
+    else if (raw instanceof Date) d = raw;
+    else if (typeof raw === 'string' || typeof raw === 'number') d = new Date(raw);
+    else return 'مسجل محاسبياً';
+    return (d instanceof Date && !Number.isNaN(d.getTime()))
+      ? d.toLocaleDateString('ar-EG')
+      : 'مسجل محاسبياً';
+  } catch {
+    return 'مسجل محاسبياً';
+  }
+}
 
 const listenerManager = new ListenerManager();
 
@@ -205,10 +234,11 @@ function populateGroupDropdowns() {
   const optionsHtml = activeGroups.length > 0 
     ? activeGroups.map(g => {
         const count = (g.studentIds || []).length;
-        const limit = parseInt(g.maxStudents) || 10;
-        const isFull = count >= limit;
+        const limit = parseInt(g.maxStudents, 10);
+        const hasLimit = Number.isFinite(limit) && limit > 0;
+        const isFull = hasLimit && count >= limit;
         const scheduleStr = (g.day || g.time) ? ` - [${g.day || ''} ${g.time || ''}]` : '';
-        return `<option value="${g.id}" data-teacherid="${g.teacherId || ''}" data-day="${g.day || 'السبت'}" data-time="${g.time || '05:30 مساءً'}" ${isFull ? 'disabled' : ''}>${g.name} (${g.teacherName || 'معلم'})${scheduleStr} - (${count}/${limit} طالب) ${isFull ? '⚠️ مكتملة' : ''}</option>`;
+        return `<option value="${g.id}" data-teacherid="${g.teacherId || ''}" data-day="${escapeHtml(g.day || '')}" data-time="${escapeHtml(g.time || '')}" ${isFull ? 'disabled' : ''}>${g.name} (${g.teacherName || 'معلم'})${scheduleStr} - (${count}/${hasLimit ? limit : 'غير محدد'} طالب) ${isFull ? '⚠️ مكتملة' : ''}</option>`;
       }).join('')
     : '<option value="" disabled>لا توجد مجموعات نشطة حالياً</option>';
 
@@ -226,10 +256,10 @@ function populateGroupDropdowns() {
 }
 
 function getPackageSessionCount(p) {
-  if (!p) return 4;
+  if (!p) return 0;
   const val = p.totalSessions ?? p.sessionsCount ?? p.sessions ?? p.totalLessons ?? p.lessonsCount;
   const num = parseInt(val, 10);
-  return !isNaN(num) && num > 0 ? num : 4;
+  return Number.isFinite(num) && num > 0 ? num : 0;
 }
 
 function populatePackageOptions() {
@@ -237,20 +267,18 @@ function populatePackageOptions() {
   if (!pkgSelect) return;
 
   if (packagesCached.length > 0) {
+    pkgSelect.disabled = false;
     pkgSelect.innerHTML = `<option value="">-- اختر الباقة التعليمية المناسبة للطالب --</option>` +
       packagesCached.map(p => {
         const sess = getPackageSessionCount(p);
-        const dur = p.duration || p.sessionDuration || p.lessonDuration || 60;
-        return `<option value="${p.id}" data-price="${p.price}" data-name="${p.name}" data-sessions="${sess}" data-duration="${dur}">${p.name} (${p.price} ج.م - ${sess} حصص)</option>`;
+        const dur = p.duration || p.sessionDuration || p.lessonDuration || '';
+        const name = escapeHtml(p.name);
+        return `<option value="${escapeHtml(p.id)}" data-price="${escapeHtml(p.price)}" data-name="${name}" data-sessions="${sess}" data-duration="${escapeHtml(dur)}">${name} (${escapeHtml(p.price)} ج.م - ${sess > 0 ? sess : 'عدد الحصص غير محدد'})</option>`;
       }).join('');
   } else {
-    pkgSelect.innerHTML = `
-      <option value="">-- اختر الباقة التعليمية المناسبة للطالب --</option>
-      <option value="pkg_4" data-price="300" data-name="باقة 4 حصص شهرياً" data-sessions="4" data-duration="60">باقة 4 حصص شهرياً (300 ج.م - 4 حصص)</option>
-      <option value="pkg_8" data-price="500" data-name="باقة 8 حصص شهرياً" data-sessions="8" data-duration="60">باقة 8 حصص شهرياً (500 ج.م - 8 حصص)</option>
-      <option value="pkg_12" data-price="700" data-name="باقة 12 حصة شهرياً" data-sessions="12" data-duration="60">باقة 12 حصة شهرياً (700 ج.م - 12 حصة)</option>
-      <option value="pkg_custom" data-price="600" data-name="باقة تعليمية مخصصة" data-sessions="8" data-duration="60">باقة تعليمية مخصصة (600 ج.م)</option>
-    `;
+    // لا نعتمد على باقات وهمية؛ يُطلب إدخال السعر يدوياً حتى توجد باقات حقيقية
+    pkgSelect.disabled = true;
+    pkgSelect.innerHTML = `<option value="">لا توجد باقات معتمدة - أدخل السعر يدوياً</option>`;
   }
 }
 
@@ -270,30 +298,31 @@ function renderPendingStudentsTable() {
   if (badgeCount) badgeCount.textContent = `${pendingStudentsCached.length} طلبات معلقة`;
 
   tbody.innerHTML = pendingStudentsCached.map(s => {
-    const days = (s.schedule && s.schedule.days) ? s.schedule.days.join(' • ') : (s.sessionDays ? s.sessionDays.join(' • ') : 'غير محدد');
-    const time = s.schedule?.uniformTime || s.sessionTime || s.time || 'مرن';
-    const phoneInfo = s.phone ? s.phone : 'لا يوجد هاتف';
+    const days = escapeHtml((s.schedule && s.schedule.days) ? s.schedule.days.join(' • ') : (s.sessionDays ? s.sessionDays.join(' • ') : 'غير محدد'));
+    const time = escapeHtml(s.schedule?.uniformTime || s.sessionTime || s.time || 'مرن');
+    const phoneInfo = escapeHtml(s.phone ? s.phone : 'لا يوجد هاتف');
     const subTypeBadge = s.subscriptionType === 'group' || s.groupId || s.requestedGroupId
-      ? `<span class="badge badge-info" style="position: static;">مجموعة ${s.requestedGroupName ? `: ${s.requestedGroupName}` : ''}</span>`
+      ? `<span class="badge badge-info" style="position: static;">مجموعة ${s.requestedGroupName ? `: ${escapeHtml(s.requestedGroupName)}` : ''}</span>`
       : `<span class="badge badge-success" style="position: static;">فردية</span>`;
+    const notesText = escapeHtml(s.notes || 'لا يوجد');
 
     return `
       <tr>
         <td>
-          <strong style="color: var(--text-primary); font-size: 0.92rem;">${s.name}</strong>
-          ${s.email ? `<div style="font-size: 0.75rem; color: var(--text-muted);">${s.email}</div>` : ''}
+          <strong style="color: var(--text-primary); font-size: 0.92rem;">${escapeHtml(s.name)}</strong>
+          ${s.email ? `<div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(s.email)}</div>` : ''}
           <div style="margin-top: 0.25rem;">${subTypeBadge}</div>
         </td>
-        <td>${s.age || '-'} سنة <br><span style="font-size: 0.75rem; color: var(--text-muted);">${phoneInfo}</span></td>
-        <td><strong style="color: var(--primary-color);">${s.teacherName || 'المعلم المتقدم'}</strong></td>
+        <td>${escapeHtml(s.age || '-')} سنة <br><span style="font-size: 0.75rem; color: var(--text-muted);">${phoneInfo}</span></td>
+        <td><strong style="color: var(--primary-color);">${escapeHtml(s.teacherName || 'المعلم المتقدم')}</strong></td>
         <td><span style="font-size: 0.8rem; font-weight: 600; color: var(--text-primary);">${days}</span><br><span style="font-size: 0.75rem; color: var(--text-muted);">${time}</span></td>
-        <td><div style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.8rem; color: var(--text-secondary);" title="${s.notes || ''}">${s.notes || 'لا يوجد'}</div></td>
+        <td><div style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.8rem; color: var(--text-secondary);" title="${notesText}">${notesText}</div></td>
         <td>
           <div style="display: flex; gap: 0.35rem; align-items: center;">
-            <button class="btn btn-sm btn-primary btn-approve-student" data-id="${s.id}" style="display: flex; align-items: center; gap: 0.25rem;">
+            <button class="btn btn-sm btn-primary btn-approve-student" data-id="${escapeHtml(s.id)}" style="display: flex; align-items: center; gap: 0.25rem;">
               <i data-lucide="check-circle-2" style="width: 14px; height: 14px;"></i> اعتماد وتحديد الباقة
             </button>
-            <button class="btn btn-sm btn-secondary btn-reject-student" data-id="${s.id}" style="color: var(--danger); display: flex; align-items: center; gap: 0.2rem;">
+            <button class="btn btn-sm btn-secondary btn-reject-student" data-id="${escapeHtml(s.id)}" style="color: var(--danger); display: flex; align-items: center; gap: 0.2rem;">
               <i data-lucide="x-circle" style="width: 14px; height: 14px;"></i> رفض
             </button>
           </div>
@@ -379,7 +408,8 @@ function renderStudentsTable(filterText = "") {
   // 1. Render Table View
   tbody.innerHTML = paginatedStudents.map(s => {
     const teacher = teachersCached.find(t => t.uid === s.teacherId);
-    const teacherName = teacher ? teacher.name : (s.teacherName || `<span style="color:var(--danger); font-weight:600;">غير معين</span>`);
+    const teacherName = teacher ? escapeHtml(teacher.name || 'غير معين')
+      : (s.teacherName ? escapeHtml(s.teacherName) : `<span style="color:var(--danger); font-weight:600;">غير معين</span>`);
     
     let statusBadge = '';
     if (s.status === 'active' || s.status === 'Active') {
@@ -390,57 +420,57 @@ function renderStudentsTable(filterText = "") {
       statusBadge = `<span class="badge badge-neutral">مؤرشف</span>`;
     }
 
-    const daysLabel = s.days && Array.isArray(s.days) && s.days.length > 0 ? s.days.join('، ') : (s.sessionDays ? s.sessionDays.join('، ') : 'غير محدد');
-    const timeLabel = s.time || s.sessionTime || 'غير محدد';
-    const pkgLabel = s.packageName ? `<span class="badge badge-primary student-pkg-badge-trigger" data-id="${s.id}" style="position:static; margin-top:0.25rem; cursor:pointer;" title="انقر لعرض تفاصيل الباقة والأرشيف"><i data-lucide="layers" style="width:10px;height:10px;display:inline;"></i> ${s.packageName}</span>` : '';
+    const daysLabel = escapeHtml(s.days && Array.isArray(s.days) && s.days.length > 0 ? s.days.join('، ') : (s.sessionDays ? s.sessionDays.join('، ') : 'غير محدد'));
+    const timeLabel = escapeHtml(s.time || s.sessionTime || 'غير محدد');
+    const pkgLabel = s.packageName ? `<span class="badge badge-primary student-pkg-badge-trigger" data-id="${escapeHtml(s.id)}" style="position:static; margin-top:0.25rem; cursor:pointer;" title="انقر لعرض تفاصيل الباقة والأرشيف"><i data-lucide="layers" style="width:10px;height:10px;display:inline;"></i> ${escapeHtml(s.packageName)}</span>` : '';
 
     const subTypeBadge = (s.subscriptionType === 'group' || s.groupId)
-      ? `<span class="badge badge-info" style="position:static; margin-top:0.25rem;">مجموعة (${s.groupName || 'دراسي'})</span>`
+      ? `<span class="badge badge-info" style="position:static; margin-top:0.25rem;">مجموعة (${escapeHtml(s.groupName || 'دراسي')})</span>`
       : `<span class="badge badge-neutral" style="position:static; margin-top:0.25rem;">فردي</span>`;
 
     let creditBadge = '';
     if (s.remainingLessons !== undefined) {
       const rem = parseInt(s.remainingLessons) || 0;
       if (rem < 0) {
-        creditBadge = `<span class="badge badge-danger student-pkg-badge-trigger" data-id="${s.id}" style="position:static; margin-top:0.25rem; cursor:pointer;" title="انقر لإدارة الباقة والتجديد">عجز حصص: ${rem}</span>`;
+        creditBadge = `<span class="badge badge-danger student-pkg-badge-trigger" data-id="${escapeHtml(s.id)}" style="position:static; margin-top:0.25rem; cursor:pointer;" title="انقر لإدارة الباقة والتجديد">عجز حصص: ${rem}</span>`;
       } else if (rem === 0) {
-        creditBadge = `<span class="badge badge-danger student-pkg-badge-trigger" data-id="${s.id}" style="position:static; margin-top:0.25rem; cursor:pointer;" title="انقر لتجديد الباقة">0 حصة (منتهي)</span>`;
+        creditBadge = `<span class="badge badge-danger student-pkg-badge-trigger" data-id="${escapeHtml(s.id)}" style="position:static; margin-top:0.25rem; cursor:pointer;" title="انقر لتجديد الباقة">0 حصة (منتهي)</span>`;
       } else if (rem <= 3) {
-        creditBadge = `<span class="badge badge-warning student-pkg-badge-trigger" data-id="${s.id}" style="position:static; margin-top:0.25rem; cursor:pointer;" title="انقر لعرض رصيد الباقة">${rem} حصص متبقية</span>`;
+        creditBadge = `<span class="badge badge-warning student-pkg-badge-trigger" data-id="${escapeHtml(s.id)}" style="position:static; margin-top:0.25rem; cursor:pointer;" title="انقر لعرض رصيد الباقة">${rem} حصص متبقية</span>`;
       } else {
-        creditBadge = `<span class="badge badge-success student-pkg-badge-trigger" data-id="${s.id}" style="position:static; margin-top:0.25rem; cursor:pointer;" title="انقر لعرض رصيد الباقة">${rem} حصة متبقية</span>`;
+        creditBadge = `<span class="badge badge-success student-pkg-badge-trigger" data-id="${escapeHtml(s.id)}" style="position:static; margin-top:0.25rem; cursor:pointer;" title="انقر لعرض رصيد الباقة">${rem} حصة متبقية</span>`;
       }
     }
 
     return `
       <tr>
         <td>
-          <div style="font-weight: 700; color: var(--text-primary); font-size: 0.92rem;">${s.name}</div>
+          <div style="font-weight: 700; color: var(--text-primary); font-size: 0.92rem;">${escapeHtml(s.name)}</div>
           <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem;">مواعيد: ${daysLabel} • ${timeLabel}</div>
           <div style="display:flex; gap:0.3rem; flex-wrap:wrap; margin-top:0.25rem;">${subTypeBadge} ${pkgLabel} ${creditBadge}</div>
         </td>
-        <td>${s.age || 'غير مسجل'} سنة</td>
+        <td>${escapeHtml(s.age || 'غير مسجل')} سنة</td>
         <td><strong>${teacherName}</strong></td>
-        <td>${s.sessionsCount || 0} حصة</td>
-        <td><div style="max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size:0.8rem; color:var(--text-secondary);" title="${s.notes || ''}">${s.notes || 'لا يوجد ملاحظات'}</div></td>
-        <td><strong style="color: var(--primary-color);">${(parseFloat(s.averageRating) || 5.0).toFixed(1)} / 5.0</strong></td>
+        <td>${s.sessionsCount ?? '—'} حصة</td>
+        <td><div style="max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size:0.8rem; color:var(--text-secondary);" title="${escapeHtml(s.notes || '')}">${escapeHtml(s.notes || 'لا يوجد ملاحظات')}</div></td>
+        <td><strong style="color: var(--primary-color);">${Number.isFinite(parseFloat(s.averageRating)) ? parseFloat(s.averageRating).toFixed(1) + ' / 5.0' : 'لا يوجد تقييم'}</strong></td>
         <td>${statusBadge}</td>
         <td>
           <div style="display: flex; gap: 0.35rem; flex-wrap: wrap; align-items: center;">
-            <button class="btn btn-sm btn-secondary btn-view-packages" data-id="${s.id}" title="عرض تفاصيل الباقة الحالية وأرشيف الباقات السابقة" style="color: #4f46e5; border-color: #c7d2fe; display: flex; align-items: center; gap: 0.25rem; font-weight: 600;">
+            <button class="btn btn-sm btn-secondary btn-view-packages" data-id="${escapeHtml(s.id)}" title="عرض تفاصيل الباقة الحالية وأرشيف الباقات السابقة" style="color: #4f46e5; border-color: #c7d2fe; display: flex; align-items: center; gap: 0.25rem; font-weight: 600;">
               <i data-lucide="layers" style="width:14px;height:14px;"></i> الباقات والأرشيف
             </button>
-            <button class="btn btn-sm btn-secondary btn-wa-student" data-id="${s.id}" title="إرسال رسالة أو تذكير واتساب لولي الأمر" style="color: #16a34a; border-color: #86efac; display: flex; align-items: center; gap: 0.25rem;">
+            <button class="btn btn-sm btn-secondary btn-wa-student" data-id="${escapeHtml(s.id)}" title="إرسال رسالة أو تذكير واتساب لولي الأمر" style="color: #16a34a; border-color: #86efac; display: flex; align-items: center; gap: 0.25rem;">
               <i data-lucide="message-square" style="width:14px;height:14px;"></i> واتساب
             </button>
             ${renderWarningCountBadge(s.waWarningCount || 0)}
-            <button class="btn btn-sm btn-secondary btn-report-student" data-id="${s.id}" style="color: var(--primary-color);">
+            <button class="btn btn-sm btn-secondary btn-report-student" data-id="${escapeHtml(s.id)}" style="color: var(--primary-color);">
               <i data-lucide="file-text" style="width:14px;height:14px;"></i> تقرير
             </button>
-            <button class="btn btn-sm btn-secondary btn-edit-student" data-id="${s.id}">
+            <button class="btn btn-sm btn-secondary btn-edit-student" data-id="${escapeHtml(s.id)}">
               <i data-lucide="edit-3" style="width:14px;height:14px;"></i> تعديل
             </button>
-            <button class="btn btn-sm btn-danger btn-delete-student" data-id="${s.id}">
+            <button class="btn btn-sm btn-danger btn-delete-student" data-id="${escapeHtml(s.id)}">
               <i data-lucide="archive" style="width:14px;height:14px;"></i> أرشيف
             </button>
           </div>
@@ -452,7 +482,8 @@ function renderStudentsTable(filterText = "") {
   // 2. Render Cards View
   gridContainer.innerHTML = paginatedStudents.map(s => {
     const teacher = teachersCached.find(t => t.uid === s.teacherId);
-    const teacherName = teacher ? teacher.name : (s.teacherName || `<span style="color:var(--danger); font-weight:600;">غير معين</span>`);
+    const teacherName = teacher ? escapeHtml(teacher.name || 'غير معين')
+      : (s.teacherName ? escapeHtml(s.teacherName) : `<span style="color:var(--danger); font-weight:600;">غير معين</span>`);
 
     let statusBadge = '';
     if (s.status === 'active' || s.status === 'Active') {
@@ -463,25 +494,25 @@ function renderStudentsTable(filterText = "") {
       statusBadge = `<span class="badge badge-neutral">مؤرشف</span>`;
     }
 
-    const daysLabel = s.days && Array.isArray(s.days) && s.days.length > 0 ? s.days.join('، ') : (s.sessionDays ? s.sessionDays.join('، ') : 'غير محدد');
-    const timeLabel = s.time || s.sessionTime || 'غير محدد';
-    const pkgLabel = s.packageName ? `<span class="badge badge-primary student-pkg-badge-trigger" data-id="${s.id}" style="position:static; cursor:pointer;" title="انقر لعرض تفاصيل الباقة والأرشيف"><i data-lucide="layers" style="width:10px;height:10px;display:inline;"></i> ${s.packageName}</span>` : '';
+    const daysLabel = escapeHtml(s.days && Array.isArray(s.days) && s.days.length > 0 ? s.days.join('، ') : (s.sessionDays ? s.sessionDays.join('، ') : 'غير محدد'));
+    const timeLabel = escapeHtml(s.time || s.sessionTime || 'غير محدد');
+    const pkgLabel = s.packageName ? `<span class="badge badge-primary student-pkg-badge-trigger" data-id="${escapeHtml(s.id)}" style="position:static; cursor:pointer;" title="انقر لعرض تفاصيل الباقة والأرشيف"><i data-lucide="layers" style="width:10px;height:10px;display:inline;"></i> ${escapeHtml(s.packageName)}</span>` : '';
 
     const subTypeBadge = (s.subscriptionType === 'group' || s.groupId)
-      ? `<span class="badge badge-info" style="position:static;">مجموعة (${s.groupName || 'دراسي'})</span>`
+      ? `<span class="badge badge-info" style="position:static;">مجموعة (${escapeHtml(s.groupName || 'دراسي')})</span>`
       : `<span class="badge badge-neutral" style="position:static;">فردي</span>`;
 
     let creditBadge = '';
     if (s.remainingLessons !== undefined) {
       const rem = parseInt(s.remainingLessons) || 0;
       if (rem < 0) {
-        creditBadge = `<span class="badge badge-danger student-pkg-badge-trigger" data-id="${s.id}" style="position:static; cursor:pointer;" title="انقر لإدارة الباقة وتسوية الدين">دين: ${rem}</span>`;
+        creditBadge = `<span class="badge badge-danger student-pkg-badge-trigger" data-id="${escapeHtml(s.id)}" style="position:static; cursor:pointer;" title="انقر لإدارة الباقة وتسوية الدين">دين: ${rem}</span>`;
       } else if (rem === 0) {
-        creditBadge = `<span class="badge badge-danger student-pkg-badge-trigger" data-id="${s.id}" style="position:static; cursor:pointer;" title="انقر لتجديد الباقة وسداد الاشتراك">0 حصة (يستحق الدفع)</span>`;
+        creditBadge = `<span class="badge badge-danger student-pkg-badge-trigger" data-id="${escapeHtml(s.id)}" style="position:static; cursor:pointer;" title="انقر لتجديد الباقة وسداد الاشتراك">0 حصة (يستحق الدفع)</span>`;
       } else if (rem === 1) {
-        creditBadge = `<span class="badge badge-warning student-pkg-badge-trigger" data-id="${s.id}" style="position:static; cursor:pointer;" title="انقر لعرض رصيد الباقة">حصة واحدة (قارب على الانتهاء)</span>`;
+        creditBadge = `<span class="badge badge-warning student-pkg-badge-trigger" data-id="${escapeHtml(s.id)}" style="position:static; cursor:pointer;" title="انقر لعرض رصيد الباقة">حصة واحدة (قارب على الانتهاء)</span>`;
       } else {
-        creditBadge = `<span class="badge badge-success student-pkg-badge-trigger" data-id="${s.id}" style="position:static; cursor:pointer;" title="انقر لعرض رصيد الباقة">${rem} متبقية</span>`;
+        creditBadge = `<span class="badge badge-success student-pkg-badge-trigger" data-id="${escapeHtml(s.id)}" style="position:static; cursor:pointer;" title="انقر لعرض رصيد الباقة">${rem} متبقية</span>`;
       }
     }
 
@@ -490,8 +521,8 @@ function renderStudentsTable(filterText = "") {
         <div>
           <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.75rem;">
             <div>
-              <strong style="font-size: 1rem; color: var(--text-primary); display: block;">${s.name}</strong>
-              <span style="font-size: 0.78rem; color: var(--text-muted);">${s.age || 'غير مسجل'} سنة</span>
+              <strong style="font-size: 1rem; color: var(--text-primary); display: block;">${escapeHtml(s.name)}</strong>
+              <span style="font-size: 0.78rem; color: var(--text-muted);">${escapeHtml(s.age || 'غير مسجل')} سنة</span>
             </div>
             ${statusBadge}
           </div>
@@ -507,28 +538,28 @@ function renderStudentsTable(filterText = "") {
             </div>
             <div style="display: flex; align-items: center; gap: 0.4rem;">
               <i data-lucide="star" style="width: 14px; height: 14px; color: var(--warning);"></i>
-              <span>${s.sessionsCount || 0} حصة • تقييم: <strong style="color:var(--primary-color);">${(parseFloat(s.averageRating) || 5.0).toFixed(1)}/5.0</strong></span>
+              <span>${s.sessionsCount ?? '—'} حصة • تقييم: <strong style="color:var(--primary-color);">${Number.isFinite(parseFloat(s.averageRating)) ? parseFloat(s.averageRating).toFixed(1) + '/5.0' : 'لا يوجد تقييم'}</strong></span>
             </div>
           </div>
 
           <div style="margin-bottom: 0.5rem; display:flex; gap:0.35rem; flex-wrap:wrap;">${subTypeBadge} ${pkgLabel} ${creditBadge}</div>
-          ${s.notes ? `<p style="font-size: 0.75rem; color: var(--text-muted); margin: 0; background: var(--bg-primary); padding: 0.4rem 0.6rem; border-radius: var(--border-radius-sm); line-height: 1.4; border: 1px solid var(--border-color);">${s.notes}</p>` : ''}
+          ${s.notes ? `<p style="font-size: 0.75rem; color: var(--text-muted); margin: 0; background: var(--bg-primary); padding: 0.4rem 0.6rem; border-radius: var(--border-radius-sm); line-height: 1.4; border: 1px solid var(--border-color);">${escapeHtml(s.notes)}</p>` : ''}
         </div>
 
         <div style="display: flex; gap: 0.35rem; border-top: 1px solid var(--border-color); padding-top: 0.65rem; flex-wrap: wrap;">
-          <button class="btn btn-sm btn-secondary btn-view-packages" data-id="${s.id}" style="flex: 1 1 100%; justify-content: center; color: #4f46e5; border-color: #c7d2fe; display: flex; align-items: center; gap: 0.35rem; font-weight: 600;">
+          <button class="btn btn-sm btn-secondary btn-view-packages" data-id="${escapeHtml(s.id)}" style="flex: 1 1 100%; justify-content: center; color: #4f46e5; border-color: #c7d2fe; display: flex; align-items: center; gap: 0.35rem; font-weight: 600;">
             <i data-lucide="layers" style="width: 14px; height: 14px;"></i> الباقات الحالية والأرشيف
           </button>
-          <button class="btn btn-sm btn-secondary btn-wa-student" data-id="${s.id}" style="flex: 1 1 100%; justify-content: center; color: #16a34a; border-color: #86efac; display: flex; align-items: center; gap: 0.35rem;">
+          <button class="btn btn-sm btn-secondary btn-wa-student" data-id="${escapeHtml(s.id)}" style="flex: 1 1 100%; justify-content: center; color: #16a34a; border-color: #86efac; display: flex; align-items: center; gap: 0.35rem;">
             <i data-lucide="message-square" style="width: 14px; height: 14px;"></i> واتساب ولي الأمر ${renderWarningCountBadge(s.waWarningCount || 0)}
           </button>
-          <button class="btn btn-sm btn-secondary btn-report-student" data-id="${s.id}" style="flex: 1 1 100%; justify-content: center; color: var(--primary-color);">
+          <button class="btn btn-sm btn-secondary btn-report-student" data-id="${escapeHtml(s.id)}" style="flex: 1 1 100%; justify-content: center; color: var(--primary-color);">
             <i data-lucide="file-text" style="width: 14px; height: 14px;"></i> بطاقة تقرير شهري
           </button>
-          <button class="btn btn-sm btn-secondary btn-edit-student" data-id="${s.id}" style="flex: 1; justify-content: center;">
+          <button class="btn btn-sm btn-secondary btn-edit-student" data-id="${escapeHtml(s.id)}" style="flex: 1; justify-content: center;">
             <i data-lucide="edit-3" style="width: 13px; height: 13px;"></i> تعديل
           </button>
-          <button class="btn btn-sm btn-danger btn-delete-student" data-id="${s.id}" style="flex: 1; justify-content: center;">
+          <button class="btn btn-sm btn-danger btn-delete-student" data-id="${escapeHtml(s.id)}" style="flex: 1; justify-content: center;">
             <i data-lucide="archive" style="width: 13px; height: 13px;"></i> أرشيف
           </button>
         </div>
@@ -628,6 +659,9 @@ function setupApproveStudentModalHandlers() {
       
       const packageName = selectedOption ? (selectedOption.dataset.name || selectedOption.text) : 'باقة تعليمية معتمدة';
       const packagePrice = parseFloat(document.getElementById('approvePackagePrice').value) || 0;
+      const totalSessions = parseInt(selectedOption?.dataset?.sessions)
+        || parseInt(currentApprovingStudent.requestedSessions || currentApprovingStudent.sessionsCount || currentApprovingStudent.totalLessons, 10)
+        || 0;
       const sessionDuration = parseInt(document.getElementById('approveSessionDuration')?.value) || 60;
       const teacherId = document.getElementById('approveTeacherSelect').value;
       const teacherObj = teachersCached.find(t => t.uid === teacherId);
@@ -636,6 +670,11 @@ function setupApproveStudentModalHandlers() {
       const endDate = document.getElementById('approveEndDate').value;
 
       const submitBtn = document.getElementById('btnSubmitApproveStudent');
+      if (!packagePrice || !totalSessions) {
+        Toast.error('يرجى إدخال سعر صالح وعدد حصص قبل اعتماد الطالب.');
+        if (submitBtn) submitBtn.disabled = false;
+        return;
+      }
       if (submitBtn) submitBtn.disabled = true;
 
       try {
@@ -668,9 +707,13 @@ function setupApproveStudentModalHandlers() {
 
         // 2. تفعيل باقة الحصص المعتمدة وحساب الرصيد (Credits) للدارس
         const currentMonthKey = new Date().toISOString().substring(0, 7);
-        const totalSessions = parseInt(selectedOption?.dataset?.sessions) || 8;
-        
-        await assignPackageToStudent({
+        const subscriptionRef = doc(collection(db, "subscriptions"));
+        const subscriptionId = subscriptionRef.id;
+        const paidRaw = currentApprovingStudent.paidAmount ?? currentApprovingStudent.paymentAmount ?? currentApprovingStudent.amount;
+        const paidValue = parseFloat(paidRaw);
+        const hasArchivedPayment = Number.isFinite(paidValue) && paidValue > 0;
+
+        const assignedPackage = await assignPackageToStudent({
           studentId: studentId,
           studentName: currentApprovingStudent.name,
           packageId: pkgSelectEl.value || null,
@@ -682,14 +725,23 @@ function setupApproveStudentModalHandlers() {
           startDate: startDate,
           expiryDate: endDate,
           notes: `تم التفعيل عند اعتماد الطالب بواسطة الإدارة`,
+          payment: hasArchivedPayment ? {
+            amount: paidValue,
+            method: currentApprovingStudent.paymentMethod || currentApprovingStudent.method || 'نقدي (كاش)',
+            date: currentApprovingStudent.paymentDate || startDate,
+            notes: `سداد باقة ${packageName}`,
+            teacherName: teacherName,
+            subscriptionId: subscriptionId
+          } : null,
           actor: { uid: auth.currentUser?.uid || 'admin', name: loggedInAdminData?.name || 'مدير الأكاديمية' }
         });
 
-        // إنشاء سجل الاشتراك للتوافق المالي الكلي
-        await addDoc(collection(db, "subscriptions"), {
+        // سجل اشتراك منفصل يبدأ غير مدفوع، ثم تُشتق حالته من الباقة/المدفوعات المرتبطة
+        await setDoc(subscriptionRef, {
           studentId: studentId,
           studentName: currentApprovingStudent.name,
           month: currentMonthKey,
+          packageId: assignedPackage?.id || '',
           packageName: packageName,
           planName: packageName,
           totalSessions: totalSessions,
@@ -704,6 +756,7 @@ function setupApproveStudentModalHandlers() {
           endDate: endDate,
           createdAt: serverTimestamp()
         });
+        await syncSubscriptionPayments(subscriptionId);
 
         // 3. إرسال إشعار للمعلم بقبول طلب إضافة الطالب وتعيينه رسمياً
         if (teacherId) {
@@ -1061,6 +1114,7 @@ function openAddStudentModalForm() {
       const subType = modal.querySelector('#addSubscriptionType')?.value || 'individual';
       const selectedGroupId = modal.querySelector('#addStudentGroupSelect')?.value || '';
       const teacherId = modal.querySelector('#addStudentTeacher').value;
+      const phone = modal.querySelector('#addStudentPhone')?.value.trim() || '';
       const time = modal.querySelector('#addStudentTime').value.trim();
       const notes = modal.querySelector('#addStudentNotes').value.trim();
 
@@ -1084,8 +1138,8 @@ function openAddStudentModalForm() {
       await TransactionProtector.executeProtected({
         opName: 'ADD_STUDENT',
         button: submitBtn,
-        lockKey: `add_student_${name.toLowerCase()}`,
-        idempotencyKey: `idem_add_student_${name.toLowerCase()}_${teacherId}`,
+        lockKey: `add_student_${name.toLowerCase()}_${phone}_${teacherId}_${new Date().toISOString().slice(0, 10)}`,
+        idempotencyKey: `idem_add_student_${name.toLowerCase()}_${phone}_${teacherId}_${new Date().toISOString().slice(0, 10)}`,
         duplicateCheck: async () => {
           return await TransactionProtector.checkDuplicate('students', [
             where('name', '==', name),
@@ -1652,7 +1706,7 @@ async function openStudentPackagesModal(studentId) {
               <td><span class="badge" style="background: rgba(99, 102, 241, 0.1); color: var(--primary-color); font-weight: 700;">دورة #${pkg.renewalCount || (archivedPackages.length - idx)}</span></td>
               <td>
                 <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-primary);">${pkg.lastReceiptId || pkg.receiptNumber || 'محفوظ محاسبياً'}</div>
-                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.1rem;">${pkg.lastPaymentDate || pkg.archivedAt?.toDate ? pkg.archivedAt.toDate().toLocaleDateString('ar-EG') : (pkg.paymentMethod || 'مسجل')}</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.1rem;">${escapeHtml(formatPackageArchiveDate(pkg))}</div>
               </td>
             </tr>
           `;
@@ -1686,19 +1740,17 @@ function openQuickRenewModal(studentId) {
   const tplSelect = document.getElementById('renewPackageTemplateSelect');
   if (tplSelect) {
     if (packagesCached.length > 0) {
+      tplSelect.disabled = false;
       tplSelect.innerHTML = `<option value="">-- اختر باقة للتجديد --</option>` +
         packagesCached.map(p => {
           const sess = getPackageSessionCount(p);
-          const dur = p.duration || p.sessionDuration || p.lessonDuration || 60;
-          return `<option value="${p.id}" data-name="${p.name}" data-price="${p.price}" data-sessions="${sess}" data-duration="${dur}">${p.name} (${p.price} ج.م - ${sess} حصص)</option>`;
+          const dur = p.duration || p.sessionDuration || p.lessonDuration || '';
+          const name = escapeHtml(p.name);
+          return `<option value="${escapeHtml(p.id)}" data-name="${name}" data-price="${escapeHtml(p.price)}" data-sessions="${sess}" data-duration="${escapeHtml(dur)}">${name} (${escapeHtml(p.price)} ج.م - ${sess > 0 ? sess : 'عدد الحصص غير محدد'})</option>`;
         }).join('');
     } else {
-      tplSelect.innerHTML = `
-        <option value="">-- اختر باقة للتجديد --</option>
-        <option value="pkg_4" data-name="باقة 4 حصص" data-price="300" data-sessions="4" data-duration="60">باقة 4 حصص (300 ج.م)</option>
-        <option value="pkg_8" data-name="باقة 8 حصص" data-price="500" data-sessions="8" data-duration="60">باقة 8 حصص (500 ج.م)</option>
-        <option value="pkg_12" data-name="باقة 12 حصة" data-price="700" data-sessions="12" data-duration="60">باقة 12 حصة (700 ج.م)</option>
-      `;
+      tplSelect.disabled = true;
+      tplSelect.innerHTML = `<option value="">لا توجد باقات معتمدة - أدخل السعر يدوياً</option>`;
     }
   }
 

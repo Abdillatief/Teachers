@@ -567,7 +567,7 @@
               if (upcomingItem.meetingLink) {
                 window.open(upcomingItem.meetingLink, '_blank');
               } else {
-                window.location.href = `today-sessions.html?studentId=${upcomingItem.id}`;
+                window.location.href = `today-sessions.html?studentId=${upcomingItem.id}&type=${upcomingItem.type}`;
               }
             };
           }

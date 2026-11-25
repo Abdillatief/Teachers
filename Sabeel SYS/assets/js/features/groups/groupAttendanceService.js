@@ -202,7 +202,7 @@ export async function recordGroupAttendance({
     // Deduct student package credit
     if (isCompleted || (isAbsent && att.absenceType === 'unexcused')) {
       try {
-        await deductSessionCredit({
+        const deductionResult = await deductSessionCredit({
           sessionId: studentSessId,
           studentId: att.studentId,
           studentName: att.studentName,
@@ -212,8 +212,46 @@ export async function recordGroupAttendance({
           absenceType: isAbsent ? (att.absenceType || 'unexcused') : '',
           actor: { uid: currentUserId, name: teacherName || 'المعلم' }
         });
+
+        // deductSessionCredit قد يُرجع {success:false} دون رمي استثناء
+        if (!deductionResult || deductionResult.success === false) {
+          const failureReason = deductionResult?.error || deductionResult?.reason || 'سبب غير معروف';
+          console.error(`Credit deduction failed for student ${att.studentId}:`, failureReason);
+          Toast.warning(`تعذّر خصم رصيد الحصة للطالب (${att.studentName || att.studentId}): ${failureReason}. تم تسجيل الحصة، يرجى مراجعة الرصيد يدوياً.`);
+          try {
+            await writeAuditLog(
+              currentUserId,
+              teacherName || 'المعلم',
+              'GROUP_CREDIT_DEDUCTION_FAILED',
+              studentSessId,
+              {
+                groupId,
+                groupName,
+                studentId: att.studentId,
+                studentName: att.studentName,
+                sessionDate,
+                failureReason
+              }
+            );
+          } catch (logErr) {
+            console.warn('Could not write group credit deduction failure log:', logErr);
+          }
+        }
       } catch (deductErr) {
-        console.warn(`Error deducting credit for student ${att.studentId}:`, deductErr);
+        const failureReason = deductErr?.message || String(deductErr);
+        console.error(`Error deducting credit for student ${att.studentId}:`, deductErr);
+        Toast.warning(`تعذّر خصم رصيد الحصة للطالب (${att.studentName || att.studentId}): ${failureReason}. تم تسجيل الحصة، يرجى مراجعة الرصيد يدوياً.`);
+        try {
+          await writeAuditLog(
+            currentUserId,
+            teacherName || 'المعلم',
+            'GROUP_CREDIT_DEDUCTION_FAILED',
+            studentSessId,
+            { groupId, groupName, studentId: att.studentId, studentName: att.studentName, sessionDate, failureReason }
+          );
+        } catch (logErr) {
+          console.warn('Could not write group credit deduction failure log:', logErr);
+        }
       }
     }
 

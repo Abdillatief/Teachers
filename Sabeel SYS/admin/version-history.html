@@ -89,6 +89,43 @@
       return safeStringify(obj);
     }
 
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // Accepts Firestore Timestamp, ISO string, epoch number or {seconds} object.
+    function toMillis(value) {
+      if (!value) return null;
+      if (typeof value.toDate === 'function') {
+        const d = value.toDate();
+        return d instanceof Date && !Number.isNaN(d.getTime()) ? d.getTime() : null;
+      }
+      if (typeof value === 'number') {
+        const ms = value > 1e12 ? value : value * 1000;
+        return Number.isFinite(ms) ? ms : null;
+      }
+      if (typeof value === 'string') {
+        const ms = Date.parse(value);
+        return Number.isFinite(ms) ? ms : null;
+      }
+      if (typeof value.seconds === 'number') {
+        const ms = value.seconds * 1000 + Math.floor((value.nanoseconds || 0) / 1e6);
+        return Number.isFinite(ms) ? ms : null;
+      }
+      return null;
+    }
+
+    // Single local formatter: Arabic date/time, or "—" for missing/invalid dates.
+    function formatDateSafe(value) {
+      const ms = toMillis(value);
+      return ms === null ? '—' : new Date(ms).toLocaleString('ar-EG');
+    }
+
     function initAuditRealtime() {
       const tbody = document.getElementById('auditTableBody');
       if (!tbody) return;
@@ -104,22 +141,23 @@
           logs.push({ id: docSnap.id, ...docSnap.data() });
         });
 
-        // ترتيب من الأحدث للأقدم تنازليًا
-        logs.sort((a, b) => {
-          const timeA = a.timestamp?.seconds || 0;
-          const timeB = b.timestamp?.seconds || 0;
-          return timeB - timeA;
-        });
+        // ترتيب من الأحدث للأقدم تنازليًا (يتوافق مع كل أشكال الطابع الزمني)
+        logs.sort((a, b) => (toMillis(b.timestamp) ?? 0) - (toMillis(a.timestamp) ?? 0));
 
         tbody.innerHTML = logs.map(log => {
-          const dateStr = log.timestamp ? new Date(log.timestamp.seconds * 1000).toLocaleString('ar-EG') : 'غير محدد';
+          const dateStr = escapeHtml(formatDateSafe(log.timestamp));
+          const actorName = escapeHtml(log.userName || log.actorName || 'النظام');
+          const actorId = escapeHtml(log.userId || log.actorId || '-');
+          const actionType = escapeHtml(log.actionType || log.action || '—');
+          const before = escapeHtml(safeStr(log.dataBefore || log.details));
+          const after = escapeHtml(safeStr(log.dataAfter || log.details));
           return `
             <tr>
               <td><strong>${dateStr}</strong></td>
-              <td>${log.userName || 'النظام'}<div style="font-size: 0.75rem; color: var(--text-muted);">UID: ${log.userId || '-'}</div></td>
-              <td><span class="badge" style="position: static; font-weight: 700; background-color: var(--primary-light); color: var(--primary-color);">${log.actionType}</span></td>
-              <td style="font-family: monospace; font-size: 0.75rem; max-width: 200px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title='${safeStr(log.dataBefore)}' style="direction: ltr;">${safeStr(log.dataBefore)}</td>
-              <td style="font-family: monospace; font-size: 0.75rem; max-width: 250px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title='${safeStr(log.dataAfter)}' style="direction: ltr;">${safeStr(log.dataAfter)}</td>
+              <td>${actorName}<div style="font-size: 0.75rem; color: var(--text-muted);">UID: ${actorId}</div></td>
+              <td><span class="badge" style="position: static; font-weight: 700; background-color: var(--primary-light); color: var(--primary-color);">${actionType}</span></td>
+              <td style="font-family: monospace; font-size: 0.75rem; max-width: 200px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; direction: ltr;" title='${before}'>${before}</td>
+              <td style="font-family: monospace; font-size: 0.75rem; max-width: 250px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; direction: ltr;" title='${after}'>${after}</td>
             </tr>
           `;
         }).join('');
@@ -130,17 +168,26 @@
       }, (err) => console.warn("Audit logs listener warning:", err));
     }
 
-    // تصفية الأرشيف القديم نهائياً بمسح المستندات المخزنة بـ auditLogs
+    // تصفية السجلات الأقدم من 90 يوماً فقط من المستندات المخزنة بـ auditLogs
+    const OLD_LOG_DAYS = 90;
     document.getElementById('clearOldLogsBtn').addEventListener('click', async () => {
-      showCustomConfirm("🚨 تحذير: هل أنت متأكد تماماً من إزالة وتصفية أرشيف التدقيق الأمني؟ سيتم إتلاف كافة التدوينات السابقة نهائياً من الخادم!", async () => {
+      showCustomConfirm(`🚨 تحذير: هل أنت متأكد تماماً من تصفية أرشيف التدقيق الأمني؟ سيتم إتلاف السجلات الأقدم من ${OLD_LOG_DAYS} يوماً فقط نهائياً من الخادم!`, async () => {
         try {
+          const cutoff = Date.now() - OLD_LOG_DAYS * 24 * 60 * 60 * 1000;
           const querySnapshot = await getDocs(collection(db, "auditLogs"));
-          const batchPromises = [];
+          const staleRefs = [];
           querySnapshot.forEach((docSnap) => {
-            batchPromises.push(deleteDoc(doc(db, "auditLogs", docSnap.id)));
+            const ms = toMillis(docSnap.data()?.timestamp);
+            if (ms !== null && ms < cutoff) {
+              staleRefs.push(doc(db, "auditLogs", docSnap.id));
+            }
           });
-          await Promise.all(batchPromises);
-          Toast.danger("تم تصفية وإفراغ أرشيف التعديلات بنجاح.");
+          if (!staleRefs.length) {
+            Toast.info(`لا توجد سجلات أقدم من ${OLD_LOG_DAYS} يوماً لتصفيتها.`);
+            return;
+          }
+          await Promise.all(staleRefs.map(ref => deleteDoc(ref)));
+          Toast.success(`تم تصفية ${staleRefs.length} من السجلات الأقدم من ${OLD_LOG_DAYS} يوماً بنجاح.`);
         } catch (err) {
           console.error(err);
           Toast.danger("فشل تصفية أرشيف التعديلات.");

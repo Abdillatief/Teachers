@@ -9,7 +9,7 @@ import { Toast } from '../utils/toast.js';
 import { initPWA, promptPWAInstall } from '../utils/pwaManager.js';
 import { dataStore } from '../data/dataStore.js';
 import { BiometricManager } from '../utils/biometricManager.js';
-import { getNotificationEventMeta, playNotificationSound } from '../utils/adminNotificationService.js';
+import { getNotificationEventMeta, playNotificationSound, submitTeacherFeedback } from '../utils/adminNotificationService.js';
 import { subscribeToUserNotifications, isNotificationPermittedForUser } from '../services/notificationService.js';
 import { initSessionReminderChecker } from '../utils/reminderService.js';
 import './maintenanceBanner.js';
@@ -17,6 +17,10 @@ import './maintenanceBanner.js';
 let unsubNavbarUserProfile = null;
 let unsubNavbarAuth = null;
 let unsubNavbarNotifications = null;
+let navbarResizeHandler = null;
+let navbarOutsideClickHandler = null;
+
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 /**
  * Renders the top navigation bar.
@@ -24,6 +28,8 @@ let unsubNavbarNotifications = null;
  * @param {object} userData - Contains user information: { name: string, roleName: string }
  */
 export function renderNavbar(title, userData = {}) {
+  if (navbarResizeHandler) { window.removeEventListener('resize', navbarResizeHandler); navbarResizeHandler = null; }
+  if (navbarOutsideClickHandler) { document.removeEventListener('click', navbarOutsideClickHandler); navbarOutsideClickHandler = null; }
   // Ensure DraftManager scans forms when page/navbar loads
   if (DraftManager && typeof DraftManager.scanAndAttachForms === 'function') {
     setTimeout(() => DraftManager.scanAndAttachForms(), 200);
@@ -188,7 +194,8 @@ export function renderNavbar(title, userData = {}) {
       }
     };
     
-    window.addEventListener('resize', handleResize);
+    navbarResizeHandler = handleResize;
+    window.addEventListener('resize', navbarResizeHandler);
     handleResize(); // run on load
 
     toggleBtn.addEventListener('click', (e) => {
@@ -203,14 +210,15 @@ export function renderNavbar(title, userData = {}) {
     });
 
     // Close sidebar when clicking outside on mobile
-    document.addEventListener('click', (e) => {
+    navbarOutsideClickHandler = (e) => {
       if (window.innerWidth <= 992 && sidebar.classList.contains('active')) {
         if (!sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
           sidebar.classList.remove('active');
           toggleBackdrop(false);
         }
       }
-    });
+    };
+    document.addEventListener('click', navbarOutsideClickHandler);
 
     function toggleBackdrop(show) {
       let backdrop = document.getElementById('sidebar-backdrop');
@@ -534,11 +542,11 @@ export function renderNavbar(title, userData = {}) {
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; direction: rtl; padding-left: ${isPinnedForUser ? '56px' : '22px'};">
               <span style="font-weight: ${fontWeight}; font-size: 0.77rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.3rem; flex-wrap: wrap;">
                 <i data-lucide="${isPinnedForUser ? 'pin' : (meta.icon || 'bell')}" style="width: 13px; height: 13px; color: ${isPinnedForUser ? '#b45309' : (meta.color || 'var(--primary-color)')}; flex-shrink: 0;"></i>
-                ${indicator} ${item.title || 'إشعار جديد'}
+                ${indicator} ${escapeHtml(item.title || 'إشعار جديد')}
               </span>
               <span style="font-size: 0.62rem; color: var(--text-muted); white-space: nowrap; font-weight: 500;">${timeLabel}</span>
             </div>
-            <p style="font-size: 0.71rem; color: var(--text-secondary); line-height: 1.35; margin: 0; text-align: right; padding-left: 20px;">${item.body || item.message || ''}</p>
+            <p style="font-size: 0.71rem; color: var(--text-secondary); line-height: 1.35; margin: 0; text-align: right; padding-left: 20px;">${escapeHtml(item.body || item.message || '')}</p>
             <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.15rem; padding-left: 20px; gap: 0.25rem; flex-wrap: wrap;">
               <div style="display: flex; align-items: center; gap: 0.25rem; flex-wrap: wrap;">
                 ${isPinnedForUser ? `
@@ -838,7 +846,7 @@ export function showNotificationModalDetails(notification, currentUser = null) {
         </div>
         <div>
           <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
-            <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin: 0;">${notification.title || 'تفاصيل الإشعار'}</h3>
+            <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin: 0;">${escapeHtml(notification.title || 'تفاصيل الإشعار')}</h3>
             ${isPinnedForUser ? `<span class="badge" style="background: rgba(234, 179, 8, 0.2); color: #854d0e; font-size: 0.68rem; font-weight: 700; border: 1px solid rgba(234, 179, 8, 0.45); padding: 0.1rem 0.4rem; border-radius: 4px;">مثبت في أول إشعار</span>` : ''}
             ${isFeedbackRequest ? `<span class="badge" style="background: rgba(139, 92, 246, 0.15); color: #7c3aed; font-size: 0.68rem; font-weight: 700; border: 1px solid rgba(139, 92, 246, 0.3); padding: 0.1rem 0.4rem; border-radius: 4px;">استطلاع رأي</span>` : ''}
           </div>
@@ -855,22 +863,22 @@ export function showNotificationModalDetails(notification, currentUser = null) {
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; font-size: 0.85rem; margin-bottom: 0.75rem;">
             <div>
               <span style="color: var(--text-muted); display: block; font-size: 0.72rem;">اسم المعلم:</span>
-              <strong style="color: var(--text-primary); font-size: 0.85rem;">${notification.teacherName || 'غير محدد'}</strong>
+              <strong style="color: var(--text-primary); font-size: 0.85rem;">${escapeHtml(notification.teacherName || 'غير محدد')}</strong>
             </div>
             <div>
               <span style="color: var(--text-muted); display: block; font-size: 0.72rem;">رقم الهاتف:</span>
-              <strong style="color: var(--text-primary); font-size: 0.85rem;">${notification.teacherPhone || 'غير محدد'}</strong>
+              <strong style="color: var(--text-primary); font-size: 0.85rem;">${escapeHtml(notification.teacherPhone || 'غير محدد')}</strong>
             </div>
             <div style="grid-column: span 2;">
               <span style="color: var(--text-muted); display: block; font-size: 0.72rem;">البريد الإلكتروني:</span>
-              <strong style="color: var(--primary-color); word-break: break-all; font-size: 0.85rem;">${notification.teacherEmail || 'غير محدد'}</strong>
+              <strong style="color: var(--primary-color); word-break: break-all; font-size: 0.85rem;">${escapeHtml(notification.teacherEmail || 'غير محدد')}</strong>
             </div>
           </div>
 
           <div style="margin-top: 0.75rem;">
             <span style="font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 0.35rem;">كلمة مرور الحساب:</span>
             <div style="background: var(--bg-primary); border: 1px solid var(--border-color); padding: 0.5rem 0.75rem; border-radius: var(--border-radius-sm); font-family: monospace; font-size: 1.05rem; font-weight: 700; color: var(--primary-color); display: flex; align-items: center; justify-content: space-between;">
-              <span id="notifPasswordText">${notification.teacherPassword || 'غير مسجلة'}</span>
+              <span id="notifPasswordText">${escapeHtml(notification.teacherPassword || 'غير مسجلة')}</span>
               <button type="button" class="btn btn-sm btn-secondary" id="copyNotifPasswordBtn">
                 <i data-lucide="copy" style="width: 14px; height: 14px;"></i>
                 نسخ
@@ -885,7 +893,7 @@ export function showNotificationModalDetails(notification, currentUser = null) {
         <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">
           ${isFeedbackRequest ? 'موضوع وتفاصيل الاستطلاع:' : 'نص الرسالة:'}
         </label>
-        <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6; white-space: pre-line; background: var(--bg-primary); border: 1px solid var(--border-color); padding: 0.75rem; border-radius: var(--border-radius-sm); margin: 0;">${notification.body || notification.message || 'لا توجد تفاصيل إضافية'}</p>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6; white-space: pre-line; background: var(--bg-primary); border: 1px solid var(--border-color); padding: 0.75rem; border-radius: var(--border-radius-sm); margin: 0;">${escapeHtml(notification.body || notification.message || 'لا توجد تفاصيل إضافية')}</p>
       </div>
 
       <!-- Feedback Interactive Box for Teachers -->

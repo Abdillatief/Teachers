@@ -361,8 +361,8 @@
                   amount: amountVal,
                   method: currentTeacher.paymentPreferred || "حوالة إلكترونية",
                   notes: proof.transactionNumber ? `تم التأكيد من المعلم. رقم المعاملة: ${proof.transactionNumber}` : "تم التأكيد والموافقة من المعلم",
-                  sessionsCount: sessionsCount || 1, // حماية ضد التصفير المفاجئ
-                  totalHours: totalHours || 1,
+                  sessionsCount: sessionsCount,
+                  totalHours: totalHours,
                   adminName: proof.adminName || "مشرف الإدارة",
                   createdAt: serverTimestamp()
                 });

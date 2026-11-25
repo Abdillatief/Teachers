@@ -316,7 +316,7 @@ export class CommunityController {
       const chipsHtml = followers.slice(0, 4).map(f => `
         <span class="badge" style="background: rgba(14, 165, 233, 0.12); color: var(--primary-color); font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 99px; display: inline-flex; align-items: center; gap: 0.25rem;">
           <span style="width: 6px; height: 6px; border-radius: 50%; background: #10b981;"></span>
-          ${f.followerName || 'معلم معتمد'}
+          ${this.escapeHtml(f.followerName || 'معلم معتمد')}
         </span>
       `).join('');
 
@@ -829,14 +829,42 @@ export class CommunityController {
    */
   formatPostText(text) {
     if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    let safe = div.innerHTML;
-
+    const safeText = String(text);
+    const container = document.createElement('div');
     const urlRegex = /(https?:\/\/[^\s]+)/g;
-    safe = safe.replace(urlRegex, (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: var(--primary-color); text-decoration: underline;">${url}</a>`);
+    let lastIndex = 0;
+    let match;
 
-    return safe;
+    while ((match = urlRegex.exec(safeText)) !== null) {
+      if (match.index > lastIndex) {
+        container.appendChild(document.createTextNode(safeText.slice(lastIndex, match.index)));
+      }
+      const rawUrl = match[0];
+      const link = document.createElement('a');
+      let validUrl = null;
+      try {
+        const parsed = new URL(rawUrl);
+        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') validUrl = parsed.href;
+      } catch (_) {
+        validUrl = null;
+      }
+      if (validUrl) {
+        link.href = validUrl; // تعيين الـ href برمجياً يمنع حقن السمات
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.style.color = 'var(--primary-color)';
+        link.style.textDecoration = 'underline';
+        link.textContent = rawUrl;
+        container.appendChild(link);
+      } else {
+        container.appendChild(document.createTextNode(rawUrl));
+      }
+      lastIndex = match.index + rawUrl.length;
+    }
+    if (lastIndex < safeText.length) {
+      container.appendChild(document.createTextNode(safeText.slice(lastIndex)));
+    }
+    return container.innerHTML;
   }
 
   /**
@@ -1277,7 +1305,7 @@ export class CommunityController {
     container.innerHTML = displayList.map(r => {
       const emoji = REACTION_TYPES[r.reactionType]?.emoji || '👍';
       const isOfficial = r.role === 'admin';
-      const initials = (r.name || 'م').trim().charAt(0);
+      const initials = this.escapeHtml((r.name || 'م').trim().charAt(0));
       const isMe = r.uid === this.currentUser.uid;
       const reactorName = isMe ? this.getMyCommunityDisplayName() : (r.name || 'معلم');
 
@@ -1350,7 +1378,7 @@ export class CommunityController {
         const isMe = item.followerId === this.currentUser.uid;
         const isFollowingHim = this.followingUserIds.has(item.followerId);
         const followerDisplay = isMe ? this.getMyCommunityDisplayName() : (item.followerName || 'معلم');
-        const initials = (followerDisplay || 'م').trim().charAt(0);
+        const initials = this.escapeHtml((followerDisplay || 'م').trim().charAt(0));
 
         return `
           <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border-bottom: 1px solid var(--border-color); gap: 0.5rem;">
@@ -1408,7 +1436,10 @@ export class CommunityController {
       updateTargetIcons(container);
 
     } catch (err) {
-      container.innerHTML = `<p style="color: var(--danger); text-align: center; padding: 1rem;">فشل التحميل: ${err.message}</p>`;
+      const errorP = document.createElement('p');
+      errorP.style.cssText = 'color: var(--danger); text-align: center; padding: 1rem;';
+      errorP.textContent = `فشل التحميل: ${err?.message || 'خطأ غير متوقع'}`;
+      container.replaceChildren(errorP);
     }
   }
 
@@ -1446,7 +1477,7 @@ export class CommunityController {
       }
 
       container.innerHTML = list.map(item => {
-        const initials = (item.followingName || 'م').trim().charAt(0);
+        const initials = this.escapeHtml((item.followingName || 'م').trim().charAt(0));
 
         return `
           <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border-bottom: 1px solid var(--border-color); gap: 0.5rem;">
@@ -1455,12 +1486,12 @@ export class CommunityController {
                 ${initials}
               </div>
               <div>
-                <strong style="font-size: 0.88rem; color: var(--text-primary);">${item.followingName}</strong>
+                <strong style="font-size: 0.88rem; color: var(--text-primary);">${this.escapeHtml(item.followingName)}</strong>
                 <div style="font-size: 0.7rem; color: var(--text-muted);">معلم معتمد بالأكاديمية</div>
               </div>
             </div>
 
-            <button type="button" class="btn-follow following" data-action="modal-unfollow" data-target-id="${item.followingId}" data-target-name="${item.followingName}">
+            <button type="button" class="btn-follow following" data-action="modal-unfollow" data-target-id="${item.followingId}" data-target-name="${this.escapeHtml(item.followingName)}">
               <i data-lucide="user-x" style="width: 12px; height: 12px;"></i>
               <span>إلغاء المتابعة</span>
             </button>
@@ -1490,7 +1521,10 @@ export class CommunityController {
       updateTargetIcons(container);
 
     } catch (err) {
-      container.innerHTML = `<p style="color: var(--danger); text-align: center; padding: 1rem;">فشل التحميل: ${err.message}</p>`;
+      const errorP = document.createElement('p');
+      errorP.style.cssText = 'color: var(--danger); text-align: center; padding: 1rem;';
+      errorP.textContent = `فشل التحميل: ${err?.message || 'خطأ غير متوقع'}`;
+      container.replaceChildren(errorP);
     }
   }
 

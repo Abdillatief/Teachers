@@ -87,7 +87,11 @@ export async function renderGroupSessionUI(containerElement, group, studentsMap 
       studentList.push(studentsMap.get(sid));
     } else {
       try {
-        const sSnap = await getDoc(doc(db, "users", sid));
+        // المصدر الأساسي للطلاب هو مجموعة students؛ users يُستخدم فقط كاحتياطي عند غياب المستند
+        let sSnap = await getDoc(doc(db, "students", sid));
+        if (!sSnap.exists()) {
+          sSnap = await getDoc(doc(db, "users", sid));
+        }
         if (sSnap.exists()) {
           const sData = { id: sSnap.id, ...sSnap.data() };
           studentsMap.set(sid, sData);

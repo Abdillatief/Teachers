@@ -38,27 +38,39 @@
           <p style="color: var(--text-secondary); font-size: 0.9rem;">متابعة تفصيلية وفلترة فورية لسجلات الحصص المسجلة، المؤجلة، المكتملة وحالات الغياب والاعتماد المالي.</p>
         </div>
 
-        <!-- بطاقات الإحصائيات الفورية -->
+        <!-- بطاقات الإحصائيات الفورية (ضمن السجل المحمّل فقط) -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
           <div class="card" style="padding: 1rem; text-align: center; border-right: 4px solid var(--primary-color);">
-            <div style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">إجمالي الحصص</div>
-            <div id="statTotalSessions" style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin-top: 0.25rem;">0</div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">إجمالي الحصص (ضمن السجل المحمّل)</div>
+            <div id="statTotalSessions" style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin-top: 0.25rem;">جار التحميل…</div>
           </div>
           <div class="card" style="padding: 1rem; text-align: center; border-right: 4px solid var(--success);">
-            <div style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">تمت بنجاح ✅</div>
-            <div id="statCompletedSessions" style="font-size: 1.5rem; font-weight: 800; color: var(--success); margin-top: 0.25rem;">0</div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">تمت بنجاح ✅ (ضمن السجل المحمّل)</div>
+            <div id="statCompletedSessions" style="font-size: 1.5rem; font-weight: 800; color: var(--success); margin-top: 0.25rem;">جار التحميل…</div>
+          </div>
+          <div class="card" style="padding: 1rem; text-align: center; border-right: 4px solid var(--primary-color);">
+            <div style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">مجدولة 📅 (ضمن السجل المحمّل)</div>
+            <div id="statScheduledSessions" style="font-size: 1.5rem; font-weight: 800; color: var(--primary-color); margin-top: 0.25rem;">جار التحميل…</div>
           </div>
           <div class="card" style="padding: 1rem; text-align: center; border-right: 4px solid var(--warning);">
-            <div style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">مؤجلة ⏳</div>
-            <div id="statDelayedSessions" style="font-size: 1.5rem; font-weight: 800; color: #d97706; margin-top: 0.25rem;">0</div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">مؤجلة ⏳ (ضمن السجل المحمّل)</div>
+            <div id="statDelayedSessions" style="font-size: 1.5rem; font-weight: 800; color: #d97706; margin-top: 0.25rem;">جار التحميل…</div>
           </div>
           <div class="card" style="padding: 1rem; text-align: center; border-right: 4px solid #ef4444;">
-            <div style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">غياب طالب 🔴</div>
-            <div id="statAbsentSessions" style="font-size: 1.5rem; font-weight: 800; color: #ef4444; margin-top: 0.25rem;">0</div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">غياب طالب 🔴 (ضمن السجل المحمّل)</div>
+            <div id="statAbsentSessions" style="font-size: 1.5rem; font-weight: 800; color: #ef4444; margin-top: 0.25rem;">جار التحميل…</div>
+          </div>
+          <div class="card" style="padding: 1rem; text-align: center; border-right: 4px solid #f97316;">
+            <div style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">غياب معلم 🟠 (ضمن السجل المحمّل)</div>
+            <div id="statTeacherAbsentSessions" style="font-size: 1.5rem; font-weight: 800; color: #ea580c; margin-top: 0.25rem;">جار التحميل…</div>
+          </div>
+          <div class="card" style="padding: 1rem; text-align: center; border-right: 4px solid #6366f1;">
+            <div style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">تعويضية 🔁 (ضمن السجل المحمّل)</div>
+            <div id="statCompensatorySessions" style="font-size: 1.5rem; font-weight: 800; color: #6366f1; margin-top: 0.25rem;">جار التحميل…</div>
           </div>
           <div class="card" style="padding: 1rem; text-align: center; border-right: 4px solid var(--text-muted);">
-            <div style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">ملغاة ❌</div>
-            <div id="statCancelledSessions" style="font-size: 1.5rem; font-weight: 800; color: var(--text-muted); margin-top: 0.25rem;">0</div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">ملغاة ❌ (ضمن السجل المحمّل)</div>
+            <div id="statCancelledSessions" style="font-size: 1.5rem; font-weight: 800; color: var(--text-muted); margin-top: 0.25rem;">جار التحميل…</div>
           </div>
         </div>
 
@@ -88,9 +100,12 @@
               <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 0.35rem;">حالة الحصة:</label>
               <select id="sessionStatusFilter" class="form-control" style="font-size: 0.85rem; padding: 0.45rem;">
                 <option value="all">جميع الحالات</option>
+                <option value="scheduled">مجدولة 📅</option>
                 <option value="completed">تمت بنجاح ✅</option>
-                <option value="delayed">مؤجلة ⏳</option>
                 <option value="student_absent">غياب طالب 🔴</option>
+                <option value="teacher_absent">غياب معلم 🟠</option>
+                <option value="delayed">مؤجلة ⏳</option>
+                <option value="compensatory">تعويضية 🔁</option>
                 <option value="cancelled">ملغاة ❌</option>
               </select>
             </div>
@@ -157,6 +172,59 @@
     let allSessionsCached = [];
     let sessionsUnsub = null;
 
+    // تواريخ محلية (توقيت مصر) — لا نستخدم toISOString() مفاتيح للتاريخ لأنه يتحول لـ UTC
+    const pad2 = n => String(n).padStart(2, '0');
+    const localDate = (value) => {
+      if (value === null || value === undefined || value === '') return '';
+      let d;
+      try {
+        if (typeof value === 'string') {
+          // تاريخ Firestore المخزن كنص YYYY-MM-DD يُقرأ كما هو بدون تحويل UTC
+          const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+          if (match) return `${match[1]}-${match[2]}-${match[3]}`;
+          d = new Date(value);
+        } else if (value instanceof Date) {
+          d = value;
+        } else if (typeof value?.toDate === 'function') {
+          d = value.toDate();
+        } else if (typeof value?.seconds === 'number') {
+          d = new Date(value.seconds * 1000);
+        } else {
+          d = new Date(value);
+        }
+      } catch (_) {
+        return '';
+      }
+      if (!d || isNaN(d.getTime())) return '';
+      return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+    };
+    const localMonthKey = (value) => {
+      const key = localDate(value);
+      return key ? key.slice(0, 7) : '';
+    };
+    const escapeHtml = (value) => {
+      if (value === null || value === undefined) return '';
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    };
+    const isApprovedSession = (s) => Boolean(s) && s.approved === true;
+
+    // مطابقة صريحة لحالات الحصص (مصدرها supervisorDomainService.js)
+    const SESSION_STATUS_META = {
+      scheduled: { label: 'مجدولة 📅', color: 'var(--primary-color)' },
+      completed: { label: 'تمت بنجاح ✅', color: 'var(--success)' },
+      student_absent: { label: 'غياب طالب 🔴', color: 'var(--danger)' },
+      teacher_absent: { label: 'غياب معلم 🟠', color: '#ea580c' },
+      delayed: { label: 'مؤجلة ⏳', color: '#d97706' },
+      compensatory: { label: 'تعويضية 🔁', color: '#6366f1' },
+      cancelled: { label: 'ملغاة ❌', color: 'var(--text-muted)' }
+    };
+    const getSessionStatusMeta = (status) => SESSION_STATUS_META[status] || { label: 'حالة غير محددة', color: 'var(--text-secondary)' };
+
     protectRoute('admin');
 
     auth.onAuthStateChanged((user) => {
@@ -185,11 +253,11 @@
     function getSessionsQueryForPeriod(period) {
       const now = new Date();
       let startDate = null;
-      if (period === '1m') startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-      else if (period === '3m') { const d = new Date(now); d.setMonth(d.getMonth() - 3); startDate = d.toISOString().split('T')[0]; }
-      else if (period === '12m') { const d = new Date(now); d.setMonth(d.getMonth() - 12); startDate = d.toISOString().split('T')[0]; }
+      if (period === '1m') startDate = localDate(new Date(now.getFullYear(), now.getMonth(), 1));
+      else if (period === '3m') startDate = localDate(new Date(now.getFullYear(), now.getMonth() - 3, now.getDate()));
+      else if (period === '12m') startDate = localDate(new Date(now.getFullYear(), now.getMonth() - 12, now.getDate()));
       else if (period === 'all') startDate = null;
-      else { const d = new Date(now); d.setMonth(d.getMonth() - 6); startDate = d.toISOString().split('T')[0]; } // 6m default
+      else startDate = localDate(new Date(now.getFullYear(), now.getMonth() - 6, now.getDate())); // 6m default
 
       const hint = document.getElementById('sessionsPeriodHint');
       if (hint) {
@@ -217,16 +285,16 @@
           const selectedPeriod2 = period || document.getElementById('sessionPeriodFilter')?.value || '6m';
           const now = new Date();
           let startDate = null;
-          if (selectedPeriod2 === '1m') startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-          else if (selectedPeriod2 === '3m') { const d = new Date(now); d.setMonth(d.getMonth() - 3); startDate = d.toISOString().split('T')[0]; }
-          else if (selectedPeriod2 === '12m') { const d = new Date(now); d.setMonth(d.getMonth() - 12); startDate = d.toISOString().split('T')[0]; }
-          else if (selectedPeriod2 !== 'all') { const d = new Date(now); d.setMonth(d.getMonth() - 6); startDate = d.toISOString().split('T')[0]; }
+          if (selectedPeriod2 === '1m') startDate = localDate(new Date(now.getFullYear(), now.getMonth(), 1));
+          else if (selectedPeriod2 === '3m') startDate = localDate(new Date(now.getFullYear(), now.getMonth() - 3, now.getDate()));
+          else if (selectedPeriod2 === '12m') startDate = localDate(new Date(now.getFullYear(), now.getMonth() - 12, now.getDate()));
+          else if (selectedPeriod2 !== 'all') startDate = localDate(new Date(now.getFullYear(), now.getMonth() - 6, now.getDate()));
           const q2 = startDate
             ? query(collection(db, "sessions"), where("date", ">=", startDate), limit(2000))
             : query(collection(db, "sessions"), limit(3000));
           const snap = await getDocs(q2);
           allSessionsCached = snap.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
-            .sort((a,b) => (b.date || '').localeCompare(a.date || ''));
+            .sort((a, b) => localDate(b.date).localeCompare(localDate(a.date)));
           updateSessionStats();
           renderFilteredSessions();
         } catch (e2) {
@@ -238,20 +306,30 @@
     function updateSessionStats() {
       const totalEl = document.getElementById('statTotalSessions');
       const completedEl = document.getElementById('statCompletedSessions');
+      const scheduledEl = document.getElementById('statScheduledSessions');
       const delayedEl = document.getElementById('statDelayedSessions');
       const absentEl = document.getElementById('statAbsentSessions');
+      const teacherAbsentEl = document.getElementById('statTeacherAbsentSessions');
+      const compensatoryEl = document.getElementById('statCompensatorySessions');
       const cancelledEl = document.getElementById('statCancelledSessions');
 
+      // كل الأرقام محسوبة من السجل المحمّل فقط، وتسميات البطاقات توضح ذلك صراحةً
       const total = allSessionsCached.length;
       const completed = allSessionsCached.filter(s => s.status === 'completed').length;
+      const scheduled = allSessionsCached.filter(s => s.status === 'scheduled').length;
       const delayed = allSessionsCached.filter(s => s.status === 'delayed').length;
       const absent = allSessionsCached.filter(s => s.status === 'student_absent').length;
+      const teacherAbsent = allSessionsCached.filter(s => s.status === 'teacher_absent').length;
+      const compensatory = allSessionsCached.filter(s => s.status === 'compensatory').length;
       const cancelled = allSessionsCached.filter(s => s.status === 'cancelled').length;
 
       if (totalEl) totalEl.textContent = total;
       if (completedEl) completedEl.textContent = completed;
+      if (scheduledEl) scheduledEl.textContent = scheduled;
       if (delayedEl) delayedEl.textContent = delayed;
       if (absentEl) absentEl.textContent = absent;
+      if (teacherAbsentEl) teacherAbsentEl.textContent = teacherAbsent;
+      if (compensatoryEl) compensatoryEl.textContent = compensatory;
       if (cancelledEl) cancelledEl.textContent = cancelled;
     }
 
@@ -269,7 +347,7 @@
         const matchQuery = !queryVal || 
           (s.studentName || '').toLowerCase().includes(queryVal) ||
           (s.teacherName || '').toLowerCase().includes(queryVal) ||
-          (s.date || '').includes(queryVal);
+          localDate(s.date).includes(queryVal);
 
         // 2. Status Match
         const matchStatus = statusVal === 'all' || s.status === statusVal;
@@ -280,8 +358,8 @@
           (typeVal === 'group' && s.type === 'group') ||
           (typeVal === 'trial' && s.type === 'trial');
 
-        // 4. Approval Match
-        const approved = s.approved !== false; // Consider true or undefined as approved when logged
+        // 4. Approval Match — الاعتماد صريح فقط: true تعني معتمدة
+        const approved = isApprovedSession(s);
         const matchApproval = approvalVal === 'all' ||
           (approvalVal === 'approved' && approved) ||
           (approvalVal === 'pending' && !approved);
@@ -295,11 +373,12 @@
       }
 
       tbody.innerHTML = filtered.map(s => {
-        const approved = s.approved !== false;
+        const approved = isApprovedSession(s);
+        const safeId = escapeHtml(s.id);
         let approvalBadge = "";
 
         if (s.type === 'trial') {
-          if (s.approved === true) {
+          if (approved) {
             approvalBadge = `<span class="badge" style="position:static; background-color: var(--success-light); color: var(--success); font-weight:700;">تجريبية معتمدة (تم اشتراك الطالب) 💰✅</span>`;
           } else if (s.trialSubscribed === false) {
             approvalBadge = `<span class="badge" style="position:static; background-color: var(--danger-light); color: var(--danger); font-weight:700;">لم يشترك الطالب (غير محسوبة) ❌</span>`;
@@ -314,18 +393,12 @@
 
         let statusLabel = "";
         let statusColor = "";
-        if (s.status === "completed") {
-          statusLabel = "تمت بنجاح ✅";
-          statusColor = "color: var(--success);";
-        } else if (s.status === "student_absent") {
+        const statusMeta = getSessionStatusMeta(s.status);
+        statusLabel = statusMeta.label;
+        statusColor = `color: ${statusMeta.color};`;
+        if (s.status === "student_absent") {
           statusLabel = s.absenceType === "unexcused" ? "غياب بدون عذر 🔴" : "غياب بعذر مقبول 🟢";
           statusColor = "color: var(--warning);";
-        } else if (s.status === "delayed") {
-          statusLabel = "مؤجلة ⏳";
-          statusColor = "color: #d97706;";
-        } else {
-          statusLabel = "ملغاة ❌";
-          statusColor = "color: var(--danger);";
         }
 
         let typeLabel = "حصة فردية 👤";
@@ -333,29 +406,29 @@
         else if (s.type === "group") typeLabel = "حصة جماعية 👥";
 
         let actionBtns = "";
-        if (s.type === 'trial' && s.approved !== true && s.trialSubscribed !== false) {
+        if (s.type === 'trial' && !approved && s.trialSubscribed !== false) {
           actionBtns = `
-            <button class="btn btn-primary approve-trial-btn" data-id="${s.id}" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; background: var(--success); border-color: var(--success);"><i data-lucide="check-circle-2"></i> اعتماد واشتراك الطالب ✅</button>
-            <button class="btn btn-secondary reject-trial-btn" data-id="${s.id}" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; color: var(--danger);" title="تسجيل عدم اشتراك الطالب"><i data-lucide="x-circle"></i> لم يشترك ❌</button>
+            <button class="btn btn-primary approve-trial-btn" data-id="${safeId}" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; background: var(--success); border-color: var(--success);"><i data-lucide="check-circle-2"></i> اعتماد واشتراك الطالب ✅</button>
+            <button class="btn btn-secondary reject-trial-btn" data-id="${safeId}" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; color: var(--danger);" title="تسجيل عدم اشتراك الطالب"><i data-lucide="x-circle"></i> لم يشترك ❌</button>
           `;
         } else if (!approved) {
-          actionBtns = `<button class="btn btn-primary approve-btn" data-id="${s.id}" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;"><i data-lucide="check-check"></i> اعتماد الصرف</button>`;
+          actionBtns = `<button class="btn btn-primary approve-btn" data-id="${safeId}" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;"><i data-lucide="check-check"></i> اعتماد الصرف</button>`;
         } else {
-          actionBtns = `<button class="btn btn-secondary toggle-approve-btn" data-id="${s.id}" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; color: var(--warning);" title="إلغاء الاعتماد المؤقت"><i data-lucide="rotate-ccw"></i> تعليق</button>`;
+          actionBtns = `<button class="btn btn-secondary toggle-approve-btn" data-id="${safeId}" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; color: var(--warning);" title="إلغاء الاعتماد المؤقت"><i data-lucide="rotate-ccw"></i> تعليق</button>`;
         }
 
         return `
           <tr>
-            <td><strong>${s.date || '-'}</strong><div style="font-size:0.75rem; color:var(--text-secondary);">${s.time || ''}</div></td>
-            <td>${s.teacherName || 'غير محدد'}</td>
-            <td><strong>${s.studentName || 'غير محدد'}</strong><div style="font-size:0.75rem; color:var(--text-secondary);">${typeLabel}</div></td>
-            <td><strong>${s.duration || 60} دقيقة</strong><div style="color:var(--warning); font-size:0.75rem;">⭐ ${s.rating || 5.0}</div></td>
+            <td><strong>${escapeHtml(localDate(s.date) || '-')}</strong><div style="font-size:0.75rem; color:var(--text-secondary);">${escapeHtml(s.time || '')}</div></td>
+            <td>${escapeHtml(s.teacherName || 'غير محدد')}</td>
+            <td><strong>${escapeHtml(s.studentName || 'غير محدد')}</strong><div style="font-size:0.75rem; color:var(--text-secondary);">${typeLabel}</div></td>
+            <td><strong>${escapeHtml(s.duration || 60)} دقيقة</strong><div style="color:var(--warning); font-size:0.75rem;">⭐ ${escapeHtml(s.rating || 5.0)}</div></td>
             <td><strong style="${statusColor}">${statusLabel}</strong></td>
             <td>${approvalBadge}</td>
             <td>
               <div style="display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap;">
                 ${actionBtns}
-                <button class="btn btn-secondary delete-btn" data-id="${s.id}" style="padding: 0.25rem; color: var(--danger);" title="حذف وترحيل للسلة"><i data-lucide="trash-2" style="width: 14px; height: 14px;"></i></button>
+                <button class="btn btn-secondary delete-btn" data-id="${safeId}" style="padding: 0.25rem; color: var(--danger);" title="حذف وترحيل للسلة"><i data-lucide="trash-2" style="width: 14px; height: 14px;"></i></button>
               </div>
             </td>
           </tr>
@@ -379,7 +452,7 @@
           await updateDoc(sessionRef, { approved: true, trialSubscribed: true, trialStatus: "approved_subscribed" });
           
           if (s && s.teacherId) {
-            const notifMsg = `وافقت الإدارة على الحصة التجريبية للطالب (${s.studentName}) بعد تأكيد اشتراكه رسمياً. تم اعتماد الحصة واحتسابها ضمن مستحقاتك المالية! ✅`;
+            const notifMsg = `وافقت الإدارة على الحصة التجريبية للطالب (${escapeHtml(s.studentName)}) بعد تأكيد اشتراكه رسمياً. تم اعتماد الحصة واحتسابها ضمن مستحقاتك المالية! ✅`;
             await addDoc(collection(db, "notifications"), {
               recipientId: s.teacherId,
               teacherId: s.teacherId,
@@ -405,7 +478,7 @@
           await updateDoc(sessionRef, { approved: false, trialSubscribed: false, trialStatus: "rejected_unsubscribed" });
           
           if (s && s.teacherId) {
-            const notifMsg = `تم تسجيل موقف الطالب (${s.studentName}) بعد الحصة التجريبية: لم يشترك في الأكاديمية، ولن تُحتسب الحصة ضمن المستحقات المالية حسب النظام.`;
+            const notifMsg = `تم تسجيل موقف الطالب (${escapeHtml(s.studentName)}) بعد الحصة التجريبية: لم يشترك في الأكاديمية، ولن تُحتسب الحصة ضمن المستحقات المالية حسب النظام.`;
             await addDoc(collection(db, "notifications"), {
               recipientId: s.teacherId,
               teacherId: s.teacherId,
@@ -451,7 +524,7 @@
           const s = list.find(item => item.id === id);
           if (!s) return;
 
-          showCustomConfirm(`هل تريد ترحيل وحذف سجل حصة الطالب (${s.studentName}) لسلة المحذوفات؟`, async () => {
+          showCustomConfirm(`هل تريد ترحيل وحذف سجل حصة الطالب (${escapeHtml(s.studentName)}) لسلة المحذوفات؟`, async () => {
             try {
               await softDeleteToTrash("sessions", id, s, `حذف حصة دراسية من المشرف العام`);
               

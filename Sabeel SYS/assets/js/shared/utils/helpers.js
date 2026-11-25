@@ -663,7 +663,10 @@ export function calculateExpectedTeacherSalary(teacher, students = [], groups = 
   // 1. Individual Students
   (students || []).forEach(student => {
     if (!student) return;
-    if (student.archived === true || student.status === 'archived' || student.status === 'Suspended' || student.status === 'suspended' || student.status === 'pending_approval' || student.status === 'inactive') {
+    // الطالب المرفوض/المعلّق/الموقوف/المرشّف مالوش جدول فعلي، ولا يصح
+    // أن يظهر ضمن ساعات الجدول أو الراتب المتوقع.
+    const studentStatus = String(student.status || '').toLowerCase();
+    if (student.archived === true || ['archived', 'suspended', 'pending', 'pending_approval', 'inactive', 'rejected'].includes(studentStatus)) {
       return;
     }
     if (student.subscriptionType === 'group' || student.groupId) {

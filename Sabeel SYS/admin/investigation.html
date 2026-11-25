@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>سبيل - مركز التحقيق وإدارة العمليات (Investigation Center)</title>
+  <title>سبيل - مركز التحقيق وإدارة العمليات</title>
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     /* Linear / Stripe / Notion Inspired Aesthetics for Investigation Center */
@@ -336,7 +336,7 @@
           <div>
             <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.35rem;">
               <span class="badge badge-info" style="background: rgba(255,255,255,0.2); color: white;">المحرك الرقابي والتحقيقي 🔎</span>
-              <span style="color: rgba(255,255,255,0.7); font-size: 0.8rem; font-family: monospace;">Investigation Center</span>
+              <span style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">مركز التحقيق وإدارة العمليات</span>
             </div>
             <h1 style="font-size: 1.75rem; font-weight: 800; margin: 0 0 0.4rem 0; color: #ffffff;">
               مركز التحقيق وإدارة العمليات
@@ -401,19 +401,19 @@
       <div class="investigation-tabs-nav">
         <button class="investigation-tab-btn active" data-tab="lessons">
           <i data-lucide="calendar"></i>
-          <span>1️⃣ Lessons (سجل الحصص الشامل)</span>
+          <span>1️⃣ سجل الحصص الشامل</span>
         </button>
         <button class="investigation-tab-btn" data-tab="financial">
           <i data-lucide="banknote"></i>
-          <span>2️⃣ Financial Records (الحركات المالية)</span>
+          <span>2️⃣ الحركات المالية</span>
         </button>
         <button class="investigation-tab-btn" data-tab="activity">
           <i data-lucide="shield-alert"></i>
-          <span>3️⃣ Activity (الصندوق الأسود والسجل)</span>
+          <span>3️⃣ الصندوق الأسود والسجل</span>
         </button>
         <button class="investigation-tab-btn" data-tab="explorer">
           <i data-lucide="search"></i>
-          <span>4️⃣ Explorer (المستكشف الشامل)</span>
+          <span>4️⃣ المستكشف الشامل</span>
         </button>
       </div>
 
@@ -421,6 +421,12 @@
       <div id="investigationLoader" style="display: none; justify-content: center; align-items: center; padding: 3rem;">
         <div class="spinner" style="width: 32px; height: 32px; border: 3px solid var(--border-color); border-top-color: var(--primary-color); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
         <span style="margin-right: 0.75rem; font-weight: 700; color: var(--text-muted);">جاري فحص وتحديث بيانات المنظومة...</span>
+      </div>
+
+      <!-- DATA LOAD ERROR STATE -->
+      <div id="investigationDataError" role="alert" style="display: none; align-items: center; gap: 0.6rem; margin-bottom: 1.25rem; padding: 0.85rem 1rem; border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 10px; background: rgba(239, 68, 68, 0.08); color: var(--danger); font-size: 0.9rem; font-weight: 700;">
+        <i data-lucide="alert-triangle" style="flex-shrink: 0;"></i>
+        <span id="investigationDataErrorText"></span>
       </div>
 
       <!-- TAB 1: LESSONS PANE -->
@@ -577,7 +583,7 @@
     <div class="inv-drawer-header" style="background: rgba(14, 165, 233, 0.08);">
       <div style="display: flex; align-items: center; gap: 0.5rem;">
         <i data-lucide="network" style="color: var(--primary-color);"></i>
-        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: var(--text-primary);">البيانات المرتبطة (Related Data Graph)</h3>
+        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: var(--text-primary);">شجرة البيانات المرتبطة</h3>
       </div>
       <button class="btn btn-secondary close-drawer-btn" style="padding: 0.35rem; border-radius: 50%;">
         <i data-lucide="x"></i>
@@ -592,7 +598,7 @@
   <div id="editSessionModal" class="modal-overlay">
     <div class="modal-card">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
-        <h3 style="margin: 0; font-weight: 800; font-size: 1.1rem;">تعديل بيانات الحصة (Edit Session)</h3>
+        <h3 style="margin: 0; font-weight: 800; font-size: 1.1rem;">تعديل بيانات الحصة</h3>
         <button type="button" class="btn btn-secondary" onclick="document.getElementById('editSessionModal').classList.remove('active')" style="padding: 0.35rem; border-radius: 50%;">
           <i data-lucide="x"></i>
         </button>
@@ -648,6 +654,24 @@
 
   <!-- PAGE INVOCATION SCRIPT -->
   <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
-  <script type="module" src="../assets/js/features/audit/investigationController.js"></script>
+  <script type="module">
+    import { auth } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { initInvestigationCenter } from '../assets/js/features/audit/investigationController.js';
+
+    protectRoute('admin');
+
+    let initialized = false;
+    auth.onAuthStateChanged(async (user) => {
+      if (!user || initialized) return;
+      initialized = true;
+      renderSidebar('investigation', 'admin');
+      renderNavbar('مركز التحقيق وإدارة العمليات', { name: 'الإدارة', roleName: 'مدير الأكاديمية' });
+      await initInvestigationCenter();
+      if (window.lucide) window.lucide.createIcons();
+    });
+  </script>
 </body>
 </html>

@@ -39,7 +39,7 @@ export function getRecentMonthsOptions(count = 12) {
   const list = [];
   const now = new Date();
 
-  for (let i = -1; i < count; i++) {
+  for (let i = 0; i < count; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const mIdx = d.getMonth();
     const year = d.getFullYear();
@@ -49,6 +49,26 @@ export function getRecentMonthsOptions(count = 12) {
     list.push({ key, label, year, month: mIdx });
   }
   return list;
+}
+
+/**
+ * Converts Firestore Timestamp / Date / string date into a month key "YYYY-MM".
+ * @param {*} value
+ * @returns {string}
+ */
+function toMonthKey(value) {
+  if (!value) return '';
+  let d = null;
+  try {
+    if (typeof value.toDate === 'function') d = value.toDate();
+    else if (value.seconds !== undefined) d = new Date(value.seconds * 1000);
+    else if (value instanceof Date) d = value;
+    else d = new Date(value);
+  } catch (_) {
+    return '';
+  }
+  if (!d || isNaN(d.getTime())) return '';
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
 /**
@@ -67,8 +87,12 @@ export async function syncSubscriptionPayments(subscriptionId, manualTotalAmount
     const paymentsSnap = await getDocs(qPayments);
     
     let totalPaid = 0;
+    const nonSettlingStatuses = ['refunded', 'failed', 'cancelled'];
     paymentsSnap.forEach(p => {
       const data = p.data();
+      const paymentStatus = String(data.status || data.paymentStatus || '').toLowerCase();
+      if (nonSettlingStatuses.includes(paymentStatus)) return;
+      if (data.refunded === true || data.isRefunded === true) return;
       totalPaid += (parseFloat(data.amount) || 0);
     });
 
@@ -88,6 +112,7 @@ export async function syncSubscriptionPayments(subscriptionId, manualTotalAmount
     const remainingAmount = Math.max(0, totalAmount - totalPaid);
 
     let status = subData.status;
+    // الأشتراكات الملغاة تبقى ملغاة ولا تُعاد إلى fully_paid حتى مع وجود مدفوعات
     if (status !== 'cancelled') {
       if (totalPaid >= totalAmount && totalAmount > 0) {
         status = 'fully_paid';
@@ -127,18 +152,10 @@ export function calculateStudentSessionsForMonth(sessionsList, studentId, monthK
   const usedSessions = sessionsList.filter(s => {
     if (s.studentId !== studentId) return false;
     
-    let sessMonth = '';
-    if (s.date) {
-      sessMonth = s.date.substring(0, 7);
-    } else if (s.createdAt) {
-      const d = s.createdAt.seconds ? new Date(s.createdAt.seconds * 1000) : new Date(s.createdAt);
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      sessMonth = `${y}-${m}`;
-    }
+    const sessMonth = toMonthKey(s.date || s.createdAt);
 
     const isMatchMonth = sessMonth === monthKey;
-    const isCompleted = s.status === "completed" || s.status === "done" || s.approved === true;
+    const isCompleted = s.status === "completed";
 
     return isMatchMonth && isCompleted;
   }).length;

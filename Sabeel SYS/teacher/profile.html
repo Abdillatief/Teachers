@@ -70,7 +70,8 @@
             <div style="display: flex; align-items: center; gap: 1.25rem; padding: 1.25rem; background: var(--bg-primary); border-radius: var(--border-radius); border: 1px dashed var(--border-color); margin-bottom: 1.5rem; flex-wrap: wrap;">
               <div style="position: relative; width: 88px; height: 88px; flex-shrink: 0;">
                 <div id="profAvatarContainer" style="width: 88px; height: 88px; border-radius: 50%; overflow: hidden; background: var(--primary-light); color: var(--primary-color); display: flex; align-items: center; justify-content: center; font-size: 2.2rem; font-weight: 800; border: 3px solid var(--primary-color); box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);">
-                  <span id="profAvatarInitials">م</span>
+                  <span id="profAvatarInitials" style="font-size: 2.2rem; font-weight: 800;">م</span>
+                  <img id="profAvatarImage" src="" alt="" style="display: none; width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
                 </div>
                 <button type="button" id="btnTriggerAvatarUpload" style="position: absolute; bottom: -2px; left: -2px; width: 32px; height: 32px; border-radius: 50%; background: var(--primary-color); color: #fff; border: 2px solid var(--bg-card, #ffffff); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.25); transition: transform 0.2s;" title="رفع / تغيير الصورة الشخصية" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
                   <i data-lucide="camera" style="width: 16px; height: 16px;"></i>
@@ -408,10 +409,12 @@
       if (window.lucide) window.lucide.createIcons();
     }
 
-    // عرض وتحديث معاينة الصورة الشخصية
+    // عرض وتحديث معاينة الصورة الشخصية (عناصر ثابتة بدون إعادة إنشاء ID)
     function renderAvatarPreview() {
       if (!currentTeacher) return;
       const avatarContainer = document.getElementById('profAvatarContainer');
+      const avatarInitials = document.getElementById('profAvatarInitials');
+      const avatarImage = document.getElementById('profAvatarImage');
       const removeBtn = document.getElementById('btnRemoveAvatar');
       const avatarStatus = document.getElementById('profAvatarStatus');
       const photoURL = currentTeacher.photoURL || currentTeacher.photoUrl || currentTeacher.avatar || '';
@@ -420,7 +423,20 @@
 
       if (avatarContainer) {
         if (photoURL) {
-          avatarContainer.innerHTML = `<img src="${photoURL}" alt="${name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;" onerror="this.onerror=null; this.parentElement.innerHTML='<span style=\\'font-size:2.2rem; font-weight:800;\\'>${firstLetter}</span>';">`;
+          if (avatarImage) {
+            avatarImage.onerror = () => {
+              avatarImage.style.display = 'none';
+              avatarImage.removeAttribute('src');
+              if (avatarInitials) {
+                avatarInitials.textContent = firstLetter;
+                avatarInitials.style.display = 'block';
+              }
+            };
+            avatarImage.src = photoURL;
+            avatarImage.alt = name;
+            avatarImage.style.display = 'block';
+          }
+          if (avatarInitials) avatarInitials.style.display = 'none';
           if (removeBtn) removeBtn.style.display = 'inline-flex';
           if (avatarStatus) {
             avatarStatus.textContent = 'صورة شخصية مفعلة ✨';
@@ -428,7 +444,15 @@
             avatarStatus.style.color = '#10b981';
           }
         } else {
-          avatarContainer.innerHTML = `<span id="profAvatarInitials" style="font-size: 2.2rem; font-weight: 800;">${firstLetter}</span>`;
+          if (avatarImage) {
+            avatarImage.onerror = null;
+            avatarImage.removeAttribute('src');
+            avatarImage.style.display = 'none';
+          }
+          if (avatarInitials) {
+            avatarInitials.textContent = firstLetter;
+            avatarInitials.style.display = 'block';
+          }
           if (removeBtn) removeBtn.style.display = 'none';
           if (avatarStatus) {
             avatarStatus.textContent = 'صورة الحرف الافتراضية';
@@ -615,7 +639,7 @@
         Toast.success("تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني بنجاح! 📧");
       } catch (err) {
         console.error(err);
-        Toast.info("تم إرسال طلب استعادة كلمة المرور إلى إدارة الأكاديمية بنجاح.");
+        Toast.danger("تعذر إرسال رابط إعادة تعيين كلمة المرور. حاول مرة أخرى لاحقاً أو تواصل مع الإدارة.");
       }
     });
 

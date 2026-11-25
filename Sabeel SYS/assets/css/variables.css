@@ -277,7 +277,7 @@ body {
   background: var(--border-color-strong) !important;
 }
 
-.dark-theme .tabular-nums {
+.tabular-nums {
   font-variant-numeric: tabular-nums;
 }
 

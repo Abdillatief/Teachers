@@ -347,7 +347,7 @@ export function renderSidebar(activePage, role) {
         let sessionRole = role;
         if (raw) {
           const parsed = JSON.parse(raw);
-          sessionRole = parsed.role || role;
+          sessionRole = resolveEffectiveRole(parsed) || role;
         }
 
         // If on a supervisor page, enforce live permission check against normalized RBAC map

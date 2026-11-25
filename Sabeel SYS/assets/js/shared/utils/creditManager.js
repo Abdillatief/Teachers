@@ -47,22 +47,10 @@ export async function getStudentActivePackage(studentId) {
       const activePositive = packages.find(p => p.status === "active" && (p.remainingLessons || 0) > 0);
       if (activePositive) return activePositive;
 
-      // 2. Otherwise active package (even if remaining <= 0 or in overdraft)
+      // 2. Otherwise active package (even if remaining <= 0 or in overdraft).
+      // لا نستخدم باقة مؤرشفة/منتهية كاحتياطي؛ غياب النشط يعني غياب باقة صالحة.
       const anyActive = packages.find(p => p.status === "active");
-      if (anyActive) return anyActive;
-
-      // 3. Fallback to latest non-archived package
-      const nonArchived = packages.filter(p => p.status !== "archived");
-      if (nonArchived.length > 0) {
-        nonArchived.sort((a, b) => {
-          const tA = a.updatedAt?.seconds || a.createdAt?.seconds || 0;
-          const tB = b.updatedAt?.seconds || b.createdAt?.seconds || 0;
-          return tB - tA;
-        });
-        return nonArchived[0];
-      }
-
-      return null;
+      return anyActive || null;
     }
   } catch (err) {
     console.error("Error fetching active package for student:", studentId, err);
@@ -138,7 +126,7 @@ export async function deductSessionCredit({
       await updateDoc(pkgRef, {
         usedLessons: newUsedLessons,
         remainingLessons: newRemainingCredits,
-        status: isExhausted ? "expired" : "active",
+        status: isOverdraft ? "overdraft" : (newRemainingCredits === 0 ? "expired" : "active"),
         updatedAt: serverTimestamp()
       });
     }
@@ -213,7 +201,7 @@ export async function deductSessionCredit({
           sessionsCount: currentCount + 1,
           remainingLessons: newRemainingCredits,
           usedLessons: (parseInt(sData.usedLessons) || 0) + 1,
-          subscriptionStatus: isExhausted ? 'expired' : 'active',
+          subscriptionStatus: isOverdraft ? 'overdraft' : (newRemainingCredits === 0 ? 'expired' : 'active'),
           paymentStatus: isExhausted ? 'unpaid' : (sData.paymentStatus || 'paid'),
           paymentStatusReason: isOverdraft 
             ? `عجز رصيد الحصص (${Math.abs(newRemainingCredits)} حصة مستهلكة بدون تجديد)`
@@ -283,8 +271,24 @@ export async function reverseSessionCredit({
       return { success: true, reversed: false, message: 'no_prior_deduction' };
     }
 
-    const deductionLog = logSnap.docs[0].data();
-    const packageId = deductionLog.packageId;
+    const sessionLogs = logSnap.docs.map(d => d.data());
+    // منع العكس المزدوج لنفس الحصة (استرداد سابق مسجل في السجل)
+    const alreadyReversed = sessionLogs.some(l =>
+      ['session_reversal', 'credit_reversal', 'reverse_session_credit'].includes(l.actionType || l.action)
+      || (parseFloat(l.changeAmount) > 0)
+    );
+    if (alreadyReversed) {
+      return { success: true, reversed: false, message: 'already_reversed' };
+    }
+
+    const deductionLog = sessionLogs.find(l =>
+      l.actionType === 'session_deduction' || l.actionType === 'overdraft_session_deduction'
+      || (parseFloat(l.changeAmount) < 0)
+    ) || sessionLogs[0];
+
+    // طبّق الاسترداد على الباقة النشطة الحالية إن وُجدت، وإلا على باقة السجل القديمة
+    const activePkg = await getStudentActivePackage(studentId);
+    const packageId = activePkg?.id || deductionLog?.packageId || '';
 
     let previousCredits = 0;
     let newCredits = 0;
@@ -295,14 +299,13 @@ export async function reverseSessionCredit({
       if (pkgSnap.exists()) {
         const pkgData = pkgSnap.data();
         previousCredits = parseInt(pkgData.remainingLessons) || 0;
-        const total = parseInt(pkgData.totalLessons) || 0;
         const used = Math.max(0, (parseInt(pkgData.usedLessons) || 1) - 1);
         newCredits = previousCredits + 1;
 
         await updateDoc(pkgRef, {
           usedLessons: used,
           remainingLessons: newCredits,
-          status: newCredits > 0 ? "active" : "expired",
+          status: newCredits < 0 ? "overdraft" : (newCredits === 0 ? "expired" : "active"),
           updatedAt: serverTimestamp()
         });
       }
@@ -322,7 +325,7 @@ export async function reverseSessionCredit({
       studentId,
       studentName: studentName || deductionLog.studentName || 'طالب',
       packageId: packageId || '',
-      packageName: deductionLog.packageName || '',
+      packageName: activePkg?.packageName || deductionLog.packageName || '',
       sessionId: sessionId,
       changeAmount: 1,
       previousCredits,
@@ -350,7 +353,7 @@ export async function reverseSessionCredit({
           sessionsCount: currentCount,
           remainingLessons: newCredits,
           usedLessons: Math.max(0, (parseInt(sData.usedLessons) || 1) - 1),
-          subscriptionStatus: isExhausted ? 'expired' : 'active',
+          subscriptionStatus: newCredits < 0 ? 'overdraft' : (newCredits === 0 ? 'expired' : 'active'),
           paymentStatus: isExhausted ? 'unpaid' : 'paid',
           paymentStatusReason: newCredits < 0 
             ? `عجز رصيد الحصص (${Math.abs(newCredits)} حصة مستهلكة بدون تجديد)`
@@ -566,6 +569,7 @@ export async function assignPackageToStudent({
       teacherName: teacherName,
       packageId: pkgDocRef.id,
       packageName: packagePayload.packageName,
+      subscriptionId: payment.subscriptionId || '',
       renewalTransactionId,
       amount: paidAmount,
       month: payMonth,
@@ -869,7 +873,7 @@ export async function adjustStudentCredits({
       totalLessons: newTotal,
       usedLessons: newUsed,
       remainingLessons: newCredits,
-      status: newCredits > 0 ? "active" : "expired",
+      status: newCredits < 0 ? "overdraft" : (newCredits === 0 ? "expired" : "active"),
       updatedAt: serverTimestamp()
     });
   }
@@ -901,7 +905,7 @@ export async function adjustStudentCredits({
     const sRef = doc(db, "students", studentId);
     await updateDoc(sRef, {
       remainingLessons: newCredits,
-      subscriptionStatus: isExhausted ? 'expired' : 'active',
+      subscriptionStatus: newCredits < 0 ? 'overdraft' : (newCredits === 0 ? 'expired' : 'active'),
       paymentStatus: isExhausted ? 'unpaid' : 'paid',
       paymentStatusReason: newCredits < 0 
         ? `عجز رصيد الحصص (${Math.abs(newCredits)} حصة)`
@@ -929,6 +933,29 @@ export async function adjustStudentCredits({
   });
 
   return { previousCredits, newCredits, changeAmount: adj };
+}
+
+/**
+ * Resolve a trustworthy per-session price from package / academy settings.
+ * Returns null when no valid price exists (never invents a default number).
+ */
+function resolveSessionUnitPrice(pkg, settingsData) {
+  const candidates = [
+    pkg?.pricePerSession, pkg?.sessionPrice, pkg?.unitPrice,
+    settingsData?.pricePerSession, settingsData?.sessionPrice,
+    settingsData?.lessonPrice, settingsData?.defaultSessionPrice
+  ];
+  for (const value of candidates) {
+    const price = parseFloat(value);
+    if (Number.isFinite(price) && price > 0) return price;
+  }
+  const total = parseFloat(pkg?.totalAmount);
+  const lessons = parseInt(pkg?.totalLessons, 10);
+  if (Number.isFinite(total) && total > 0 && Number.isFinite(lessons) && lessons > 0) {
+    const derived = total / lessons;
+    if (Number.isFinite(derived) && derived > 0) return derived;
+  }
+  return null;
 }
 
 /**
@@ -1002,11 +1029,20 @@ export async function syncStudentBalance(studentId) {
     // Calculate monetary debt: Unpaid package invoices + monetary estimate for overdraft lessons
     const unpaidInvoices = Math.max(0, totalDebit - totalPaid);
     
-    // Estimate cost per session from latest package or default (e.g. 75 EGP)
-    const unitPrice = (latestPackage && latestPackage.totalLessons > 0)
-      ? (latestPackage.totalAmount / latestPackage.totalLessons)
-      : 75;
-    const overdraftMonetaryDebt = overdraftLessons * unitPrice;
+    // لا نفترض سعراً ثابتاً؛ إن غاب السعر الصحيح نترك القيمة فارغة ونُ علم تحذير
+    let pricingSettings = {};
+    try {
+      const settingsSnap = await getDoc(doc(db, "settings", "academy"));
+      if (settingsSnap.exists()) pricingSettings = settingsSnap.data();
+    } catch (e) {
+      console.warn("Could not read academy pricing settings:", e);
+    }
+    const unitPrice = resolveSessionUnitPrice(activePackage || latestPackage, pricingSettings);
+    const pricingWarning = unitPrice === null && overdraftLessons > 0;
+    if (pricingWarning) {
+      console.warn(`No valid session price for student ${studentId}; overdraft debt left unpriced.`);
+    }
+    const overdraftMonetaryDebt = unitPrice === null ? 0 : overdraftLessons * unitPrice;
     const totalDebt = unpaidInvoices + overdraftMonetaryDebt;
 
     const displayPackage = activePackage || latestPackage;
@@ -1024,16 +1060,20 @@ export async function syncStudentBalance(studentId) {
       overdraftLessons,
       isOverdraft,
       isExhausted,
+      unitPrice,
+      pricingWarning,
       activePackageId: displayPackage?.id || '',
       activePackageName: displayPackage?.packageName || '',
       remainingLessons: remainingLessonsConsolidated,
       totalLessons: totalLessonsAll,
       usedLessons: usedLessonsAll,
-      subscriptionStatus: isExhausted ? 'expired' : 'active',
+      subscriptionStatus: isOverdraft ? 'overdraft' : (remainingLessonsConsolidated === 0 ? 'expired' : 'active'),
       paymentStatus: (isExhausted || totalDebt > 0) ? 'unpaid' : 'paid',
-      paymentStatusReason: isOverdraft 
+      paymentStatusReason: pricingWarning
+        ? `دين حصص (${overdraftLessons} حصة) - سعر الحصة غير محدد`
+        : (isOverdraft 
         ? `دين حصص (${overdraftLessons} حصة مسجلة كدين)` 
-        : (remainingLessonsConsolidated === 0 ? 'يستحق الدفع (انتهاء رصيد الحصص)' : (remainingLessonsConsolidated === 1 ? 'قارب على الانتهاء (حصة واحدة متبقية)' : (totalDebt > 0 ? 'متبقي مالي مطلوب تحصيله' : ''))),
+        : (remainingLessonsConsolidated === 0 ? 'يستحق الدفع (انتهاء رصيد الحصص)' : (remainingLessonsConsolidated === 1 ? 'قارب على الانتهاء (حصة واحدة متبقية)' : (totalDebt > 0 ? 'متبقي مالي مطلوب تحصيله' : '')))),
       updatedAt: serverTimestamp()
     };
 
@@ -1048,7 +1088,7 @@ export async function syncStudentBalance(studentId) {
         remainingLessons: remainingLessonsConsolidated,
         overdraftLessons: overdraftLessons,
         isOverdraft: isOverdraft,
-        subscriptionStatus: isExhausted ? 'expired' : 'active',
+        subscriptionStatus: isOverdraft ? 'overdraft' : (remainingLessonsConsolidated === 0 ? 'expired' : 'active'),
         paymentStatus: (isExhausted || totalDebt > 0) ? 'unpaid' : 'paid',
         paymentStatusReason: balancePayload.paymentStatusReason,
         packageStatus: activePackage ? 'active' : (isOverdraft ? 'overdraft' : (totalLessonsAll > 0 ? 'completed' : 'none')),
@@ -1196,7 +1236,7 @@ export async function migrateLegacySubscriptionsToPackages(actor = { uid: 'admin
           remainingAmount: Math.max(0, price - totalPaid),
           startDate: sub.startDate || sub.monthKey || new Date().toISOString().split('T')[0],
           expiryDate: sub.endDate || sub.expiryDate || '',
-          status: remainingLessons > 0 ? 'active' : 'expired',
+          status: remainingLessons < 0 ? 'overdraft' : (remainingLessons === 0 ? 'expired' : 'active'),
           notes: 'تم ترحيل هذا الاشتراك آلياً من النظام السابق',
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()

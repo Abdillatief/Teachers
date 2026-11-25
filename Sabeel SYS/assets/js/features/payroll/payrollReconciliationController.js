@@ -891,7 +891,7 @@ function openArchiveReconInspectorModal(archiveRecon) {
 
             Toast.show(`تم بنجاح ترحيل ${sessionIds.length} حصة إلى راتب الشهر الجديد بملاحظة "مرحّلة من شهر ${mNum}".`, 'success');
             modal.style.display = 'none';
-            await refreshReconciliationData();
+            await loadAndRunReconciliation();
           } catch (err) {
             console.error("Error carrying over sessions:", err);
             Toast.show("تعذر ترحيل الحصص: " + err.message, "error");

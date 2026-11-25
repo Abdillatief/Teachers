@@ -414,7 +414,15 @@ service cloud.firestore {
         ) ||
         (
           isApprovedTeacher() &&
-          incoming().teacherId == request.auth.uid
+          incoming().teacherId == request.auth.uid &&
+          // Teachers may auto-approve their own ordinary lessons (business workflow),
+          // but a trial lesson always requires an explicit admin approval.
+          (
+            !('isTrial' in incoming()) ||
+            incoming().isTrial != true ||
+            !('approved' in incoming()) ||
+            incoming().approved == false
+          )
         )
       );
 
@@ -428,9 +436,18 @@ service cloud.firestore {
           isApprovedTeacher() &&
           existing().teacherId == request.auth.uid &&
           incoming().teacherId == request.auth.uid &&
+          // A teacher must never be able to flip an unapproved session to approved.
+          (!('approved' in incoming()) || !('approved' in existing()) || incoming().approved == existing().approved) &&
           (
-            existing().approved == false ||
-            !('approved' in existing()) ||
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'studentId', 'studentName', 'teacherName', 'date', 'time', 'duration', 'type', 'isTrial',
+              'status', 'rating', 'notes', 'surahName', 'actualSurahName', 'actualVerse',
+              'memorizationDirection', 'absenceType', 'absenceReason', 'postponedFrom',
+              'postponeReason', 'responsibleParty', 'teacherNotes', 'makeupDate', 'makeupTime',
+              'slotSelectionReason', 'slotSelectedBy', 'slotSelectedAt', 'compensationStatus',
+              'originalLessonId', 'cancellationResponsibility', 'cancellationReason', 'trialStatus',
+              'updatedBy', 'updatedByRole', 'updatedAt', 'compensatedBySessionId', 'compensatedAt'
+            ]) ||
             existing().status in ['scheduled', 'delayed'] ||
             incoming().diff(existing()).affectedKeys().hasOnly(['compensationStatus', 'compensatedBySessionId', 'compensatedAt', 'updatedAt'])
           )
@@ -469,7 +486,13 @@ service cloud.firestore {
         ) ||
         (
           isApprovedTeacher() &&
-          incoming().teacherId == request.auth.uid
+          incoming().teacherId == request.auth.uid &&
+          (
+            !('isTrial' in incoming()) ||
+            incoming().isTrial != true ||
+            !('approved' in incoming()) ||
+            incoming().approved == false
+          )
         )
       );
 
@@ -482,7 +505,18 @@ service cloud.firestore {
         (
           isApprovedTeacher() &&
           existing().teacherId == request.auth.uid &&
-          incoming().teacherId == request.auth.uid
+          incoming().teacherId == request.auth.uid &&
+          // No self-approval flip, and only the operational fields a teacher may edit.
+          (!('approved' in incoming()) || !('approved' in existing()) || incoming().approved == existing().approved) &&
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'studentId', 'studentName', 'teacherName', 'date', 'time', 'duration', 'type', 'isTrial',
+            'status', 'rating', 'notes', 'surahName', 'actualSurahName', 'actualVerse',
+            'memorizationDirection', 'absenceType', 'absenceReason', 'postponedFrom',
+            'postponeReason', 'responsibleParty', 'teacherNotes', 'makeupDate', 'makeupTime',
+            'slotSelectionReason', 'slotSelectedBy', 'slotSelectedAt', 'compensationStatus',
+            'originalLessonId', 'cancellationResponsibility', 'cancellationReason', 'trialStatus',
+            'updatedBy', 'updatedByRole', 'updatedAt', 'compensatedBySessionId', 'compensatedAt'
+          ])
         )
       );
 
@@ -572,6 +606,8 @@ service cloud.firestore {
     match /studentPackages/{packageId} {
       allow get: if isValidId(packageId) && isApprovedTeacherOrAdmin();
       allow list: if isApprovedTeacherOrAdmin();
+      // Credit deduction is part of the teacher lesson workflow: approved teachers may
+      // update package balances; only admins may create/delete packages.
       allow create, update: if isValidId(packageId) && isApprovedTeacherOrAdmin();
       allow delete: if isAdmin() && isValidId(packageId);
     }
@@ -654,6 +690,14 @@ service cloud.firestore {
       allow write: if isAdmin() && isValidId(logId);
     }
 
+    // إثباتات صرف الرواتب (الملف المالي للمعلم) — كانت بدون قاعدة فكانت مرفوضة دائمًا
+    match /payouts/{payoutId} {
+      allow get: if isValidId(payoutId) && (isAdmin() || (isApprovedTeacher() && existing().teacherId == request.auth.uid));
+      allow list: if isAdmin() || (isApprovedTeacher() && resource.data.teacherId == request.auth.uid);
+      allow create: if isValidId(payoutId) && (isAdmin() || (isApprovedTeacher() && incoming().teacherId == request.auth.uid));
+      allow update, delete: if isAdmin() && isValidId(payoutId);
+    }
+
     // ==========================================
     // 10. Notifications (Admin & Teacher Only - Blocked for Supervisors)
     // ==========================================
@@ -668,7 +712,24 @@ service cloud.firestore {
           (!('senderId' in incoming()) || incoming().senderId == request.auth.uid)
         )
       );
-      allow update: if isValidId(notificationId) && isApprovedTeacherOrAdmin();
+      // Only an admin may change title/recipient/status. A recipient may only
+      // update its own read/opened markers.
+      allow update: if isValidId(notificationId) && (
+        isAdmin() ||
+        (
+          isSignedIn() &&
+          !isSupervisor() &&
+          (
+            existing().recipientId == request.auth.uid ||
+            existing().teacherId == request.auth.uid ||
+            existing().userId == request.auth.uid ||
+            ('targetIds' in existing() && existing().targetIds is list && request.auth.uid in existing().targetIds)
+          ) &&
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'readBy', 'openedBy', 'unpinnedBy', 'deletedBy', 'statuses', 'pinnedBy', 'isPinned'
+          ])
+        )
+      );
       allow delete: if isValidId(notificationId) && (isAdmin() || (isApprovedTeacher() && existing().senderId == request.auth.uid));
     }
 
@@ -705,7 +766,15 @@ service cloud.firestore {
     match /community_posts/{postId} {
       allow read: if isApprovedTeacherOrAdmin();
       allow create: if isValidId(postId) && isApprovedTeacherOrAdmin();
-      allow update: if isValidId(postId) && isApprovedTeacherOrAdmin();
+      // Reactions and comments are written by other teachers as post updates.
+      // Editing the post body itself is restricted to its author or an admin.
+      allow update: if isValidId(postId) && (
+        isAdmin() ||
+        (isApprovedTeacher() && (
+          existing().authorId == request.auth.uid ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['reactions', 'reactors'])
+        ))
+      );
       allow delete: if isValidId(postId) && (isAdmin() || (isApprovedTeacher() && existing().authorId == request.auth.uid));
 
       match /comments/{commentId} {
@@ -722,10 +791,17 @@ service cloud.firestore {
       allow delete: if isValidId(followId) && isApprovedTeacherOrAdmin() && existing().followerId == request.auth.uid;
     }
 
+    // طلبات التقييم/التغذية الراجعة المرسلة للمعلمين من الإدارة
+    match /feedback_requests/{requestId} {
+      allow read: if isApprovedTeacherOrAdmin();
+      allow create, update, delete: if isAdmin() && isValidId(requestId);
+    }
+
     match /auditLogs/{logId} {
       allow read: if isAdmin();
+      // Any authenticated role may append an immutable audit entry; nobody may edit or remove one.
       allow create: if isValidId(logId) && isSignedIn();
-      allow update, delete: if isAdmin() && isValidId(logId);
+      allow update, delete: if false;
     }
 
     match /teacher_activity_logs/{logId} {
@@ -750,7 +826,8 @@ service cloud.firestore {
     }
 
     match /settings/{settingId} {
-      allow read: if settingId == 'academy' || isSignedIn();
+      allow get: if settingId == 'academy' || isSignedIn();
+      allow list: if isSignedIn();
       allow write: if isAdmin() && isValidId(settingId);
     }
 

@@ -8,6 +8,29 @@ import { db } from '../../config/firebase.js';
 import { doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { Toast } from './toast.js';
 
+/** Escape text before embedding it into generateReceiptHTML's innerHTML template. */
+function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/** Only allow http(s) links supplied from settings/data; trusted built-in data URLs are kept as-is. */
+function safeImageUrl(value, fallback) {
+  const raw = typeof value === 'string' ? value.trim() : '';
+  if (!raw) return fallback;
+  if (raw === DEFAULT_ACADEMY_LOGO || raw === DEFAULT_ACADEMY_STAMP
+    || raw === DEFAULT_SIGNATURE_MOHAMED_ADEL || raw === DEFAULT_SIGNATURE_ABDULLATIEF) {
+    return raw;
+  }
+  if (/^https?:\/\/[^\s"'<>]+$/i.test(raw)) return escapeHtml(raw);
+  return fallback;
+}
+
 // ==========================================
 // 1. التوقيعات والأختام الافتراضية عالية الدقة والشفافية (Default PNG / SVG Assets)
 // ==========================================
@@ -348,33 +371,48 @@ export function getRecipientTitle(recipientName, settings = null) {
 export function generateReceiptHTML(data, settings) {
   const s = settings || DEFAULT_RECEIPT_SETTINGS;
 
-  const receiptNo = data.receiptNo || (data.id ? data.id.substring(0, 8).toUpperCase() : '00001');
-  const issueDate = data.issueDate || (data.createdAt ? new Date(data.createdAt.seconds ? data.createdAt.seconds * 1000 : data.createdAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' }) : new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' }));
-  const issueTime = data.issueTime || (data.createdAt ? new Date(data.createdAt.seconds ? data.createdAt.seconds * 1000 : data.createdAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }));
+  const receiptNo = escapeHtml(data.receiptNo || (data.id ? String(data.id).substring(0, 8).toUpperCase() : '00001'));
+  const issueDate = escapeHtml(data.issueDate || (data.createdAt ? new Date(data.createdAt.seconds ? data.createdAt.seconds * 1000 : data.createdAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' }) : new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })));
+  const issueTime = escapeHtml(data.issueTime || (data.createdAt ? new Date(data.createdAt.seconds ? data.createdAt.seconds * 1000 : data.createdAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })));
 
-  const studentName = data.studentName || 'طالب الأكاديمية';
-  const parentName = data.parentName || data.guardianName || (data.student?.parentName) || 'غير مسجل';
-  const teacherName = data.teacherName || 'الإدارة التعليمية';
+  const studentName = escapeHtml(data.studentName || 'طالب الأكاديمية');
+  const parentName = escapeHtml(data.parentName || data.guardianName || (data.student?.parentName) || 'غير مسجل');
+  const teacherName = escapeHtml(data.teacherName || 'الإدارة التعليمية');
 
-  const packageName = data.packageName || data.pkgName || 'اشتراك تعليمي شهري';
-  const totalLessons = data.totalLessons !== undefined ? data.totalLessons : (data.pkg?.totalLessons || '-');
-  const remainingLessons = data.remainingLessons !== undefined ? data.remainingLessons : (data.pkg?.remainingLessons !== undefined ? data.pkg.remainingLessons : '-');
+  const packageName = escapeHtml(data.packageName || data.pkgName || 'اشتراك تعليمي شهري');
+  const totalLessons = escapeHtml(data.totalLessons !== undefined ? data.totalLessons : (data.pkg?.totalLessons || '-'));
+  const remainingLessons = escapeHtml(data.remainingLessons !== undefined ? data.remainingLessons : (data.pkg?.remainingLessons !== undefined ? data.pkg.remainingLessons : '-'));
 
-  const subscriptionPrice = parseFloat(data.subscriptionPrice || data.totalAmount || data.price || data.amount || 0);
-  const paidAmount = parseFloat(data.amount || data.paidAmount || 0);
+  // الإجمالي والمبلغ المدفوع حقلان منفصلان؛ لا نستنتج أحدهما من الآخر
+  const rawTotal = data.totalAmount !== undefined && data.totalAmount !== null
+    ? data.totalAmount : data.subscriptionPrice;
+  const rawPaid = data.paidAmount !== undefined && data.paidAmount !== null
+    ? data.paidAmount : data.amount;
+  const subscriptionPrice = parseFloat(rawTotal);
+  const paidAmount = parseFloat(rawPaid);
+  if (!Number.isFinite(subscriptionPrice) || subscriptionPrice < 0
+    || !Number.isFinite(paidAmount) || paidAmount < 0) {
+    throw new Error('لا يمكن توليد السند بدون إجمالي اشتراك ومبلغ مدفوع صالحين.');
+  }
   const remainingBalance = Math.max(0, subscriptionPrice - paidAmount);
 
-  const paymentMethod = data.method || data.paymentMethod || 'نقدي (كاش)';
-  const accountingMonth = data.month || 'الشهر الحالي';
-  const notes = data.notes && data.notes.trim() ? data.notes.trim() : 'سداد الرسوم والمستحقات الدراسية المقررة.';
+  const paymentMethod = escapeHtml(data.method || data.paymentMethod || 'نقدي (كاش)');
+  const accountingMonth = escapeHtml(data.month || 'الشهر الحالي');
+  const notes = escapeHtml(data.notes && data.notes.trim() ? data.notes.trim() : 'سداد الرسوم والمستحقات الدراسية المقررة.');
 
-  const receivedBy = data.receivedBy || data.adminName || s.recipients[0]?.name || 'محمد عادل';
-  const recipientTitle = getRecipientTitle(receivedBy, s);
-  const signatureURL = getSignatureForRecipient(receivedBy, s);
-  const stampURL = s.stampURL || DEFAULT_ACADEMY_STAMP;
-  const logoURL = s.logoURL || DEFAULT_ACADEMY_LOGO;
+  const receivedByRaw = data.receivedBy || data.adminName || s.recipients[0]?.name || 'محمد عادل';
+  const receivedBy = escapeHtml(receivedByRaw);
+  const recipientTitle = escapeHtml(getRecipientTitle(receivedByRaw, s));
+  const signatureURL = safeImageUrl(getSignatureForRecipient(receivedByRaw, s), DEFAULT_SIGNATURE_MOHAMED_ADEL);
+  const stampURL = safeImageUrl(s.stampURL, DEFAULT_ACADEMY_STAMP);
+  const logoURL = safeImageUrl(s.logoURL, DEFAULT_ACADEMY_LOGO);
+  const academyName = escapeHtml(s.academyName);
+  const academySubtitle = escapeHtml(s.academySubtitle);
+  const termsNote = escapeHtml(s.termsNote);
+  const academyPhone = escapeHtml(s.academyContact?.phone || '01094475649');
+  const academyWhatsapp = escapeHtml(s.academyContact?.whatsapp || '01094475649');
 
-  const wordsAmount = tafqeetArabic(paidAmount);
+  const wordsAmount = escapeHtml(tafqeetArabic(paidAmount));
 
   return `
     <div class="official-receipt-sheet" style="font-family: 'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif; direction: rtl; text-align: right; background: #ffffff; color: #0f172a; padding: 2.2rem; border-radius: 4px; box-sizing: border-box; max-width: 800px; margin: 0 auto; line-height: 1.5; position: relative;">
@@ -394,8 +432,8 @@ export function generateReceiptHTML(data, settings) {
           <div style="display: flex; align-items: center; gap: 1rem;">
             <img src="${logoURL}" alt="شعار الأكاديمية" style="max-height: 65px; max-width: 180px; object-fit: contain;">
             <div>
-              <div style="font-size: 1.25rem; font-weight: 900; color: #0f766e; margin-bottom: 0.15rem;">${s.academyName}</div>
-              <div style="font-size: 0.8rem; color: #64748b; font-weight: 600;">${s.academySubtitle}</div>
+              <div style="font-size: 1.25rem; font-weight: 900; color: #0f766e; margin-bottom: 0.15rem;">${academyName}</div>
+              <div style="font-size: 0.8rem; color: #64748b; font-weight: 600;">${academySubtitle}</div>
             </div>
           </div>
 
@@ -509,11 +547,11 @@ export function generateReceiptHTML(data, settings) {
 
         <!-- ملاحظة شروط السند وبيانات التواصل -->
         <div style="border-top: 1px dashed #cbd5e1; margin-top: 1.25rem; padding-top: 0.75rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: #64748b; flex-wrap: wrap; gap: 0.5rem; position: relative; z-index: 1;">
-          <div>${s.termsNote}</div>
+          <div>${termsNote}</div>
           <div style="font-weight: 700; color: #0f766e; text-align: left; direction: ltr;">
-            <span>هاتف: ${s.academyContact.phone || '01094475649'}</span>
+            <span>هاتف: ${academyPhone}</span>
             <span style="margin: 0 0.35rem;">|</span>
-            <span>واتساب: ${s.academyContact.whatsapp || '01094475649'}</span>
+            <span>واتساب: ${academyWhatsapp}</span>
           </div>
         </div>
 
@@ -532,7 +570,13 @@ export async function openReceiptViewer(paymentData, options = {}) {
   // تحديد المستلم الأولي
   const initialRecipientName = options.recipientName || paymentData.receivedBy || paymentData.adminName || (settings.recipients && settings.recipients[0]?.name) || 'محمد عادل';
   
-  const htmlContent = generateReceiptHTML(paymentData, settings);
+  let htmlContent;
+  try {
+    htmlContent = generateReceiptHTML(paymentData, settings);
+  } catch (err) {
+    Toast.danger(err?.message || 'تعذر توليد سند القبض لنقص البيانات المالية.');
+    return;
+  }
 
   let modal = document.getElementById('globalReceiptModal');
   if (!modal) {

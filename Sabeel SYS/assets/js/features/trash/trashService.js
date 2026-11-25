@@ -1,4 +1,4 @@
-import { db } from '../../config/firebase.js';
+import { auth, db } from '../../config/firebase.js';
 import { collection, doc, addDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { UndoManager } from '../../shared/utils/undoManager.js';
 
@@ -31,8 +31,9 @@ export async function restoreFromTrash(trashDocId, collectionName, documentId, d
  * @param {string} documentId - ID of the document to delete
  * @param {object} originalData - Full data of the document being deleted
  * @param {string} actionDescription - Reason or action description for audit trail
+ * @param {string|null} [deletedByName] - Optional admin name; falls back to the signed-in user
  */
-export async function softDeleteToTrash(collectionName, documentId, originalData, actionDescription = "") {
+export async function softDeleteToTrash(collectionName, documentId, originalData, actionDescription = "", deletedByName = null) {
   try {
     const trashPayload = {
       originalId: documentId,
@@ -40,7 +41,10 @@ export async function softDeleteToTrash(collectionName, documentId, originalData
       originalCollection: collectionName,
       data: originalData,
       deletedAt: new Date().toISOString(),
-      description: actionDescription
+      description: actionDescription,
+      // Explicit UI fields; old `description` records remain readable via fallback.
+      deletionReason: actionDescription || '',
+      deletedByName: deletedByName || auth.currentUser?.displayName || ''
     };
 
     // 1. Write the backup to trash collection

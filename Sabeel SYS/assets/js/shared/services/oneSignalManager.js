@@ -13,7 +13,7 @@
 import '../utils/jsonShield.js';
 import { auth, db } from '../../config/firebase.js';
 import { doc, getDoc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-import { isMedianApp, isCapacitorNative, getMedianOneSignalInfo, setMedianOneSignalTags, promptMedianPushPermission, logoutMedianOneSignal } from '../utils/medianBridge.js';
+import { isMedianApp, isNativeApp, isCapacitorNative, getMedianOneSignalInfo, setMedianOneSignalTags, promptMedianPushPermission, logoutMedianOneSignal, loginMedianOneSignal } from '../utils/medianBridge.js';
 import { sanitizeFirebaseUid } from '../utils/helpers.js';
 import { registerDevice } from './deviceService.js';
 

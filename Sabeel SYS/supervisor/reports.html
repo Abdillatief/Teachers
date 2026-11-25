@@ -139,7 +139,11 @@
 
       const attendDenom = completed + studentAbsent;
       const attendanceRate = attendDenom > 0 ? Math.round((completed / attendDenom) * 100) : 0;
-      const teacherCommitment = total > 0 ? Math.max(0, Math.round(((total - teacherAbsent) / total) * 100)) : 100;
+      // Commitment is measured against lessons that were actually due: completed
+      // (including compensatory), student/teacher absences. Cancelled and delayed
+      // lessons without a compensatory session are not due lessons.
+      const dueLessons = completed + studentAbsent + teacherAbsent;
+      const teacherCommitment = dueLessons > 0 ? Math.max(0, Math.round(((dueLessons - teacherAbsent) / dueLessons) * 100)) : 100;
 
       document.getElementById('repTotalLessons').textContent = String(total);
       document.getElementById('repAttendanceRate').textContent = `${attendanceRate}%`;
@@ -194,6 +198,10 @@
     }
 
     function exportOperationalCsv() {
+      const escapeCsvField = (value) => {
+        const str = String(value ?? '');
+        return /[",\r\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+      };
       const headers = ['التاريخ', 'الوقت', 'الطالب', 'المعلم', 'المدة', 'الحالة', 'الملاحظات'];
       const rows = filteredMonthSessions.map((s) => [
         s.date || '',
@@ -202,17 +210,17 @@
         s.teacherName || '',
         s.duration || 60,
         LESSON_STATUS_META[s.status]?.label || s.status || '',
-        (s.notes || s.postponeReason || s.absenceReason || '').replace(/[\r\n,]+/g, ' ')
+        s.notes || s.postponeReason || s.absenceReason || ''
       ]);
 
-      const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+      const csvContent = '\uFEFF' + [headers, ...rows].map((r) => r.map(escapeCsvField).join(',')).join('\r\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `sabeel-operational-report-${document.getElementById('reportMonthInput')?.value || 'all'}.csv`;
       a.click();
-      URL.revokeObjectURL(url);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
       Toast.success('تم تصدير التقرير التشغيلي بنجاح.');
     }
   </script>

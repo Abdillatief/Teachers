@@ -48,6 +48,38 @@ class CentralDataStore {
     this.isHydrating = false;
   }
 
+  _getSessionRole() {
+    // Prefer the effective role resolved by authService (trusted), then cached session, then URL as last resort.
+    if (typeof window !== 'undefined' && window.__sabeelEffectiveRole) return window.__sabeelEffectiveRole;
+    try {
+      const rawSession = sessionStorage.getItem('sabeel_user_session') || sessionStorage.getItem('sabeel_user');
+      if (rawSession) {
+        const parsed = JSON.parse(rawSession);
+        if (parsed?.effectiveRole) return parsed.effectiveRole;
+        if (parsed?.role) return parsed.role;
+      }
+    } catch (e) {}
+    if (typeof window !== 'undefined') {
+      const p = window.location.pathname || '';
+      if (p.includes('/teacher/')) return 'teacher';
+      if (p.includes('/supervisor/')) return 'supervisor';
+      if (p.includes('/admin/')) return 'admin';
+    }
+    return '';
+  }
+
+  _isBlockedForRole(collectionKey, sessionRole) {
+    if (sessionRole === 'supervisor' && ['users', 'students', 'studentBalances', 'packages', 'payments', 'expenses', 'subscriptions', 'salaryArchive', 'notifications', 'warnings', 'feedbacks'].includes(collectionKey)) return true;
+    if (sessionRole === 'teacher' && ['users', 'payments', 'expenses', 'subscriptions', 'supervisorRequests', 'warnings', 'activityLogs', 'studentOperationalSummaries'].includes(collectionKey)) return true;
+    return false;
+  }
+
+  _targetCollection(collectionKey) {
+    if (collectionKey === 'teachers') return 'users';
+    if (collectionKey === 'packages') return 'studentPackages';
+    return collectionKey;
+  }
+
   /**
    * Subscribe to a collection with automatic listener deduplication.
    * If a listener already exists for this collection, the new callback is simply attached.
@@ -67,10 +99,32 @@ class CentralDataStore {
     }
 
     let entry = this.activeListeners.get(collectionKey);
+    if (entry) {
+      const prev = entry.options || {};
+      const merged = {
+        monthsBack: Math.max(Number(prev.monthsBack) || 0, Number(options.monthsBack) || 0) || undefined,
+        currentMonthOnly: Boolean(prev.currentMonthOnly || options.currentMonthOnly),
+        startDate: [prev.startDate, options.startDate].filter(Boolean).sort()[0],
+        startOfMonth: options.startOfMonth || prev.startOfMonth,
+        supervisorId: prev.supervisorId || options.supervisorId
+      };
+      const changed = merged.monthsBack !== (prev.monthsBack || undefined)
+        || merged.currentMonthOnly !== Boolean(prev.currentMonthOnly)
+        || merged.startDate !== prev.startDate
+        || merged.supervisorId !== prev.supervisorId;
+      if (changed) {
+        try { entry.unsubscribe?.(); } catch (e) {}
+        this.activeListeners.delete(collectionKey);
+        entry = { subscribers: entry.subscribers, unsubscribe: null, options: merged };
+        this.activeListeners.set(collectionKey, entry);
+        this._startFirestoreListener(collectionKey, merged);
+      }
+    }
     if (!entry) {
       entry = {
         subscribers: new Set(),
-        unsubscribe: null
+        unsubscribe: null,
+        options
       };
       this.activeListeners.set(collectionKey, entry);
       this._startFirestoreListener(collectionKey, options);
@@ -102,34 +156,15 @@ class CentralDataStore {
     const entry = this.activeListeners.get(collectionKey);
     if (!entry) return;
 
-    let targetCollection = collectionKey;
-    if (collectionKey === 'teachers') targetCollection = 'users';
-    if (collectionKey === 'studentBalances') targetCollection = 'studentBalances';
-    if (collectionKey === 'packages') targetCollection = 'studentPackages';
-
+    const targetCollection = this._targetCollection(collectionKey);
+    const effectiveOptions = entry.options || options || {};
     let q = collection(db, targetCollection);
 
-    let sessionRole = '';
-    try {
-      const rawSession = sessionStorage.getItem('sabeel_user_session') || sessionStorage.getItem('sabeel_user');
-      if (rawSession) {
-        sessionRole = JSON.parse(rawSession)?.role || '';
-      }
-    } catch (e) {}
-    if (!sessionRole && typeof window !== 'undefined') {
-      const p = window.location.pathname || '';
-      if (p.includes('/teacher/')) sessionRole = 'teacher';
-      else if (p.includes('/supervisor/')) sessionRole = 'supervisor';
-      else if (p.includes('/admin/')) sessionRole = 'admin';
-    }
+    const sessionRole = this._getSessionRole();
     const currentUid = auth?.currentUser?.uid || '';
 
     // Prevent non-permitted roles from opening blocked collection listeners
-    if (sessionRole === 'supervisor' && ['users', 'students', 'studentBalances', 'packages', 'payments', 'expenses', 'subscriptions', 'salaryArchive', 'notifications', 'warnings', 'feedbacks'].includes(collectionKey)) {
-      this.activeListeners.delete(collectionKey);
-      return;
-    }
-    if (sessionRole === 'teacher' && ['users', 'payments', 'expenses', 'subscriptions', 'supervisorRequests', 'warnings', 'activityLogs', 'studentOperationalSummaries'].includes(collectionKey)) {
+    if (this._isBlockedForRole(collectionKey, sessionRole)) {
       this.activeListeners.delete(collectionKey);
       return;
     }
@@ -140,27 +175,28 @@ class CentralDataStore {
         this.activeListeners.delete(collectionKey);
         return;
       }
-      if (collectionKey === 'sessions' && options.currentMonthOnly) {
-        const startOfMonth = options.startOfMonth || new Date().toISOString().substring(0, 7) + '-01';
+      if (collectionKey === 'sessions' && effectiveOptions.currentMonthOnly) {
+        const startOfMonth = effectiveOptions.startOfMonth || new Date().toISOString().substring(0, 7) + '-01';
         q = query(collection(db, "sessions"), where("teacherId", "==", currentUid), where("date", ">=", startOfMonth));
       } else {
         q = query(collection(db, targetCollection), where("teacherId", "==", currentUid));
       }
-    } else if (collectionKey === 'sessions' && (options.currentMonthOnly || options.monthsBack || options.startDate)) {
-      let startDate = options.startDate;
-      if (!startDate && options.currentMonthOnly) {
-        startDate = options.startOfMonth || new Date().toISOString().substring(0, 7) + '-01';
+    } else if (collectionKey === 'sessions' && (effectiveOptions.currentMonthOnly || effectiveOptions.monthsBack || effectiveOptions.startDate)) {
+      let startDate = effectiveOptions.startDate;
+      if (!startDate && effectiveOptions.currentMonthOnly) {
+        startDate = effectiveOptions.startOfMonth || new Date().toISOString().substring(0, 7) + '-01';
       }
-      if (!startDate && options.monthsBack) {
+      if (!startDate && effectiveOptions.monthsBack) {
         const d = new Date();
-        d.setMonth(d.getMonth() - Number(options.monthsBack));
+        d.setDate(1);
+        d.setMonth(d.getMonth() - Number(effectiveOptions.monthsBack));
         startDate = d.toISOString().split('T')[0];
       }
       if (startDate) {
         q = query(collection(db, "sessions"), where("date", ">=", startDate));
       }
-    } else if (collectionKey === 'supervisorRequests' && (options.supervisorId || sessionRole === 'supervisor')) {
-      const targetSupervisorUid = options.supervisorId || currentUid;
+    } else if (collectionKey === 'supervisorRequests' && (effectiveOptions.supervisorId || sessionRole === 'supervisor')) {
+      const targetSupervisorUid = effectiveOptions.supervisorId || currentUid;
       if (!targetSupervisorUid) {
         this.activeListeners.delete(collectionKey);
         return;
@@ -185,7 +221,7 @@ class CentralDataStore {
             }
           } else if (collectionKey === 'notifications') {
             const currentUid = auth?.currentUser?.uid;
-            if (currentUid && isNotificationPermittedForUser(data, currentUid, 'teacher')) {
+            if (currentUid && isNotificationPermittedForUser(data, currentUid, sessionRole || null)) {
               items.push({ ...data, id: docSnap.id });
             }
           } else {
@@ -209,7 +245,7 @@ class CentralDataStore {
       }, (error) => {
         console.warn(`[DataStore] Stream warning for ${collectionKey}:`, error);
         this.collectionErrors.set(collectionKey, error);
-        this.loadedCollections.add(collectionKey);
+        this.loadedCollections.delete(collectionKey);
         this.cache[collectionKey] = this.cache[collectionKey] || [];
         entry.subscribers.forEach(cb => {
           try { cb(this.cache[collectionKey]); } catch (e) {}
@@ -225,20 +261,46 @@ class CentralDataStore {
   /**
    * Manually refreshes a collection from Firestore
    */
-  async refreshCollection(collectionKey) {
+  async refreshCollection(collectionKey, options = {}) {
+    const sessionRole = this._getSessionRole();
+    if (this._isBlockedForRole(collectionKey, sessionRole)) {
+      const err = new Error(`[DataStore] refreshCollection blocked for role ${sessionRole || 'unknown'}: ${collectionKey}`);
+      console.warn(err.message);
+      this.collectionErrors.set(collectionKey, err);
+      return this.cache[collectionKey] || [];
+    }
     try {
-      let targetCollection = collectionKey;
-      if (collectionKey === 'teachers') targetCollection = 'users';
-      if (collectionKey === 'studentBalances') targetCollection = 'studentBalances';
-      if (collectionKey === 'packages') targetCollection = 'studentPackages';
+      const targetCollection = this._targetCollection(collectionKey);
+      const currentUid = auth?.currentUser?.uid || '';
+      let q = collection(db, targetCollection);
+      if (sessionRole === 'teacher' && ['students', 'sessions', 'groups', 'salaryArchive', 'feedbacks'].includes(collectionKey) && currentUid) {
+        q = query(collection(db, targetCollection), where('teacherId', '==', currentUid));
+      } else if (collectionKey === 'sessions' && (options.monthsBack || options.startDate)) {
+        let startDate = options.startDate;
+        if (!startDate && options.monthsBack) {
+          const d = new Date();
+          d.setDate(1);
+          d.setMonth(d.getMonth() - Number(options.monthsBack));
+          startDate = d.toISOString().split('T')[0];
+        }
+        if (startDate) q = query(collection(db, 'sessions'), where('date', '>=', startDate));
+      } else if (collectionKey === 'supervisorRequests' && (options.supervisorId || sessionRole === 'supervisor')) {
+        const targetUid = options.supervisorId || currentUid;
+        if (targetUid) q = query(collection(db, 'supervisorRequests'), where('supervisorId', '==', targetUid));
+      }
 
-      const snap = await getDocs(collection(db, targetCollection));
+      const snap = await getDocs(q);
       const items = [];
       snap.forEach(docSnap => {
         const data = docSnap.data();
         if (collectionKey === 'teachers') {
           if (data.role === 'teacher') {
             items.push({ ...data, uid: docSnap.id, id: docSnap.id });
+          }
+        } else if (collectionKey === 'notifications') {
+          const currentUid = auth?.currentUser?.uid;
+          if (currentUid && isNotificationPermittedForUser(data, currentUid, sessionRole || null)) {
+            items.push({ ...data, id: docSnap.id });
           }
         } else {
           items.push({ ...data, id: docSnap.id });
@@ -355,7 +417,10 @@ class CentralDataStore {
    * Get cached or compute dashboard metrics
    */
   getDashboardMetrics(yearMonth, teachersList = null) {
-    const cacheKey = `metrics_${yearMonth}`;
+    const teachersFingerprint = teachersList
+      ? `${teachersList.length}_${teachersList[0]?.id || teachersList[0]?.uid || ''}_${teachersList[teachersList.length - 1]?.id || teachersList[teachersList.length - 1]?.uid || ''}`
+      : 'cache';
+    const cacheKey = `metrics_${yearMonth}_${teachersFingerprint}`;
     const cached = this.computedMetricsCache.get(cacheKey);
     const now = Date.now();
 
@@ -370,25 +435,30 @@ class CentralDataStore {
     const expenses = this.get('expenses');
     const balances = this.get('studentBalances');
 
+    const ymdOf = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const toYMD = (value) => {
+      if (value == null) return '';
+      if (typeof value === 'string') return value.slice(0, 10);
+      if (typeof value === 'number' && Number.isFinite(value)) return ymdOf(new Date(value));
+      if (typeof value.toDate === 'function') return ymdOf(value.toDate());
+      if (typeof value.seconds === 'number') return ymdOf(new Date(value.seconds * 1000));
+      const d = new Date(value);
+      return Number.isNaN(d.getTime()) ? '' : ymdOf(d);
+    };
+
     const approvedTeachers = teachers.filter(t => t.status === "approved" || t.status === "active");
-    const todayStr = new Date().toISOString().split('T')[0];
-    const todaySessions = sessions.filter(s => s.date === todayStr);
+    const todayStr = ymdOf(new Date());
+    const todaySessions = sessions.filter(s => toYMD(s.date) === todayStr);
 
     // Active students
     const activeStudents = students.filter(s => s.status !== "archived" && s.status !== "Suspended" && s.status !== "pending_approval");
     
     // Revenue for month
-    const monthPayments = payments.filter(p => {
-      const pDate = p.paymentDate || p.createdAt || p.date;
-      return pDate && String(pDate).startsWith(yearMonth);
-    });
+    const monthPayments = payments.filter(p => toYMD(p.paymentDate || p.createdAt || p.date).startsWith(yearMonth));
     const totalRevenue = monthPayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
 
     // Expenses
-    const monthExpenses = expenses.filter(e => {
-      const eDate = e.date || e.createdAt;
-      return eDate && String(eDate).startsWith(yearMonth);
-    });
+    const monthExpenses = expenses.filter(e => toYMD(e.date || e.createdAt || e.paymentDate).startsWith(yearMonth));
     const totalExpenses = monthExpenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
 
     const metricsData = {
@@ -399,7 +469,7 @@ class CentralDataStore {
       todaySessionsCount: todaySessions.length,
       totalRevenue,
       totalExpenses,
-      todayPaymentsCount: monthPayments.length
+      todayPaymentsCount: monthPayments.filter(p => toYMD(p.paymentDate || p.createdAt || p.date) === todayStr).length
     };
 
     this.computedMetricsCache.set(cacheKey, {

@@ -531,7 +531,7 @@
     });
 
     // البحث الفوري التفاعلي
-    document.getElementById('studentSearchInput').addEventListener('input', () => {
+    document.getElementById('studentSearchInput')?.addEventListener('input', () => {
       renderStudentsTable();
     });
 
@@ -889,7 +889,7 @@
 
         item.querySelector('.toggle-surah-status-btn').addEventListener('click', async (e) => {
           e.preventDefault();
-          const sid = parseInt(e.target.dataset.surahId);
+          const sid = parseInt(e.currentTarget.dataset.surahId);
           const studentRef = doc(db, "students", student.id);
           
           let updatedCompleted = [...completedSurahsList];
@@ -1255,7 +1255,7 @@
           age,
           phone,
           email,
-          teacherId: "", // لا ينسب للمعلم بأي شكل حتى اعتماد الإدارة
+          teacherId: currentUser.uid, // يظهر في قائمة طلبات المعلم؛ لكنه لا يُعرض كطالب نشط إلا بعد اعتماد الإدارة (status: pending_approval)
           requestedByTeacherId: currentUser.uid,
           requestedByTeacherName: teacherName,
           teacherName: teacherName,

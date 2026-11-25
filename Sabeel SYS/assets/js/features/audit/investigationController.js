@@ -11,11 +11,14 @@ import {
   orderBy, 
   limit, 
   where, 
+  getCountFromServer,
   serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { Toast } from '../../shared/utils/toast.js';
 import { showCustomConfirm, safeStringify } from '../../shared/utils/helpers.js';
 import { logAuditLog } from '../../shared/utils/activityLogger.js';
+
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 // Global Data Caches
 let sessionsCache = [];
@@ -28,6 +31,21 @@ let trialSessionsCache = [];
 let activeTab = 'lessons';
 let currentDrawerData = null;
 
+// تتبع أخطاء التحميل والإجماليات الحقيقية (منفصلة عن حد عرض 300 سجل)
+let dataLoadErrors = [];
+let totalCounts = { sessions: null, financial: null, activity: null, students: null };
+
+const DATA_LOAD_LABELS = {
+  sessions: 'الحصص',
+  financial: 'الحركات المالية',
+  activity: 'سجلات النشاط',
+  audit: 'سجلات التدقيق',
+  students: 'الطلاب',
+  users: 'حسابات المستخدمين',
+  trials: 'الحصص التجريبية',
+  counts: 'إجماليات السجلات'
+};
+
 /**
  * Initializes the Investigation Center (مركز التحقيق وإدارة العمليات)
  */
@@ -36,6 +54,14 @@ export async function initInvestigationCenter() {
   setupGlobalSearch();
   setupFilterListeners();
   setupDrawerCloseEvents();
+
+  // ربط نموذج تعديل الحصة حتى يُحفظ فعلياً عند الإرسال
+  document.getElementById('editSessionForm')?.addEventListener('submit', handleSaveSessionEdit);
+  // زر تحديث البيانات المباشرة
+  document.getElementById('btnRefreshAllInvData')?.addEventListener('click', async () => {
+    await loadAllSystemData();
+    renderActiveTab();
+  });
 
   // Load initial data
   await loadAllSystemData();
@@ -123,11 +149,44 @@ export function closeAllDrawers() {
   if (overlay) overlay.classList.remove('active');
 }
 
+function registerDataError(label, err) {
+  console.error(`Error loading ${label}:`, err);
+  if (!dataLoadErrors.includes(label)) dataLoadErrors.push(label);
+}
+
+async function fetchCollectionData(label, task) {
+  try {
+    return await task();
+  } catch (err) {
+    registerDataError(label, err);
+    return { docs: [] };
+  }
+}
+
+async function fetchCollectionCount(label, task) {
+  try {
+    const snapshot = await task();
+    return snapshot.data().count ?? 0;
+  } catch (err) {
+    registerDataError(label, err);
+    return null;
+  }
+}
+
+function showDataError(message) {
+  const box = document.getElementById('investigationDataError');
+  const text = document.getElementById('investigationDataErrorText');
+  if (text) text.textContent = message || '';
+  if (box) box.style.display = message ? 'flex' : 'none';
+}
+
 /**
  * Loads all system collections required for investigation
  */
 export async function loadAllSystemData() {
   showLoader(true);
+  showDataError('');
+  dataLoadErrors = [];
   try {
     const [
       sessionsSnap, 
@@ -138,13 +197,13 @@ export async function loadAllSystemData() {
       teachersSnap,
       trialsSnap
     ] = await Promise.all([
-      getDocs(query(collection(db, "sessions"), orderBy("createdAt", "desc"), limit(300))).catch(e => ({ docs: [] })),
-      getDocs(query(collection(db, "teacher_salary_transactions"), orderBy("createdAt", "desc"), limit(300))).catch(e => ({ docs: [] })),
-      getDocs(query(collection(db, "teacher_activity_logs"), orderBy("timestamp", "desc"), limit(300))).catch(e => ({ docs: [] })),
-      getDocs(query(collection(db, "auditLogs"), orderBy("timestamp", "desc"), limit(300))).catch(e => ({ docs: [] })),
-      getDocs(collection(db, "students")).catch(e => ({ docs: [] })),
-      getDocs(collection(db, "users")).catch(e => ({ docs: [] })),
-      getDocs(collection(db, "trial_sessions")).catch(e => ({ docs: [] }))
+      fetchCollectionData(DATA_LOAD_LABELS.sessions, () => getDocs(query(collection(db, "sessions"), orderBy("createdAt", "desc"), limit(300)))),
+      fetchCollectionData(DATA_LOAD_LABELS.financial, () => getDocs(query(collection(db, "teacher_salary_transactions"), orderBy("createdAt", "desc"), limit(300)))),
+      fetchCollectionData(DATA_LOAD_LABELS.activity, () => getDocs(query(collection(db, "teacher_activity_logs"), orderBy("timestamp", "desc"), limit(300)))),
+      fetchCollectionData(DATA_LOAD_LABELS.audit, () => getDocs(query(collection(db, "auditLogs"), orderBy("timestamp", "desc"), limit(300)))),
+      fetchCollectionData(DATA_LOAD_LABELS.students, () => getDocs(collection(db, "students"))),
+      fetchCollectionData(DATA_LOAD_LABELS.users, () => getDocs(collection(db, "users"))),
+      fetchCollectionData(DATA_LOAD_LABELS.trials, () => getDocs(collection(db, "trial_sessions")))
     ]);
 
     sessionsCache = sessionsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -164,10 +223,34 @@ export async function loadAllSystemData() {
     teachersCache = teachersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     trialSessionsCache = trialsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
+    // إجماليات حقيقية مستقلة عن حد عرض آخر 300 سجل في الجداول
+    const [sessionsCount, financialCount, teacherLogsCount, auditCount, studentsCount] = await Promise.all([
+      fetchCollectionCount(DATA_LOAD_LABELS.counts, () => getCountFromServer(collection(db, "sessions"))),
+      fetchCollectionCount(DATA_LOAD_LABELS.counts, () => getCountFromServer(collection(db, "teacher_salary_transactions"))),
+      fetchCollectionCount(DATA_LOAD_LABELS.activity, () => getCountFromServer(collection(db, "teacher_activity_logs"))),
+      fetchCollectionCount(DATA_LOAD_LABELS.audit, () => getCountFromServer(collection(db, "auditLogs"))),
+      fetchCollectionCount(DATA_LOAD_LABELS.students, () => getCountFromServer(collection(db, "students")))
+    ]);
+
+    totalCounts = {
+      sessions: sessionsCount,
+      financial: financialCount,
+      activity: (teacherLogsCount === null || auditCount === null) ? null : teacherLogsCount + auditCount,
+      students: studentsCount === null ? studentsCache.length : studentsCount
+    };
+
     updateStatsCounters();
+
+    if (dataLoadErrors.length > 0) {
+      const message = `تعذر تحميل أو احتساب: ${dataLoadErrors.join('، ')}. تُعرض البيانات المتاحة فقط، ولا تُعدّ الأرقام الناقصة صفراً.`;
+      showDataError(message);
+      Toast.error(message);
+    }
   } catch (err) {
     console.error("Error loading investigation center data:", err);
-    Toast.error("حدث خطأ أثناء تحميل بيانات مركز التحقيق.");
+    const message = "حدث خطأ أثناء تحميل بيانات مركز التحقيق. يرجى المحاولة مرة أخرى.";
+    showDataError(message);
+    Toast.error(message);
   } finally {
     showLoader(false);
   }
@@ -184,10 +267,12 @@ function updateStatsCounters() {
   const totalLogsEl = document.getElementById('statTotalLogs');
   const totalStudentsEl = document.getElementById('statTotalStudents');
 
-  if (totalLessonsEl) totalLessonsEl.textContent = sessionsCache.length;
-  if (totalFinEl) totalFinEl.textContent = financialCache.length;
-  if (totalLogsEl) totalLogsEl.textContent = activityCache.length;
-  if (totalStudentsEl) totalStudentsEl.textContent = studentsCache.length;
+  const display = (value) => (value === null || value === undefined) ? '—' : String(value);
+
+  if (totalLessonsEl) totalLessonsEl.textContent = display(totalCounts.sessions);
+  if (totalFinEl) totalFinEl.textContent = display(totalCounts.financial);
+  if (totalLogsEl) totalLogsEl.textContent = display(totalCounts.activity);
+  if (totalStudentsEl) totalStudentsEl.textContent = display(totalCounts.students);
 }
 
 /**
@@ -387,33 +472,33 @@ function renderLessonsTab() {
     const lastEditFormatted = formatTimestamp(s.updatedAt || s.lastModifiedAt);
 
     return `
-      <tr class="inv-table-row" data-id="${s.id}">
+      <tr class="inv-table-row" data-id="${esc(s.id)}">
         <td>
-          <div class="font-bold text-primary">${s.studentName || 'طالب غير معروف'}</div>
-          <div class="text-xs text-muted">ID: ${s.studentId || '-'}</div>
+          <div class="font-bold text-primary">${esc(s.studentName || 'طالب غير معروف')}</div>
+          <div class="text-xs text-muted">المعرّف: ${esc(s.studentId || '-')}</div>
         </td>
         <td>
-          <div class="font-semibold">${s.teacherName || 'معلم غير معروف'}</div>
+          <div class="font-semibold">${esc(s.teacherName || 'معلم غير معروف')}</div>
         </td>
         <td>
-          <div class="font-mono text-xs">${s.date || '-'}</div>
+          <div class="font-mono text-xs">${esc(s.date || '-')}</div>
         </td>
         <td>
-          <div class="text-xs font-mono">${s.startTime || s.time || '-'} -> ${s.endTime || '-'}</div>
-          <div class="text-xs text-muted">${s.duration || 60} دقيقة</div>
+          <div class="text-xs font-mono">${esc(s.startTime || s.time || '-')} -> ${esc(s.endTime || '-')}</div>
+          <div class="text-xs text-muted">${esc(s.duration || 60)} دقيقة</div>
         </td>
         <td>
-          <div class="text-xs font-mono">${recordedAtFormatted}</div>
+          <div class="text-xs font-mono">${esc(recordedAtFormatted)}</div>
         </td>
         <td>
-          <div class="text-xs">${s.createdBy || s.recordedBy || s.teacherName || 'المعلم'}</div>
+          <div class="text-xs">${esc(s.createdBy || s.recordedBy || s.teacherName || 'المعلم')}</div>
         </td>
         <td>
-          <div class="text-xs">${s.lastModifiedBy || s.updatedBy || '-'}</div>
-          <div class="text-xs text-muted">${lastEditFormatted}</div>
+          <div class="text-xs">${esc(s.lastModifiedBy || s.updatedBy || '-')}</div>
+          <div class="text-xs text-muted">${esc(lastEditFormatted)}</div>
         </td>
         <td class="text-left">
-          <button class="btn btn-sm btn-secondary view-session-btn" data-id="${s.id}" title="عرض تفاصيل الحصة والفحص">
+          <button class="btn btn-sm btn-secondary view-session-btn" data-id="${esc(s.id)}" title="عرض تفاصيل الحصة والفحص">
             <i data-lucide="eye" style="width: 14px; height: 14px;"></i>
             <span>عرض</span>
           </button>
@@ -493,7 +578,7 @@ export async function openSessionDetailDrawer(sessionId) {
       <div class="grid grid-cols-2 gap-3 text-xs mb-2">
         <div>
           <span class="text-muted block mb-1">حالة الحصة:</span>
-          <span class="badge badge-info">${sessionStatusText}</span>
+          <span class="badge badge-info">${esc(sessionStatusText)}</span>
         </div>
         <div>
           <span class="text-muted block mb-1">التقرير الأكاديمي:</span>
@@ -501,10 +586,10 @@ export async function openSessionDetailDrawer(sessionId) {
         </div>
         <div class="col-span-2">
           <span class="text-muted block mb-1">احتساب المرتب:</span>
-          <span class="badge ${ruleStatus.badgeClass}">${ruleStatus.statusLabel}</span>
+          <span class="badge ${ruleStatus.badgeClass}">${esc(ruleStatus.statusLabel)}</span>
         </div>
         <div class="col-span-2 text-muted">
-          <span>آخر تعديل:</span> ${session.lastModifiedBy || session.updatedBy || 'لا يوجد'} (${formatTimestamp(session.updatedAt || session.lastModifiedAt)})
+          <span>آخر تعديل:</span> ${esc(session.lastModifiedBy || session.updatedBy || 'لا يوجد')} (${esc(formatTimestamp(session.updatedAt || session.lastModifiedAt))})
         </div>
       </div>
 
@@ -512,10 +597,10 @@ export async function openSessionDetailDrawer(sessionId) {
         <div class="p-3 border border-danger rounded bg-danger-subtle text-xs mt-3 flex justify-between items-center" style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3);">
           <div>
             <strong class="text-danger">⚠️ توجد مشكلة في الاحتساب:</strong>
-            <p class="margin-0 text-muted mt-0.5">${ruleStatus.statusLabel}</p>
+            <p class="margin-0 text-muted mt-0.5">${esc(ruleStatus.statusLabel)}</p>
           </div>
           <button class="btn btn-warning btn-xs" id="btnQuickRecalculate">
-            <i data-lucide="calculator" style="width: 12px; height: 12px;"></i> Recalculate
+            <i data-lucide="calculator" style="width: 12px; height: 12px;"></i> إعادة الحساب
           </button>
         </div>
       ` : ''}
@@ -524,37 +609,37 @@ export async function openSessionDetailDrawer(sessionId) {
     <!-- MAIN LESSON DETAILS -->
     <div class="drawer-card mb-4">
       <h4 class="drawer-section-title">
-        <i data-lucide="file-text"></i> بيانات الحصة الأساسية (Lesson Details)
+        <i data-lucide="file-text"></i> بيانات الحصة الأساسية
       </h4>
       <div class="detail-grid">
         <div class="detail-item">
           <span class="detail-label">اسم الطالب:</span>
-          <span class="detail-val font-bold text-primary">${session.studentName || '-'}</span>
+          <span class="detail-val font-bold text-primary">${esc(session.studentName || '-')}</span>
         </div>
         <div class="detail-item">
           <span class="detail-label">اسم المعلم:</span>
-          <span class="detail-val font-semibold">${session.teacherName || '-'}</span>
+          <span class="detail-val font-semibold">${esc(session.teacherName || '-')}</span>
         </div>
         <div class="detail-item">
           <span class="detail-label">تاريخ الحصة:</span>
-          <span class="detail-val font-mono">${session.date || '-'}</span>
+          <span class="detail-val font-mono">${esc(session.date || '-')}</span>
         </div>
         <div class="detail-item">
           <span class="detail-label">الوقت والمدة:</span>
-          <span class="detail-val font-mono">${session.startTime || session.time || '-'} (${session.duration || 60} دقيقة)</span>
+          <span class="detail-val font-mono">${esc(session.startTime || session.time || '-')} (${esc(session.duration || 60)} دقيقة)</span>
         </div>
         <div class="detail-item">
           <span class="detail-label">قيمة الحصة:</span>
-          <span class="detail-val font-bold text-success">${session.price || session.sessionPrice || 0} ج.م</span>
+          <span class="detail-val font-bold text-success">${esc(session.price || session.sessionPrice || 0)} ج.م</span>
         </div>
         <div class="detail-item">
           <span class="detail-label">تاريخ وقت التسجيل:</span>
-          <span class="detail-val font-mono text-xs">${formatTimestamp(session.createdAt || session.timestamp)}</span>
+          <span class="detail-val font-mono text-xs">${esc(formatTimestamp(session.createdAt || session.timestamp))}</span>
         </div>
         <div class="detail-item">
           <span class="detail-label">حالة الحصة من المرتب:</span>
           <span class="detail-val">
-            <span class="badge ${ruleStatus.badgeClass}">${ruleStatus.statusLabel}</span>
+            <span class="badge ${ruleStatus.badgeClass}">${esc(ruleStatus.statusLabel)}</span>
           </span>
         </div>
         <div class="detail-item">
@@ -565,11 +650,11 @@ export async function openSessionDetailDrawer(sessionId) {
         </div>
         <div class="detail-item">
           <span class="detail-label">من سجل الحصة:</span>
-          <span class="detail-val">${session.createdBy || session.recordedBy || session.teacherName || 'المعلم'}</span>
+          <span class="detail-val">${esc(session.createdBy || session.recordedBy || session.teacherName || 'المعلم')}</span>
         </div>
         <div class="detail-item">
           <span class="detail-label">آخر تعديل بواسطة:</span>
-          <span class="detail-val">${session.lastModifiedBy || session.updatedBy || 'لا يوجد'}</span>
+          <span class="detail-val">${esc(session.lastModifiedBy || session.updatedBy || 'لا يوجد')}</span>
         </div>
       </div>
     </div>
@@ -577,17 +662,17 @@ export async function openSessionDetailDrawer(sessionId) {
     <!-- REPORT DETAILS -->
     <div class="drawer-card mb-4">
       <h4 class="drawer-section-title">
-        <i data-lucide="book-open"></i> التقرير الأكاديمي والدرجات (Lesson Report)
+        <i data-lucide="book-open"></i> التقرير الأكاديمي والدرجات
       </h4>
       ${hasReport ? `
         <div class="report-box p-3 border rounded">
           <div class="grid grid-cols-2 gap-2 text-xs mb-2">
-            <div><strong>السورة / المفهوم:</strong> ${session.report.surah || '-'}</div>
-            <div><strong>الآيات:</strong> ${session.report.verses || '-'}</div>
-            <div><strong>تقييم الحفظ:</strong> <span class="badge badge-info">${session.report.memorizationGrade || session.report.grade || '-'}</span></div>
-            <div><strong>تقييم المراجعة:</strong> <span class="badge badge-info">${session.report.revisionGrade || '-'}</span></div>
+            <div><strong>السورة / المفهوم:</strong> ${esc(session.report.surah || '-')}</div>
+            <div><strong>الآيات:</strong> ${esc(session.report.verses || '-')}</div>
+            <div><strong>تقييم الحفظ:</strong> <span class="badge badge-info">${esc(session.report.memorizationGrade || session.report.grade || '-')}</span></div>
+            <div><strong>تقييم المراجعة:</strong> <span class="badge badge-info">${esc(session.report.revisionGrade || '-')}</span></div>
           </div>
-          <div class="text-xs text-muted"><strong>ملاحظات المعلم:</strong> ${session.report.notes || session.report.teacherNotes || 'لا توجد ملاحظات مدونة'}</div>
+          <div class="text-xs text-muted"><strong>ملاحظات المعلم:</strong> ${esc(session.report.notes || session.report.teacherNotes || 'لا توجد ملاحظات مدونة')}</div>
         </div>
       ` : `
         <p class="text-xs text-muted">التقرير غير موجود لهذه الحصة (اختياري).</p>
@@ -597,17 +682,17 @@ export async function openSessionDetailDrawer(sessionId) {
     <!-- CONNECTED FINANCIAL MOVEMENT -->
     <div class="drawer-card mb-4">
       <h4 class="drawer-section-title">
-        <i data-lucide="wallet"></i> الحركة المالية الناتجة (Financial Impact)
+        <i data-lucide="wallet"></i> الحركة المالية الناتجة
       </h4>
       ${linkedFinancial ? `
         <div class="p-2 border rounded text-xs flex justify-between items-center bg-card">
           <div>
-            <div class="font-bold">${linkedFinancial.type === 'session_earnings' ? 'مستحقات حصة' : linkedFinancial.type}</div>
-            <div class="text-muted">${linkedFinancial.description || '-'}</div>
+            <div class="font-bold">${linkedFinancial.type === 'session_earnings' ? 'مستحقات حصة' : esc(linkedFinancial.type)}</div>
+            <div class="text-muted">${esc(linkedFinancial.description || '-')}</div>
           </div>
           <div class="text-left font-mono">
-            <div class="text-success font-bold">+${linkedFinancial.amount || 0} ج.م</div>
-            <div class="text-muted">الرصيد بعد: ${linkedFinancial.balanceAfter || 0} ج.م</div>
+            <div class="text-success font-bold">+${esc(linkedFinancial.amount || 0)} ج.م</div>
+            <div class="text-muted">الرصيد بعد: ${esc(linkedFinancial.balanceAfter || 0)} ج.م</div>
           </div>
         </div>
       ` : `
@@ -618,17 +703,17 @@ export async function openSessionDetailDrawer(sessionId) {
     <!-- LOGS & MODIFICATION HISTORY -->
     <div class="drawer-card mb-4">
       <h4 class="drawer-section-title">
-        <i data-lucide="history"></i> سجل التعديلات والحركات الخاصة بالحصة (Logs)
+        <i data-lucide="history"></i> سجل التعديلات والحركات الخاصة بالحصة
       </h4>
       ${linkedLogs.length > 0 ? `
         <div class="space-y-2">
           ${linkedLogs.map(l => `
             <div class="p-2 border-b text-xs flex justify-between">
               <div>
-                <span class="font-bold">${l.userName || l.teacherName || 'المستخدم'}:</span>
-                <span>${l.actionTitle || l.action || l.description || 'تعديل'}</span>
+                <span class="font-bold">${esc(l.userName || l.teacherName || 'المستخدم')}:</span>
+                <span>${esc(l.actionTitle || l.action || l.description || 'تعديل')}</span>
               </div>
-              <span class="font-mono text-muted">${formatTimestamp(l.timestamp || l.createdAtIso)}</span>
+              <span class="font-mono text-muted">${esc(formatTimestamp(l.timestamp || l.createdAtIso))}</span>
             </div>
           `).join('')}
         </div>
@@ -640,13 +725,13 @@ export async function openSessionDetailDrawer(sessionId) {
     <!-- ACTION BUTTONS TOOLBAR -->
     <div class="drawer-actions-toolbar">
       <button class="btn btn-primary btn-sm flex-1" id="btnEditSession">
-        <i data-lucide="edit-3"></i> تعديل الحصة (Edit)
+        <i data-lucide="edit-3"></i> تعديل الحصة
       </button>
       <button class="btn btn-warning btn-sm flex-1" id="btnRecalculateSalary">
-        <i data-lucide="calculator"></i> إعاده احتساب المرتب
+        <i data-lucide="calculator"></i> إعادة احتساب الراتب
       </button>
       <button class="btn btn-secondary btn-sm" id="btnViewRelatedData">
-        <i data-lucide="network"></i> Related Data (البيانات المرتبطة)
+        <i data-lucide="network"></i> البيانات المرتبطة
       </button>
       <button class="btn btn-danger btn-sm" id="btnDeleteSession">
         <i data-lucide="trash-2"></i> حذف
@@ -753,7 +838,7 @@ export async function handleSaveSessionEdit(e) {
  * Recalculate Session Salary
  */
 async function recalculateSessionSalary(session) {
-  showCustomConfirm(`هل أنت متأكد من إعادة احتساب المرتب للحصة الخاصة بـ (${session.studentName}) وتضمين مبلغ (${session.price || 0} ج.م) لحساب المعلم؟`, async () => {
+  showCustomConfirm(`هل أنت متأكد من إعادة احتساب الراتب للحصة الخاصة بـ (${session.studentName}) وتضمين مبلغ (${session.price || 0} ج.م) لحساب المعلم؟`, async () => {
     try {
       const user = auth.currentUser;
       const adminName = user?.displayName || user?.email || 'المشرف الإداري';
@@ -803,7 +888,7 @@ async function recalculateSessionSalary(session) {
       openSessionDetailDrawer(session.id);
     } catch (err) {
       console.error("Recalculate error:", err);
-      Toast.error("حدث خطأ أثناء إعادة احتساب المرتب.");
+      Toast.error("حدث خطأ أثناء إعادة احتساب الراتب.");
     }
   });
 }
@@ -893,30 +978,30 @@ function renderFinancialTab() {
     const dateFormatted = formatTimestamp(f.createdAt || f.createdAtIso);
 
     return `
-      <tr class="inv-table-row" data-id="${f.id}">
+      <tr class="inv-table-row" data-id="${esc(f.id)}">
         <td>
-          <div class="font-bold text-primary">${f.teacherName || 'معلم غير محدد'}</div>
+          <div class="font-bold text-primary">${esc(f.teacherName || 'معلم غير محدد')}</div>
         </td>
         <td>
-          <span class="badge ${typeObj.class}">${typeObj.label}</span>
+          <span class="badge ${typeObj.class}">${esc(typeObj.label)}</span>
         </td>
         <td>
-          <div class="font-bold font-mono text-success">${f.amount > 0 ? '+' : ''}${f.amount || 0} ج.م</div>
+          <div class="font-bold font-mono text-success">${f.amount > 0 ? '+' : ''}${esc(f.amount || 0)} ج.م</div>
         </td>
         <td>
-          <div class="font-mono text-xs text-muted">${f.balanceBefore || 0} ج.م</div>
+          <div class="font-mono text-xs text-muted">${esc(f.balanceBefore || 0)} ج.م</div>
         </td>
         <td>
-          <div class="font-mono text-xs font-semibold">${f.balanceAfter || 0} ج.م</div>
+          <div class="font-mono text-xs font-semibold">${esc(f.balanceAfter || 0)} ج.م</div>
         </td>
         <td>
-          <div class="text-xs max-w-xs truncate" title="${f.description || ''}">${f.description || '-'}</div>
+          <div class="text-xs max-w-xs truncate" title="${esc(f.description || '')}">${esc(f.description || '-')}</div>
         </td>
         <td>
-          <div class="text-xs font-mono">${dateFormatted}</div>
+          <div class="text-xs font-mono">${esc(dateFormatted)}</div>
         </td>
         <td>
-          <div class="text-xs">${f.createdBy || 'النظام'}</div>
+          <div class="text-xs">${esc(f.createdBy || 'النظام')}</div>
         </td>
       </tr>
     `;
@@ -952,17 +1037,17 @@ function openFinancialDetailDrawer(finId) {
     <div class="drawer-card mb-4">
       <h4 class="drawer-section-title"><i data-lucide="wallet"></i> تفاصيل الحركة المالية</h4>
       <div class="detail-grid">
-        <div class="detail-item"><span class="detail-label">المعلم:</span> <span class="detail-val font-bold">${item.teacherName || '-'}</span></div>
-        <div class="detail-item"><span class="detail-label">القيمة:</span> <span class="detail-val font-bold text-success">${item.amount || 0} ج.م</span></div>
-        <div class="detail-item"><span class="detail-label">نوع الحركة:</span> <span class="detail-val">${item.type || '-'}</span></div>
-        <div class="detail-item"><span class="detail-label">الرصيد قبل:</span> <span class="detail-val font-mono">${item.balanceBefore || 0} ج.م</span></div>
-        <div class="detail-item"><span class="detail-label">الرصيد بعد:</span> <span class="detail-val font-mono font-bold">${item.balanceAfter || 0} ج.م</span></div>
-        <div class="detail-item"><span class="detail-label">تاريخ الحركة:</span> <span class="detail-val font-mono text-xs">${formatTimestamp(item.createdAt || item.createdAtIso)}</span></div>
-        <div class="detail-item"><span class="detail-label">من قام بالعملية:</span> <span class="detail-val">${item.createdBy || 'النظام'}</span></div>
+        <div class="detail-item"><span class="detail-label">المعلم:</span> <span class="detail-val font-bold">${esc(item.teacherName || '-')}</span></div>
+        <div class="detail-item"><span class="detail-label">القيمة:</span> <span class="detail-val font-bold text-success">${esc(item.amount || 0)} ج.م</span></div>
+        <div class="detail-item"><span class="detail-label">نوع الحركة:</span> <span class="detail-val">${esc(item.type || '-')}</span></div>
+        <div class="detail-item"><span class="detail-label">الرصيد قبل:</span> <span class="detail-val font-mono">${esc(item.balanceBefore || 0)} ج.م</span></div>
+        <div class="detail-item"><span class="detail-label">الرصيد بعد:</span> <span class="detail-val font-mono font-bold">${esc(item.balanceAfter || 0)} ج.م</span></div>
+        <div class="detail-item"><span class="detail-label">تاريخ الحركة:</span> <span class="detail-val font-mono text-xs">${esc(formatTimestamp(item.createdAt || item.createdAtIso))}</span></div>
+        <div class="detail-item"><span class="detail-label">من قام بالعملية:</span> <span class="detail-val">${esc(item.createdBy || 'النظام')}</span></div>
       </div>
       <div class="mt-3 p-2 border rounded bg-card text-xs">
         <strong>سبب الحركة والأصل:</strong>
-        <p class="mt-1 text-muted">${item.description || 'لا يوجد سبب مفصل مدون'}</p>
+        <p class="mt-1 text-muted">${esc(item.description || 'لا يوجد سبب مفصل مدون')}</p>
       </div>
     </div>
 
@@ -971,10 +1056,10 @@ function openFinancialDetailDrawer(finId) {
         <h4 class="drawer-section-title"><i data-lucide="link"></i> الحصة المصدرية المرتبطة</h4>
         <div class="p-2 border rounded text-xs flex justify-between items-center">
           <div>
-            <div class="font-bold text-primary">${linkedSession.studentName}</div>
-            <div class="text-muted">${linkedSession.date} (${linkedSession.startTime || ''})</div>
+            <div class="font-bold text-primary">${esc(linkedSession.studentName)}</div>
+            <div class="text-muted">${esc(linkedSession.date)} (${esc(linkedSession.startTime || '')})</div>
           </div>
-          <button class="btn btn-xs btn-secondary btn-inspect-linked-session" data-id="${linkedSession.id}">
+          <button class="btn btn-xs btn-secondary btn-inspect-linked-session" data-id="${esc(linkedSession.id)}">
             فحص الحصة 👁️
           </button>
         </div>
@@ -983,7 +1068,7 @@ function openFinancialDetailDrawer(finId) {
 
     <div class="drawer-actions-toolbar">
       <button class="btn btn-secondary btn-sm flex-1" id="btnViewRelatedDataFin">
-        <i data-lucide="network"></i> Related Data (البيانات المرتبطة)
+        <i data-lucide="network"></i> البيانات المرتبطة
       </button>
     </div>
   `;
@@ -1053,24 +1138,24 @@ function renderActivityTab() {
     const entity = a.targetCollection || a.actionCategory || a.details?.entityName || 'نظام';
 
     return `
-      <tr class="inv-table-row" data-id="${a.id}">
+      <tr class="inv-table-row" data-id="${esc(a.id)}">
         <td>
-          <div class="text-xs font-mono">${timeFormatted}</div>
+          <div class="text-xs font-mono">${esc(timeFormatted)}</div>
         </td>
         <td>
-          <div class="font-bold text-primary">${user}</div>
+          <div class="font-bold text-primary">${esc(user)}</div>
         </td>
         <td>
           <span class="badge badge-info">${a.source === 'audit' ? 'تعديل تدقيقي' : 'نشاط مستخدم'}</span>
         </td>
         <td>
-          <div class="font-semibold text-xs">${actionText}</div>
+          <div class="font-semibold text-xs">${esc(actionText)}</div>
         </td>
         <td>
-          <div class="text-xs text-muted">${entity}</div>
+          <div class="text-xs text-muted">${esc(entity)}</div>
         </td>
         <td class="text-left">
-          <button class="btn btn-xs btn-secondary view-act-btn" data-id="${a.id}">
+          <button class="btn btn-xs btn-secondary view-act-btn" data-id="${esc(a.id)}">
             التفاصيل
           </button>
         </td>
@@ -1106,30 +1191,30 @@ function openActivityDetailDrawer(actId) {
 
   drawerContent.innerHTML = `
     <div class="drawer-card mb-4">
-      <h4 class="drawer-section-title"><i data-lucide="shield"></i> بيانات السجل والعملية (Black Box Log)</h4>
+      <h4 class="drawer-section-title"><i data-lucide="shield"></i> بيانات السجل والعملية</h4>
       <div class="detail-grid">
-        <div class="detail-item"><span class="detail-label">المستخدم:</span> <span class="detail-val font-bold">${item.userName || item.teacherName || '-'}</span></div>
-        <div class="detail-item"><span class="detail-label">نوع العملية:</span> <span class="detail-val font-mono">${item.actionType || item.actionCategory || '-'}</span></div>
-        <div class="detail-item"><span class="detail-label">الوقت والتاريخ:</span> <span class="detail-val font-mono text-xs">${formatTimestamp(item.timestamp || item.createdAtIso)}</span></div>
-        <div class="detail-item"><span class="detail-label">الكيان المستهدف:</span> <span class="detail-val">${item.targetCollection || item.targetId || '-'}</span></div>
+        <div class="detail-item"><span class="detail-label">المستخدم:</span> <span class="detail-val font-bold">${esc(item.userName || item.teacherName || '-')}</span></div>
+        <div class="detail-item"><span class="detail-label">نوع العملية:</span> <span class="detail-val font-mono">${esc(item.actionType || item.actionCategory || '-')}</span></div>
+        <div class="detail-item"><span class="detail-label">الوقت والتاريخ:</span> <span class="detail-val font-mono text-xs">${esc(formatTimestamp(item.timestamp || item.createdAtIso))}</span></div>
+        <div class="detail-item"><span class="detail-label">الكيان المستهدف:</span> <span class="detail-val">${esc(item.targetCollection || item.targetId || '-')}</span></div>
       </div>
       <div class="mt-3 p-2 border rounded text-xs bg-card">
         <strong>وصف الحركة:</strong>
-        <p class="mt-1">${item.actionTitle || item.reason || 'لا يوجد وصف مخصص'}</p>
+        <p class="mt-1">${esc(item.actionTitle || item.reason || 'لا يوجد وصف مخصص')}</p>
       </div>
     </div>
 
     ${oldValJson || newValJson ? `
       <div class="drawer-card mb-4">
-        <h4 class="drawer-section-title"><i data-lucide="git-compare"></i> مقارنة البيانات قبل وبعد التعديل (Diff View)</h4>
+        <h4 class="drawer-section-title"><i data-lucide="git-compare"></i> مقارنة البيانات قبل وبعد التعديل</h4>
         <div class="grid grid-cols-2 gap-2 text-xs font-mono">
           <div class="p-2 border rounded bg-danger-subtle">
-            <div class="font-bold text-danger mb-1">البيانات السابقة (Before):</div>
-            <pre style="white-space: pre-wrap; font-size: 0.7rem;">${oldValJson || 'لا تتوفر بيانات سابقة'}</pre>
+            <div class="font-bold text-danger mb-1">البيانات السابقة:</div>
+            <pre style="white-space: pre-wrap; font-size: 0.7rem;">${esc(oldValJson || 'لا تتوفر بيانات سابقة')}</pre>
           </div>
           <div class="p-2 border rounded bg-success-subtle">
-            <div class="font-bold text-success mb-1">البيانات الجديدة (After):</div>
-            <pre style="white-space: pre-wrap; font-size: 0.7rem;">${newValJson || 'لا تتوفر بيانات جديدة'}</pre>
+            <div class="font-bold text-success mb-1">البيانات الجديدة:</div>
+            <pre style="white-space: pre-wrap; font-size: 0.7rem;">${esc(newValJson || 'لا تتوفر بيانات جديدة')}</pre>
           </div>
         </div>
       </div>
@@ -1137,7 +1222,7 @@ function openActivityDetailDrawer(actId) {
 
     <div class="drawer-actions-toolbar">
       <button class="btn btn-secondary btn-sm flex-1" id="btnViewRelatedDataAct">
-        <i data-lucide="network"></i> Related Data (البيانات المرتبطة)
+        <i data-lucide="network"></i> البيانات المرتبطة
       </button>
     </div>
   `;
@@ -1179,7 +1264,7 @@ function renderExplorerResults(queryStr) {
     container.innerHTML = `
       <div class="text-center py-10 text-muted">
         <i data-lucide="search" style="width: 48px; height: 48px; margin-bottom: 1rem; opacity: 0.4;"></i>
-        <h3 class="font-bold text-lg mb-1">المستكشف الشامل للبيانات (Comprehensive Explorer)</h3>
+        <h3 class="font-bold text-lg mb-1">المستكشف الشامل للبيانات</h3>
         <p class="text-xs">اكتب اسم طالب، اسم معلم، ولي أمر، رقم حصة، أو رقم معاملة لرؤية شجرة البيانات الموحدة الكاملة.</p>
       </div>
     `;
@@ -1204,7 +1289,7 @@ function renderExplorerResults(queryStr) {
     container.innerHTML = `
       <div class="text-center py-8 text-muted">
         <i data-lucide="alert-circle" style="width: 36px; height: 36px; margin-bottom: 0.5rem; opacity: 0.5;"></i>
-        <p>لم يتم العثور على أي نتائج مطابقة لـ "${queryStr}".</p>
+        <p>لم يتم العثور على أي نتائج مطابقة لـ "${esc(queryStr)}".</p>
       </div>
     `;
     if (window.lucide) window.lucide.createIcons();
@@ -1224,12 +1309,12 @@ function renderExplorerResults(queryStr) {
         <div class="flex justify-between items-center border-b pb-3 mb-3">
           <div>
             <span class="badge badge-info mb-1">ملف طالب 🎓</span>
-            <h3 class="font-bold text-xl text-primary">${student.name}</h3>
-            <div class="text-xs text-muted">الهاتف: ${student.parentPhone || student.phone || 'غير مدون'} | المعلم: ${student.teacherName || '-'}</div>
+            <h3 class="font-bold text-xl text-primary">${esc(student.name)}</h3>
+            <div class="text-xs text-muted">الهاتف: ${esc(student.parentPhone || student.phone || 'غير مدون')} | المعلم: ${esc(student.teacherName || '-')}</div>
           </div>
           <div class="text-left">
             <span class="badge ${student.status === 'active' || student.status === 'مستمر' ? 'badge-success' : 'badge-warning'}">
-              ${student.status || 'نشط'}
+              ${esc(student.status || 'نشط')}
             </span>
           </div>
         </div>
@@ -1238,9 +1323,9 @@ function renderExplorerResults(queryStr) {
           <div class="p-3 border rounded bg-card">
             <div class="font-bold mb-2 text-primary">📚 سجل الحصص (${stSessions.length})</div>
             ${stSessions.slice(0, 5).map(s => `
-              <div class="py-1 border-b flex justify-between cursor-pointer hover:bg-hover" onclick="window.openSessionDetail('${s.id}')">
-                <span>${s.date}</span>
-                <span class="font-bold">${s.price || 0} ج.م</span>
+              <div class="py-1 border-b flex justify-between cursor-pointer hover:bg-hover" onclick="window.openSessionDetail('${esc(s.id)}')">
+                <span>${esc(s.date)}</span>
+                <span class="font-bold">${esc(s.price || 0)} ج.م</span>
               </div>
             `).join('') || '<div class="text-muted">لا توجد حصص مسجلة</div>'}
           </div>
@@ -1249,8 +1334,8 @@ function renderExplorerResults(queryStr) {
             <div class="font-bold mb-2 text-success">💳 المعاملات المترتبة (${stFin.length})</div>
             ${stFin.slice(0, 5).map(f => `
               <div class="py-1 border-b flex justify-between">
-                <span>${f.type || 'حركة'}</span>
-                <span class="font-bold text-success">+${f.amount || 0} ج.م</span>
+                <span>${esc(f.type || 'حركة')}</span>
+                <span class="font-bold text-success">+${esc(f.amount || 0)} ج.م</span>
               </div>
             `).join('') || '<div class="text-muted">لا توجد حركات مالية</div>'}
           </div>
@@ -1259,7 +1344,7 @@ function renderExplorerResults(queryStr) {
             <div class="font-bold mb-2 text-info">📋 الأنشطة والتعديلات (${stLogs.length})</div>
             ${stLogs.slice(0, 5).map(l => `
               <div class="py-1 border-b text-xs truncate">
-                ${l.actionTitle || l.action || 'تعديل'}
+                ${esc(l.actionTitle || l.action || 'تعديل')}
               </div>
             `).join('') || '<div class="text-muted">لا توجد سجلات نشاط</div>'}
           </div>
@@ -1280,8 +1365,8 @@ function renderExplorerResults(queryStr) {
         <div class="flex justify-between items-center border-b pb-3 mb-3">
           <div>
             <span class="badge badge-primary mb-1">ملف معلم 👨‍🏫</span>
-            <h3 class="font-bold text-xl text-primary">${teacher.name}</h3>
-            <div class="text-xs text-muted">البريد: ${teacher.email || '-'} | الرصيد الحالي: ${teacher.currentMonthEarnings || 0} ج.م</div>
+            <h3 class="font-bold text-xl text-primary">${esc(teacher.name)}</h3>
+            <div class="text-xs text-muted">البريد: ${esc(teacher.email || '-')} | الرصيد الحالي: ${esc(teacher.currentMonthEarnings || 0)} ج.م</div>
           </div>
           <div class="text-left">
             <span class="badge badge-success">معلم معتمد</span>
@@ -1293,8 +1378,8 @@ function renderExplorerResults(queryStr) {
             <div class="font-bold mb-2 text-primary">👨‍🎓 الطلاب التابعون (${tStudents.length})</div>
             ${tStudents.slice(0, 5).map(st => `
               <div class="py-1 border-b flex justify-between">
-                <span>${st.name}</span>
-                <span class="text-muted">${st.status || 'مستمر'}</span>
+                <span>${esc(st.name)}</span>
+                <span class="text-muted">${esc(st.status || 'مستمر')}</span>
               </div>
             `).join('') || '<div class="text-muted">لا يوجد طلاب مسجلون</div>'}
           </div>
@@ -1303,8 +1388,8 @@ function renderExplorerResults(queryStr) {
             <div class="font-bold mb-2 text-success">💰 الحركات المالية (${tFin.length})</div>
             ${tFin.slice(0, 5).map(f => `
               <div class="py-1 border-b flex justify-between">
-                <span>${f.type}</span>
-                <span class="font-bold text-success">+${f.amount} ج.م</span>
+                <span>${esc(f.type)}</span>
+                <span class="font-bold text-success">+${esc(f.amount)} ج.م</span>
               </div>
             `).join('') || '<div class="text-muted">لا توجد معاملات</div>'}
           </div>
@@ -1312,9 +1397,9 @@ function renderExplorerResults(queryStr) {
           <div class="p-3 border rounded bg-card">
             <div class="font-bold mb-2 text-info">📚 إجمالي الحصص (${tSessions.length})</div>
             ${tSessions.slice(0, 5).map(s => `
-              <div class="py-1 border-b flex justify-between cursor-pointer hover:bg-hover" onclick="window.openSessionDetail('${s.id}')">
-                <span>${s.studentName} (${s.date})</span>
-                <span class="font-bold">${s.price || 0} ج.م</span>
+              <div class="py-1 border-b flex justify-between cursor-pointer hover:bg-hover" onclick="window.openSessionDetail('${esc(s.id)}')">
+                <span>${esc(s.studentName)} (${esc(s.date)})</span>
+                <span class="font-bold">${esc(s.price || 0)} ج.م</span>
               </div>
             `).join('') || '<div class="text-muted">لا توجد حصص</div>'}
           </div>
@@ -1401,7 +1486,7 @@ export function openRelatedDataDrawer(item, type) {
     ${session ? `
       <div class="drawer-card mb-3 p-3 border rounded bg-card">
         <div class="font-bold text-sm mb-1">📖 الحصة والتقرير المرتبط:</div>
-        <div class="text-xs">التاريخ: ${session.date} | الوقت: ${session.startTime || ''} (${session.duration || 60} دقيقة)</div>
+        <div class="text-xs">التاريخ: ${session.date} | الوقت: ${session.startTime || ''} (${esc(session.duration || 60)} دقيقة)</div>
         <div class="text-xs text-muted mt-1">السورة والتقييم: ${session.report?.surah || 'غير محدد'} (${session.report?.grade || 'لا يوجد درجات'})</div>
       </div>
     ` : ''}
@@ -1411,7 +1496,7 @@ export function openRelatedDataDrawer(item, type) {
       <div class="font-bold text-sm mb-2 text-success">💰 الحركات المالية المرتبطة (${finLogs.length}):</div>
       ${finLogs.map(f => `
         <div class="py-1 border-b text-xs flex justify-between">
-          <span>${f.type} (${f.description || '-'})</span>
+          <span>${f.type} (${esc(f.description || '-')})</span>
           <span class="font-bold text-success">+${f.amount} ج.م</span>
         </div>
       `).join('') || '<div class="text-xs text-muted">لا توجد حركات مالية مرتبطة</div>'}

@@ -111,7 +111,8 @@ export async function fetchReconciliationRawData() {
   const teachers = [];
   usersSnap.forEach(d => {
     const data = d.data();
-    if (data.role === 'teacher' || data.role === 'supervisor') {
+    // المشرفون دور مستقل ولا يدخلون في كشوف رواتب المعلمين
+    if (data.role === 'teacher') {
       teachers.push({ id: d.id, uid: d.id, ...data });
     }
   });
@@ -152,14 +153,22 @@ export function reconcileTeacherCurrentSalary(teacher, allSessions, groups, stud
   const teacherId = teacher.id || teacher.uid;
   const ym = targetYearMonth || new Date().toISOString().substring(0, 7);
 
-  const rateInd = parseFloat(teacher.hourlyRateIndividual || teacher.hourlyRate || 100);
-  const rateGrp = parseFloat(teacher.hourlyRateGroup || teacher.hourlyRateIndividual || teacher.hourlyRate || 120);
+  const rateIndRaw = parseFloat(teacher.hourlyRateIndividual ?? teacher.hourlyRate);
+  const rateGrpRaw = parseFloat(teacher.hourlyRateGroup ?? teacher.hourlyRateIndividual ?? teacher.hourlyRate);
+  const rateInd = Number.isFinite(rateIndRaw) && rateIndRaw > 0 ? rateIndRaw : 0;
+  const rateGrp = Number.isFinite(rateGrpRaw) && rateGrpRaw > 0 ? rateGrpRaw : 0;
   const bonuses = parseFloat(teacher.salaryBonuses || 0);
   const deductions = parseFloat(teacher.salaryDeductions || 0);
 
   // 1. Filter sessions strictly associated with this teacher
   const all = (allSessions || []);
-  const direct = all.filter(s => s.teacherId === teacherId || s.teacherUid === teacherId || (s.teacherName && teacher.name && s.teacherName.trim().toLowerCase() === teacher.name.trim().toLowerCase()) || (s.teacherEmail && teacher.email && s.teacherEmail.trim().toLowerCase() === teacher.email.trim().toLowerCase()));
+  // لو الحصة لها معرّف معلم، المطابقة بالمعرّف فقط (عشان ما تتحسبش لمعلمين مع بعض).
+  // لو الحصة بلا معرّف أصلاً، نطابقها بالاسم/الإيميل كحل احتياطي.
+  const normText = (v) => String(v || '').trim().toLowerCase();
+  const direct = all.filter(s => {
+    if (s.teacherId || s.teacherUid) return s.teacherId === teacherId || s.teacherUid === teacherId;
+    return (s.teacherName && teacher.name && normText(s.teacherName) === normText(teacher.name)) || (s.teacherEmail && teacher.email && normText(s.teacherEmail) === normText(teacher.email));
+  });
   // If caller already passed teacher-specific sessions and direct match failed due id mismatch, fallback safely
   const teacherSessions = direct.length > 0 ? direct : (all.length > 0 && all.every(s => !s.teacherId || s.teacherId === teacherId || s.teacherUid === teacherId) ? all : direct);
 
@@ -287,7 +296,9 @@ export function reconcileTeacherCurrentSalary(teacher, allSessions, groups, stud
   const netCalculatedSalary = Math.max(0, rawCalculatedSalary + bonuses - deductions);
 
   // 2. Compute Expected Target Salary based on master schedule
-  const teacherStudents = (students || []).filter(s => s.teacherId === teacherId || s.requestedByTeacherId === teacherId);
+  // الطالب بيتحسب لمعلمه المسند له فقط. حق requestByTeacherId لا يعني إسناداً،
+  // وإضافته كانت بتخلي الطالب الواحد يتحسب لمعلمين ويرفع الراتب المتوقع.
+  const teacherStudents = (students || []).filter(s => s.teacherId === teacherId || (!s.teacherId && s.requestedByTeacherId === teacherId));
   const teacherGroups = (groups || []).filter(g => g.teacherId === teacherId);
   const expectedAnalytics = calculateExpectedTeacherSalary(teacher, teacherStudents, teacherGroups, ym, monthSessions);
 
@@ -365,12 +376,15 @@ export function reconcileTeacherCurrentSalary(teacher, allSessions, groups, stud
     month: ym,
     rateInd,
     rateGrp,
+    rateConfigured: rateInd > 0,
     bonuses,
     deductions,
     totalRecordedSessions,
     totalRecordedHours,
     includedSessionsCount,
     includedHours,
+    includedIndividualHours: includedIndividualMinutes / 60,
+    includedGroupHours: includedGroupMinutes / 60,
     includedSessions,
     excludedSessionsCount,
     excludedSessions,
@@ -432,8 +446,10 @@ export function reconcileArchiveRecord(archiveDoc, allSessions, teacher) {
   const ym = archiveDoc.month;
   const teacherId = archiveDoc.teacherId;
 
-  const rateInd = teacher ? parseFloat(teacher.hourlyRateIndividual || teacher.hourlyRate || 100) : 100;
-  const rateGrp = teacher ? parseFloat(teacher.hourlyRateGroup || teacher.hourlyRateIndividual || teacher.hourlyRate || 120) : 120;
+  const rateIndRaw = teacher ? parseFloat(teacher.hourlyRateIndividual ?? teacher.hourlyRate) : NaN;
+  const rateGrpRaw = teacher ? parseFloat(teacher.hourlyRateGroup ?? teacher.hourlyRateIndividual ?? teacher.hourlyRate) : NaN;
+  const rateInd = Number.isFinite(rateIndRaw) && rateIndRaw > 0 ? rateIndRaw : 0;
+  const rateGrp = Number.isFinite(rateGrpRaw) && rateGrpRaw > 0 ? rateGrpRaw : 0;
 
   // Query raw sessions from the archive month for this teacher
   const matchingSessions = (allSessions || []).filter(s => {

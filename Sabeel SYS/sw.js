@@ -16,7 +16,7 @@ try {
   console.warn('[Sabeel SW] Notice: OneSignal worker import error or offline:', e);
 }
 
-const CACHE_NAME = 'sabeel-pwa-v2.1.5';
+const CACHE_NAME = 'sabeel-pwa-v2.1.6';
 const OFFLINE_URL = '/offline.html';
 
 // Core static assets to pre-cache during installation

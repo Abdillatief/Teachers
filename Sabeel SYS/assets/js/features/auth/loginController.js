@@ -145,7 +145,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (mainAcademyName) mainAcademyName.textContent = academyName;
     if (mainAcademyTagline) mainAcademyTagline.textContent = academyDesc;
     if (loginLogoContainer) {
-      loginLogoContainer.innerHTML = `<img src="${logoSrc}" class="academy-logo-img" alt="${academyName}">`;
+      // Build via DOM APIs: a crafted logoURL from settings must never be able
+      // to break out of an attribute and inject markup into the login page.
+      const safeLogoSrc = (/^https?:\/\//i.test(logoSrc) || logoSrc.startsWith('/'))
+        ? logoSrc
+        : '/icons/icon-192.png';
+      const logoImg = document.createElement('img');
+      logoImg.className = 'academy-logo-img';
+      logoImg.src = safeLogoSrc;
+      logoImg.alt = academyName;
+      loginLogoContainer.replaceChildren(logoImg);
     }
   };
 

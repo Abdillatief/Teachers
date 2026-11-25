@@ -194,7 +194,7 @@
           <div class="stat-mini-card">
             <div>
               <div style="font-size: 0.78rem; color: var(--text-secondary); font-weight: 600;">طلبات معلقة</div>
-              <div id="statPendingCount" style="font-size: 1.5rem; font-weight: 800; color: var(--warning); font-variant-numeric: tabular-nums;">0</div>
+              <div id="statPendingCount" style="font-size: 1.5rem; font-weight: 800; color: var(--warning); font-variant-numeric: tabular-nums;">جار التحميل…</div>
             </div>
             <div style="width: 40px; height: 40px; border-radius: 10px; background: var(--warning-light); display: flex; align-items: center; justify-content: center; color: var(--warning);">
               <i data-lucide="clock" style="width: 20px; height: 20px;"></i>
@@ -204,7 +204,7 @@
           <div class="stat-mini-card">
             <div>
               <div style="font-size: 0.78rem; color: var(--text-secondary); font-weight: 600;">مشرفون معتمدون</div>
-              <div id="statApprovedCount" style="font-size: 1.5rem; font-weight: 800; color: var(--success); font-variant-numeric: tabular-nums;">0</div>
+              <div id="statApprovedCount" style="font-size: 1.5rem; font-weight: 800; color: var(--success); font-variant-numeric: tabular-nums;">جار التحميل…</div>
             </div>
             <div style="width: 40px; height: 40px; border-radius: 10px; background: var(--success-light); display: flex; align-items: center; justify-content: center; color: var(--success);">
               <i data-lucide="shield-check" style="width: 20px; height: 20px;"></i>
@@ -214,7 +214,7 @@
           <div class="stat-mini-card">
             <div>
               <div style="font-size: 0.78rem; color: var(--text-secondary); font-weight: 600;">مشرفون موقوفون</div>
-              <div id="statSuspendedCount" style="font-size: 1.5rem; font-weight: 800; color: var(--danger); font-variant-numeric: tabular-nums;">0</div>
+              <div id="statSuspendedCount" style="font-size: 1.5rem; font-weight: 800; color: var(--danger); font-variant-numeric: tabular-nums;">جار التحميل…</div>
             </div>
             <div style="width: 40px; height: 40px; border-radius: 10px; background: var(--danger-light); display: flex; align-items: center; justify-content: center; color: var(--danger);">
               <i data-lucide="user-x" style="width: 20px; height: 20px;"></i>
@@ -223,8 +223,8 @@
 
           <div class="stat-mini-card">
             <div>
-              <div style="font-size: 0.78rem; color: var(--text-secondary); font-weight: 600;">إجمالي حسابات الإدارة والإشراف</div>
-              <div id="statTotalCount" style="font-size: 1.5rem; font-weight: 800; color: var(--primary-color); font-variant-numeric: tabular-nums;">0</div>
+              <div style="font-size: 0.78rem; color: var(--text-secondary); font-weight: 600;">إجمالي حسابات المشرفين</div>
+              <div id="statTotalCount" style="font-size: 1.5rem; font-weight: 800; color: var(--primary-color); font-variant-numeric: tabular-nums;">جار التحميل…</div>
             </div>
             <div style="width: 40px; height: 40px; border-radius: 10px; background: var(--primary-light); display: flex; align-items: center; justify-content: center; color: var(--primary-color);">
               <i data-lucide="users" style="width: 20px; height: 20px;"></i>
@@ -448,6 +448,10 @@
 
     protectRoute('admin');
 
+    const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+
     let usersMap = new Map();
     let userRolesMap = new Map();
     let allAccounts = [];
@@ -462,29 +466,37 @@
     }
 
     auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        try {
-          const [userDoc, roleDoc] = await Promise.all([
-            getDoc(doc(db, 'users', user.uid)),
-            getDoc(doc(db, RBAC_COLLECTIONS.USER_ROLES, user.uid))
-          ]);
-          const effectiveRole = resolveEffectiveRole(
-            userDoc.exists() ? userDoc.data() : null,
-            roleDoc.exists() ? roleDoc.data() : null
-          );
-          if (effectiveRole !== ROLES.ADMIN) {
-            Toast.error('صفحة صلاحيات المشرفين مخصصة للمدير العام فقط.');
-            window.location.href = '../index.html';
-            return;
-          }
-          ensureRbacSeeded(user.uid).catch(() => {});
-          backfillOperationalProjectionsIfNeeded().catch(() => {});
-        } catch (e) {}
-
-        renderSidebar('permissions', 'admin');
-        renderNavbar('إدارة حسابات وصلاحيات المشرفين', { name: 'المدير العام', roleName: 'مدير النظام' });
-        initSupervisorsRealtime();
+      if (!user) {
+        window.location.href = '../index.html';
+        return;
       }
+      try {
+        const [userDoc, roleDoc] = await Promise.all([
+          getDoc(doc(db, 'users', user.uid)),
+          getDoc(doc(db, RBAC_COLLECTIONS.USER_ROLES, user.uid))
+        ]);
+        const effectiveRole = resolveEffectiveRole(
+          userDoc.exists() ? userDoc.data() : null,
+          roleDoc.exists() ? roleDoc.data() : null
+        );
+        if (effectiveRole !== ROLES.ADMIN) {
+          Toast.error('صفحة صلاحيات المشرفين مخصصة للمدير العام فقط.');
+          window.location.href = '../index.html';
+          return;
+        }
+        ensureRbacSeeded(user.uid).catch(() => {});
+        backfillOperationalProjectionsIfNeeded().catch(() => {});
+      } catch (e) {
+        // لا نعرض الصفحة إذا تعذر التحقق من الصلاحية.
+        console.error('Role check failed:', e);
+        Toast.error('تعذر التحقق من صلاحيات الوصول. سيتم التوجيه إلى صفحة الدخول.');
+        window.location.href = '../index.html';
+        return;
+      }
+
+      renderSidebar('permissions', 'admin');
+      renderNavbar('إدارة حسابات وصلاحيات المشرفين', { name: 'المدير العام', roleName: 'مدير النظام' });
+      initSupervisorsRealtime();
     });
 
     function rebuildAndRenderAccounts() {
@@ -531,14 +543,15 @@
 
     function updateStatsAndTabs() {
       const supervisorsOnly = allAccounts.filter((a) => a.effectiveRole === ROLES.SUPERVISOR);
-      const pendingList = supervisorsOnly.filter((a) => a.effectiveStatus === 'pending' || a.effectiveStatus === 'pending_approval' || a.approved === false);
-      const approvedList = allAccounts.filter((a) => a.effectiveStatus === 'approved' || a.effectiveRole === ROLES.ADMIN);
+      // نفس الشرط المستخدم في renderPendingSupervisors() حتى يتطابق العدّاد مع القائمة.
+      const pendingList = supervisorsOnly.filter((a) => a.effectiveStatus === 'pending' || a.effectiveStatus === 'pending_approval');
+      const approvedList = supervisorsOnly.filter((a) => a.effectiveStatus === 'approved');
       const suspendedList = supervisorsOnly.filter((a) => a.effectiveStatus === 'suspended');
 
       document.getElementById('statPendingCount').textContent = pendingList.length;
       document.getElementById('statApprovedCount').textContent = approvedList.length;
       document.getElementById('statSuspendedCount').textContent = suspendedList.length;
-      document.getElementById('statTotalCount').textContent = allAccounts.length;
+      document.getElementById('statTotalCount').textContent = supervisorsOnly.length;
 
       const pendingBadge = document.getElementById('tabPendingBadge');
       if (pendingBadge) {
@@ -579,27 +592,27 @@
             <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
               <div style="display: flex; align-items: center; gap: 1rem;">
                 <div style="width: 46px; height: 46px; border-radius: 12px; background: var(--warning-light); color: var(--warning); display: flex; align-items: center; justify-content: center; font-size: 1.15rem; font-weight: 800;">
-                  ${(item.name || 'م').trim().charAt(0)}
+                  ${escapeHtml((item.name || 'م').trim().charAt(0))}
                 </div>
                 <div>
                   <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
-                    <strong style="font-size: 1rem; color: var(--text-primary);">${item.name || 'مستخدم جديد'}</strong>
+                    <strong style="font-size: 1rem; color: var(--text-primary);">${escapeHtml(item.name || 'مستخدم جديد')}</strong>
                     <span class="status-badge pending">بانتظار الاعتماد</span>
                   </div>
                   <div style="font-size: 0.8rem; color: var(--text-secondary); display: flex; gap: 0.85rem; flex-wrap: wrap;">
-                    <span>${item.email || ''}</span>
-                    ${item.phone ? `<span style="direction: ltr;">${item.phone}</span>` : ''}
-                    <span style="color: var(--primary-color); font-weight: 700;">${item.department || item.supervisorTitle || 'إشراف تشغيلي'}</span>
+                    <span>${escapeHtml(item.email || '')}</span>
+                    ${item.phone ? `<span style="direction: ltr;">${escapeHtml(item.phone)}</span>` : ''}
+                    <span style="color: var(--primary-color); font-weight: 700;">${escapeHtml(item.department || item.supervisorTitle || 'إشراف تشغيلي')}</span>
                   </div>
                 </div>
               </div>
 
               <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                <button class="btn btn-primary review-perm-btn" data-uid="${item.uid}" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; font-weight: 700; font-size: 0.84rem;">
+                <button class="btn btn-primary review-perm-btn" data-uid="${escapeHtml(item.uid)}" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; font-weight: 700; font-size: 0.84rem;">
                   <i data-lucide="shield-plus" style="width: 16px; height: 16px;"></i>
                   <span>تحديد الصلاحيات والقبول</span>
                 </button>
-                <button class="btn btn-secondary reject-request-btn" data-uid="${item.uid}" data-name="${item.name || ''}" style="color: var(--danger); border-color: var(--danger-border); padding: 0.5rem 0.75rem;">
+                <button class="btn btn-secondary reject-request-btn" data-uid="${escapeHtml(item.uid)}" data-name="${escapeHtml(item.name || '')}" style="color: var(--danger); border-color: var(--danger-border); padding: 0.5rem 0.75rem;">
                   <i data-lucide="user-x" style="width: 16px; height: 16px;"></i>
                   <span>رفض الطلب</span>
                 </button>
@@ -626,7 +639,7 @@
         btn.addEventListener('click', (e) => {
           const uid = e.currentTarget.dataset.uid;
           const name = e.currentTarget.dataset.name;
-          showCustomConfirm(`هل تريد بالتأكيد رفض طلب المشرف (${name})؟`, async () => {
+          showCustomConfirm(`هل تريد بالتأكيد رفض طلب المشرف (${escapeHtml(name)})؟`, async () => {
             try {
               await updateDoc(doc(db, 'users', uid), { status: 'rejected', rejectedAt: serverTimestamp() });
               await setDoc(doc(db, RBAC_COLLECTIONS.USER_ROLES, uid), { status: 'rejected', updatedAt: serverTimestamp() }, { merge: true });
@@ -693,7 +706,7 @@
         } else {
           PERMISSION_CATALOG.forEach((p) => {
             if (perms[p.key] === true) {
-              badges.push(`<span class="perm-badge active">${p.label}</span>`);
+              badges.push(`<span class="perm-badge active">${escapeHtml(p.label)}</span>`);
             }
           });
           if (badges.length === 0) {
@@ -706,16 +719,16 @@
             <td>
               <div style="display: flex; align-items: center; gap: 0.6rem;">
                 <div style="width: 36px; height: 36px; border-radius: 8px; background: var(--bg-primary); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--primary-color);">
-                  ${(acc.name || 'م').trim().charAt(0)}
+                  ${escapeHtml((acc.name || 'م').trim().charAt(0))}
                 </div>
                 <div>
-                  <strong style="color: var(--text-primary); font-size: 0.9rem;">${acc.name || 'بدون اسم'}</strong>
-                  <div style="font-size: 0.76rem; color: var(--text-secondary);">${acc.email || ''}</div>
-                  ${acc.phone ? `<div style="font-size: 0.72rem; color: var(--text-muted); direction: ltr; text-align: right;">${acc.phone}</div>` : ''}
+                  <strong style="color: var(--text-primary); font-size: 0.9rem;">${escapeHtml(acc.name || 'بدون اسم')}</strong>
+                  <div style="font-size: 0.76rem; color: var(--text-secondary);">${escapeHtml(acc.email || '')}</div>
+                  ${acc.phone ? `<div style="font-size: 0.72rem; color: var(--text-muted); direction: ltr; text-align: right;">${escapeHtml(acc.phone)}</div>` : ''}
                 </div>
               </div>
             </td>
-            <td><span class="badge" style="font-weight: 700; ${roleBadgeStyle}">${roleBadgeLabel}</span></td>
+            <td><span class="badge" style="font-weight: 700; ${roleBadgeStyle}">${escapeHtml(roleBadgeLabel)}</span></td>
             <td>${statusBadge}</td>
             <td style="max-width: 340px;">
               <div style="display: flex; gap: 0.3rem; flex-wrap: wrap;">
@@ -725,14 +738,14 @@
             <td style="text-align: center;">
               ${!isSuperAdmin ? `
                 <div style="display: inline-flex; gap: 0.4rem;">
-                  <button class="btn btn-secondary edit-perms-btn" data-uid="${acc.uid}" style="padding: 0.35rem 0.65rem; font-size: 0.8rem; font-weight: 700;" title="تعديل الصلاحيات">
+                  <button class="btn btn-secondary edit-perms-btn" data-uid="${escapeHtml(acc.uid)}" style="padding: 0.35rem 0.65rem; font-size: 0.8rem; font-weight: 700;" title="تعديل الصلاحيات">
                     <i data-lucide="sliders" style="width: 14px; height: 14px;"></i>
                     <span>الصلاحيات</span>
                   </button>
-                  <button class="btn btn-secondary toggle-status-btn" data-uid="${acc.uid}" data-suspended="${isSuspended}" style="padding: 0.35rem 0.65rem; font-size: 0.8rem;" title="${isSuspended ? 'تفعيل الحساب' : 'إيقاف مؤقت'}">
+                  <button class="btn btn-secondary toggle-status-btn" data-uid="${escapeHtml(acc.uid)}" data-suspended="${isSuspended}" style="padding: 0.35rem 0.65rem; font-size: 0.8rem;" title="${isSuspended ? 'تفعيل الحساب' : 'إيقاف مؤقت'}">
                     <i data-lucide="${isSuspended ? 'play' : 'pause'}" style="width: 14px; height: 14px; color: ${isSuspended ? 'var(--success)' : 'var(--warning)'};"></i>
                   </button>
-                  <button class="btn btn-secondary delete-admin-btn" data-uid="${acc.uid}" data-name="${acc.name || ''}" style="padding: 0.35rem 0.65rem; color: var(--danger);" title="حذف حساب المشرف">
+                  <button class="btn btn-secondary delete-admin-btn" data-uid="${escapeHtml(acc.uid)}" data-name="${escapeHtml(acc.name || '')}" style="padding: 0.35rem 0.65rem; color: var(--danger);" title="حذف حساب المشرف">
                     <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
                   </button>
                 </div>

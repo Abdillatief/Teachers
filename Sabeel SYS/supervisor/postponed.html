@@ -189,7 +189,8 @@
       const linked = sessionsCache.find(
         (s) => s.status === 'compensatory' && (s.originalLessonId === delayed.id || s.id === delayed.compensatedBySessionId)
       );
-      if (linked && linked.status === 'completed') return 'completed';
+      // A linked compensatory record is itself proof of compensation (its status is "compensatory", never "completed").
+      if (linked) return 'completed';
       if (delayed.makeupDate || delayed.compensationStatus === 'scheduled' || linked) return 'scheduled';
       return 'pending';
     }
@@ -334,7 +335,15 @@
       const btn = document.getElementById('saveMakeupBtn');
       btn.disabled = true;
 
+      const alreadyCompensated = sessionsCache.some(
+        (s) => s.status === 'compensatory' && s.originalLessonId === selectedDelayedSession.id
+      );
+
       try {
+        if (alreadyCompensated) {
+          Toast.warning('تم إنشاء حصة تعويضية مرتبطة بهذه الحصة بالفعل.');
+          return;
+        }
         await recordLessonWithWorkflow({
           existingSessionId: selectedDelayedSession.id,
           studentId: selectedDelayedSession.studentId,
@@ -352,7 +361,7 @@
           makeupTime,
           teacherNotes,
           slotSelectionReason,
-          createMakeupSession: !selectedDelayedSession.compensatedBySessionId
+          createMakeupSession: !selectedDelayedSession.compensatedBySessionId && !alreadyCompensated
         }, {
           uid: actorCtx.uid,
           name: actorCtx.name,

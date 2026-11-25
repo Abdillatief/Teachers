@@ -9,12 +9,21 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (relativePath) => readFileSync(resolve(root, relativePath), 'utf8');
 const results = [];
+const fail = (message) => {
+  console.error(message);
+  process.exit(1);
+};
 
 function check(label, condition, detail = '') {
   results.push({ label, ok: Boolean(condition), detail });
 }
 
-const firebaseJson = JSON.parse(read('firebase.json'));
+let firebaseJson;
+try {
+  firebaseJson = JSON.parse(read('firebase.json'));
+} catch (err) {
+  fail(`firebase.json is not valid JSON: ${err.message}`);
+}
 const functionsSource = firebaseJson.functions?.[0]?.source;
 check('Functions source points to an existing folder', functionsSource === 'functions' && existsSync(resolve(root, 'functions')), `source=${functionsSource}`);
 
@@ -24,6 +33,18 @@ check('No global "Total Subscriptions" broadcast fallback', !functionsJs.include
 check('notification secrets are bound through Firebase Secret Manager', functionsJs.includes("defineSecret('ONESIGNAL_REST_API_KEY')") && functionsJs.includes("defineSecret('CRON_SECRET')") && functionsJs.includes('runWith({ secrets:'));
 check('dispatchNotification requires a verified admin token', functionsJs.includes("verifyIdToken") && functionsJs.includes("Admin Firebase token required"));
 check('scheduled worker requires a scheduler/admin token', functionsJs.includes("Scheduler secret or admin token required"));
+check('CORS never falls back to a wildcard origin', !functionsJs.includes("ALLOWED_ORIGIN || '*'") && !functionsJs.includes("'Access-Control-Allow-Origin', '*'"));
+check('OneSignal and cron secrets are read inside function handlers', functionsJs.includes('secret.value()') && functionsJs.includes('readSecret(oneSignalKeySecret') && functionsJs.includes('readSecret(cronSecret'));
+check('push logs never expose recipient identifiers', !functionsJs.includes('Target external IDs'));
+
+check('Firestore indexes are configured', firebaseJson.firestore?.indexes === 'firestore.indexes.json' && existsSync(resolve(root, 'firestore.indexes.json')));
+check('Hosting serves the built dist folder', firebaseJson.hosting?.public === 'dist' && Array.isArray(firebaseJson.hosting?.rewrites));
+check('Hosting deploy ignores sensitive source folders', ['functions/**', 'scripts/**', 'src/**'].every((p) => (firebaseJson.hosting?.ignore || []).includes(p)));
+
+const transcribeTs = read('functions/api/transcribe-and-grade.ts');
+check('transcribe API never accepts a client-supplied Gemini key', !transcribeTs.includes('x-gemini-api-key') && transcribeTs.includes('context.env.GEMINI_API_KEY'));
+check('transcribe API never emits wildcard CORS', !transcribeTs.includes("'Access-Control-Allow-Origin': '*'") && transcribeTs.includes('buildCorsHeaders'));
+check('transcribe API does not leak upstream error details', !transcribeTs.includes('details: lastErrorDetails') && !transcribeTs.includes('details: error.message'));
 
 const viteConfig = read('vite.config.ts');
 check('dev server serves CSS as text/css (no unstyled preview)', viteConfig.includes("command === 'serve'") && viteConfig.includes('?direct'));
@@ -65,6 +86,25 @@ const rules = read('firestore.rules');
 check('Firestore keeps its zero-trust default deny', /match \/\{document=\*\*\} \{\s*allow read, write: if false;/.test(rules));
 check('Firestore still contains normalized RBAC helpers', rules.includes('hasPerm(') && rules.includes('user_roles/{userId}'));
 check('lesson-view permission check is guarded for teachers (expression limit)', rules.includes('(isSupervisor() && hasLessonViewPerm())'));
+check(
+  'sessions/lessons block teacher self-approval flips and trial self-approval',
+  (rules.match(/incoming\(\)\.approved == existing\(\)\.approved/g) || []).length >= 2 &&
+  (rules.match(/incoming\(\)\.isTrial != true/g) || []).length >= 2
+);
+check('audit logs are immutable', /match \/auditLogs\/\{logId\} \{[\s\S]*?allow update, delete: if false;/.test(rules));
+check('settings reads require sign-in except the public academy doc', rules.includes("settingId == 'academy' || isSignedIn()"));
+check('community post edits require authorship or admin', rules.includes('isApprovedTeacher() && existing().authorId == request.auth.uid'));
+
+const scriptSources = [
+  'check-notif.cjs', 'test-firestore-rest.cjs', 'verify-onesignal.cjs', 'verify-onesignal.js',
+  'push-to-github.mjs', 'verify-config.mjs'
+].map((f) => read(`scripts/${f}`)).join('\n');
+check('no hardcoded Google API keys in scripts', !/AIza[0-9A-Za-z_-]{20,}/.test(scriptSources));
+check('no hardcoded OneSignal app IDs in scripts', !/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(scriptSources));
+const oneSignalVerifiers = ['verify-onesignal.cjs', 'verify-onesignal.js'].map((f) => read(`scripts/${f}`));
+check('OneSignal verification targets one test alias with explicit confirmation', oneSignalVerifiers.every((src) => src.includes('include_aliases') && src.includes('external_id') && src.includes('CONFIRM_TEST_PUSH') && !src.includes('included_segments')));
+check('Firestore REST smoke test refuses production without opt-in', scriptSources.includes('ALLOW_FIRESTORE_TEST') && scriptSources.includes('Refusing to run') && scriptSources.includes("projectId === 'sabeelteacher'"));
+check('push-to-github excludes the sensitive scripts folder', read('scripts/push-to-github.mjs').includes("'scripts'"));
 
 const supervisorPages = readdirSync(resolve(root, 'supervisor')).filter((f) => f.endsWith('.html'));
 const unguardedSupervisorPages = supervisorPages.filter((f) => !read(`supervisor/${f}`).includes('initSupervisorPage('));
@@ -90,4 +130,8 @@ for (const { label, ok, detail } of results) {
 }
 
 console.log(`\n${results.length - failures}/${results.length} checks passed.`);
-process.exit(failures === 0 ? 0 : 1);
+if (failures > 0) {
+  console.error(`Config verification failed: ${failures} check(s) did not pass.`);
+  process.exit(1);
+}
+process.exit(0);

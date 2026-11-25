@@ -153,6 +153,7 @@
           </div>
 
           <div id="groupDynamicContent"></div>
+          <div id="groupStudentsList" style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.75rem;"></div>
         </div>
 
         <div class="form-group" style="margin-top: 1rem;">
@@ -817,10 +818,26 @@
         });
       });
 
-      // Deep Linking handler for push notification clicks
+      // Deep Linking handler for push notification clicks / dashboard links
       const urlParams = new URLSearchParams(window.location.search);
       const deepStudentId = urlParams.get('studentId');
-      if (deepStudentId) {
+      const deepSessionType = urlParams.get('type');
+      if (deepSessionType === 'group' && deepStudentId) {
+        setTimeout(async () => {
+          try {
+            const groupSnap = await getDoc(doc(db, "groups", deepStudentId));
+            if (!groupSnap.exists()) {
+              Toast.warning("لم يتم العثور على المجموعة المطلوبة لتسجيل الحصة.");
+              return;
+            }
+            const deepGroup = { id: groupSnap.id, ...groupSnap.data() };
+            await openRecordGroupSessionModal(deepGroup, currentTeacher?.name || 'المعلم المشرف', () => renderTodayLessonsList());
+          } catch (err) {
+            console.error("Error opening group session from link:", err);
+            Toast.danger("تعذر فتح نموذج تسجيل الحصة الجماعية.");
+          }
+        }, 300);
+      } else if (deepStudentId) {
         setTimeout(() => {
           const deepBtn = document.querySelector(`.record-session-btn[data-id="${deepStudentId}"]`);
           if (deepBtn) {

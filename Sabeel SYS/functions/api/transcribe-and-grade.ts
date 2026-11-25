@@ -3,6 +3,18 @@
 
 export interface Env {
   GEMINI_API_KEY?: string;
+  ALLOWED_ORIGIN?: string;
+}
+
+// Never emit a wildcard CORS header: only the configured origin is allowed.
+function buildCorsHeaders(env: Env, includeJsonContentType = true): Record<string, string> {
+  const configured = (env.ALLOWED_ORIGIN || '').trim();
+  const allowedOrigin = configured && configured !== '*' ? configured : '';
+  return {
+    ...(includeJsonContentType ? { 'Content-Type': 'application/json' } : {}),
+    ...(allowedOrigin ? { 'Access-Control-Allow-Origin': allowedOrigin } : {}),
+    Vary: 'Origin',
+  };
 }
 
 function normalizeRuleName(rule: string = ''): string {
@@ -162,6 +174,8 @@ function calculateLengthEvaluation(wordCount: number, target: number = 150) {
       feedback: `النص أطول من المطلوب (${wordCount} كلمة)، المطلوب في حدود 150 كلمة (زيادة ${diff} كلمة).`,
     };
   }
+}
+
 function snapToContentGrade(score: number): 4 | 6 | 8 | 10 {
   const allowed: (4 | 6 | 8 | 10)[] = [4, 6, 8, 10];
   let closest = allowed[0];
@@ -176,32 +190,28 @@ function snapToContentGrade(score: number): 4 | 6 | 8 | 10 {
   return closest;
 }
 
-export const onRequestOptions = async () => {
+export const onRequestOptions = async (context: { env: Env; request: Request }) => {
   return new Response(null, {
     status: 204,
     headers: {
-      'Access-Control-Allow-Origin': '*',
+      ...buildCorsHeaders(context.env, false),
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, x-gemini-api-key',
+      'Access-Control-Allow-Headers': 'Content-Type',
     },
   });
 };
 
 export const onRequestPost = async (context: { env: Env; request: Request }) => {
-  const corsHeaders = {
-    'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
-  };
+  const corsHeaders = buildCorsHeaders(context.env);
 
   try {
-    const apiKey =
-      context.request.headers.get('x-gemini-api-key') ||
-      context.env.GEMINI_API_KEY;
+    // The key is server-side only: never accept it from a client header.
+    const apiKey = context.env.GEMINI_API_KEY;
 
     if (!apiKey) {
       return new Response(
         JSON.stringify({
-          error: 'مفتاح Gemini API غير مهيأ. يرجى ضبط متغير GEMINI_API_KEY في إعدادات Cloudflare Pages أو إدخاله في التطبيق.',
+          error: 'مفتاح Gemini API غير مهيأ. يرجى ضبط متغير GEMINI_API_KEY في إعدادات Cloudflare Pages.',
         }),
         { status: 500, headers: corsHeaders }
       );
@@ -355,16 +365,16 @@ ${essayTopic ? `موضوع النص المحتمل: ${essayTopic}` : ''}
     }
 
     if (!geminiData) {
+      // Keep upstream details in server logs only; never expose them to the client.
+      console.error('[Cloudflare Function] All Gemini models failed. Status:', lastStatus);
       return new Response(
         JSON.stringify({
           error: 'فشل استدعاء Gemini API من Cloudflare Functions',
-          details: lastErrorDetails,
         }),
         { status: lastStatus || 500, headers: corsHeaders }
       );
     }
 
-    const geminiData = (await geminiRes.json()) as any;
     const rawCandidateText =
       geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
 
@@ -474,10 +484,10 @@ ${essayTopic ? `موضوع النص المحتمل: ${essayTopic}` : ''}
       headers: corsHeaders,
     });
   } catch (error: any) {
+    console.error('[Cloudflare Function] Unexpected processing error:', error);
     return new Response(
       JSON.stringify({
         error: 'فشلت معالجة الصورة في Cloudflare Function',
-        details: error.message || String(error),
       }),
       { status: 500, headers: corsHeaders }
     );

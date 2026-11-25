@@ -3,7 +3,7 @@ const { defineSecret } = require('firebase-functions/params');
 const admin = require('firebase-admin');
 
 // Secrets are stored in Firebase Secret Manager (firebase functions:secrets:set).
-// Binding them with runWith() below injects them into process.env at runtime.
+// They are bound with runWith() and read via value() inside each handler.
 const oneSignalKeySecret = defineSecret('ONESIGNAL_REST_API_KEY');
 const cronSecret = defineSecret('CRON_SECRET');
 
@@ -13,11 +13,28 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-// OneSignal App ID for Sabeel Academy
+// OneSignal App ID is public config; the REST key and cron secret stay in Secret Manager.
 const ONESIGNAL_APP_ID = process.env.ONESIGNAL_APP_ID || '61a2cc38-b4a8-4032-96ae-caa738df2ffd';
-const ONESIGNAL_REST_API_KEY = process.env.ONESIGNAL_REST_API_KEY || '';
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '*';
-const CRON_SECRET = process.env.CRON_SECRET || '';
+
+// Read bound secrets inside a function invocation (not at module load time).
+function readSecret(secret, envName) {
+  try {
+    const value = secret.value();
+    if (value) return value;
+  } catch (err) {
+    // .value() is unavailable outside a bound function invocation (e.g. local tooling).
+  }
+  return process.env[envName] || '';
+}
+
+// Never allow a wildcard CORS origin in production.
+function setCorsHeaders(req, res) {
+  const origin = (process.env.ALLOWED_ORIGIN || '').trim();
+  if (origin && origin !== '*') {
+    res.set('Access-Control-Allow-Origin', origin);
+    res.set('Vary', 'Origin');
+  }
+}
 
 /**
  * Verifies a Firebase ID token and confirms the caller is an approved admin.
@@ -43,18 +60,18 @@ async function getAdminUidFromRequest(req) {
   return null;
 }
 
-async function isAuthorizedScheduler(req) {
+async function isAuthorizedScheduler(req, cronSecretValue) {
   const header = req.get('Authorization') || '';
-  if (CRON_SECRET && header === `Bearer ${CRON_SECRET}`) return true;
+  if (cronSecretValue && header === `Bearer ${cronSecretValue}`) return true;
   return Boolean(await getAdminUidFromRequest(req));
 }
 
 /**
  * Dispatches push notification via OneSignal REST API
  */
-async function sendToOneSignal({ title, body, image, deepLink, targetType, targetIds, data, priority }) {
+async function sendToOneSignal({ title, body, image, deepLink, targetType, targetIds, data, priority, oneSignalRestApiKey }) {
   // Fail closed: never broadcast to every subscriber when credentials or targets are missing.
-  if (!ONESIGNAL_REST_API_KEY) {
+  if (!oneSignalRestApiKey) {
     console.error('[OneSignal] ONESIGNAL_REST_API_KEY is not configured. Push skipped.');
     return { success: false, error: 'ONESIGNAL_REST_API_KEY is not configured' };
   }
@@ -118,9 +135,8 @@ async function sendToOneSignal({ title, body, image, deepLink, targetType, targe
   // Strictly filter out any generic role keywords
   resolvedTargetIds = [...new Set(resolvedTargetIds.filter(id => id && !['teachers', 'admin', 'admins', 'all'].includes(id)))];
 
-  // 4. Debug Logs before dispatching to OneSignal REST API (Requirement 4)
+  // Debug logs before dispatching: counts only, never individual recipient IDs.
   console.log("=== [OneSignal Dispatch Debug - Cloud Functions] ===");
-  console.log("Target external IDs (معرفات الأهداف):", resolvedTargetIds);
   console.log("Recipients count (عدد المستلمين):", resolvedTargetIds.length);
   console.log("Target Type:", targetType);
 
@@ -139,8 +155,8 @@ async function sendToOneSignal({ title, body, image, deepLink, targetType, targe
     const headers = {
       'Content-Type': 'application/json'
     };
-    if (ONESIGNAL_REST_API_KEY) {
-      headers['Authorization'] = `Basic ${ONESIGNAL_REST_API_KEY}`;
+    if (oneSignalRestApiKey) {
+      headers['Authorization'] = `Basic ${oneSignalRestApiKey}`;
     }
 
     const response = await fetch('https://onesignal.com/api/v1/notifications', {
@@ -174,6 +190,7 @@ exports.onNotificationCreated = functions
   .onCreate(async (snap, context) => {
     const notifData = snap.data();
     const notifId = context.params.notificationId;
+    const oneSignalRestApiKey = readSecret(oneSignalKeySecret, 'ONESIGNAL_REST_API_KEY');
 
     if (!notifData || notifData.status === 'sent' || notifData.status === 'cancelled' || notifData.pushDispatchedByClient || notifData.pushSent) {
       return null;
@@ -228,7 +245,8 @@ exports.onNotificationCreated = functions
       targetType: notifData.targetType,
       targetIds: notifData.targetIds,
       data: notifData.data || {},
-      priority: notifData.priority
+      priority: notifData.priority,
+      oneSignalRestApiKey
     });
 
     const status = result.success ? 'sent' : 'failed';
@@ -277,7 +295,7 @@ exports.onNotificationCreated = functions
 exports.dispatchNotification = functions
   .runWith({ secrets: [oneSignalKeySecret] })
   .https.onRequest(async (req, res) => {
-  res.set('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
+  setCorsHeaders(req, res);
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
@@ -289,6 +307,7 @@ exports.dispatchNotification = functions
   }
 
   try {
+    const oneSignalRestApiKey = readSecret(oneSignalKeySecret, 'ONESIGNAL_REST_API_KEY');
     const adminUid = await getAdminUidFromRequest(req);
     if (!adminUid) {
       return res.status(401).json({ success: false, error: 'Admin Firebase token required' });
@@ -325,7 +344,8 @@ exports.dispatchNotification = functions
       targetType,
       targetIds,
       data,
-      priority
+      priority,
+      oneSignalRestApiKey
     });
 
     await notifRef.update({
@@ -352,11 +372,13 @@ exports.dispatchNotification = functions
 exports.processScheduledNotifications = functions
   .runWith({ secrets: [oneSignalKeySecret, cronSecret] })
   .https.onRequest(async (req, res) => {
-  res.set('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
+  setCorsHeaders(req, res);
   if (req.method === 'OPTIONS') return res.status(204).send('');
 
   try {
-    if (!(await isAuthorizedScheduler(req))) {
+    const oneSignalRestApiKey = readSecret(oneSignalKeySecret, 'ONESIGNAL_REST_API_KEY');
+    const cronSecretValue = readSecret(cronSecret, 'CRON_SECRET');
+    if (!(await isAuthorizedScheduler(req, cronSecretValue))) {
       return res.status(401).json({ success: false, error: 'Scheduler secret or admin token required' });
     }
 
@@ -382,7 +404,8 @@ exports.processScheduledNotifications = functions
         targetType: data.targetType,
         targetIds: data.targetIds,
         data: data.data || {},
-        priority: data.priority
+        priority: data.priority,
+        oneSignalRestApiKey
       });
 
       await docSnap.ref.update({

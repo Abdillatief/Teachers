@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>أكاديمية سبيل - محوّل النص لصوت مصري</title>
+
+  <script>
+    if (localStorage.getItem('academy_dark_mode') === 'true') {
+      document.documentElement.classList.add('dark-theme');
+    }
+  </script>
+
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="./text-to-speech.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <meta name="theme-color" content="#4FA3D1">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+</head>
+<body class="tts-page">
+
+<div class="tts-shell">
+  <header class="tts-header">
+    <div class="tts-brand">
+      <div class="tts-logo"><i data-lucide="audio-lines"></i></div>
+      <div>
+        <h1 class="tts-title">محوّل النص لصوت مصري</h1>
+        <p class="tts-subtitle">تدقيق إملائي تلقائي + نطق عربي مصري بجودة احترافية</p>
+      </div>
+    </div>
+    <div class="tts-header-actions">
+      <span class="tts-badge"><i data-lucide="shield-check"></i> تدقيق قبل النطق</span>
+      <a class="icon-btn" href="../index.html" title="العودة للأكاديمية"><i data-lucide="arrow-right"></i></a>
+    </div>
+  </header>
+
+  <main class="tts-grid">
+    <!-- ============ العمود الأيمن: النص والتدقيق ============ -->
+    <div>
+      <section class="tts-card">
+        <div class="tts-card-head">
+          <i data-lucide="file-text"></i>
+          <div class="tts-card-head-text">
+            <h2 class="tts-card-title">اكتب النص</h2>
+            <p class="tts-card-hint">اكتب بالعربية المصرية زي ما بتتكلم — هنصحّح الإملاء قبل النطق</p>
+          </div>
+        </div>
+
+        <textarea id="ttsInput" class="tts-textarea" placeholder="اكتب النص هنا... مثال: انا بحب اتعلم حروف الهجاء كل يوم والمدرسه بتاعتي ممتازه جدا، شكرا استاذ!"></textarea>
+
+        <div class="tts-sample-row">
+          <button class="chip" type="button" data-sample="انا بحب ادرس في الجامعه والمدرسه كل يوم وشكرا استاذ.">نص تعليمي</button>
+          <button class="chip" type="button" data-sample="النص لازم يكون مظبوط قبل ما يتنطق عشان الصوت يطلع احترافي جدا.">نص إعلاني</button>
+          <button class="chip" type="button" data-sample="ان شاء الله كل عام وانت بخير يا استاذ، واحنا دايمًا فخورين بيك.">تحية</button>
+          <button class="chip" type="button" data-sample="مفيش مشكله، هنبدأ الدرس دلوقتي بخطوة صغيره وبعدين نكمل على مهلكم.">شرح مدرسي</button>
+        </div>
+
+        <div class="tts-stats">
+          <div class="tts-stat"><strong id="statWords">0</strong> كلمة</div>
+          <div class="tts-stat"><strong id="statChars">0</strong> حرف</div>
+          <div class="tts-stat"><strong id="statDuration">0</strong> ثانية تقريبًا</div>
+        </div>
+
+        <div class="tts-options">
+          <label class="switch-row">
+            <input type="checkbox" id="optCorrect" checked>
+            <span class="switch-track"></span>
+            تصحيح إملائي تلقائي
+          </label>
+          <label class="switch-row">
+            <input type="checkbox" id="optTashkeel" checked>
+            <span class="switch-track"></span>
+            إزالة التشكيل للنطق
+          </label>
+          <label class="switch-row">
+            <input type="checkbox" id="optAI" checked>
+            <span class="switch-track"></span>
+            تدقيق ذكي (لو فيه مفتاح)
+          </label>
+        </div>
+      </section>
+
+      <section class="tts-card" id="correctionCard" hidden>
+        <div class="tts-card-head">
+          <i data-lucide="sparkles"></i>
+          <div class="tts-card-head-text">
+            <h2 class="tts-card-title">النص بعد التدقيق</h2>
+            <p class="tts-card-hint" id="correctionHint">الكلمات الملوّنة هي اللي اتصحّحت</p>
+          </div>
+        </div>
+        <div class="corrected-text" id="correctedText"></div>
+        <div class="change-list" id="changeList"></div>
+        <div class="tts-actions">
+          <button class="btn-secondary-tts" type="button" id="btnAccept"><i data-lucide="check"></i> اعتماد النص المصحّح</button>
+          <button class="btn-secondary-tts" type="button" id="btnCopy"><i data-lucide="copy"></i> نسخ</button>
+        </div>
+      </section>
+
+      <section class="tts-card" id="historyCard" hidden>
+        <div class="tts-card-head">
+          <i data-lucide="history"></i>
+          <div class="tts-card-head-text">
+            <h2 class="tts-card-title">آخر النصوص</h2>
+            <p class="tts-card-hint">اضغط على أي عنصر لاستعادته</p>
+          </div>
+          <button class="btn-ghost-tts" type="button" id="btnClearHistory" title="مسح السجل"><i data-lucide="trash-2"></i></button>
+        </div>
+        <div class="history-list" id="historyList"></div>
+      </section>
+    </div>
+
+    <!-- ============ العمود الأيسر: الصوت ============ -->
+    <div>
+      <section class="tts-card">
+        <div class="tts-card-head">
+          <i data-lucide="mic"></i>
+          <div class="tts-card-head-text">
+            <h2 class="tts-card-title">اختر الصوت</h2>
+            <p class="tts-card-hint">ست بصمات صوتية مصرية جاهزة</p>
+          </div>
+        </div>
+        <div class="voice-grid" id="voiceGrid"></div>
+
+        <div class="tts-field-row" style="margin-top:18px">
+          <div class="field">
+            <label class="field-label" for="accentSelect">اللهجة</label>
+            <select class="tts-select" id="accentSelect"></select>
+          </div>
+          <div class="field">
+            <label class="field-label" for="toneSelect">نبرة الصوت</label>
+            <select class="tts-select" id="toneSelect"></select>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="range-head">
+            <label class="field-label" for="speedRange" style="margin:0">سرعة النطق</label>
+            <span class="range-value" id="speedValue">1.0×</span>
+          </div>
+          <input type="range" class="tts-range" id="speedRange" min="0.7" max="1.3" step="0.05" value="1">
+        </div>
+
+        <details style="margin-top:14px">
+          <summary style="cursor:pointer;font-size:.8rem;font-weight:700;color:var(--text-secondary)">إعدادات الجودة المتقدمة (اختياري)</summary>
+          <div class="field" style="margin-top:14px">
+            <label class="field-label" for="apiKeyInput">مفتاح Gemini API</label>
+            <div class="key-row">
+              <input class="tts-input" type="password" id="apiKeyInput" placeholder="AIza..." autocomplete="off">
+              <button class="btn-secondary-tts" type="button" id="btnSaveKey">حفظ</button>
+            </div>
+            <p class="key-note">بدون مفتاح: الأداة تشتغل فورًا عبر محرك النطق العربي أو صوت المتصفح. مع المفتاح: صوت مصري طبيعي أعلى جودة + ملف WAV للتحميل. المفتاح محفوظ في متصفحك فقط.</p>
+          </div>
+        </details>
+
+        <div class="tts-actions">
+          <button class="btn-primary-tts" type="button" id="btnGenerate"><i data-lucide="wand-sparkles"></i> حوّل النص لصوت</button>
+          <button class="btn-secondary-tts" type="button" id="btnStop"><i data-lucide="square"></i> إيقاف</button>
+        </div>
+
+        <div class="tts-status" id="statusBox"><i data-lucide="info"></i><span>جاهز — اكتب النص واضغط «حوّل النص لصوت»</span></div>
+      </section>
+
+      <section class="tts-card">
+        <div class="tts-card-head">
+          <i data-lucide="headphones"></i>
+          <div class="tts-card-head-text">
+            <h2 class="tts-card-title">المشغّل</h2>
+            <p class="tts-card-hint">اسمع النتيجة وحمّلها</p>
+          </div>
+        </div>
+        <div id="playerContainer">
+          <div class="empty-state"><i data-lucide="audio-lines"></i><div>لسه مفيش صوت —اعمل أول توليد</div></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <p class="footer-note">أكاديمية سَبِيل — أداة تعليمية مساعدة · النص يُدقَّق آليًا قبل النطق لتجنّب الأخطاء الإملائية</p>
+</div>
+
+<div class="tts-toast" id="toastBox" aria-live="polite"></div>
+
+<script type="module">
+  import {
+    VOICE_PRESETS, ACCENTS, TONES,
+    getApiKey, setApiKey,
+    normalizeEgyptianArabic, stripTashkeelText, aiCorrectText,
+    synthesize, stopSpeech, loadHistory, saveHistory, clearHistory, downloadBlob,
+  } from '../assets/js/features/tts/egyptianTts.js';
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const icons = () => { try { window.lucide?.createIcons(); } catch { /* ignore */ } };
+
+  const state = {
+    preset: VOICE_PRESETS[1],
+    accent: ACCENTS[0],
+    tone: TONES[0],
+    corrected: '',
+    changes: [],
+    audioBlob: null,
+    ext: 'wav',
+    history: loadHistory(),
+    busy: false,
+  };
+
+  /* ---------- UI bootstrap ---------- */
+  function renderVoices() {
+    $('voiceGrid').innerHTML = VOICE_PRESETS.map((v) => `
+      <button type="button" class="voice-card${v.id === state.preset.id ? ' active' : ''}" data-voice="${v.id}">
+        <span class="voice-icon${v.gender === 'female' ? ' female' : ''}"><i data-lucide="${v.icon}"></i></span>
+        <span><span class="voice-name">${esc(v.name)}</span><br><span class="voice-desc">${esc(v.desc)}</span></span>
+      </button>`).join('');
+    $('voiceGrid').querySelectorAll('[data-voice]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        state.preset = VOICE_PRESETS.find((v) => v.id === btn.dataset.voice) || state.preset;
+        renderVoices();
+      });
+    });
+    icons();
+  }
+
+  function renderSelects() {
+    $('accentSelect').innerHTML = ACCENTS.map((a) => `<option value="${a.id}">${esc(a.name)}</option>`).join('');
+    $('toneSelect').innerHTML = TONES.map((t) => `<option value="${t.id}">${esc(t.name)}</option>`).join('');
+    $('accentSelect').value = state.accent.id;
+    $('toneSelect').value = state.tone.id;
+  }
+
+  function renderHistory() {
+    $('historyCard').hidden = state.history.length === 0;
+    $('historyList').innerHTML = state.history.map((h, i) => `
+      <div class="history-item" data-history="${i}">
+        <i data-lucide="message-square"></i>
+        <span class="history-text">${esc(h.text)}</span>
+        <span class="history-date">${esc(h.date || '')}</span>
+      </div>`).join('');
+    $('historyList').querySelectorAll('[data-history]').forEach((el) => {
+      el.addEventListener('click', () => {
+        const item = state.history[Number(el.dataset.history)];
+        if (!item) return;
+        $('ttsInput').value = item.text;
+        const preset = VOICE_PRESETS.find((v) => v.id === item.presetId);
+        if (preset) { state.preset = preset; renderVoices(); }
+        if (item.accentId) { state.accent = ACCENTS.find((a) => a.id === item.accentId) || ACCENTS[0]; $('accentSelect').value = state.accent.id; }
+        if (item.speed) { $('speedRange').value = item.speed; updateSpeed(); }
+        updateStats();
+        toast('تم استعادة النص', 'success');
+        $('ttsInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    });
+    icons();
+  }
+
+  /* ---------- Helpers ---------- */
+  function toast(message, type = 'success') {
+    const el = document.createElement('div');
+    el.className = `tts-toast-item ${type}`;
+    const icon = type === 'error' ? 'circle-x' : type === 'warn' ? 'triangle-alert' : 'circle-check';
+    el.innerHTML = `<i data-lucide="${icon}"></i><span>${esc(message)}</span>`;
+    $('toastBox').appendChild(el);
+    icons();
+    setTimeout(() => el.remove(), 4200);
+  }
+
+  function setStatus(message, type = '', iconName = 'info') {
+    const box = $('statusBox');
+    box.className = `tts-status ${type}`;
+    box.innerHTML = `${type === 'loading' ? '<span class="spinner"></span>' : `<i data-lucide="${iconName}"></i>`}<span>${esc(message)}</span>`;
+    icons();
+  }
+
+  function updateSpeed() {
+    $('speedValue').textContent = `${Number($('speedRange').value).toFixed(2).replace(/0$/, '')}×`;
+  }
+
+  function updateStats() {
+    const text = $('ttsInput').value.trim();
+    const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
+    const chars = text.length;
+    $('statWords').textContent = words;
+    $('statChars').textContent = chars;
+    $('statDuration').textContent = Math.max(0, Math.round(words / 2.4 / Number($('speedRange').value)));
+  }
+
+  function renderCorrection(original, corrected, changes) {
+    const card = $('correctionCard');
+    card.hidden = !$('optCorrect').checked;
+    if (card.hidden) return;
+    const words = new Set(changes.map((c) => c.to).filter(Boolean));
+    const pattern = words.size ? `(${[...words].map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})` : null;
+    const html = pattern
+      ? esc(corrected).replace(new RegExp(pattern, 'gu'), '<mark>$1</mark>')
+      : esc(corrected);
+    $('correctedText').innerHTML = html;
+    $('changeList').innerHTML = changes.length
+      ? changes.slice(0, 30).map((c) => `<span class="change-pill"><span class="change-type">${esc(c.type || '')}</span><span class="old">${esc(c.from)}</span><span class="arrow">←</span><span class="new">${esc(c.to)}</span></span>`).join('')
+      : '<span class="change-pill">لا توجد أخطاء إملائية ظاهرة — النص سليم ✓</span>';
+    $('correctionHint').textContent = changes.length
+      ? `اتصحّحت ${changes.length} كلمة/عبارة — الكلمات الملوّنة هي اللي اتعدّلت`
+      : 'النص سليم إملائيًا';
+  }
+
+  function renderPlayer(blob, ext, provider) {
+    const box = $('playerContainer');
+    if (!blob) {
+      box.innerHTML = `<div class="player-box"><div class="player-meta"><span class="player-provider"><i data-lucide="volume-2"></i>${esc(provider)}</span></div><p class="key-note">الاستماع من صوت المتصفح متاح، لكن التحميل يحتاج مفتاح Gemini أو تفعيل محرك النطق على الخادم.</p></div>`;
+      icons();
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    box.innerHTML = `
+      <div class="player-box">
+        <audio controls src="${url}"></audio>
+        <div class="player-meta">
+          <span class="player-provider"><i data-lucide="circle-check"></i>${esc(provider)}</span>
+          <button class="player-download" type="button" id="btnDownload"><i data-lucide="download"></i> تحميل ${ext.toUpperCase()}</button>
+        </div>
+      </div>`;
+    $('btnDownload').addEventListener('click', () => downloadBlob(blob, `sabeel-voiceover-${Date.now()}.${ext}`));
+    icons();
+    const audio = box.querySelector('audio');
+    audio.play().catch(() => { /* user can press play manually */ });
+  }
+
+  function setBusy(busy) {
+    state.busy = busy;
+    $('btnGenerate').disabled = busy;
+    $('btnGenerate').innerHTML = busy
+      ? '<span class="spinner"></span> جاري التحضير...'
+      : '<i data-lucide="wand-sparkles"></i> حوّل النص لصوت';
+    icons();
+  }
+
+  /* ---------- Actions ---------- */
+  async function correctOnly() {
+    const raw = $('ttsInput').value.trim();
+    if (!raw) { toast('اكتب النص الأول', 'warn'); return null; }
+    let corrected = raw;
+    let changes = [];
+    if ($('optCorrect').checked) {
+      const local = normalizeEgyptianArabic(raw);
+      corrected = local.corrected;
+      changes = local.changes;
+      const key = getApiKey();
+      if ($('optAI').checked && key) {
+        try {
+          const ai = await aiCorrectText(corrected, key);
+          corrected = ai.corrected;
+          if (ai.changes.length) changes = [...changes, ...ai.changes];
+        } catch (err) {
+          toast('التدقيق الذكي غير متاح دلوقتي — استخدمنا التدقيق المحلي', 'warn');
+        }
+      }
+    }
+    state.corrected = corrected;
+    state.changes = changes;
+    renderCorrection(raw, corrected, changes);
+    return corrected;
+  }
+
+  async function generate() {
+    if (state.busy) return;
+    stopSpeech();
+    setBusy(true);
+    setStatus('جاري تدقيق النص...', 'loading');
+    try {
+      const text = await correctOnly();
+      if (!text) { setStatus('اكتب النص الأول', 'warn', 'triangle-alert'); return; }
+      setStatus('جاري تجهيز الصوت...', 'loading');
+
+      const speechText = $('optTashkeel').checked ? stripTashkeelText(text) : text;
+      const key = getApiKey();
+      const result = await synthesize({
+        text: speechText,
+        preset: state.preset,
+        accent: state.accent,
+        tone: state.tone,
+        speed: Number($('speedRange').value),
+        apiKey: key,
+        useAI: $('optAI').checked,
+        onProgress: (msg) => setStatus(msg, 'loading'),
+      });
+
+      state.audioBlob = result.blob;
+      state.ext = result.ext || 'wav';
+      renderPlayer(result.blob, result.ext, result.provider);
+      setStatus(`تم — ${result.provider}`, 'success', 'circle-check');
+      toast('تم توليد الصوت بنجاح', 'success');
+
+      state.history = saveHistory({
+        text,
+        presetId: state.preset.id,
+        accentId: state.accent.id,
+        speed: Number($('speedRange').value),
+        provider: result.provider,
+        date: new Date().toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' }),
+      });
+      renderHistory();
+    } catch (err) {
+      setStatus(err.message || 'حصل خطأ أثناء التوليد', 'error', 'circle-x');
+      toast(err.message || 'تعذر توليد الصوت', 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /* ---------- Events ---------- */
+  document.querySelectorAll('[data-sample]').forEach((btn) => btn.addEventListener('click', () => {
+    $('ttsInput').value = btn.dataset.sample;
+    updateStats();
+    $('ttsInput').focus();
+  }));
+
+  $('ttsInput').addEventListener('input', updateStats);
+  $('ttsInput').addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); generate(); }
+  });
+  $('speedRange').addEventListener('input', () => { updateSpeed(); updateStats(); });
+  $('accentSelect').addEventListener('change', (e) => { state.accent = ACCENTS.find((a) => a.id === e.target.value) || ACCENTS[0]; });
+  $('toneSelect').addEventListener('change', (e) => { state.tone = TONES.find((t) => t.id === e.target.value) || TONES[0]; });
+  $('optCorrect').addEventListener('change', () => { $('correctionCard').hidden = !$('optCorrect').checked; });
+  $('btnGenerate').addEventListener('click', generate);
+  $('btnStop').addEventListener('click', () => { stopSpeech(); document.querySelector('audio')?.pause(); setStatus('تم الإيقاف', '', 'square'); });
+
+  $('btnAccept').addEventListener('click', () => {
+    if (!state.corrected) return;
+    $('ttsInput').value = state.corrected;
+    updateStats();
+    toast('تم اعتماد النص المصحّح', 'success');
+  });
+  $('btnCopy').addEventListener('click', async () => {
+    if (!state.corrected) return;
+    try { await navigator.clipboard.writeText(state.corrected); toast('تم نسخ النص', 'success'); }
+    catch { toast('تعذر النسخ — حدّد النص وانسخه يدويًا', 'warn'); }
+  });
+  $('btnSaveKey').addEventListener('click', () => {
+    setApiKey($('apiKeyInput').value);
+    toast($('apiKeyInput').value.trim() ? 'تم حفظ المفتاح في متصفحك' : 'تم حذف المفتاح', 'success');
+  });
+  $('btnClearHistory').addEventListener('click', () => {
+    state.history = clearHistory();
+    renderHistory();
+    toast('تم مسح السجل', 'success');
+  });
+
+  /* ---------- Init ---------- */
+  renderVoices();
+  renderSelects();
+  renderHistory();
+  updateSpeed();
+  updateStats();
+  $('apiKeyInput').value = getApiKey();
+  window.speechSynthesis?.getVoices();
+  icons();
+</script>
+</body>
+</html>

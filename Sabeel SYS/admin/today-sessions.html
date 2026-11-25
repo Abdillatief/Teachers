@@ -72,23 +72,23 @@
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
           <div class="card" style="border-right: 4px solid var(--primary-color);">
             <div style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600;">إجمالي حصص اليوم</div>
-            <h3 id="statTodayTotal" style="font-size: 1.6rem; font-weight: 800; margin-top: 0.25rem;">0</h3>
+            <h3 id="statTodayTotal" style="font-size: 1.6rem; font-weight: 800; margin-top: 0.25rem;">جار التحميل…</h3>
           </div>
           <div class="card" style="border-right: 4px solid var(--success);">
             <div style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600;">تمت بنجاح ✅</div>
-            <h3 id="statTodayCompleted" style="font-size: 1.6rem; font-weight: 800; margin-top: 0.25rem; color: var(--success);">0</h3>
+            <h3 id="statTodayCompleted" style="font-size: 1.6rem; font-weight: 800; margin-top: 0.25rem; color: var(--success);">جار التحميل…</h3>
           </div>
           <div class="card" style="border-right: 4px solid #6366f1;">
             <div style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600;">لم تتم بعد ⏳</div>
-            <h3 id="statTodayPending" style="font-size: 1.6rem; font-weight: 800; margin-top: 0.25rem; color: #6366f1;">0</h3>
+            <h3 id="statTodayPending" style="font-size: 1.6rem; font-weight: 800; margin-top: 0.25rem; color: #6366f1;">جار التحميل…</h3>
           </div>
           <div class="card" style="border-right: 4px solid #d97706;">
             <div style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600;">مؤجلة 🔄</div>
-            <h3 id="statTodayDelayed" style="font-size: 1.6rem; font-weight: 800; margin-top: 0.25rem; color: #d97706;">0</h3>
+            <h3 id="statTodayDelayed" style="font-size: 1.6rem; font-weight: 800; margin-top: 0.25rem; color: #d97706;">جار التحميل…</h3>
           </div>
           <div class="card" style="border-right: 4px solid var(--danger);">
             <div style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 600;">غياب / ملغاة 🔴</div>
-            <h3 id="statTodayAbsent" style="font-size: 1.6rem; font-weight: 800; margin-top: 0.25rem; color: var(--danger);">0</h3>
+            <h3 id="statTodayAbsent" style="font-size: 1.6rem; font-weight: 800; margin-top: 0.25rem; color: var(--danger);">جار التحميل…</h3>
           </div>
         </div>
 
@@ -129,6 +129,45 @@
 
     protectRoute('admin');
 
+    // تواريخ محلية (توقيت مصر): لا نستخدم toISOString() لتحديد يوم اليوم
+    const pad2 = n => String(n).padStart(2, '0');
+    const localDate = (value) => {
+      if (value === null || value === undefined || value === '') return '';
+      let d;
+      try {
+        if (typeof value === 'string') {
+          const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+          if (match) return `${match[1]}-${match[2]}-${match[3]}`;
+          d = new Date(value);
+        } else if (value instanceof Date) {
+          d = value;
+        } else if (typeof value?.toDate === 'function') {
+          d = value.toDate();
+        } else if (typeof value?.seconds === 'number') {
+          d = new Date(value.seconds * 1000);
+        } else {
+          d = new Date(value);
+        }
+      } catch (_) {
+        return '';
+      }
+      if (!d || isNaN(d.getTime())) return '';
+      return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+    };
+    const localMonthKey = (value) => {
+      const key = localDate(value);
+      return key ? key.slice(0, 7) : '';
+    };
+    const escapeHtml = (value) => {
+      if (value === null || value === undefined) return '';
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    };
+
     document.addEventListener('DOMContentLoaded', () => {
       renderSidebar('today-sessions', 'admin');
       renderNavbar('الحصص الجارية اليوم', { name: 'المشرف العام', roleName: 'مدير النظام' });
@@ -143,7 +182,8 @@
       const arabicDays = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
       const now = new Date();
       const todayArabic = arabicDays[now.getDay()];
-      const todayStr = now.toISOString().split('T')[0];
+      const todayStr = localDate(now);
+      const todayMonthKey = localMonthKey(now);
 
       const dateLabel = document.getElementById('todayAdminDateLabel');
       if (dateLabel) dateLabel.textContent = `اليوم: ${todayArabic} (${todayStr})`;
@@ -159,7 +199,7 @@
       adminTodayUnsubs.push(onSnapshot(qToday, (sessSnap) => {
         const todaySessions = sessSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         // merge with postponed-from-today set
-        const prevPostponed = sessionsCached.filter(s => s.postponedFrom === todayStr && s.date !== todayStr);
+        const prevPostponed = sessionsCached.filter(s => localDate(s.postponedFrom) === todayStr && localDate(s.date) !== todayStr);
         sessionsCached = [...todaySessions, ...prevPostponed];
         renderAdminTodayList();
       }, (err) => console.warn("Admin today sessions listener error:", err)));
@@ -167,8 +207,8 @@
       // 1b. Sessions postponed from today (separate scoped query)
       const qPostponed = query(collection(db, "sessions"), where("postponedFrom", "==", todayStr));
       adminTodayUnsubs.push(onSnapshot(qPostponed, (snap) => {
-        const postponed = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.date !== todayStr);
-        const todayOnly = sessionsCached.filter(s => s.date === todayStr);
+        const postponed = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => localDate(s.date) !== todayStr);
+        const todayOnly = sessionsCached.filter(s => localDate(s.date) === todayStr);
         sessionsCached = [...todayOnly, ...postponed];
         renderAdminTodayList();
       }, (err) => console.warn("Admin today postponed sessions listener error:", err)));
@@ -195,12 +235,13 @@
         renderAdminTodayList();
       }, (err) => console.warn("Admin today groups listener error:", err)));
 
-      // 4. Listen to group_sessions today
-      adminTodayUnsubs.push(onSnapshot(collection(db, "group_sessions"), (gsSnap) => {
+      // 4. Listen to group_sessions today (استعلام مقيّد بتاريخ اليوم بدل تحميل كل السجلات)
+      const qGroupSessionsToday = query(collection(db, "group_sessions"), where("date", "==", todayStr));
+      adminTodayUnsubs.push(onSnapshot(qGroupSessionsToday, (gsSnap) => {
         groupSessionsCached = [];
         gsSnap.forEach(d => {
           const gs = d.data();
-          if (gs.date === todayStr) {
+          if (localDate(gs.date) === todayStr) {
             groupSessionsCached.push({ id: d.id, ...gs });
           }
         });
@@ -252,7 +293,9 @@
         groupsCached.forEach(grp => {
           const grpDays = grp.day ? [grp.day] : (grp.days || []);
           const isScheduledToday = grpDays.some(d => normalizeArabicDay(d) === normalizeArabicDay(todayArabic));
-          const recordedGroupSession = groupSessionsCached.find(gs => gs.groupId === grp.id && gs.date === todayStr);
+          const recordedGroupSession = groupSessionsCached.find(gs => gs.groupId === grp.id && localDate(gs.date) === todayStr);
+          // الحصة الجماعية تُعد مكتملة فقط إذا كانت حالة السجل صريحة completed
+          const isGroupCompleted = recordedGroupSession?.status === 'completed';
 
           if (!isScheduledToday) return;
 
@@ -260,7 +303,7 @@
           let statusLabel = 'لم تتم بعد ⏳';
           let badgeBg = 'background: rgba(99, 102, 241, 0.12); color: #6366f1;';
 
-          if (recordedGroupSession) {
+          if (isGroupCompleted) {
             statusKey = 'completed';
             statusLabel = 'تمت بنجاح ✅';
             badgeBg = 'background: rgba(16, 185, 129, 0.12); color: var(--success);';
@@ -293,10 +336,10 @@
           if (!isScheduledToday) return;
 
           // 1. Session recorded specifically for TODAY
-          const sessionToday = sessionsCached.find(s => s.studentId === st.id && s.date === todayStr);
+          const sessionToday = sessionsCached.find(s => s.studentId === st.id && localDate(s.date) === todayStr);
 
           // 2. Session postponed FROM today to a future date
-          const postponedFromToday = sessionsCached.find(s => s.studentId === st.id && s.postponedFrom === todayStr && s.date !== todayStr && s.status === 'delayed');
+          const postponedFromToday = sessionsCached.find(s => s.studentId === st.id && localDate(s.postponedFrom) === todayStr && localDate(s.date) !== todayStr && s.status === 'delayed');
 
           let statusKey = 'pending';
           let statusLabel = 'لم تتم بعد ⏳';
@@ -315,14 +358,22 @@
               badgeBg = 'background: rgba(239, 68, 68, 0.12); color: var(--danger);';
             } else if (activeSession.status === 'delayed') {
               statusKey = 'delayed';
-              if (activeSession.postponedFrom === todayStr && activeSession.date !== todayStr) {
-                statusLabel = `مؤجلة إلى (${activeSession.date}) ⏳`;
-              } else if (activeSession.postponedFrom && activeSession.postponedFrom !== todayStr) {
-                statusLabel = `مؤجلة من (${activeSession.postponedFrom}) 🔄`;
+              if (localDate(activeSession.postponedFrom) === todayStr && localDate(activeSession.date) !== todayStr) {
+                statusLabel = `مؤجلة إلى (${localDate(activeSession.date)}) ⏳`;
+              } else if (activeSession.postponedFrom && localDate(activeSession.postponedFrom) !== todayStr) {
+                statusLabel = `مؤجلة من (${localDate(activeSession.postponedFrom)}) 🔄`;
               } else {
                 statusLabel = 'مؤجلة 🔄';
               }
               badgeBg = 'background: rgba(217, 119, 6, 0.12); color: #d97706;';
+            } else if (activeSession.status === 'teacher_absent') {
+              statusKey = 'absent';
+              statusLabel = 'غياب معلم 🟠';
+              badgeBg = 'background: rgba(249, 115, 22, 0.12); color: #ea580c;';
+            } else if (activeSession.status === 'compensatory') {
+              statusKey = 'completed';
+              statusLabel = 'حصة تعويضية 🔁';
+              badgeBg = 'background: rgba(16, 185, 129, 0.12); color: var(--success);';
             } else if (activeSession.status === 'cancelled') {
               statusKey = 'absent';
               statusLabel = 'ملغاة ❌';
@@ -382,12 +433,12 @@
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;">
                   <div>
                     <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
-                      <h4 style="font-size: 1.05rem; font-weight: 800; color: var(--text-primary); margin: 0;">${item.name}</h4>
+                      <h4 style="font-size: 1.05rem; font-weight: 800; color: var(--text-primary); margin: 0;">${escapeHtml(item.name)}</h4>
                       <span class="badge" style="position: static; font-size: 0.7rem; background: rgba(14, 165, 233, 0.12); color: var(--primary-color); font-weight: 800;">حصة جماعية 👥</span>
                     </div>
                     <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.35rem; display: flex; align-items: center; gap: 0.35rem;">
                       <i data-lucide="clock" style="width: 14px; height: 14px; color: var(--text-muted);"></i>
-                      <span>موعد الحصة: <strong>${item.time}</strong></span>
+                      <span>موعد الحصة: <strong>${escapeHtml(item.time)}</strong></span>
                     </div>
                   </div>
                   <span class="badge" style="position: static; font-weight: 800; font-size: 0.75rem; padding: 0.3rem 0.65rem; border-radius: 6px; ${item.badgeBg}">
@@ -397,7 +448,7 @@
 
                 ${isCompleted ? `
                   <div style="font-size: 0.78rem; background: var(--bg-primary); padding: 0.55rem 0.75rem; border-radius: 6px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;">
-                    <span>🕒 تسجلت: <strong>${recorded?.recordedAt || ''}</strong></span>
+                    <span>🕒 تسجلت: <strong>${escapeHtml(recorded?.recordedAt || '')}</strong></span>
                     <span style="color: var(--success); font-weight: 800;">👥 حضور: ${recorded?.presentCount || 0}/${recorded?.totalCount || 0}</span>
                     <span style="color: var(--danger); font-weight: 800;">❌ غياب: ${recorded?.absentCount || 0}</span>
                   </div>
@@ -408,13 +459,13 @@
                 `}
 
                 <div style="padding-top: 0.5rem; border-top: 1px dashed var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 0.4rem; font-size: 0.85rem;">
-                  <span style="color: var(--text-primary);">المعلم: <strong style="color: var(--primary-color); font-weight: 800;">${item.teacherName}</strong></span>
+                  <span style="color: var(--text-primary);">المعلم: <strong style="color: var(--primary-color); font-weight: 800;">${escapeHtml(item.teacherName)}</strong></span>
                   ${isCompleted ? `
-                    <button type="button" class="btn btn-secondary btn-admin-view-grp" data-grp-id="${item.groupId}" style="padding: 0.35rem 0.75rem; font-size: 0.78rem; font-weight: 800; color: var(--primary-color); border-color: var(--primary-color);">
+                    <button type="button" class="btn btn-secondary btn-admin-view-grp" data-grp-id="${escapeHtml(item.groupId)}" style="padding: 0.35rem 0.75rem; font-size: 0.78rem; font-weight: 800; color: var(--primary-color); border-color: var(--primary-color);">
                       <i data-lucide="eye" style="width: 13px; height: 13px;"></i> عرض التفاصيل
                     </button>
                   ` : `
-                    <button type="button" class="btn btn-primary btn-admin-rec-grp" data-grp-id="${item.groupId}" style="padding: 0.35rem 0.75rem; font-size: 0.78rem; font-weight: 800;">
+                    <button type="button" class="btn btn-primary btn-admin-rec-grp" data-grp-id="${escapeHtml(item.groupId)}" style="padding: 0.35rem 0.75rem; font-size: 0.78rem; font-weight: 800;">
                       <i data-lucide="edit-3" style="width: 13px; height: 13px;"></i> تسجيل الحصة
                     </button>
                   `}
@@ -428,7 +479,7 @@
             <div class="session-item-card">
               <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;">
                 <div>
-                  <h4 style="font-size: 1.05rem; font-weight: 800; color: var(--text-primary); margin: 0;">${item.name}</h4>
+                  <h4 style="font-size: 1.05rem; font-weight: 800; color: var(--text-primary); margin: 0;">${escapeHtml(item.name)}</h4>
                   <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem; display: flex; align-items: center; gap: 0.35rem;">
                     <i data-lucide="clock" style="width: 14px; height: 14px; color: var(--text-muted);"></i>
                     <span>موعد الحصة: <strong>${item.time}</strong></span>
@@ -441,7 +492,7 @@
 
               <div style="padding-top: 0.5rem; border-top: 1px dashed var(--border-color); display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; color: var(--text-primary);">
                 <i data-lucide="user-check" style="width: 16px; height: 16px; color: var(--primary-color);"></i>
-                <span>المعلم التابع: <strong style="color: var(--primary-color); font-weight: 800;">${item.teacherName}</strong></span>
+                <span>المعلم التابع: <strong style="color: var(--primary-color); font-weight: 800;">${escapeHtml(item.teacherName)}</strong></span>
               </div>
             </div>
           `;
@@ -463,7 +514,7 @@
         grid.querySelectorAll('.btn-admin-view-grp').forEach(btn => {
           btn.addEventListener('click', (e) => {
             const grpId = e.currentTarget.dataset.grpId;
-            const gsDoc = groupSessionsCached.find(gs => gs.groupId === grpId && gs.date === todayStr);
+            const gsDoc = groupSessionsCached.find(gs => gs.groupId === grpId && localDate(gs.date) === todayStr);
             if (gsDoc) {
               openGroupSessionDetailsModal(gsDoc);
             }
