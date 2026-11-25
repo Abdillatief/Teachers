@@ -12,7 +12,14 @@ import { UndoManager } from '../../shared/utils/undoManager.js';
 export async function restoreFromTrash(trashDocId, collectionName, documentId, data) {
   try {
     // 1. Re-insert document into original collection
-    await setDoc(doc(db, collectionName, documentId), data);
+    // حساب معلم محذوف بالزر القديم كان status = 'deleted'؛ لو رجع بنفس القيمة هيفضل مختفي
+    // من قائمة المعلمين، فبيرجع بحالة "موقوف" لحد ما الإدارة تفعّله.
+    const restoreData = { ...(data || {}) };
+    if (collectionName === 'users' && restoreData.status === 'deleted') {
+      restoreData.status = 'suspended';
+      delete restoreData.deletedAt;
+    }
+    await setDoc(doc(db, collectionName, documentId), restoreData);
 
     // 2. Remove from trash collection
     if (trashDocId) {

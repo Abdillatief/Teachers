@@ -176,6 +176,9 @@
           </button>
         </div>
 
+        <!-- لوحة الحسابات المعلّمة "deleted" من زر الحذف القديم: تحتاج نقلاً صحيحًا لسلة المحذوفات -->
+        <div id="legacyDeletedPanel" style="display: none;"></div>
+
         <div id="teachersDisplayArea"></div>
       </main>
     </div>
@@ -513,6 +516,8 @@
 
     let teachersUnsubs = [];
     let cachedTeachers = [];
+    let legacyDeletedTeachers = [];
+    const escText = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     let cachedStudents = [];
     let cachedGroups = [];
     let activeTeacher = null;
@@ -561,12 +566,15 @@
       // مزامنة المعلمين — معرّف المستند له الأولوية المطلقة على أي حقل uid قديم داخل البيانات
       teachersUnsubs.push(onSnapshot(collection(db, "users"), (snapshot) => {
         cachedTeachers = [];
+        legacyDeletedTeachers = [];
         snapshot.forEach(docSnap => {
           const d = docSnap.data();
-          // الحسابات المؤرشفة قديمًا بحالة "deleted" لا تُعرض في قائمة المعلمين
-          if (d.role === "teacher" && d.status !== "deleted") {
-            cachedTeachers.push({ ...d, uid: docSnap.id, id: docSnap.id, _docId: docSnap.id });
-          }
+          if (d.role !== "teacher") return;
+          const row = { ...d, uid: docSnap.id, id: docSnap.id, _docId: docSnap.id };
+          // الحسابات المعلّمة "deleted" من الزر القديم لا تُعرض في القائمة العادية،
+          // لكنها تُعرض في لوحة مستقلة عشان تتنقل لسلة المحذوفات بشكل صحيح.
+          if (d.status === "deleted") legacyDeletedTeachers.push(row);
+          else cachedTeachers.push(row);
         });
         renderTeachersView();
       }, (err) => console.warn("Teachers list users listener warning:", err)));
@@ -633,6 +641,7 @@
     }
 
     function renderTeachersView() {
+      renderLegacyDeletedPanel();
       const displayArea = document.getElementById('teachersDisplayArea');
       const viewMode = localStorage.getItem('teachersViewPreference') || 'grid';
       const currentYearMonth = currentMonthKey();
@@ -1764,6 +1773,134 @@
       await syncTeacherOperationalProfile(activeTeacherId);
       Toast.success("تم تحديث البيانات الأساسية بنجاح.");
       openTeacherProfileModal(activeTeacherId);
+    });
+
+    // === 8.5 لوحة الحسابات المعلّمة "deleted" من الزر القديم: عرض واضح + نقل سليم للسلة ===
+    function renderLegacyDeletedPanel() {
+      const panel = document.getElementById('legacyDeletedPanel');
+      if (!panel) return;
+
+      const items = legacyDeletedTeachers;
+      if (!items.length) {
+        panel.style.display = 'none';
+        panel.innerHTML = '';
+        return;
+      }
+
+      const deletedLabel = (t) => {
+        const v = t.deletedAt;
+        if (v?.toDate) return v.toDate().toLocaleDateString('ar-EG');
+        const s = String(v || '');
+        return s ? s.slice(0, 10) : '-';
+      };
+
+      panel.style.display = 'block';
+      panel.innerHTML = `
+        <div class="card" style="border: 1px solid rgba(239, 68, 68, 0.35); background: rgba(239, 68, 68, 0.04); padding: 1rem; margin-bottom: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+            <div>
+              <h3 style="margin: 0; font-size: 1rem; font-weight: 800; color: var(--danger);">
+                حسابات محذوفة بالزر القديم (${items.length})
+              </h3>
+              <p style="margin: 0.3rem 0 0; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.6;">
+                حالتها «deleted» فقط ومستنداتها لسه موجودة في قاعدة البيانات. نقلها هنا يضع نسخة كاملة في سلة المحذوفات ويحذف المستند، فتظهر في صفحة السلة ويمكن استعادتها.
+              </p>
+            </div>
+            <button type="button" id="btnMigrateAllLegacy" class="btn btn-primary" style="background: var(--danger); border-color: var(--danger); font-weight: 800; font-size: 0.85rem; padding: 0.5rem 0.9rem;">
+              <i data-lucide="archive"></i> نقل الكل إلى سلة المحذوفات
+            </button>
+          </div>
+          <div class="table-container" style="margin-top: 0.85rem; max-height: 260px; overflow-y: auto;">
+            <table style="min-width: 100%;">
+              <thead>
+                <tr><th>المعلم</th><th>البريد</th><th>تاريخ الحذف القديم</th><th>إجراء</th></tr>
+              </thead>
+              <tbody>
+                ${items.map(t => `
+                  <tr>
+                    <td><strong>${escText(t.name || 'بدون اسم')}</strong></td>
+                    <td style="font-size: 0.8rem; color: var(--text-secondary);">${escText(t.email || '-')}</td>
+                    <td style="font-size: 0.8rem;">${escText(deletedLabel(t))}</td>
+                    <td>
+                      <button type="button" class="btn btn-secondary legacy-migrate-one" data-id="${escText(t._docId || t.uid)}" style="font-size: 0.78rem; padding: 0.3rem 0.6rem; color: var(--danger); border-color: rgba(239, 68, 68, 0.4); white-space: nowrap;">
+                        نقل إلى السلة
+                      </button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      if (window.lucide) { try { window.lucide.createIcons({ root: panel }); } catch (e) {} }
+    }
+
+    async function migrateLegacyDeletedTeacher(id) {
+      const item = legacyDeletedTeachers.find(t => (t._docId || t.uid) === id);
+      try {
+        const snap = await getDoc(doc(db, 'users', id));
+        if (!snap.exists()) {
+          Toast.warning('هذا الحساب غير موجود بالفعل.');
+          return false;
+        }
+        const data = snap.data();
+
+        // في السلة نخزّن الحساب بحالة نشطة-غير-مفعّلة (suspended) بدل "deleted"
+        // حتى يُرجع للقائمة عند استعادته، ويظل الإيقاف/التفعيل قرارًا من الإدارة.
+        const payload = { ...data, status: 'suspended' };
+        delete payload.deletedAt;
+
+        await softDeleteToTrash('users', id, { ...payload, uid: id }, `تنظيف حساب حُذف بالزر القديم: ${data.name || id}`);
+
+        try { await deleteDoc(doc(db, 'teacherOperationalProfiles', id)); }
+        catch (e) { console.warn('operational profile cleanup skipped:', e?.message || e); }
+
+        const after = await getDoc(doc(db, 'users', id));
+        if (after.exists()) throw new Error('لم يتم نقل الحساب إلى سلة المحذوفات');
+
+        return true;
+      } catch (err) {
+        console.error('Legacy deleted teacher migration failed:', err);
+        Toast.danger(`تعذر نقل (${item?.name || id}): ${err?.message || err}`);
+        return false;
+      }
+    }
+
+    document.getElementById('legacyDeletedPanel')?.addEventListener('click', async (e) => {
+      const oneBtn = e.target.closest('.legacy-migrate-one');
+      const allBtn = e.target.closest('#btnMigrateAllLegacy');
+      if (!oneBtn && !allBtn) return;
+
+      if (allBtn) {
+        const ids = legacyDeletedTeachers.map(t => t._docId || t.uid);
+        if (!ids.length) return;
+        if (!confirm(`نقل ${ids.length} حساب إلى سلة المحذوفات؟ يمكن استعادتها لاحقًا من صفحة السلة.`)) return;
+
+        const originalText = allBtn.textContent;
+        allBtn.disabled = true;
+        allBtn.textContent = 'جاري النقل...';
+        let moved = 0;
+        for (const id of ids) {
+          if (await migrateLegacyDeletedTeacher(id)) moved++;
+        }
+        allBtn.disabled = false;
+        allBtn.textContent = originalText;
+        if (moved) Toast.success(`تم نقل ${moved} حساب إلى سلة المحذوفات.`);
+        renderLegacyDeletedPanel();
+        return;
+      }
+
+      const id = oneBtn.dataset.id;
+      const item = legacyDeletedTeachers.find(t => (t._docId || t.uid) === id);
+      if (!confirm(`نقل حساب (${item?.name || id}) إلى سلة المحذوفات؟`)) return;
+
+      oneBtn.disabled = true;
+      const moved = await migrateLegacyDeletedTeacher(id);
+      if (moved) Toast.success('تم النقل إلى سلة المحذوفات — يمكن استعادته من صفحة السلة.');
+      else oneBtn.disabled = false;
+      renderLegacyDeletedPanel();
     });
 
     // === 9. نظام المودال الاحترافي لحذف الحساب نهائياً من الـ Authentication والـ Firestore ===

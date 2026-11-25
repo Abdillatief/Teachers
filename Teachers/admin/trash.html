@@ -181,13 +181,25 @@
 
           showCustomConfirm(`هل تريد استعادة السجل المحذوف (${escapeHtml(record.data?.name || record.data?.studentName || 'المستند')}) وإعادته لمكانه المعتمد فوراً؟`, async () => {
             try {
+              const targetCollection = record.originalCollection || record.collectionName;
+              if (!targetCollection || !record.originalId) throw new Error('بيانات السجل ناقصة (المجموعة أو المعرّف)');
+
               // 1. إعادة المستند لجدوله الأصلي
-              await setDoc(doc(db, record.originalCollection, record.originalId), record.data);
-              
+              const restoreData = { ...(record.data || {}) };
+              // حساب معلم كان معلّمًا "deleted" من الزر القديم: يرجّع بحالة موقوفة بدل ما يفضل مختفي
+              const wasDeletedTeacher = targetCollection === 'users' && restoreData.status === 'deleted';
+              if (wasDeletedTeacher) {
+                restoreData.status = 'suspended';
+                delete restoreData.deletedAt;
+              }
+              await setDoc(doc(db, targetCollection, record.originalId), restoreData);
+
               // 2. إزالته من السلة
               await deleteDoc(doc(db, "trash", id));
-              
-              Toast.success("تم استعادة وترميم السجل بنجاح وإعادته لقاعدة البيانات الفعالة.");
+
+              Toast.success(wasDeletedTeacher
+                ? "تم استعادة حساب المعلم — ظهر في قائمة المعلمين بحالة «موقوف»، فعّله من زر تفعيل الحساب."
+                : "تم استعادة وترميم السجل بنجاح وإعادته لقاعدة البيانات الفعالة.");
             } catch (err) {
               console.error(err);
               Toast.danger("حدث خطأ أثناء محاولة الاستعادة المباشرة.");
