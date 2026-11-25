@@ -1,6 +1,0 @@
-[
-	{
-		"pkg": "@onesignal/capacitor-plugin",
-		"classpath": "com.onesignal.capacitor.OneSignalCapacitorPlugin"
-	}
-]
