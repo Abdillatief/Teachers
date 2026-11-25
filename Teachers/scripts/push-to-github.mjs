@@ -6,7 +6,7 @@ const TOKEN = process.env.GITHUB_TOKEN;
 const OWNER = process.env.GITHUB_OWNER || 'Abdillatief';
 const REPO = process.env.GITHUB_REPO || 'Teachers';
 const BRANCH = process.env.GITHUB_BRANCH || 'main';
-const REMOTE_PREFIX = (process.env.GITHUB_REMOTE_PREFIX || 'Sabeel SYS').replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+const REMOTE_PREFIX = (process.env.GITHUB_REMOTE_PREFIX || 'Teachers').replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
 const ROOT = process.cwd();
 
 if (!TOKEN) {

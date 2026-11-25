@@ -13,7 +13,7 @@
    - **Framework preset**: `Vite` (أو `None`)
    - **Build command**: `npm run build` (أو `npm run build:pages`)
    - **Build output directory**: `dist`
-   - **Root directory**: `/` (اتركه فارغاً أو كما هو)
+   - **Root directory**: `Teachers` (المشروع كله موجود جوّه فولدر `Teachers` في جذر مستودع `Abdillatief/Teachers`)
 5. **إضافة المتغيرات البيئية (Environment Variables)**:
    - اضغط على **Add variable**.
    - الاسم (Variable name): `GEMINI_API_KEY`
