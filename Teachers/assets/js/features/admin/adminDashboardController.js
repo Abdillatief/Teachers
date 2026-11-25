@@ -50,10 +50,12 @@ function toYMD(value) {
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? '' : localDate(parsed);
 }
+// كل listener بينادي renderAll، وعند التحميل بيوصل 8 snapshots ورا بعض.
+// التأخير القصير ده بيجمعهم في رسمة واحدة بدل 8 رسمات كاملة.
 function scheduleRender(){
   if (renderQueued) return;
   renderQueued = true;
-  requestAnimationFrame(() => { renderQueued = false; renderAll(); });
+  setTimeout(() => { renderQueued = false; renderAll(); }, 120);
 }
 
 auth.onAuthStateChanged(async (user) => {
@@ -376,9 +378,10 @@ function renderTodaySessions() {
 
 function renderStudentFollowUp(filter='all') {
   const tbody = $('studentFollowUpTableBody'); if (!tbody) return;
+  const teacherById = new Map(teachers.map(t => [t.uid || t.id, t]));
   const enriched = students.map(s => {
     const credit = getStudentCredit(s);
-    const teacher = teachers.find(t => (t.uid||t.id) === s.teacherId);
+    const teacher = teacherById.get(s.teacherId);
     const { status, label, color } = creditStatus(s);
     const pkg = credit.doc?.activePackageName || s.packageName || s.subscriptionType || '-';
     return { s, bal: credit.remaining, pkg, teacher, status, label, color };

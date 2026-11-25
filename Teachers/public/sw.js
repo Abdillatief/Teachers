@@ -16,20 +16,19 @@ try {
   console.warn('[Sabeel SW] Notice: OneSignal worker import error or offline:', e);
 }
 
-const CACHE_NAME = 'sabeel-pwa-v2.1.6';
+const CACHE_NAME = 'sabeel-pwa-v2.1.7';
 const OFFLINE_URL = '/offline.html';
 
 // Core static assets to pre-cache during installation
+// Only files that exist in the production build output: Vite emits CSS with
+// hashed names under /assets/, so listing the source CSS paths made
+// cache.addAll() reject and silently skipped the whole precache.
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
   '/register.html',
   '/manifest.json',
-  '/assets/css/variables.css',
-  '/assets/css/main.css',
-  '/assets/css/components.css',
-  '/assets/icons/icon-192.png',
-  '/assets/icons/icon-512.png',
+  '/offline.html',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/icon-maskable-192.png',

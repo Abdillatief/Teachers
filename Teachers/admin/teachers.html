@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="../assets/css/variables.css">
   <link rel="stylesheet" href="../assets/css/main.css">
   <link rel="stylesheet" href="../assets/css/components.css">
-  <script src="/assets/vendor/lucide.min.js"></script>
+  <script src="/assets/vendor/lucide-1.80.0.min.js"></script>
   <style>
     .grid-view-container {
       display: grid;
@@ -402,6 +402,7 @@
 
       <!-- أزرار الإجراءات السريعة بالأسفل -->
       <div style="border-top: 2px solid var(--border-color); padding-top: 1.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;" id="quickActionsContainer">
+        <button class="btn btn-secondary action-btn" id="qaEditBasicBtn"><i data-lucide="edit-3"></i> تعديل الاسم والهاتف</button>
         <button class="btn btn-secondary action-btn" id="actEditRates"><i data-lucide="dollar-sign"></i> أجر ساعة</button>
         <button class="btn btn-secondary action-btn" id="actEditPeriod"><i data-lucide="calendar"></i> فترة الاحتساب</button>
         <button class="btn btn-secondary action-btn" id="actAddBonus" style="color: var(--success);"><i data-lucide="plus-circle"></i> مكافأة</button>

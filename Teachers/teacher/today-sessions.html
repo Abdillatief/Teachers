@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="../assets/css/variables.css">
   <link rel="stylesheet" href="../assets/css/main.css">
   <link rel="stylesheet" href="../assets/css/components.css">
-  <script src="/assets/vendor/lucide.min.js"></script>
+  <script src="/assets/vendor/lucide-1.80.0.min.js"></script>
   <style>
     .modal-overlay {
       display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -153,6 +153,13 @@
           </div>
 
           <div id="groupDynamicContent"></div>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.9rem;">
+            <button type="button" id="btnSelectAllPresent" class="btn btn-secondary" style="font-size: .75rem; padding: .35rem .7rem;">تحديد الكل حاضر</button>
+            <button type="button" id="btnSelectAllAbsent" class="btn btn-secondary" style="font-size: .75rem; padding: .35rem .7rem;">تحديد الكل غائب</button>
+            <button type="button" id="btnSelectExceptStudent" class="btn btn-secondary" style="font-size: .75rem; padding: .35rem .7rem;">حاضر إلا طالب</button>
+            <button type="button" id="btnOpenQuickGroupDrawer" class="btn btn-secondary" style="font-size: .75rem; padding: .35rem .7rem;">إضافة طلاب للمجموعة</button>
+          </div>
+          
           <div id="groupStudentsList" style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.75rem;"></div>
         </div>
 
@@ -412,6 +419,10 @@
     import { populateGroupSelect, renderGroupSessionUI, executeGroupSessionSubmit } from '../assets/js/features/groups/groupSessionHandler.js';
     import { openRecordGroupSessionModal, openGroupSessionDetailsModal } from '../assets/js/features/groups/groupSessionModal.js';
     import { notifyAdminSessionRecorded } from '../assets/js/shared/utils/adminNotificationService.js';
+    import { DraftManager } from '../assets/js/shared/utils/draftManager.js';
+
+    // روابط الإشعارات (deep links) تتنفذ مرة واحدة بس لكل تحميل صفحة
+    let deepLinkHandled = false;
     import { deductSessionCredit } from '../assets/js/shared/utils/creditManager.js';
     import { checkDuplicateSession, promptDuplicateSessionConfirm, createSystemWarning } from '../assets/js/features/sessions/sessionRecordService.js';
     import { PERMISSIONS, hasPermissionFromSession } from '../assets/js/features/rbac/rbacService.js';
@@ -819,9 +830,20 @@
       });
 
       // Deep Linking handler for push notification clicks / dashboard links
+      // renderTodayLessonsList بيعيد التنفيذ مع كل snapshot، فمن غير الحارس ده
+      // كان الفورم يفتح تاني ولوحده بعد كل تحديث أو refresh.
+      if (deepLinkHandled) return;
       const urlParams = new URLSearchParams(window.location.search);
-      const deepStudentId = urlParams.get('studentId');
-      const deepSessionType = urlParams.get('type');
+      const deepGroupId = urlParams.get('groupId');
+      const deepSessionId = urlParams.get('sessionId');
+      const resumeDraft = urlParams.get('resumeDraft') === 'true';
+      const deepStudentId = urlParams.get('studentId') || deepGroupId;
+      const deepSessionType = urlParams.get('type') || (deepGroupId ? 'group' : null);
+      if (deepStudentId || deepSessionId || resumeDraft) {
+        deepLinkHandled = true;
+        // امسح الباراميتر من الرابط بعد الاستخدام عشان الـrefresh/Back ميفتحوش الفورم تاني
+        history.replaceState({}, '', window.location.pathname);
+      }
       if (deepSessionType === 'group' && deepStudentId) {
         setTimeout(async () => {
           try {
@@ -837,6 +859,48 @@
             Toast.danger("تعذر فتح نموذج تسجيل الحصة الجماعية.");
           }
         }, 300);
+      } else if (deepSessionId) {
+        setTimeout(async () => {
+          try {
+            const sessionSnap = await getDoc(doc(db, 'sessions', deepSessionId));
+            if (!sessionSnap.exists()) return;
+            const deepSession = { id: sessionSnap.id, ...sessionSnap.data() };
+            const targetStudent = studentsCached.find(s => (s.id || s.uid) === deepSession.studentId);
+            if (!targetStudent) {
+              Toast.warning('لم يتم العثور على طالب الحصة المطلوبة.');
+              return;
+            }
+            activeStudentForRecording = targetStudent;
+            activeExistingSessionIdForRecording = deepSession.id;
+            openRecordSessionModal(targetStudent);
+          } catch (err) {
+            console.error('Error opening session from link:', err);
+          }
+        }, 300);
+      } else if (resumeDraft) {
+        setTimeout(() => {
+          try {
+            const draft = DraftManager.loadDraft('recordSessionForm');
+            if (!draft || !Object.keys(draft).length) {
+              Toast.info('لا توجد مسودة محفوظة لاستئنافها.');
+              return;
+            }
+            const studentName = String(draft.recStudentName || '').trim();
+            const targetStudent = studentName
+              ? studentsCached.find(s => String(s.name || '').trim() === studentName)
+              : null;
+            if (!targetStudent) {
+              Toast.warning('المسودة لا تحتوي على طالب معروف، افتح تسجيل الحصة واختر الطالب.');
+              return;
+            }
+            activeStudentForRecording = targetStudent;
+            activeExistingSessionIdForRecording = null;
+            openRecordSessionModal(targetStudent);
+            DraftManager.restoreDraft(document.getElementById('recordSessionForm'));
+          } catch (err) {
+            console.warn('[Draft] resume failed', err);
+          }
+        }, 400);
       } else if (deepStudentId) {
         setTimeout(() => {
           const deepBtn = document.querySelector(`.record-session-btn[data-id="${deepStudentId}"]`);

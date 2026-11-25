@@ -259,6 +259,29 @@ class DraftManagerEngine {
   }
 
   /**
+   * Reads a saved draft payload
+   * Accepts either a full storage key or part of it (e.g. a form id), because
+   * keys include the page path: sabeel_draft_<page>_<formId>.
+   */
+  loadDraft(customKey = null) {
+    try {
+      if (!customKey) return null;
+      const direct = localStorage.getItem(customKey);
+      if (direct) return JSON.parse(direct)?.data || null;
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key || !key.startsWith('sabeel_draft_') || !key.includes(customKey)) continue;
+        const parsed = JSON.parse(localStorage.getItem(key) || 'null');
+        if (parsed?.data) return parsed.data;
+      }
+      return null;
+    } catch (e) {
+      console.warn('DraftManager loadDraft error:', e);
+      return null;
+    }
+  }
+
+  /**
    * Restores draft values into container fields
    */
   restoreDraft(container, customKey = null) {

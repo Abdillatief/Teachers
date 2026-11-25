@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="../assets/css/variables.css">
   <link rel="stylesheet" href="../assets/css/main.css">
   <link rel="stylesheet" href="../assets/css/components.css">
-  <script src="/assets/vendor/lucide.min.js"></script>
+  <script src="/assets/vendor/lucide-1.80.0.min.js"></script>
   <style>
     .sessions-layout {
       display: grid;
@@ -107,6 +107,13 @@
                   </div>
 
                   <div id="groupDynamicContent"></div>
+                  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.9rem;">
+            <button type="button" id="btnSelectAllPresent" class="btn btn-secondary" style="font-size: .75rem; padding: .35rem .7rem;">تحديد الكل حاضر</button>
+            <button type="button" id="btnSelectAllAbsent" class="btn btn-secondary" style="font-size: .75rem; padding: .35rem .7rem;">تحديد الكل غائب</button>
+            <button type="button" id="btnSelectExceptStudent" class="btn btn-secondary" style="font-size: .75rem; padding: .35rem .7rem;">حاضر إلا طالب</button>
+            <button type="button" id="btnOpenQuickGroupDrawer" class="btn btn-secondary" style="font-size: .75rem; padding: .35rem .7rem;">إضافة طلاب للمجموعة</button>
+          </div>
+          
                   <div id="groupStudentsList" style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.75rem;"></div>
                 </div>
 
