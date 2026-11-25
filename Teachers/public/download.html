@@ -139,7 +139,7 @@
         </div>
 
         <div class="meta">
-          <span>Android 8+</span>
+          <span>Android 7+</span>
           <span>تثبيت مباشر APK</span>
           <span>يعمل بنفس حسابك</span>
         </div>
@@ -216,7 +216,7 @@
         <a class="btn btn-primary" id="dlRetryBtn" href="/downloads/sabeel-academy.apk" download="sabeel-academy.apk">إعادة بدء التحميل</a>
         <button class="btn btn-secondary" id="dlCloseBtn" type="button">إغلاق</button>
       </div>
-      <div class="dl-file">اسم الملف: sabeel-academy.apk • الحجم التقريبي: 11 MB</div>
+      <div class="dl-file">اسم الملف: sabeel-academy.apk <span id="dlSize">• الحجم: 8.6 MB</span></div>
     </div>
   </div>
 
@@ -275,6 +275,19 @@
 
       btn.addEventListener('click', startDownload);
       retryBtn && retryBtn.addEventListener('click', startDownload);
+
+      // اقرأ الحجم الحقيقي من السيرفر بدل رقم ثابت ممكن يقدم مع كل إصدار
+      (async function syncFileMeta() {
+        const el = document.getElementById('dlSize');
+        if (!el) return;
+        try {
+          const res = await fetch(btn.getAttribute('href'), { method: 'HEAD', cache: 'no-store' });
+          if (!res.ok) return;
+          const len = Number(res.headers.get('content-length'));
+          if (!len) return;
+          el.textContent = '• الحجم: ' + (len / 1048576).toFixed(1) + ' MB';
+        } catch (_) { /* keep fallback text */ }
+      })();
     })();
   </script>
 </body>

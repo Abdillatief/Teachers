@@ -6,3 +6,7 @@
 
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+# اسم ملف الـAPK ثابت، فلازم نتحقق منه كل مرة بدل ما المتصفح/Kاش يقدّم نسخة قديمة
+/downloads/*
+  Cache-Control: public, max-age=0, must-revalidate

@@ -13,7 +13,8 @@
     "test:rules": "node scripts/run-rule-tests.mjs",
     "verify:config": "node scripts/verify-config.mjs",
     "deploy": "npm run build && wrangler pages deploy dist",
-    "deploy:pages": "npm run build && wrangler pages deploy dist"
+    "deploy:pages": "npm run build && wrangler pages deploy dist",
+    "android:apk": "node scripts/build-android-apk.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
