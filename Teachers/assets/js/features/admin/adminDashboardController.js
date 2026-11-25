@@ -73,8 +73,10 @@ auth.onAuthStateChanged(async (user) => {
   initMonthPicker();
   bindUI();
   try { initCommunityDashboardWidget('adminCommunityWidgetContainer', 'admin'); } catch (e) { console.error('[Dashboard] community widget failed', e); }
-  try { await backfillOperationalProjectionsIfNeeded(); } catch (e) { console.error('[Dashboard] projections backfill failed', e); }
   subscribeData();
+  // الـbackfill بيعمل ٤ قراءات كاملة للمجموعات ويكتب الـprojections الناقصة،
+  // فمينفعش يعطّل أول رسم للوحة التحكم. بيشتغل في الخلفية بعد بدء الاشتراكات.
+  backfillOperationalProjectionsIfNeeded().catch((e) => console.warn('[Dashboard] projections backfill failed', e));
 });
 
 function initMonthPicker() {

@@ -30,11 +30,12 @@ const firebaseConfig = {
 // تهيئة تطبيق Firebase الأساسي
 const app = initializeApp(firebaseConfig);
 
-// تهيئة Firestore بذاكرة محلية مستقرة ودعم الكشف التلقائي عن Long Polling لمنع تعارضات الكاش متعدد التبويبات
+// تهيئة Firestore بذاكرة محلية فقط (بدون كاش IndexedDB) حتى لا تبقى بيانات
+// المستخدم محفوظة على أجهزة مشتركة. لا نفرض Long Polling: قناة WebChannel هي
+// الوضع الأسرع، وFirestore بيرجع لـ Long Polling تلقائيًا لو الشبكة منعتها.
 let db;
 try {
   db = initializeFirestore(app, {
-    experimentalForceLongPolling: true,
     localCache: memoryLocalCache()
   });
 } catch (err) {
