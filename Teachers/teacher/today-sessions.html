@@ -111,7 +111,9 @@
         </span>
       </div>
 
-      <form id="recordSessionForm">
+      <!-- Native validation is disabled on purpose: conditional fields are validated
+           in the submit handler so a hidden field can never block submission silently. -->
+      <form id="recordSessionForm" novalidate>
         <div class="form-group" id="singleStudentGroup">
           <label style="font-size: 0.75rem;">الاسم الشخصي للطالب</label>
           <input type="text" id="recStudentName" class="form-control" readonly style="background-color: var(--bg-primary); font-weight: bold;">
@@ -192,7 +194,9 @@
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
             <div class="form-group">
               <label for="recNewDate" style="font-size: 0.75rem;">التاريخ الجديد <span style="color: var(--danger);">(إجباري)</span></label>
-              <input type="date" id="recNewDate" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
+              <!-- required is toggled from JS only while this panel is visible.
+                   A hidden required input silently blocks form submission (no submit event). -->
+              <input type="date" id="recNewDate" class="form-control" style="border: 1px solid var(--border-color); width: 100%;">
             </div>
             <div class="form-group">
               <label style="font-size: 0.75rem;">الوقت الجديد</label>
@@ -1304,6 +1308,13 @@
 
       absenceTypeContainer.style.display = "none";
       postponeContainer.style.display = "none";
+      // Reset the conditional requirement every time the modal opens: the status
+      // is set programmatically above, so the change listener does not fire here.
+      const postponeDateInput = document.getElementById('recNewDate');
+      if (postponeDateInput) {
+        postponeDateInput.required = false;
+        postponeDateInput.value = '';
+      }
       if (cancelContainer) cancelContainer.style.display = "none";
       document.getElementById('recType').value = "individual";
       groupAttendanceContainer.style.display = "none";
@@ -1385,6 +1396,12 @@
       const state = recStatus.value;
       absenceTypeContainer.style.display = state === "student_absent" ? "block" : "none";
       postponeContainer.style.display = state === "delayed" ? "block" : "none";
+      // Keep HTML validation in sync with visibility: a hidden required input
+      // silently prevents the submit event from firing, so the save code never runs.
+      const postponeDateInput = document.getElementById('recNewDate');
+      if (postponeDateInput) {
+        postponeDateInput.required = state === "delayed";
+      }
       if (cancelContainer) cancelContainer.style.display = state === "cancelled" ? "block" : "none";
 
       const isConducted = state === "completed" || state === "compensatory";
