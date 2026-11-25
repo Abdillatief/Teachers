@@ -73,6 +73,44 @@
     .timeline-item::before {
       content: ""; position: absolute; right: -6px; top: 0.25rem; width: 10px; height: 10px; border-radius: 50%; background-color: var(--primary-color);
     }
+    /* شبكة أزرار الإجراءات السريعة داخل ملف المعلم */
+    #quickActionsContainer {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 0.6rem;
+      border-top: 2px solid var(--border-color);
+      padding-top: 1.25rem;
+      margin-top: 0.5rem;
+    }
+    #quickActionsContainer .action-btn {
+      display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+      font-size: 0.85rem; font-weight: 700; padding: 0.6rem 0.75rem;
+      white-space: nowrap; margin: 0;
+    }
+    #quickActionsContainer .action-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+    #quickActionsContainer .danger-action { grid-column: 1 / -1; }
+    @media (max-width: 560px) {
+      #quickActionsContainer { grid-template-columns: 1fr 1fr; }
+      #quickActionsContainer .action-btn { font-size: 0.76rem; padding: 0.55rem 0.4rem; white-space: normal; text-align: center; }
+    }
+    @media (max-width: 900px) {
+      .payroll-two-col { grid-template-columns: 1fr !important; }
+    }
+    @media (max-width: 640px) {
+      .modal-card { padding: 1.1rem; max-height: 94vh; }
+      /* التبويبات تبقى شبكة 2×2 بدل شريط أفقي مزدحم على الموبايل */
+      .tabs-header {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem;
+        overflow: visible; padding-bottom: 0.4rem; border-bottom-width: 1px;
+      }
+      .tab-btn { font-size: 0.8rem; padding: 0.5rem 0.35rem; white-space: normal; text-align: center; margin: 0; line-height: 1.4; }
+      #tab-overview > div:first-child { justify-content: center; text-align: center; gap: 1rem; }
+      #modalTeacherAvatar { width: 64px; height: 64px; }
+      .salary-subcard { padding: 0.6rem; }
+      #teacherProfileModal > .modal-card > div:first-child { gap: 0.5rem; }
+      #teacherProfileModal h2 { font-size: 1.02rem !important; }
+      #closeProfileModalBtn { font-size: 0.82rem !important; padding: 0.35rem 0.5rem !important; white-space: nowrap; }
+    }
   </style>
 
   <!-- PWA & Mobile Web App Meta Tags -->
@@ -202,7 +240,7 @@
           </div>
 
           <!-- الدارسين والحصص -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; flex-wrap: wrap;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem;">
             <div>
               <h4 style="font-weight: 700; margin-bottom: 0.5rem;">👨‍🎓 الطلاب المنتسبين للمشرف</h4>
               <div class="table-container" style="margin-top: 0; max-height: 200px; overflow-y: auto;">
@@ -282,7 +320,7 @@
 
         <!-- 3. المستحقات والرواتب وإثبات الدفع -->
         <div id="tab-payroll" class="tab-content">
-          <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 1.5rem; flex-wrap: wrap;">
+          <div class="payroll-two-col" style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 1.5rem; flex-wrap: wrap;">
             
             <div>
               <h4 style="font-weight: 800; margin-bottom: 1rem;"><i data-lucide="calculator"></i> حسابات الدورة المالية الجارية</h4>
@@ -401,7 +439,7 @@
       </div>
 
       <!-- أزرار الإجراءات السريعة بالأسفل -->
-      <div style="border-top: 2px solid var(--border-color); padding-top: 1.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;" id="quickActionsContainer">
+      <div id="quickActionsContainer">
         <button class="btn btn-secondary action-btn" id="qaEditBasicBtn"><i data-lucide="edit-3"></i> تعديل الاسم والهاتف</button>
         <button class="btn btn-secondary action-btn" id="actEditRates"><i data-lucide="dollar-sign"></i> أجر ساعة</button>
         <button class="btn btn-secondary action-btn" id="actEditPeriod"><i data-lucide="calendar"></i> فترة الاحتساب</button>
@@ -410,7 +448,7 @@
         <button class="btn btn-secondary action-btn" id="actSendNotif" style="color: var(--info);"><i data-lucide="bell"></i> بث إشعار</button>
         <button class="btn btn-secondary action-btn" id="actSuspend" style="color: var(--danger);"><i data-lucide="user-x"></i> إيقاف حساب</button>
         <button class="btn btn-secondary action-btn" id="actActivate" style="color: var(--success); display: none;"><i data-lucide="user-check"></i> تفعيل حساب</button>
-        <button class="btn btn-secondary action-btn" id="actDeleteTeacherGlobal" style="color: var(--danger); font-weight: bold; background-color: var(--danger-light);"><i data-lucide="trash-2"></i> حذف الحساب نهائياً</button>
+        <button class="btn btn-secondary action-btn danger-action" id="actDeleteTeacherGlobal" style="color: var(--danger); font-weight: bold; background-color: var(--danger-light); border-color: var(--danger);"><i data-lucide="trash-2"></i> حذف الحساب نهائياً</button>
       </div>
 
     </div>
@@ -473,6 +511,7 @@
 
     protectRoute('admin');
 
+    let teachersUnsubs = [];
     let cachedTeachers = [];
     let cachedStudents = [];
     let cachedGroups = [];
@@ -494,38 +533,42 @@
     });
 
     function initTeachersList() {
+      // إلغاء أي مستمعين سابقين قبل إعادة الاشتراك (كانوا يتراكمون مع كل استدعاء)
+      teachersUnsubs.forEach(unsub => { try { unsub(); } catch (e) {} });
+      teachersUnsubs = [];
+
       // مزامنة الطلاب لتغذية حسابات الرواتب المتوقعة
-      onSnapshot(collection(db, "students"), (snapshot) => {
+      teachersUnsubs.push(onSnapshot(collection(db, "students"), (snapshot) => {
         cachedStudents = [];
-        snapshot.forEach(docSnap => cachedStudents.push({ id: docSnap.id, ...docSnap.data() }));
+        snapshot.forEach(docSnap => cachedStudents.push({ ...docSnap.data(), id: docSnap.id }));
         renderTeachersView();
-      }, (err) => console.warn("Teachers list students listener warning:", err));
+      }, (err) => console.warn("Teachers list students listener warning:", err)));
 
       // مزامنة المجموعات لتغذية حسابات الرواتب المتوقعة
-      onSnapshot(collection(db, "groups"), (snapshot) => {
+      teachersUnsubs.push(onSnapshot(collection(db, "groups"), (snapshot) => {
         cachedGroups = [];
         snapshot.forEach(docSnap => cachedGroups.push({ id: docSnap.id, ...docSnap.data() }));
         renderTeachersView();
-      }, (err) => console.warn("Teachers list groups listener warning:", err));
+      }, (err) => console.warn("Teachers list groups listener warning:", err)));
 
       // مزامنة الحصص لتغذية حساب المستحق الفعلي من محرك المطابقة
-      onSnapshot(collection(db, "sessions"), (snapshot) => {
+      teachersUnsubs.push(onSnapshot(collection(db, "sessions"), (snapshot) => {
         cachedAllSessions = [];
         snapshot.forEach(docSnap => cachedAllSessions.push(docSnap.data()));
         renderTeachersView();
-      }, (err) => console.warn("Teachers list sessions listener warning:", err));
+      }, (err) => console.warn("Teachers list sessions listener warning:", err)));
 
-      // مزامنة المعلمين
-      onSnapshot(collection(db, "users"), (snapshot) => {
+      // مزامنة المعلمين — معرّف المستند له الأولوية المطلقة على أي حقل uid قديم داخل البيانات
+      teachersUnsubs.push(onSnapshot(collection(db, "users"), (snapshot) => {
         cachedTeachers = [];
         snapshot.forEach(docSnap => {
           const d = docSnap.data();
           if (d.role === "teacher") {
-            cachedTeachers.push({ uid: docSnap.id, ...d });
+            cachedTeachers.push({ ...d, uid: docSnap.id, id: docSnap.id, _docId: docSnap.id });
           }
         });
         renderTeachersView();
-      }, (err) => console.warn("Teachers list users listener warning:", err));
+      }, (err) => console.warn("Teachers list users listener warning:", err)));
     }
 
     const savedView = localStorage.getItem('teachersViewPreference') || 'grid';
@@ -1729,9 +1772,14 @@
     const emailEl = document.getElementById('deleteTeacherEmail');
 
     document.getElementById('actDeleteTeacherGlobal').addEventListener('click', () => {
-      avatarImg.src = activeTeacher.photoURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=120';
-      nameEl.textContent = activeTeacher.name;
-      emailEl.textContent = activeTeacher.email;
+      const teacher = activeTeacher || cachedTeachers.find(t => (t._docId || t.uid) === activeTeacherId);
+      if (!teacher) {
+        Toast.warning('تعذر تحديد حساب المعلم، أعد فتح الملف وحاول مجددًا.');
+        return;
+      }
+      avatarImg.src = teacher.photoURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=120';
+      nameEl.textContent = teacher.name || '-';
+      emailEl.textContent = teacher.email || '-';
       
       // إخفاء مودال الملف الشخصي مؤقتًا لإظهار مودال التأكيد
       document.getElementById('teacherProfileModal').style.display = "none";
@@ -1744,25 +1792,44 @@
     });
 
     document.getElementById('btnConfirmDeleteTeacher').addEventListener('click', async () => {
-      const originalBtnText = document.getElementById('btnConfirmDeleteTeacher').textContent;
+      const confirmBtn = document.getElementById('btnConfirmDeleteTeacher');
+      const originalBtnText = confirmBtn.textContent;
+      // معرّف المستند الحقيقي (مش أي حقل uid قديم جوه البيانات)
+      const targetId = activeTeacher?._docId || activeTeacher?.id || activeTeacher?.uid || activeTeacherId;
+
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = "جاري الحذف النهائي...";
+
       try {
-        document.getElementById('btnConfirmDeleteTeacher').disabled = true;
-        document.getElementById('btnConfirmDeleteTeacher').textContent = "جاري الحذف النهائي...";
+        if (!targetId) throw new Error('معرّف المعلم غير متاح، أعد فتح الملف وحاول مجددًا');
+        const targetRef = doc(db, "users", targetId);
+        const targetSnap = await getDoc(targetRef);
+        if (!targetSnap.exists()) throw new Error('حساب المعلم غير موجود في قاعدة البيانات');
+
+        const teacherData = targetSnap.data();
+        const teacherName = teacherData.name || activeTeacher?.name || '';
 
         // 1. تدوين سجل النشاط الأمني قبل الحذف
-        await writeAuditLog(activeTeacherId, activeTeacher.name, "ADMIN_FORCE_DELETE_TEACHER_COMPLETE", { email: activeTeacher.email }, null);
+        await writeAuditLog(targetId, teacherName, "ADMIN_FORCE_DELETE_TEACHER_COMPLETE", targetId, { email: teacherData.email || '' });
 
         // 2. حذف وتحويل المعلم لسلة المحذوفات مع إمكانية التراجع
-        await softDeleteToTrash("users", activeTeacherId, activeTeacher, `حذف حساب المعلم ${activeTeacher.name}`);
+        await softDeleteToTrash("users", targetId, { ...teacherData, uid: targetId }, `حذف حساب المعلم ${teacherName}`);
+
+        // 3. التأكد الفعلي من الحذف — بدل ما نفترض إنه نجح
+        const afterSnap = await getDoc(targetRef);
+        if (afterSnap.exists()) throw new Error('لم يتم حذف الحساب من قاعدة البيانات');
+
         deleteModal.style.display = "none";
-        
-        // إعادة تهيئة وتحديث قائمة المعلمين مباشرة بالصفحة
-        initTeachersList();
+        document.getElementById('teacherProfileModal').style.display = "none";
+        activeTeacher = null;
+        activeTeacherId = "";
+        Toast.success(`تم حذف حساب المعلم (${teacherName}) ونقله إلى سلة المحذوفات.`);
       } catch (err) {
-        console.error(err);
-        Toast.danger("حدث خطأ أثناء محاولة الحذف الكلي للمستخدم.");
-        document.getElementById('btnConfirmDeleteTeacher').disabled = false;
-        document.getElementById('btnConfirmDeleteTeacher').textContent = originalBtnText;
+        console.error("Delete teacher failed:", err);
+        Toast.danger(`تعذر حذف الحساب: ${err?.message || err}`);
+      } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = originalBtnText;
       }
     });
 

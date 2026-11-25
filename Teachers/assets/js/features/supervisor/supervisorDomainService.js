@@ -663,6 +663,12 @@ export async function recordLessonWithWorkflow(payload, actor = {}) {
         compensatedAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
+      // تعليم الحصة التعويضية نفسها كمسجلة، حتى لا تعرض واجهة المعلم زر تسجيلها مرة أخرى
+      await updateDoc(doc(db, 'sessions', savedSessionId), {
+        compensationStatus: 'completed',
+        compensatedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
     } catch (e) {
       console.warn('Could not update parent delayed session:', e?.message || e);
     }

@@ -169,11 +169,10 @@
             <option value="scheduled">مجدولة (Scheduled)</option>
             <option value="completed" selected>حاضر ومكتمل (Completed)</option>
             <option value="student_absent">غياب الطالب (Student Absent)</option>
-            <option value="teacher_absent">غياب المعلم (Teacher Absent)</option>
             <option value="delayed">مؤجلة (Delayed)</option>
-            <option value="compensatory">حصة تعويضية (Compensatory)</option>
             <option value="cancelled">ملغاة (Cancelled)</option>
           </select>
+          <div id="makeupRecordingNotice" style="display: none; margin-top: 0.6rem; padding: 0.6rem 0.75rem; background: var(--primary-light); color: var(--primary-color); border-radius: 8px; font-size: 0.78rem; font-weight: 800;"></div>
         </div>
 
         <!-- مدخل فرعي لحالة غياب الدارس -->
@@ -187,21 +186,13 @@
           <input type="text" id="recAbsenceReason" class="form-control" placeholder="توضيح سبب غياب الطالب...">
         </div>
 
-        <!-- مدخل فرعي لغياب المعلم -->
-        <div id="teacherAbsentContainer" class="form-group" style="display: none; margin-top: 1rem; padding: 1rem; background-color: var(--bg-primary); border: 1px dashed var(--danger); border-radius: 8px;">
-          <label for="recTeacherAbsentReason">سبب غياب المعلم</label>
-          <input type="text" id="recTeacherAbsentReason" class="form-control" placeholder="اكتب سبب الغياب ليتم توثيقه في سجل الغياب...">
-        </div>
-
         <!-- مدخل فرعي لتأجيل الحصة -->
         <div id="postponeContainer" class="form-group" style="display: none; margin-top: 1rem; padding: 1rem; background-color: var(--bg-primary); border: 1px dashed var(--border-color); border-radius: 8px;">
           <h4 style="font-size: 0.82rem; font-weight: 800; color: var(--primary-color); margin-bottom: 0.75rem;"><i data-lucide="clock"></i> بيانات التأجيل والموعد التعويضي</h4>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
             <div class="form-group">
-              <label style="font-size: 0.75rem;">التاريخ الجديد</label>
-              <select id="recNewDate" class="form-control" style="border: 1px solid var(--border-color); width: 100%;">
-                <option value="">-- اختر اليوم البديل --</option>
-              </select>
+              <label for="recNewDate" style="font-size: 0.75rem;">التاريخ الجديد <span style="color: var(--danger);">(إجباري)</span></label>
+              <input type="date" id="recNewDate" class="form-control" required style="border: 1px solid var(--border-color); width: 100%;">
             </div>
             <div class="form-group">
               <label style="font-size: 0.75rem;">الوقت الجديد</label>
@@ -232,16 +223,6 @@
               <input type="text" id="recSlotSelectionReason" class="form-control" placeholder="مثال: بناءً على توافر الطالب">
             </div>
           </div>
-        </div>
-
-        <!-- مدخل فرعي للحصة التعويضية -->
-        <div id="compensatoryContainer" class="form-group" style="display: none; margin-top: 1rem; padding: 1rem; background-color: var(--bg-primary); border: 1px dashed var(--primary-color); border-radius: 8px;">
-          <label for="recOriginalLessonId">ربط بحصة مؤجلة سابقة (اختياري)</label>
-          <select id="recOriginalLessonId" class="form-control">
-            <option value="">-- بدون ربط أو اختر الحصة المؤجلة --</option>
-          </select>
-          <label for="recCompensatoryNotes" style="margin-top: 0.65rem;">ملاحظات الحصة التعويضية</label>
-          <input type="text" id="recCompensatoryNotes" class="form-control" placeholder="تفاصيل الحصة التعويضية...">
         </div>
 
         <!-- مدخل فرعي لإلغاء الحصة -->
@@ -437,6 +418,7 @@
     let groupSessionsCached = [];
     let activeStudentForRecording = null;
     let activeExistingSessionIdForRecording = null;
+    let activeMakeupSessionObj = null;
 
     // تعيين وعرض تاريخ اليوم
     const arabicDays = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
@@ -464,25 +446,12 @@
 
     // توليد خيارات التاريخ والوقت لتأجيل الحصص
     function populatePostponeDropdowns() {
-      const dateSelect = document.getElementById('recNewDate');
+      const dateInput = document.getElementById('recNewDate');
       const timeSelect = document.getElementById('recNewTime');
-      if (!dateSelect || !timeSelect) return;
+      if (!dateInput || !timeSelect) return;
 
-      // ملء اليوم الحالي + الـ 14 يوم القادمة
-      const daysAr = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
-      let dateOpts = '<option value="">-- اختر اليوم البديل --</option>';
-      const today = new Date();
-      for (let i = 0; i <= 14; i++) {
-        const nextDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
-        const yyyy = nextDay.getFullYear();
-        const mm = String(nextDay.getMonth() + 1).padStart(2, '0');
-        const dd = String(nextDay.getDate()).padStart(2, '0');
-        const valStr = `${yyyy}-${mm}-${dd}`;
-        const dayName = daysAr[nextDay.getDay()];
-        const dayLabel = i === 0 ? `نفس اليوم (${dayName} ${nextDay.toLocaleDateString('ar-EG', {month: 'numeric', day: 'numeric'})})` : `${dayName} (${nextDay.toLocaleDateString('ar-EG', {month: 'numeric', day: 'numeric'})})`;
-        dateOpts += `<option value="${valStr}">${dayLabel}</option>`;
-      }
-      dateSelect.innerHTML = dateOpts;
+      // حقل تاريخ حر: المعلم يكتب الموعد الفعلي، مع منع اختيار تاريخ سابق
+      dateInput.min = new Date().toISOString().split('T')[0];
 
       // ملء الأوقات
       const timesList = [
@@ -642,7 +611,12 @@
           sess.status === "delayed"
         );
 
-        if (isScheduledToday || hasPostponedSessionToday) {
+        // الحصة التعويضية المجدولة اليوم لازم تظهر في يومها حتى لو الطالب مش مجدول فيه من الأصل
+        const hasMakeupTodaySession = sessionsCached.some(sess =>
+          sess.studentId === student.id && sess.date === todayStr && sess.status === "compensatory"
+        );
+
+        if (isScheduledToday || hasPostponedSessionToday || hasMakeupTodaySession) {
           let sessionTime = student.schedule?.uniformTime || student.sessionTime || "";
           if (student.schedule?.differentTimes && student.schedule?.times?.[todayArabic]) {
             sessionTime = student.schedule.times[todayArabic];
@@ -721,7 +695,7 @@
         const finalRecordedSession = sessionsCached.find(sess => 
           sess.studentId === student.id && 
           (sess.date === todayStr || sess.postponedFrom === todayStr) &&
-          (sess.status === "completed" || sess.status === "compensatory" || sess.status === "student_absent" || sess.status === "teacher_absent" || sess.status === "cancelled")
+          (sess.status === "completed" || sess.status === "student_absent" || sess.status === "teacher_absent" || sess.status === "cancelled")
         );
 
         // 2. التحقق مما إذا تم تأجيل الحصة من يومنا الحالي إلى يوم آخر قادم
@@ -738,6 +712,12 @@
           sess.date === todayStr &&
           sess.status === "delayed"
         );
+
+        // 4. الحصة التعويضية المجدولة اليوم (تُنشأ تلقائيًا مع التأجيل) — تُعرض كحصة مؤجلة لا كحصة عادية
+        const makeupTodaySession = sessionsCached.find(sess =>
+          sess.studentId === student.id && sess.date === todayStr && sess.status === "compensatory"
+        );
+        let rowTime = item.time;
 
         let actionBtnHtml = "";
         let postponedTagHtml = "";
@@ -763,13 +743,20 @@
           }
 
           actionBtnHtml = `<span class="badge" style="position:static; font-weight:700; ${badgeColor}">${badgeLabel}</span>`;
+        } else if (makeupTodaySession) {
+          rowTime = makeupTodaySession.time || item.time;
+          const isMakeupDone = makeupTodaySession.compensationStatus === 'completed';
+          const fromLabel = makeupTodaySession.postponedFrom || makeupTodaySession.date || 'تاريخ سابق';
+          postponedTagHtml = `<span class="badge" style="position:static; font-size:0.7rem; background-color: rgba(245, 158, 11, 0.15); color: #d97706; font-weight:700; margin-right: 0.5rem;">حصة مؤجلة من ${fromLabel}</span>`;
+          actionBtnHtml = isMakeupDone
+            ? `<span class="badge" style="position:static; font-weight:700; background-color: var(--primary-light); color: var(--primary-color);">تعويضية مسجلة</span>`
+            : `<button class="btn btn-primary record-session-btn" data-id="${student.id}" data-session-id="${makeupTodaySession.id}" style="padding: 0.4rem 0.8rem; font-size: 0.82rem;"><i data-lucide="edit-3" style="width:14px;height:14px;"></i> تسجيل الحصة التعويضية</button>`;
         } else if (postponedFromTodaySession) {
-          actionBtnHtml = `<span class="badge" style="position:static; font-weight:700; background-color: var(--primary-light); color: var(--primary-color);">مؤجلة إلى (${postponedFromTodaySession.date})</span>`;
+          actionBtnHtml = `<span class="badge" style="position:static; font-weight:700; background-color: var(--primary-light); color: var(--primary-color);">مؤجلة إلى (${postponedFromTodaySession.makeupDate || postponedFromTodaySession.date})</span>`;
         } else if (postponedToTodaySession) {
-          const isSameDayPostponed = postponedToTodaySession.postponedFrom === todayStr;
-          const tagText = isSameDayPostponed ? `تأجيل لنفس اليوم (${postponedToTodaySession.time || 'موعد جديد'})` : `حصة مؤجلة من ${postponedToTodaySession.postponedFrom || 'تاريخ سابق'}`;
-          postponedTagHtml = `<span class="badge" style="position:static; font-size:0.7rem; background-color: rgba(245, 158, 11, 0.15); color: #d97706; font-weight:700; margin-right: 0.5rem;">${tagText}</span>`;
-          actionBtnHtml = `<button class="btn btn-primary record-session-btn" data-id="${student.id}" data-session-id="${postponedToTodaySession.id}" style="padding: 0.4rem 0.8rem; font-size: 0.82rem;"><i data-lucide="edit-3" style="width:14px;height:14px;"></i> تسجيل الحصة المؤجلة</button>`;
+          actionBtnHtml = postponedToTodaySession.makeupDate
+            ? `<span class="badge" style="position:static; font-weight:700; background-color: var(--primary-light); color: var(--primary-color);">مؤجلة إلى (${postponedToTodaySession.makeupDate})</span>`
+            : `<span class="badge" style="position:static; font-weight:700; background-color: var(--warning-light); color: var(--warning);">مؤجلة — بانتظار تحديد موعد التعويض</span>`;
         } else {
           actionBtnHtml = `<button class="btn btn-primary record-session-btn" data-id="${student.id}" style="padding: 0.4rem 0.8rem; font-size: 0.82rem;"><i data-lucide="edit-3" style="width:14px;height:14px;"></i> تسجيل الحصة</button>`;
         }
@@ -782,7 +769,7 @@
                 ${postponedTagHtml}
               </div>
               <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top:0.25rem;">
-                <span>الموعد: ${item.time || 'غير محدد'}</span>
+                <span>الموعد: ${rowTime || 'غير محدد'}</span>
               </div>
             </div>
             <div>${actionBtnHtml}</div>
@@ -822,6 +809,9 @@
           const targetBtn = e.target.closest('.record-session-btn');
           const id = targetBtn.dataset.id;
           activeExistingSessionIdForRecording = targetBtn.dataset.sessionId || null;
+          activeMakeupSessionObj = activeExistingSessionIdForRecording
+            ? (sessionsCached.find(s => s.id === activeExistingSessionIdForRecording && s.status === 'compensatory') || null)
+            : null;
           activeStudentForRecording = studentsCached.find(s => s.id === id);
           if (activeStudentForRecording) {
             openRecordSessionModal(activeStudentForRecording);
@@ -916,9 +906,7 @@
     const modal = document.getElementById('recordSessionModal');
     const recStatus = document.getElementById('recStatus');
     const absenceTypeContainer = document.getElementById('absenceTypeContainer');
-    const teacherAbsentContainer = document.getElementById('teacherAbsentContainer');
     const postponeContainer = document.getElementById('postponeContainer');
-    const compensatoryContainer = document.getElementById('compensatoryContainer');
     const cancelContainer = document.getElementById('cancelContainer');
     const groupAttendanceContainer = document.getElementById('groupAttendanceContainer');
     const groupStudentsList = document.getElementById('groupStudentsList');
@@ -1299,11 +1287,23 @@
 
     function openRecordSessionModal(student) {
       document.getElementById('recStudentName').value = student.name;
+      const makeupSession = activeExistingSessionIdForRecording
+        ? (sessionsCached.find(s => s.id === activeExistingSessionIdForRecording && s.status === 'compensatory') || null)
+        : null;
+      activeMakeupSessionObj = makeupSession;
+
       recStatus.value = "completed";
+      recStatus.disabled = Boolean(makeupSession);
+      const makeupNotice = document.getElementById('makeupRecordingNotice');
+      if (makeupNotice) {
+        makeupNotice.style.display = makeupSession ? 'block' : 'none';
+        makeupNotice.textContent = makeupSession
+          ? `حصة تعويضية عن حصة مؤجلة بتاريخ ${makeupSession.postponedFrom || '—'} — تُسجل تلقائيًا كتعويضية ولا تُعد حصة عادية.`
+          : '';
+      }
+
       absenceTypeContainer.style.display = "none";
-      if (teacherAbsentContainer) teacherAbsentContainer.style.display = "none";
       postponeContainer.style.display = "none";
-      if (compensatoryContainer) compensatoryContainer.style.display = "none";
       if (cancelContainer) cancelContainer.style.display = "none";
       document.getElementById('recType').value = "individual";
       groupAttendanceContainer.style.display = "none";
@@ -1384,9 +1384,7 @@
     recStatus.addEventListener('change', () => {
       const state = recStatus.value;
       absenceTypeContainer.style.display = state === "student_absent" ? "block" : "none";
-      if (teacherAbsentContainer) teacherAbsentContainer.style.display = state === "teacher_absent" ? "block" : "none";
       postponeContainer.style.display = state === "delayed" ? "block" : "none";
-      if (compensatoryContainer) compensatoryContainer.style.display = state === "compensatory" ? "block" : "none";
       if (cancelContainer) cancelContainer.style.display = state === "cancelled" ? "block" : "none";
 
       const isConducted = state === "completed" || state === "compensatory";
@@ -1417,14 +1415,14 @@
 
       const duration = parseInt(document.getElementById('recDuration').value, 10) || 60;
       const type = document.getElementById('recType').value;
-      const status = recStatus.value;
+      // تسجيل حصة تعويضية مجدولة: الحالة تُفرض تلقائيًا ولا يختارها المعلم يدويًا
+      const makeupSession = activeMakeupSessionObj && activeMakeupSessionObj.status === 'compensatory' ? activeMakeupSessionObj : null;
+      const status = makeupSession ? 'compensatory' : recStatus.value;
       const rating = parseFloat(document.getElementById('recRating').value);
       const isConducted = status === "completed" || status === "compensatory";
       const notes = isConducted ? document.getElementById('recNotes').value.trim() : "";
       const absenceType = document.getElementById('recAbsenceType').value;
-      const absenceReason = status === "teacher_absent"
-        ? (document.getElementById('recTeacherAbsentReason')?.value.trim() || '')
-        : (document.getElementById('recAbsenceReason')?.value.trim() || '');
+      const absenceReason = document.getElementById('recAbsenceReason')?.value.trim() || '';
 
       const newDate = document.getElementById('recNewDate').value;
       const newTime = document.getElementById('recNewTime').value;
@@ -1432,14 +1430,21 @@
       const postponeReason = document.getElementById('recPostponeReason')?.value.trim() || '';
       const delayTeacherNotes = document.getElementById('recDelayTeacherNotes')?.value.trim() || '';
       const slotSelectionReason = document.getElementById('recSlotSelectionReason')?.value.trim() || '';
-      const originalLessonId = document.getElementById('recOriginalLessonId')?.value || '';
-      const compNotes = document.getElementById('recCompensatoryNotes')?.value.trim() || '';
+      const originalLessonId = makeupSession ? (makeupSession.originalLessonId || '') : '';
+      const compNotes = makeupSession?.teacherNotes || '';
       const cancellationResponsibility = document.getElementById('recCancelResponsibility')?.value || 'academy';
       const cancellationReason = document.getElementById('recCancelReason')?.value.trim() || '';
 
       const todayStr = new Date().toISOString().split('T')[0];
       const submitBtn = document.getElementById('btnSubmitRecord');
       submitBtn.disabled = true;
+
+      // التأجيل إجباري بموعد بديل: الموعد هو اللي بيحدد اليوم اللي هتظهر فيه الحصة التعويضية
+      if (status === 'delayed' && !newDate) {
+        Toast.warning('يجب تحديد تاريخ الموعد البديل حتى تُؤجل الحصة إلى يوم محدد.');
+        submitBtn.disabled = false;
+        return;
+      }
 
       try {
         const currentTimeLabel = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
@@ -1539,7 +1544,8 @@
 
         let isConfirmedDuplicate = false;
         let existingDuplicateSession = null;
-        if (!isTrial && activeStudentForRecording?.id) {
+        // الحصة التعويضية المجدولة مستند موجود بالفعل، فلا نعتبرها تسجيلاً مكررًا
+        if (!isTrial && !makeupSession && activeStudentForRecording?.id) {
           const dupCheck = await checkDuplicateSession({
             studentId: activeStudentForRecording.id,
             teacherId: currentTeacher.uid,
@@ -1564,14 +1570,21 @@
         }
 
         const canEditDuration = isTrial || hasPermissionFromSession(PERMISSIONS.EDIT_LESSON_DURATION);
+        // حماية من تكرار الحصة التعويضية: لو الحصة المؤجلة مربوطة بتعويضية بالفعل لا ننشئ أخرى
+        const existingDelayedRecord = activeExistingSessionIdForRecording
+          ? sessionsCached.find(s => s.id === activeExistingSessionIdForRecording)
+          : null;
+        const hasCompensatoryLink = Boolean(existingDelayedRecord?.compensatedBySessionId) ||
+          sessionsCached.some(s => s.status === 'compensatory' && existingDelayedRecord && s.originalLessonId === existingDelayedRecord.id);
+
         const savedLesson = await recordLessonWithWorkflow({
           existingSessionId: existingSessId,
           studentId: targetStudentId,
           studentName: studentDisplayName,
           teacherId: currentTeacher.uid,
           teacherName: currentTeacher.name,
-          date: todayStr,
-          time: currentTimeLabel,
+          date: makeupSession ? (makeupSession.date || todayStr) : todayStr,
+          time: makeupSession ? (makeupSession.time || currentTimeLabel) : currentTimeLabel,
           duration,
           type,
           status,
@@ -1585,7 +1598,7 @@
           makeupTime: status === 'delayed' ? (newTime || '') : '',
           teacherNotes: status === 'compensatory' ? compNotes : delayTeacherNotes,
           slotSelectionReason,
-          createMakeupSession: status === 'delayed' && Boolean(newDate),
+          createMakeupSession: status === 'delayed' && Boolean(newDate) && !hasCompensatoryLink,
           originalLessonId,
           cancellationResponsibility,
           cancellationReason,
