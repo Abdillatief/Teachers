@@ -563,7 +563,8 @@
         cachedTeachers = [];
         snapshot.forEach(docSnap => {
           const d = docSnap.data();
-          if (d.role === "teacher") {
+          // الحسابات المؤرشفة قديمًا بحالة "deleted" لا تُعرض في قائمة المعلمين
+          if (d.role === "teacher" && d.status !== "deleted") {
             cachedTeachers.push({ ...d, uid: docSnap.id, id: docSnap.id, _docId: docSnap.id });
           }
         });
@@ -1818,6 +1819,10 @@
         // 3. التأكد الفعلي من الحذف — بدل ما نفترض إنه نجح
         const afterSnap = await getDoc(targetRef);
         if (afterSnap.exists()) throw new Error('لم يتم حذف الحساب من قاعدة البيانات');
+
+        // تنظيف الملف التشغيلي المرتبط (غير حرج لو فشل)
+        try { await deleteDoc(doc(db, 'teacherOperationalProfiles', targetId)); }
+        catch (cleanupErr) { console.warn('operational profile cleanup skipped:', cleanupErr?.message || cleanupErr); }
 
         deleteModal.style.display = "none";
         document.getElementById('teacherProfileModal').style.display = "none";

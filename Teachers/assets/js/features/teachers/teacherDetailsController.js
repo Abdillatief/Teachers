@@ -3,9 +3,10 @@ import { protectRoute } from '../auth/authService.js';
 import { renderSidebar } from '../../shared/components/sidebar.js';
 import { renderNavbar } from '../../shared/components/navbar.js';
 import { db } from '../../config/firebase.js';
-import { doc, getDoc, getDocs, collection, query, where, orderBy, startAfter, limit, updateDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { doc, getDoc, getDocs, collection, query, where, orderBy, startAfter, limit, updateDoc, addDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { reconcileTeacherCurrentSalary } from '../payroll/payrollReconciliationEngine.js';
 import { Toast } from '../../shared/utils/toast.js';
+import { softDeleteToTrash } from '../trash/trashService.js';
 
 protectRoute('admin');
 const $ = id => document.getElementById(id);
@@ -231,8 +232,36 @@ async function toggleStatus(){
 }
 
 async function deleteTeacher(){
-  if(!teacher || !confirm('هل أنت متأكد من أرشفة هذا المعلم؟')) return;
-  try{ await updateDoc(doc(db,'users',teacher.id), {status:'deleted', deletedAt:serverTimestamp()}); Toast.success('تمت أرشفة المعلم.'); location.href='teachers.html'; }catch(e){ console.error(e); Toast.error('تعذر تنفيذ العملية.'); }
+  if(!teacher) return;
+  const teacherName = teacher.name || 'المعلم';
+  if(!confirm(`حذف حساب (${teacherName}) نهائياً؟ سيُحذف من قاعدة البيانات وتُحفظ نسخة قابلة للاسترجاع في سلة المحذوفات.`)) return;
+
+  const btn = $('btnDeleteTeacher');
+  if (btn) btn.disabled = true;
+
+  try{
+    const targetRef = doc(db,'users',teacher.id);
+    const snap = await getDoc(targetRef);
+    if(!snap.exists()) throw new Error('حساب المعلم غير موجود بالفعل');
+
+    // 1. نسخة احتياطية في سلة المحذوفات ثم حذف المستند نفسه
+    await softDeleteToTrash('users', teacher.id, { ...snap.data(), uid: teacher.id }, `حذف حساب المعلم ${teacherName}`);
+
+    // 2. التأكد الفعلي من الحذف بدل افتراض النجاح
+    const after = await getDoc(targetRef);
+    if(after.exists()) throw new Error('لم يتم حذف الحساب من قاعدة البيانات');
+
+    // 3. تنظيف الملف التشغيلي المرتبط (غير حرج لو فشل)
+    try { await deleteDoc(doc(db,'teacherOperationalProfiles', teacher.id)); }
+    catch(e){ console.warn('operational profile cleanup skipped:', e?.message || e); }
+
+    Toast.success(`تم حذف حساب (${teacherName}) نهائياً ونقله إلى سلة المحذوفات.`);
+    location.href='teachers.html';
+  }catch(e){
+    console.error('Delete teacher failed:', e);
+    Toast.error(`تعذر حذف الحساب: ${e?.message || e}`);
+    if (btn) btn.disabled = false;
+  }
 }
 
 async function saveProfile(e){
