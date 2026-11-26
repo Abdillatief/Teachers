@@ -322,6 +322,27 @@
           <input type="text" id="recNotes" class="form-control" placeholder="اكتب الآيات المنجزة أو الواجب المدرسي...">
         </div>
 
+        <!-- بيانات تقرير الحصة المرسل لجروب الطالب على واتساب -->
+        <div id="recReportFields" style="margin-top: 0.9rem; padding: 0.85rem; background: var(--bg-primary); border: 1px dashed var(--border-color); border-radius: 8px;">
+          <div style="font-size: 0.82rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.35rem;">
+            <i data-lucide="message-circle" style="width: 15px; height: 15px; color: #25D366;"></i>
+            بيانات تقرير الحصة (تُرسل لجروب الطالب على واتساب)
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            <div class="form-group" style="margin: 0;">
+              <label for="recReview" style="font-weight: 700; font-size: 0.85rem; display: block; margin-bottom: 0.3rem;">📌 الماضي المقرر (المراجعة السابقة)</label>
+              <input type="text" id="recReview" class="form-control" placeholder="مثال: مراجعة سورة القلم من ١ إلى ١٠" style="font-weight: 600;">
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label for="recMemorization" style="font-weight: 700; font-size: 0.85rem; display: block; margin-bottom: 0.3rem;">📖 السورة المقررة على الطالب (الحفظ الجديد)</label>
+              <input type="text" id="recMemorization" class="form-control" placeholder="مثال: سورة الملك من ١ إلى ٥" style="font-weight: 600;">
+            </div>
+          </div>
+          <p style="font-size: 0.72rem; color: var(--text-muted); margin: 0.4rem 0 0 0;">
+            بعد حفظ الحصة يُجهّز التطبيق التقرير تلقائياً من هذه البيانات وينسخه ويفتح جروب الطالب.
+          </p>
+        </div>
+
         <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem; position: sticky; bottom: -1.75rem; background: var(--bg-secondary); padding: 1rem 0 0.5rem 0; border-top: 1px solid var(--border-color); z-index: 10;">
           <button type="button" class="btn btn-secondary" id="btnCancelModalBtn">إلغاء</button>
           <button type="submit" class="btn btn-primary" id="btnSubmitRecord">تأكيد وتسجيل الحصة فوريًا</button>
@@ -408,6 +429,7 @@
     import { writeAuditLog } from '../assets/js/features/audit/auditService.js';
     import { quranSurahs, getNextHomeworkSuggestion } from '../assets/js/shared/utils/quranData.js';
     import { populateGroupSelect, renderGroupSessionUI, executeGroupSessionSubmit } from '../assets/js/features/groups/groupSessionHandler.js';
+    import { formatSessionReportDate, showStudentReportsModal } from '../assets/js/shared/utils/sessionReport.js';
     import { openRecordGroupSessionModal, openGroupSessionDetailsModal } from '../assets/js/features/groups/groupSessionModal.js';
     import { notifyAdminSessionRecorded } from '../assets/js/shared/utils/adminNotificationService.js';
     import { DraftManager } from '../assets/js/shared/utils/draftManager.js';
@@ -1519,6 +1541,13 @@
     });
 
     // معالجة تسجيل الحصة فوريًا عبر مسار الحصص الموحد
+    // حفظ رابط جروب واتساب الطالب على مستنده
+    async function saveStudentWhatsAppGroupLink(studentId, link) {
+      await updateDoc(doc(db, 'students', studentId), { whatsappGroupLink: link });
+      const cachedStudent = studentsCached.find(s => s.id === studentId);
+      if (cachedStudent) cachedStudent.whatsappGroupLink = link;
+    }
+
     document.getElementById('recordSessionForm').addEventListener('submit', async (e) => {
       e.preventDefault();
 
@@ -1589,6 +1618,35 @@
           });
 
           Toast.success(`تم تسجيل الحصة الجماعية بنجاح! (حضر: ${groupRes.presentCount} - غاب: ${groupRes.absentCount})`);
+
+          // تجهيز تقرير لكل طالب حاضر وإرساله لجروبه الخاص
+          try {
+            const reportItems = attendanceRecords
+              .filter(r => r.isPresent)
+              .map(r => {
+                const cachedStudent = studentsCached.find(s => s.id === r.studentId) || {};
+                return {
+                  studentId: r.studentId,
+                  studentName: r.studentName,
+                  circleNumber: cachedStudent.circleNumber || selectedGroup.name || '',
+                  date: formatSessionReportDate(todayStr),
+                  memorization: r.memorization || '',
+                  review: r.review || '',
+                  groupLink: cachedStudent.whatsappGroupLink || ''
+                };
+              });
+
+            if (reportItems.length > 0) {
+              showStudentReportsModal({
+                items: reportItems,
+                title: `${selectedGroup.name || 'المجموعة'} — ${reportItems.length} طالب`,
+                onSaveLink: (item, link) => saveStudentWhatsAppGroupLink(item.studentId, link)
+              });
+            }
+          } catch (reportErr) {
+            console.warn('Group session report error:', reportErr);
+          }
+
           modal.style.display = "none";
           document.getElementById('recordSessionForm').reset();
           return;
@@ -1783,6 +1841,35 @@
         }, 10);
 
         Toast.success("تم تسجيل الحصة وتحديث السجل بنجاح.");
+
+        // تجهيز تقرير الحصة وإرساله لجروب الطالب الخاص
+        try {
+          const memorizationText = document.getElementById('recMemorization')?.value.trim() || '';
+          const reviewText = document.getElementById('recReview')?.value.trim() || '';
+          const circleNumber = (activeStudentForRecording?.circleNumber || activeStudentForRecording?.groupName || '').trim();
+
+          showStudentReportsModal({
+            items: [{
+              studentId: targetStudentId,
+              studentName: studentDisplayName,
+              circleNumber,
+              date: formatSessionReportDate(todayStr),
+              memorization: memorizationText,
+              review: reviewText,
+              groupLink: activeStudentForRecording?.whatsappGroupLink || ''
+            }],
+            title: studentDisplayName,
+            onSaveLink: isTrial
+              ? null
+              : (item, link) => {
+                if (activeStudentForRecording) activeStudentForRecording.whatsappGroupLink = link;
+                return saveStudentWhatsAppGroupLink(item.studentId, link);
+              }
+          });
+        } catch (reportErr) {
+          console.warn('Session report error:', reportErr);
+        }
+
         modal.style.display = "none";
         document.getElementById('recordSessionForm').reset();
       } catch (err) {

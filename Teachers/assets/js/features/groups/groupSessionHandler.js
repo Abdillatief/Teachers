@@ -141,12 +141,12 @@ export async function renderGroupSessionUI(containerElement, group, studentsMap 
             <!-- حقول الحفظ والمراجعة لتقرير المجموعة -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.5rem;">
               <div>
-                <label style="font-size: 0.72rem; color: var(--text-secondary); display: block; margin-bottom: 0.2rem;">الحفظ (الجديد)</label>
-                <input type="text" class="grp-st-hifz form-control" placeholder="مثال: سورة الملك ١-٥" style="font-size: 0.78rem; padding: 0.25rem 0.5rem;">
+                <label style="font-size: 0.72rem; color: var(--text-secondary); display: block; margin-bottom: 0.2rem;">الماضي المقرر</label>
+                <input type="text" class="grp-st-past form-control" placeholder="مثال: مراجعة البقرة ١-٢٠" style="font-size: 0.78rem; padding: 0.25rem 0.5rem;">
               </div>
               <div>
-                <label style="font-size: 0.72rem; color: var(--text-secondary); display: block; margin-bottom: 0.2rem;">الماضي (المراجعة)</label>
-                <input type="text" class="grp-st-past form-control" placeholder="مثال: مراجعة البقرة ١-٢٠" style="font-size: 0.78rem; padding: 0.25rem 0.5rem;">
+                <label style="font-size: 0.72rem; color: var(--text-secondary); display: block; margin-bottom: 0.2rem;">السورة المقررة</label>
+                <input type="text" class="grp-st-hifz form-control" placeholder="مثال: سورة الملك ١-٥" style="font-size: 0.78rem; padding: 0.25rem 0.5rem;">
               </div>
             </div>
 

@@ -318,20 +318,26 @@
                   <input type="text" id="recNotes" class="form-control" placeholder="اكتب السورة والآيات المنجزة أو الواجب المنزلي..." style="font-weight: 600;">
                 </div>
 
-                <!-- بيانات تقرير الحصة المرسل لجروب واتساب -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.75rem;">
-                  <div class="form-group" style="margin: 0;">
-                    <label for="recMemorization" style="font-weight: 700; font-size: 0.85rem; display: block; margin-bottom: 0.3rem;">☘️ الحفظ (الجديد)</label>
-                    <input type="text" id="recMemorization" class="form-control" placeholder="مثال: سورة الملك من ١ إلى ٥" style="font-weight: 600;">
+                <!-- بيانات تقرير الحصة المرسل لجروب الطالب على واتساب -->
+                <div id="recReportFields" style="margin-top: 0.9rem; padding: 0.85rem; background: var(--bg-primary); border: 1px dashed var(--border-color); border-radius: 8px;">
+                  <div style="font-size: 0.82rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.35rem;">
+                    <i data-lucide="message-circle" style="width: 15px; height: 15px; color: #25D366;"></i>
+                    بيانات تقرير الحصة (تُرسل لجروب الطالب على واتساب)
                   </div>
-                  <div class="form-group" style="margin: 0;">
-                    <label for="recReview" style="font-weight: 700; font-size: 0.85rem; display: block; margin-bottom: 0.3rem;">☘️ الماضي (المراجعة)</label>
-                    <input type="text" id="recReview" class="form-control" placeholder="مثال: مراجعة سورة القلم كاملة" style="font-weight: 600;">
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                    <div class="form-group" style="margin: 0;">
+                      <label for="recReview" style="font-weight: 700; font-size: 0.85rem; display: block; margin-bottom: 0.3rem;">📌 الماضي المقرر (المراجعة السابقة)</label>
+                      <input type="text" id="recReview" class="form-control" placeholder="مثال: مراجعة سورة القلم من ١ إلى ١٠" style="font-weight: 600;">
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                      <label for="recMemorization" style="font-weight: 700; font-size: 0.85rem; display: block; margin-bottom: 0.3rem;">📖 السورة المقررة على الطالب (الحفظ الجديد)</label>
+                      <input type="text" id="recMemorization" class="form-control" placeholder="مثال: سورة الملك من ١ إلى ٥" style="font-weight: 600;">
+                    </div>
                   </div>
+                  <p style="font-size: 0.72rem; color: var(--text-muted); margin: 0.4rem 0 0 0;">
+                    بعد حفظ الحصة يُجهّز التطبيق التقرير تلقائياً من هذه البيانات وينسخه ويفتح جروب الطالب.
+                  </p>
                 </div>
-                <p style="font-size: 0.72rem; color: var(--text-muted); margin: 0.4rem 0 0 0;">
-                  بعد تسجيل الحصة يُجهّز التطبيق تقرير واتساب تلقائياً من هذه البيانات ويفتح جروب الحلقة.
-                </p>
               </div>
 
               <button type="submit" class="btn btn-primary" id="btnSubmitRecord" style="width: 100%; font-weight: 800; padding: 0.85rem; font-size: 1rem; justify-content: center; gap: 0.5rem; display: flex; align-items: center;">
