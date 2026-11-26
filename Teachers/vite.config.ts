@@ -133,6 +133,7 @@ export default defineConfig(({ command }) => {
           admin_today_sessions: path.resolve(__dirname, 'admin/today-sessions.html'),
           admin_transfer_students: path.resolve(__dirname, 'admin/transfer-students.html'),
           admin_groups: path.resolve(__dirname, 'admin/groups.html'),
+          admin_whatsapp_groups: path.resolve(__dirname, 'admin/whatsapp-groups.html'),
           admin_investigation: path.resolve(__dirname, 'admin/investigation.html'),
           admin_blackbox: path.resolve(__dirname, 'admin/blackbox.html'),
           admin_notifications: path.resolve(__dirname, 'admin/notifications.html'),

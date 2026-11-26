@@ -494,7 +494,7 @@
     import { writeAuditLog } from '../assets/js/features/audit/auditService.js';
     import { quranSurahs, getNextHomeworkSuggestion } from '../assets/js/shared/utils/quranData.js';
     import { populateGroupSelect, renderGroupSessionUI, executeGroupSessionSubmit } from '../assets/js/features/groups/groupSessionHandler.js';
-    import { formatSessionReportDate, normalizeWhatsAppGroupLink, showStudentReportsModal } from '../assets/js/shared/utils/sessionReport.js';
+    import { formatSessionReportDate, showStudentReportsModal } from '../assets/js/shared/utils/sessionReport.js';
     import { notifyAdminSessionRecorded } from '../assets/js/shared/utils/adminNotificationService.js';
     import { deductSessionCredit } from '../assets/js/shared/utils/creditManager.js';
     import { checkDuplicateSession, promptDuplicateSessionConfirm, createSystemWarning } from '../assets/js/features/sessions/sessionRecordService.js';
@@ -1163,6 +1163,13 @@
       }
     });
 
+    // حفظ رابط جروب واتساب الطالب على مستنده
+    async function saveStudentWhatsAppGroupLink(studentId, link) {
+      await updateDoc(doc(db, 'students', studentId), { whatsappGroupLink: link });
+      const cachedStudent = studentsCached.find(s => s.id === studentId);
+      if (cachedStudent) cachedStudent.whatsappGroupLink = link;
+    }
+
     // معالجة تسجيل الحصة فوريًا
     document.getElementById('manualRecordSessionForm').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -1248,12 +1255,7 @@
               showStudentReportsModal({
                 items: reportItems,
                 title: `${selectedGroup.name || 'المجموعة'} — ${reportItems.length} طالب`,
-                onSaveLink: async (item, link) => {
-                  const normalized = normalizeWhatsAppGroupLink(link);
-                  await updateDoc(doc(db, 'students', item.studentId), { whatsappGroupLink: normalized });
-                  const cachedStudent = studentsCached.find(s => s.id === item.studentId);
-                  if (cachedStudent) cachedStudent.whatsappGroupLink = normalized;
-                }
+                onSaveLink: (item, link) => saveStudentWhatsAppGroupLink(item.studentId, link)
               });
             }
           } catch (reportErr) {
@@ -1512,13 +1514,12 @@
               groupLink: activeStudent.whatsappGroupLink || ''
             }],
             title: activeStudent.name || studentName,
-            onSaveLink: async (item, link) => {
-              const normalized = normalizeWhatsAppGroupLink(link);
-              if (!isTrial && item.studentId) {
-                await updateDoc(doc(db, 'students', item.studentId), { whatsappGroupLink: normalized });
-                activeStudent.whatsappGroupLink = normalized;
+            onSaveLink: isTrial
+              ? null
+              : (item, link) => {
+                activeStudent.whatsappGroupLink = link;
+                return saveStudentWhatsAppGroupLink(item.studentId, link);
               }
-            }
           });
         } catch (reportErr) {
           console.warn('Session report error:', reportErr);

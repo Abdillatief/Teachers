@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سبيل - جروبات واتساب الطلاب</title>
+  <link rel="stylesheet" href="../assets/css/variables.css">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <script src="/assets/vendor/lucide-1.80.0.min.js"></script>
+
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sabeel">
+  <meta name="application-name" content="Sabeel Academy">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script type="module" src="/assets/js/shared/utils/pwaManager.js"></script>
+
+  <style>
+    .wa-row td { padding: 0.65rem 0.6rem; vertical-align: middle; }
+    .wa-link-input { direction: ltr; text-align: left; font-size: 0.78rem; font-family: monospace; }
+    .wa-badge { font-size: 0.7rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 999px; white-space: nowrap; }
+    .wa-badge.linked { background: rgba(37, 211, 102, 0.15); color: #15803d; }
+    .wa-badge.missing { background: rgba(245, 158, 11, 0.16); color: #b45309; }
+    .wa-table-wrap { overflow-x: auto; }
+    @media (max-width: 780px) {
+      .wa-hide-sm { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar"></aside>
+
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+
+      <main class="content-body">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0;">جروبات واتساب الطلاب</h1>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">
+              الصق رابط دعوة جروب واتساب لكل طالب مرة واحدة — بعد كده يُرسل تقرير كل حصة إلى جروبه تلقائياً.
+            </p>
+          </div>
+          <button type="button" id="btnSaveAllLinks" class="btn btn-primary" style="font-weight: 800; gap: 0.4rem;">
+            <i data-lucide="save"></i> حفظ كل الروابط المعدلة
+          </button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+          <div class="card" style="padding: 1rem;">
+            <div style="font-size: 0.78rem; color: var(--text-secondary); font-weight: 700;">إجمالي الطلاب</div>
+            <h3 id="statTotal" style="font-size: 1.35rem; font-weight: 800; margin: 0.2rem 0 0 0; color: var(--text-primary);">0</h3>
+          </div>
+          <div class="card" style="padding: 1rem; border-right: 4px solid var(--success);">
+            <div style="font-size: 0.78rem; color: var(--text-secondary); font-weight: 700;">جروب مربوط</div>
+            <h3 id="statLinked" style="font-size: 1.35rem; font-weight: 800; margin: 0.2rem 0 0 0; color: var(--success);">0</h3>
+          </div>
+          <div class="card" style="padding: 1rem; border-right: 4px solid var(--warning);">
+            <div style="font-size: 0.78rem; color: var(--text-secondary); font-weight: 700;">بدون رابط</div>
+            <h3 id="statMissing" style="font-size: 1.35rem; font-weight: 800; margin: 0.2rem 0 0 0; color: var(--warning);">0</h3>
+          </div>
+        </div>
+
+        <div class="card" style="padding: 1rem;">
+          <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-bottom: 1rem;">
+            <div style="position: relative; flex: 1 1 240px;">
+              <input type="text" id="waSearchInput" class="form-control" placeholder="بحث باسم الطالب أو المعلم..." style="padding-right: 2.2rem; font-size: 0.85rem;">
+              <i data-lucide="search" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-muted);"></i>
+            </div>
+            <select id="waFilterSelect" class="form-control" style="font-size: 0.85rem; width: auto; font-weight: 700;">
+              <option value="all">كل الطلاب</option>
+              <option value="missing">بدون رابط فقط</option>
+              <option value="linked">المربوط فقط</option>
+            </select>
+            <span id="waVisibleCount" style="font-size: 0.78rem; color: var(--text-muted); font-weight: 700;"></span>
+          </div>
+
+          <div class="wa-table-wrap">
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="border-bottom: 1px solid var(--border-color); text-align: right;">
+                  <th style="font-size: 0.78rem; color: var(--text-secondary); padding: 0.5rem 0.6rem;">الطالب</th>
+                  <th class="wa-hide-sm" style="font-size: 0.78rem; color: var(--text-secondary); padding: 0.5rem 0.6rem;">المعلم</th>
+                  <th class="wa-hide-sm" style="font-size: 0.78rem; color: var(--text-secondary); padding: 0.5rem 0.6rem;">المجموعة</th>
+                  <th style="font-size: 0.78rem; color: var(--text-secondary); padding: 0.5rem 0.6rem;">رابط جروب واتساب</th>
+                  <th style="font-size: 0.78rem; color: var(--text-secondary); padding: 0.5rem 0.6rem;">الحالة</th>
+                  <th style="font-size: 0.78rem; color: var(--text-secondary); padding: 0.5rem 0.6rem;"></th>
+                </tr>
+              </thead>
+              <tbody id="waStudentsBody">
+                <tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-muted);">جاري تحميل بيانات الطلاب...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module">
+    import { db } from '../assets/js/config/firebase.js';
+    import { protectRoute } from '../assets/js/features/auth/authService.js';
+    import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
+    import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { collection, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+    import { Toast } from '../assets/js/shared/utils/toast.js';
+    import { normalizeWhatsAppGroupLink } from '../assets/js/shared/utils/sessionReport.js';
+
+    protectRoute('admin');
+
+    let studentsList = [];
+    const originalLinks = new Map();
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderSidebar('whatsapp-groups', 'admin');
+      renderNavbar('جروبات واتساب الطلاب', { name: 'الإدارة العامة', roleName: 'مدير الأكاديمية' });
+      initPage();
+    });
+
+    function initPage() {
+      const body = document.getElementById('waStudentsBody');
+      const searchInput = document.getElementById('waSearchInput');
+      const filterSelect = document.getElementById('waFilterSelect');
+      const saveAllBtn = document.getElementById('btnSaveAllLinks');
+
+      searchInput.addEventListener('input', renderRows);
+      filterSelect.addEventListener('change', renderRows);
+      saveAllBtn.addEventListener('click', saveAllLinks);
+
+      onSnapshot(collection(db, 'students'), (snap) => {
+        studentsList = [];
+        snap.forEach(docSnap => {
+          const data = docSnap.data();
+          studentsList.push({ id: docSnap.id, ...data });
+          originalLinks.set(docSnap.id, data.whatsappGroupLink || '');
+        });
+
+        studentsList.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'ar'));
+        renderRows();
+      }, (err) => {
+        console.error('Students listener error:', err);
+        body.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--danger);">تعذر تحميل بيانات الطلاب.</td></tr>';
+      });
+    }
+
+    function renderStats() {
+      const linked = studentsList.filter(s => normalizeWhatsAppGroupLink(s.whatsappGroupLink)).length;
+      document.getElementById('statTotal').textContent = studentsList.length;
+      document.getElementById('statLinked').textContent = linked;
+      document.getElementById('statMissing').textContent = studentsList.length - linked;
+    }
+
+    function renderRows() {
+      const body = document.getElementById('waStudentsBody');
+      const search = (document.getElementById('waSearchInput').value || '').trim().toLowerCase();
+      const filter = document.getElementById('waFilterSelect').value;
+
+      renderStats();
+
+      const rows = studentsList.filter(student => {
+        const hasLink = Boolean(normalizeWhatsAppGroupLink(student.whatsappGroupLink));
+        if (filter === 'missing' && hasLink) return false;
+        if (filter === 'linked' && !hasLink) return false;
+        if (!search) return true;
+        return [student.name, student.teacherName, student.groupName, student.parentPhone, student.phone]
+          .filter(Boolean)
+          .some(value => String(value).toLowerCase().includes(search));
+      });
+
+      document.getElementById('waVisibleCount').textContent = `${rows.length} من ${studentsList.length} طالب`;
+
+      if (rows.length === 0) {
+        body.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-muted);">لا يوجد طلاب مطابقون للبحث.</td></tr>';
+        return;
+      }
+
+      body.innerHTML = '';
+      rows.forEach(student => {
+        const link = student.whatsappGroupLink || '';
+        const tr = document.createElement('tr');
+        tr.className = 'wa-row';
+        tr.style.borderBottom = '1px solid var(--border-color)';
+        tr.innerHTML = `
+          <td style="padding: 0.65rem 0.6rem;">
+            <div style="font-weight: 700; font-size: 0.85rem; color: var(--text-primary);">${escapeHtml(student.name || 'طالب')}</div>
+            <div style="font-size: 0.7rem; color: var(--text-muted);">${escapeHtml(student.parentPhone || student.phone || '')}</div>
+          </td>
+          <td class="wa-hide-sm" style="font-size: 0.8rem; color: var(--text-secondary); padding: 0.65rem 0.6rem;">${escapeHtml(student.teacherName || '—')}</td>
+          <td class="wa-hide-sm" style="font-size: 0.8rem; color: var(--text-secondary); padding: 0.65rem 0.6rem;">${escapeHtml(student.groupName || '—')}</td>
+          <td style="padding: 0.65rem 0.6rem; min-width: 240px;">
+            <input type="text" class="form-control wa-link-input" data-student-id="${escapeHtml(student.id)}" placeholder="https://chat.whatsapp.com/XXXXXXXX">
+          </td>
+          <td style="padding: 0.65rem 0.6rem;"><span class="wa-badge"></span></td>
+          <td style="padding: 0.65rem 0.6rem;">
+            <button type="button" class="btn btn-secondary wa-save-btn" style="font-size: 0.75rem; white-space: nowrap; font-weight: 700;">حفظ</button>
+          </td>
+        `;
+
+        const input = tr.querySelector('.wa-link-input');
+        const badge = tr.querySelector('.wa-badge');
+        const saveBtn = tr.querySelector('.wa-save-btn');
+
+        input.value = link;
+        applyBadge(badge, Boolean(normalizeWhatsAppGroupLink(link)));
+
+        input.addEventListener('input', () => {
+          applyBadge(badge, Boolean(normalizeWhatsAppGroupLink(input.value)));
+        });
+
+        const save = async () => {
+          await saveStudentLink(student.id, input.value, input, badge);
+        };
+        saveBtn.addEventListener('click', save);
+        input.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            save();
+          }
+        });
+
+        body.appendChild(tr);
+      });
+
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function applyBadge(badge, hasLink) {
+      badge.className = `wa-badge ${hasLink ? 'linked' : 'missing'}`;
+      badge.textContent = hasLink ? 'مربوط ✅' : 'بدون رابط ⚠️';
+    }
+
+    async function saveStudentLink(studentId, rawValue, input, badge) {
+      const normalized = normalizeWhatsAppGroupLink(rawValue);
+      const isClearing = !String(rawValue || '').trim();
+
+      if (!isClearing && !/^https?:\/\/[^\s]+\.[^\s]+/.test(normalized)) {
+        Toast.warning('رابط الجروب غير صحيح — انسخ رابط الدعوة من واتساب (chat.whatsapp.com).');
+        return false;
+      }
+
+      try {
+        await updateDoc(doc(db, 'students', studentId), { whatsappGroupLink: normalized });
+        const student = studentsList.find(s => s.id === studentId);
+        if (student) student.whatsappGroupLink = normalized;
+        originalLinks.set(studentId, normalized);
+        if (input) input.value = normalized;
+        if (badge) applyBadge(badge, Boolean(normalized));
+        renderStats();
+        return true;
+      } catch (err) {
+        console.error('Error saving student WhatsApp group link:', err);
+        Toast.danger('تعذر حفظ الرابط، حاول مرة أخرى.');
+        return false;
+      }
+    }
+
+    async function saveAllLinks() {
+      const inputs = Array.from(document.querySelectorAll('.wa-link-input'));
+      const changed = inputs.filter((input) => {
+        const student = studentsList.find(s => s.id === input.dataset.studentId);
+        return student && normalizeWhatsAppGroupLink(input.value) !== normalizeWhatsAppGroupLink(originalLinks.get(student.id));
+      });
+
+      if (changed.length === 0) {
+        Toast.info('لا توجد روابط معدّلة لحفظها.');
+        return;
+      }
+
+      const saveAllBtn = document.getElementById('btnSaveAllLinks');
+      saveAllBtn.disabled = true;
+      let saved = 0;
+
+      try {
+        for (const input of changed) {
+          const badge = input.closest('tr')?.querySelector('.wa-badge');
+          // eslint-disable-next-line no-await-in-loop
+          const ok = await saveStudentLink(input.dataset.studentId, input.value, input, badge);
+          if (ok) saved += 1;
+        }
+        Toast.success(`تم حفظ ${saved} رابط جروب بنجاح ✅`);
+      } finally {
+        saveAllBtn.disabled = false;
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value === undefined || value === null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+  </script>
+</body>
+</html>

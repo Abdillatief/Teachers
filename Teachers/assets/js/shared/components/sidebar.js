@@ -56,6 +56,7 @@ export function renderSidebar(activePage, role) {
           { id: 'teacher-schedules', label: 'جداول المعلمين والشواغر', icon: 'calendar-clock', path: 'teacher-schedules.html' },
           { id: 'students', label: 'الطلاب والدارسون', icon: 'graduation-cap', path: 'students.html' },
           { id: 'groups', label: 'المجموعات الجماعية', icon: 'users-round', path: 'groups.html' },
+          { id: 'whatsapp-groups', label: 'جروبات واتساب الطلاب', icon: 'message-circle', path: 'whatsapp-groups.html' },
           { id: 'transfer-students', label: 'نقل الطلاب', icon: 'arrow-left-right', path: 'transfer-students.html' }
         ]
       },
