@@ -31,14 +31,25 @@
    npm run build
    ```
 
-2. النشر المباشر على Cloudflare Pages باستخدام أداة Wrangler:
+2. النشر المباشر على Cloudflare Workers (الطريقة المستخدمة فعلياً للموقع):
    ```bash
-   npx wrangler pages deploy dist --project-name=sabeel-arabic-evaluator
+   npx wrangler deploy
+   ```
+   المشروع منشور كـWorker اسمه `teachers` (إعداداته في `wrangler.toml` مع `assets = "./dist"`),
+   والرابط: `https://teachers.sabeelacademy8.workers.dev`. لو طلب تسجيل دخول:
+   ```bash
+   npx wrangler login
    ```
 
-3. لضبط المتغير البيئي عبر Wrangler:
+3. لضبط المتغير البيئي (مفتاح Gemini) على الـWorker:
    ```bash
-   npx wrangler pages secret put GEMINI_API_KEY --project-name=sabeel-arabic-evaluator
+   npx wrangler secret put GEMINI_API_KEY
+   ```
+
+4. لنشر إصدار أندرويد جديد + الموقع معاً بأمر واحد:
+   ```bash
+   npm run android:apk   # يبنى الويب + APK ويحدّث public/version.json
+   npm run deploy        # يبنى وينشر على الـWorker
    ```
 
 ---

@@ -12,7 +12,7 @@
     "lint:rules": "eslint firestore.rules",
     "test:rules": "node scripts/run-rule-tests.mjs",
     "verify:config": "node scripts/verify-config.mjs",
-    "deploy": "npm run build && wrangler pages deploy dist",
+    "deploy": "npm run build && npx wrangler deploy",
     "deploy:pages": "npm run build && wrangler pages deploy dist",
     "android:apk": "node scripts/build-android-apk.mjs"
   },
