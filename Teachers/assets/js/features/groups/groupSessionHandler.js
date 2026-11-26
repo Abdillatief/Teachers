@@ -138,6 +138,18 @@ export async function renderGroupSessionUI(containerElement, group, studentsMap 
               </label>
             </div>
 
+            <!-- حقول الحفظ والمراجعة لتقرير المجموعة -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.5rem;">
+              <div>
+                <label style="font-size: 0.72rem; color: var(--text-secondary); display: block; margin-bottom: 0.2rem;">الحفظ (الجديد)</label>
+                <input type="text" class="grp-st-hifz form-control" placeholder="مثال: سورة الملك ١-٥" style="font-size: 0.78rem; padding: 0.25rem 0.5rem;">
+              </div>
+              <div>
+                <label style="font-size: 0.72rem; color: var(--text-secondary); display: block; margin-bottom: 0.2rem;">الماضي (المراجعة)</label>
+                <input type="text" class="grp-st-past form-control" placeholder="مثال: مراجعة البقرة ١-٢٠" style="font-size: 0.78rem; padding: 0.25rem 0.5rem;">
+              </div>
+            </div>
+
             <!-- Absence details drawer (hidden by default) -->
             <div class="grp-st-absence-box" style="display: none; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px dashed var(--border-color); grid-template-columns: 1fr 1fr; gap: 0.5rem;">
               <div>
@@ -210,7 +222,9 @@ export async function renderGroupSessionUI(containerElement, group, studentsMap 
           studentName,
           isPresent,
           absenceType,
-          note
+          note,
+          memorization: (row.querySelector('.grp-st-hifz')?.value || '').trim(),
+          review: (row.querySelector('.grp-st-past')?.value || '').trim()
         });
       });
 

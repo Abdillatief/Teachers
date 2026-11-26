@@ -269,6 +269,14 @@
           <textarea id="inputGroupNotes" class="form-control" rows="2" placeholder="أهداف المجموعة، المستوى المطلوب..."></textarea>
         </div>
 
+        <div class="form-group" style="margin-top: 1rem;">
+          <label for="inputGroupWhatsApp" style="font-weight: 700; font-size: 0.85rem; margin-bottom: 0.35rem; display: block;">رابط جروب واتساب الحلقة (اختياري)</label>
+          <input type="url" id="inputGroupWhatsApp" class="form-control" placeholder="https://chat.whatsapp.com/XXXXXXXX" style="direction: ltr; text-align: left; font-size: 0.85rem;">
+          <small style="display: block; font-size: 0.72rem; color: var(--text-muted); margin-top: 0.3rem;">
+            يُستخدم لإرسال تقرير الحصة تلقائياً لجروب أولياء أمور هذه الحلقة بعد تسجيل المعلم للحصة.
+          </small>
+        </div>
+
         <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
           <button type="submit" id="btnSaveGroup" class="btn btn-primary" style="font-weight: 700; gap: 0.5rem;">
             <i data-lucide="save"></i> حفظ بيانات المجموعة
@@ -855,6 +863,7 @@
           document.getElementById('inputGroupMaxStudents').value = g.maxStudents || 10;
           document.getElementById('inputGroupStatus').value = g.status || 'active';
           document.getElementById('inputGroupNotes').value = g.notes || '';
+          document.getElementById('inputGroupWhatsApp').value = g.whatsappGroupLink || '';
 
           document.getElementById('groupModal').style.display = 'flex';
         });
@@ -917,6 +926,7 @@
         const maxStudents = parseInt(document.getElementById('inputGroupMaxStudents').value) || 10;
         const status = document.getElementById('inputGroupStatus').value;
         const notes = document.getElementById('inputGroupNotes').value.trim();
+        const whatsappGroupLink = document.getElementById('inputGroupWhatsApp').value.trim();
 
         const teacherObj = allTeachers.find(t => t.id === teacherId);
         const teacherName = teacherObj ? teacherObj.name : '';
@@ -926,10 +936,10 @@
 
         try {
           if (editingId) {
-            await updateGroup(editingId, { name, teacherId, teacherName, day, time, maxStudents, status, notes });
+            await updateGroup(editingId, { name, teacherId, teacherName, day, time, maxStudents, status, notes, whatsappGroupLink });
             Toast.success("تم تحديث بيانات المجموعة وسلسلة الطلاب التابعين بنجاح ✅");
           } else {
-            await createGroup({ name, teacherId, teacherName, day, time, maxStudents, status, notes });
+            await createGroup({ name, teacherId, teacherName, day, time, maxStudents, status, notes, whatsappGroupLink });
             Toast.success("تم إنشاء المجموعة الجديدة بنجاح 👥✅");
           }
           document.getElementById('groupModal').style.display = 'none';

@@ -71,7 +71,8 @@ export async function createGroup({
   maxStudents = 10, 
   status = 'active', 
   studentIds = [], 
-  notes = '' 
+  notes = '',
+  whatsappGroupLink = ''
 }) {
   if (!name || !name.trim()) throw new Error("اسم المجموعة مطلوب.");
   if (!teacherId) throw new Error("يرجى اختيار المعلم المسؤول عن المجموعة.");
@@ -86,6 +87,7 @@ export async function createGroup({
     status: status || 'active',
     studentIds: Array.isArray(studentIds) ? studentIds : [],
     notes: (notes || '').trim(),
+    whatsappGroupLink: (whatsappGroupLink || '').trim(),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   });
