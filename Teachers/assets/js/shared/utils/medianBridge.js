@@ -60,6 +60,33 @@ export function isNativeApp() {
 }
 
 /**
+ * يفتح رابطاً خارجياً بطريقة تعمل في المتصفح وفي تطبيق الموبايل.
+ * داخل WebView يرجع window.open قيمة null فلا يفتح شيء، بينما الملاحة
+ * لرابط غير محلي يسلمها Capacitor لمتصفح النظام مباشرة.
+ * @param {string} url
+ * @returns {boolean}
+ */
+export function openExternalUrl(url) {
+  const target = String(url || '').trim();
+  if (!/^(https?:|mailto:|tel:)/i.test(target)) return false;
+  if (typeof window === 'undefined') return false;
+
+  if (!isNativeApp()) {
+    try {
+      const win = window.open(target, '_blank', 'noopener');
+      if (win) return true;
+    } catch (e) {}
+  }
+
+  try {
+    window.location.href = target;
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
  * Specifically detects if running inside Median Native Android WebView
  * @returns {boolean}
  */

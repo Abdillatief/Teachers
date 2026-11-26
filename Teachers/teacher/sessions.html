@@ -131,15 +131,21 @@
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
                   <div class="form-group" style="margin: 0;">
                     <label for="recDuration" style="font-weight: 700; font-size: 0.85rem;">مدة الحصة</label>
-                    <select id="recDuration" class="form-control" style="font-weight: 700;">
-                      <option value="30">30 دقيقة</option>
-                      <option value="45">45 دقيقة</option>
-                      <option value="60" selected>60 دقيقة (ساعة كاملة)</option>
-                      <option value="90">90 دقيقة (ساعة ونصف)</option>
-                      <option value="120">120 دقيقة (ساعتان)</option>
-                    </select>
+                    <div style="display: flex; gap: 0.5rem; align-items: stretch;">
+                      <select id="recDuration" class="form-control" style="font-weight: 700; flex: 1;">
+                        <option value="30">30 دقيقة</option>
+                        <option value="45">45 دقيقة</option>
+                        <option value="60" selected>60 دقيقة (ساعة كاملة)</option>
+                        <option value="90">90 دقيقة (ساعة ونصف)</option>
+                        <option value="120">120 دقيقة (ساعتان)</option>
+                      </select>
+                      <button type="button" id="btnToggleDurationLock" class="btn btn-secondary" style="display: none; align-items: center; gap: 0.3rem; font-size: 0.75rem; font-weight: 700; padding: 0 0.7rem; white-space: nowrap;"></button>
+                    </div>
                     <div id="recDurationLockHint" style="display: none; font-size: 0.72rem; color: var(--text-muted); margin-top: 0.25rem;">
-                      مدة الحصة مقفلة تلقائياً حسب باقة الطالب
+                      مدة الحصة مقفلة تلقائياً حسب باقة الطالب — يمكنك فتحها يدوياً عند الحاجة
+                    </div>
+                    <div id="recDurationManualHint" style="display: none; font-size: 0.72rem; color: var(--warning); margin-top: 0.25rem;">
+                      تم فتح المدة يدوياً — ستُسجل الحصة بالمدة التي تختارها وليست مدة الباقة
                     </div>
                   </div>
                   <div class="form-group" style="margin: 0;">
@@ -554,6 +560,8 @@
       unsubStudentsDropdown = onSnapshot(q, (snapshot) => {
         studentsCached = [];
         const select = document.getElementById('recStudent');
+        // نحافظ على الدارس المختار: الباقة قد تتغيّر من الإدارة والصفحة مفتوحة
+        const previousStudentId = select.value;
         select.innerHTML = '<option value="" disabled selected>اختر الدارس الكريم...</option>';
 
         snapshot.forEach(docSnap => {
@@ -566,6 +574,11 @@
             select.appendChild(opt);
           }
         });
+
+        if (previousStudentId && studentsCached.some(s => s.id === previousStudentId)) {
+          select.value = previousStudentId;
+        }
+        syncDurationWithStudentPackage();
       }, (err) => {
         console.warn("Students dropdown listener error:", err);
       });
@@ -612,29 +625,92 @@
       return "30";
     }
 
-    function autoSelectStudentDuration(s, isTrial = false) {
+    // القفل التلقائي على باقة الطالب هو الأساس، لكن المعلم يقدر يفتح خانة المدة
+    // يدوياً لأي حصة استثنائية، وإعادة القفل ترجّع مدة الباقة فوراً.
+    let durationManuallyUnlocked = false;
+
+    function isDurationEditable(isTrial = false) {
+      return isTrial || hasPermissionFromSession(PERMISSIONS.EDIT_LESSON_DURATION) || durationManuallyUnlocked;
+    }
+
+    function applyDurationLockState(isTrial = false) {
       const durationSelect = document.getElementById('recDuration');
       const lockHint = document.getElementById('recDurationLockHint');
+      const manualHint = document.getElementById('recDurationManualHint');
+      const toggleBtn = document.getElementById('btnToggleDurationLock');
       if (!durationSelect) return;
 
-      const canEditDuration = isTrial || hasPermissionFromSession(PERMISSIONS.EDIT_LESSON_DURATION);
-      if (s) {
-        const targetDuration = getStudentDefaultDuration(s);
-        let optionExists = Array.from(durationSelect.options).some(opt => opt.value === targetDuration);
-        if (!optionExists) {
-          const newOpt = document.createElement('option');
-          newOpt.value = targetDuration;
-          newOpt.textContent = `${targetDuration} دقيقة`;
-          durationSelect.appendChild(newOpt);
-        }
-        durationSelect.value = targetDuration;
-      }
+      const hasDirectPermission = isTrial || hasPermissionFromSession(PERMISSIONS.EDIT_LESSON_DURATION);
+      const editable = hasDirectPermission || durationManuallyUnlocked;
 
-      durationSelect.disabled = !canEditDuration;
+      durationSelect.disabled = !editable;
+
       if (lockHint) {
-        lockHint.style.display = (!isTrial && !canEditDuration) ? 'block' : 'none';
+        lockHint.style.display = (!editable && !isTrial) ? 'block' : 'none';
+      }
+      if (manualHint) {
+        manualHint.style.display = (durationManuallyUnlocked && !hasDirectPermission) ? 'block' : 'none';
+      }
+      if (toggleBtn) {
+        toggleBtn.style.display = hasDirectPermission ? 'none' : 'inline-flex';
+        toggleBtn.innerHTML = durationManuallyUnlocked
+          ? '<i data-lucide="lock" style="width: 14px; height: 14px;"></i> إعادة القفل'
+          : '<i data-lucide="lock-open" style="width: 14px; height: 14px;"></i> فتح التعديل';
+        if (window.lucide) window.lucide.createIcons();
       }
     }
+
+    function setDurationOption(value) {
+      const durationSelect = document.getElementById('recDuration');
+      if (!durationSelect || !value) return;
+      const targetDuration = String(value);
+      const optionExists = Array.from(durationSelect.options).some(opt => opt.value === targetDuration);
+      if (!optionExists) {
+        const newOpt = document.createElement('option');
+        newOpt.value = targetDuration;
+        newOpt.textContent = `${targetDuration} دقيقة`;
+        durationSelect.appendChild(newOpt);
+      }
+      durationSelect.value = targetDuration;
+    }
+
+    function autoSelectStudentDuration(s, isTrial = false) {
+      // اختيار دارس أو تصنيف درس جديد يعيد تفعيل القفل التلقائي على الباقة
+      durationManuallyUnlocked = false;
+
+      if (s) setDurationOption(getStudentDefaultDuration(s));
+      applyDurationLockState(isTrial);
+    }
+
+    // الإدارة قد تعدّل باقة الطالب (مثلاً من 60 إلى 30 دقيقة) والصفحة مفتوحة:
+    // أي تحديث لحظي لمستند الطالب يعيد ضبط المدة المقفلة تلقائياً.
+    function syncDurationWithStudentPackage() {
+      const durationSelect = document.getElementById('recDuration');
+      const recStudent = document.getElementById('recStudent');
+      const recType = document.getElementById('recType');
+      if (!durationSelect || !recStudent) return;
+      if (recType && (recType.value === 'group' || recType.value === 'trial')) return;
+      if (durationManuallyUnlocked) return;
+
+      const student = studentsCached.find(s => s.id === recStudent.value);
+      if (!student) return;
+
+      setDurationOption(getStudentDefaultDuration(student));
+      applyDurationLockState(false);
+    }
+
+    document.getElementById('btnToggleDurationLock')?.addEventListener('click', () => {
+      const isTrial = document.getElementById('recType')?.value === 'trial';
+      durationManuallyUnlocked = !durationManuallyUnlocked;
+
+      if (!durationManuallyUnlocked) {
+        const student = studentsCached.find(s => s.id === document.getElementById('recStudent')?.value);
+        if (student) setDurationOption(getStudentDefaultDuration(student));
+      }
+
+      applyDurationLockState(isTrial);
+      if (window.lucide) window.lucide.createIcons();
+    });
 
     function populateStudentPostponedSelect(studentId) {
       const sel = document.getElementById('recOriginalLessonId');
@@ -1282,7 +1358,7 @@
           uid: currentTeacher.uid,
           name: currentTeacher.name,
           role: 'teacher',
-          canEditDuration: isTrial || hasPermissionFromSession(PERMISSIONS.EDIT_LESSON_DURATION)
+          canEditDuration: isDurationEditable(isTrial)
         });
 
         const primaryFollowUps = [];

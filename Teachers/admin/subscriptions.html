@@ -1943,7 +1943,8 @@
         cleanPhone = '20' + cleanPhone;
       }
       const encodedMsg = encodeURIComponent(message);
-      window.open(`https://wa.me/${cleanPhone}?text=${encodedMsg}`, '_blank');
+      if (window.__sabeelOpenExternal) window.__sabeelOpenExternal(`https://wa.me/${cleanPhone}?text=${encodedMsg}`);
+      else window.open(`https://wa.me/${cleanPhone}?text=${encodedMsg}`, '_blank');
       waSubModal.style.display = 'none';
       Toast.success("تم فتح محادثة واتساب بنجاح! 🚀");
     });
@@ -3257,6 +3258,9 @@
                 totalPackageLessons: totalLessons,
                 usedPackageLessons: usedLessons,
                 packageDuration: lessonDuration,
+                // مدة الحصة الافتراضية في تسجيل الحصص عند المعلم تتغيّر مع الباقة
+                sessionDuration: lessonDuration,
+                duration: lessonDuration,
                 packageStatus: status,
                 updatedAt: serverTimestamp()
               });

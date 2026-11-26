@@ -2,6 +2,7 @@ import { db } from '../../config/firebase.js';
 import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { Toast } from './toast.js';
 import { quranSurahs } from './quranData.js';
+import { openExternalUrl } from './medianBridge.js';
 
 /**
  * Returns array of last 12 months in Arabic with format YYYY-MM and label
@@ -422,9 +423,9 @@ export async function openStudentReportModal(studentId, studentData) {
 
     const encoded = encodeURIComponent(text);
     if (phone) {
-      window.open(`https://wa.me/${phone}?text=${encoded}`, '_blank');
+      openExternalUrl(`https://wa.me/${phone}?text=${encoded}`);
     } else {
-      window.open(`https://wa.me/?text=${encoded}`, '_blank');
+      openExternalUrl(`https://wa.me/?text=${encoded}`);
     }
   });
 

@@ -2,6 +2,7 @@ import { db } from '../../config/firebase.js';
 import { doc, getDoc, updateDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { Toast } from './toast.js';
 import { showCustomConfirm } from './helpers.js';
+import { openExternalUrl } from './medianBridge.js';
 
 let activeStudentData = null;
 let activePackageData = null;
@@ -494,17 +495,9 @@ function attachModalEventListeners() {
     const encodedMsg = encodeURIComponent(message);
     const waUrl = `https://wa.me/${cleanPhone}?text=${encodedMsg}`;
     
-    // Attempt window.open with a fallback to anchor click
-    const win = window.open(waUrl, '_blank');
-    if (!win || win.closed || typeof win.closed === 'undefined') {
-      const a = document.createElement('a');
-      a.href = waUrl;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
+    // window.open يرجع null داخل تطبيق الموبايل، فنستخدم مساعد يفتح
+    // الرابط في متصفح النظام هناك وفي نافذة جديدة على الويب.
+    openExternalUrl(waUrl);
 
     modal.style.display = 'none';
     Toast.success(`تم فتح محادثة واتساب بنجاح! 🚀 (إجمالي التحذيرات: ${activeStudentData?.waWarningCount || 1})`);

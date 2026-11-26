@@ -122,15 +122,21 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
           <div class="form-group">
             <label for="recDuration">مدة الحصة (بالدقائق)</label>
-            <select id="recDuration" class="form-control">
-              <option value="30">30 دقيقة</option>
-              <option value="45">45 دقيقة</option>
-              <option value="60" selected>60 دقيقة (ساعة)</option>
-              <option value="90">90 دقيقة</option>
-              <option value="120">120 دقيقة (ساعتان)</option>
-            </select>
+            <div style="display: flex; gap: 0.5rem; align-items: stretch;">
+              <select id="recDuration" class="form-control" style="flex: 1;">
+                <option value="30">30 دقيقة</option>
+                <option value="45">45 دقيقة</option>
+                <option value="60" selected>60 دقيقة (ساعة)</option>
+                <option value="90">90 دقيقة</option>
+                <option value="120">120 دقيقة (ساعتان)</option>
+              </select>
+              <button type="button" id="btnToggleDurationLock" class="btn btn-secondary" style="display: none; align-items: center; gap: 0.3rem; font-size: 0.75rem; font-weight: 700; padding: 0 0.7rem; white-space: nowrap;"></button>
+            </div>
             <div id="recDurationLockHint" style="display: none; font-size: 0.72rem; color: var(--text-muted); margin-top: 0.2rem;">
-              مدة الحصة مقفلة تلقائياً حسب باقة الطالب
+              مدة الحصة مقفلة تلقائياً حسب باقة الطالب — يمكنك فتحها يدوياً عند الحاجة
+            </div>
+            <div id="recDurationManualHint" style="display: none; font-size: 0.72rem; color: var(--warning); margin-top: 0.2rem;">
+              تم فتح المدة يدوياً — ستُسجل الحصة بالمدة التي تختارها وليست مدة الباقة
             </div>
           </div>
           <div class="form-group">
@@ -491,6 +497,8 @@
           studentsCached.push({ id: docSnap.id, ...docSnap.data() });
         });
         renderTodayLessonsList();
+        // لو الأدمن عدّل باقة الطالب والـمـودال مفتوح: حدّث خانة المدة المقفلة
+        syncDurationWithStudentPackage();
       }, (err) => {
         console.warn("Today sessions students listener error:", err);
       }));
@@ -819,6 +827,8 @@
           activeStudentForRecording = studentsCached.find(s => s.id === id);
           if (activeStudentForRecording) {
             openRecordSessionModal(activeStudentForRecording);
+          } else {
+            Toast.warning('لم يتم العثور على بيانات الطالب، حدّث الصفحة وحاول مرة أخرى.');
           }
         });
       });
@@ -953,29 +963,94 @@
       return "30";
     }
 
-    function autoSelectStudentDuration(s, isTrial = false) {
+    // القفل التلقائي على باقة الطالب هو الأساس، لكن المعلم يقدر يفتح خانة المدة
+    // يدوياً لأي حصة استثنائية، وإعادة القفل ترجّع مدة الباقة فوراً.
+    let durationManuallyUnlocked = false;
+
+    function isDurationEditable(isTrial = false) {
+      return isTrial || hasPermissionFromSession(PERMISSIONS.EDIT_LESSON_DURATION) || durationManuallyUnlocked;
+    }
+
+    function applyDurationLockState(isTrial = false) {
       const durationSelect = document.getElementById('recDuration');
       const lockHint = document.getElementById('recDurationLockHint');
+      const manualHint = document.getElementById('recDurationManualHint');
+      const toggleBtn = document.getElementById('btnToggleDurationLock');
       if (!durationSelect) return;
 
-      const canEditDuration = isTrial || hasPermissionFromSession(PERMISSIONS.EDIT_LESSON_DURATION);
-      if (s) {
-        const targetDuration = getStudentDefaultDuration(s);
-        let optionExists = Array.from(durationSelect.options).some(opt => opt.value === targetDuration);
-        if (!optionExists) {
-          const newOpt = document.createElement('option');
-          newOpt.value = targetDuration;
-          newOpt.textContent = `${targetDuration} دقيقة`;
-          durationSelect.appendChild(newOpt);
-        }
-        durationSelect.value = targetDuration;
-      }
+      const hasDirectPermission = isTrial || hasPermissionFromSession(PERMISSIONS.EDIT_LESSON_DURATION);
+      const editable = hasDirectPermission || durationManuallyUnlocked;
 
-      durationSelect.disabled = !canEditDuration;
+      durationSelect.disabled = !editable;
+
       if (lockHint) {
-        lockHint.style.display = (!isTrial && !canEditDuration) ? 'block' : 'none';
+        lockHint.style.display = (!editable && !isTrial) ? 'block' : 'none';
+      }
+      if (manualHint) {
+        manualHint.style.display = (durationManuallyUnlocked && !hasDirectPermission) ? 'block' : 'none';
+      }
+      if (toggleBtn) {
+        toggleBtn.style.display = hasDirectPermission ? 'none' : 'inline-flex';
+        toggleBtn.innerHTML = durationManuallyUnlocked
+          ? '<i data-lucide="lock" style="width: 14px; height: 14px;"></i> إعادة القفل'
+          : '<i data-lucide="lock-open" style="width: 14px; height: 14px;"></i> فتح التعديل';
+        if (window.lucide) window.lucide.createIcons();
       }
     }
+
+    function setDurationOption(value) {
+      const durationSelect = document.getElementById('recDuration');
+      if (!durationSelect || !value) return;
+      const targetDuration = String(value);
+      const optionExists = Array.from(durationSelect.options).some(opt => opt.value === targetDuration);
+      if (!optionExists) {
+        const newOpt = document.createElement('option');
+        newOpt.value = targetDuration;
+        newOpt.textContent = `${targetDuration} دقيقة`;
+        durationSelect.appendChild(newOpt);
+      }
+      durationSelect.value = targetDuration;
+    }
+
+    function autoSelectStudentDuration(s, isTrial = false) {
+      // اختيار دارس أو تصنيف درس جديد يعيد تفعيل القفل التلقائي على الباقة
+      durationManuallyUnlocked = false;
+
+      if (s) setDurationOption(getStudentDefaultDuration(s));
+      applyDurationLockState(isTrial);
+    }
+
+    // الإدارة قد تعدّل باقة الطالب (مثلاً من 60 إلى 30 دقيقة) والصفحة مفتوحة:
+    // أي تحديث لحظي لمستند الطالب يعيد ضبط المدة المقفلة تلقائياً.
+    function syncDurationWithStudentPackage() {
+      const durationSelect = document.getElementById('recDuration');
+      const modalEl = document.getElementById('recordSessionModal');
+      if (!durationSelect || !activeStudentForRecording?.id) return;
+      if (modalEl && modalEl.style.display !== 'flex') return;
+      if (durationManuallyUnlocked) return;
+
+      const recTypeVal = document.getElementById('recType')?.value;
+      if (recTypeVal === 'group' || recTypeVal === 'trial') return;
+
+      const fresh = studentsCached.find(s => s.id === activeStudentForRecording.id);
+      if (!fresh) return;
+
+      activeStudentForRecording = fresh;
+      setDurationOption(getStudentDefaultDuration(fresh));
+      applyDurationLockState(false);
+    }
+
+    document.getElementById('btnToggleDurationLock')?.addEventListener('click', () => {
+      const isTrial = document.getElementById('recType')?.value === 'trial';
+      durationManuallyUnlocked = !durationManuallyUnlocked;
+
+      if (!durationManuallyUnlocked && activeStudentForRecording) {
+        setDurationOption(getStudentDefaultDuration(activeStudentForRecording));
+      }
+
+      applyDurationLockState(isTrial);
+      if (window.lucide) window.lucide.createIcons();
+    });
 
     function populateStudentPostponedSelect(studentId) {
       const sel = document.getElementById('recOriginalLessonId');
@@ -1290,44 +1365,61 @@
     }
 
     function openRecordSessionModal(student) {
-      document.getElementById('recStudentName').value = student.name;
-      const makeupSession = activeExistingSessionIdForRecording
-        ? (sessionsCached.find(s => s.id === activeExistingSessionIdForRecording && s.status === 'compensatory') || null)
-        : null;
-      activeMakeupSessionObj = makeupSession;
-
-      recStatus.value = "completed";
-      recStatus.disabled = Boolean(makeupSession);
-      const makeupNotice = document.getElementById('makeupRecordingNotice');
-      if (makeupNotice) {
-        makeupNotice.style.display = makeupSession ? 'block' : 'none';
-        makeupNotice.textContent = makeupSession
-          ? `حصة تعويضية عن حصة مؤجلة بتاريخ ${makeupSession.postponedFrom || '—'} — تُسجل تلقائيًا كتعويضية ولا تُعد حصة عادية.`
-          : '';
+      if (!student) {
+        Toast.warning('تعذر تحديد بيانات الطالب، حدّث الصفحة وحاول مرة أخرى.');
+        return;
       }
 
-      absenceTypeContainer.style.display = "none";
-      postponeContainer.style.display = "none";
-      // Reset the conditional requirement every time the modal opens: the status
-      // is set programmatically above, so the change listener does not fire here.
-      const postponeDateInput = document.getElementById('recNewDate');
-      if (postponeDateInput) {
-        postponeDateInput.required = false;
-        postponeDateInput.value = '';
-      }
-      if (cancelContainer) cancelContainer.style.display = "none";
-      document.getElementById('recType').value = "individual";
-      groupAttendanceContainer.style.display = "none";
-      singleStudentGroup.style.display = "block";
-      recNotesGroup.style.display = "block";
-      document.getElementById('recNotes').disabled = false;
-
-      autoSelectStudentDuration(student, false);
-      populateStudentPostponedSelect(student.id);
-      updateSmartSuggestionForStudent(student);
-
-      if (smartQuranHelperCard) smartQuranHelperCard.style.display = 'block';
+      // نفتح النموذج أولاً وقبل أي تجهيز آخر: لو فشل أي عنصر داخلي (خصوصاً
+      // داخل WebView التطبيق) يظل الزر يعمل والنموذج ظاهر بدل ما يبدو ميتاً.
       modal.style.display = "flex";
+
+      try {
+        const nameInput = document.getElementById('recStudentName');
+        if (nameInput) nameInput.value = student.name || '';
+
+        const makeupSession = activeExistingSessionIdForRecording
+          ? (sessionsCached.find(s => s.id === activeExistingSessionIdForRecording && s.status === 'compensatory') || null)
+          : null;
+        activeMakeupSessionObj = makeupSession;
+
+        recStatus.value = "completed";
+        recStatus.disabled = Boolean(makeupSession);
+        const makeupNotice = document.getElementById('makeupRecordingNotice');
+        if (makeupNotice) {
+          makeupNotice.style.display = makeupSession ? 'block' : 'none';
+          makeupNotice.textContent = makeupSession
+            ? `حصة تعويضية عن حصة مؤجلة بتاريخ ${makeupSession.postponedFrom || '—'} — تُسجل تلقائيًا كتعويضية ولا تُعد حصة عادية.`
+            : '';
+        }
+
+        if (absenceTypeContainer) absenceTypeContainer.style.display = "none";
+        if (postponeContainer) postponeContainer.style.display = "none";
+        // Reset the conditional requirement every time the modal opens: the status
+        // is set programmatically above, so the change listener does not fire here.
+        const postponeDateInput = document.getElementById('recNewDate');
+        if (postponeDateInput) {
+          postponeDateInput.required = false;
+          postponeDateInput.value = '';
+        }
+        if (cancelContainer) cancelContainer.style.display = "none";
+        const typeSelect = document.getElementById('recType');
+        if (typeSelect) typeSelect.value = "individual";
+        if (groupAttendanceContainer) groupAttendanceContainer.style.display = "none";
+        if (singleStudentGroup) singleStudentGroup.style.display = "block";
+        if (recNotesGroup) recNotesGroup.style.display = "block";
+        const notesInput = document.getElementById('recNotes');
+        if (notesInput) notesInput.disabled = false;
+
+        autoSelectStudentDuration(student, false);
+        populateStudentPostponedSelect(student.id);
+        updateSmartSuggestionForStudent(student);
+
+        if (smartQuranHelperCard) smartQuranHelperCard.style.display = 'block';
+      } catch (err) {
+        console.error('openRecordSessionModal failed:', err);
+        Toast.danger(`تم فتح النموذج لكن تعذر تجهيز بياناته: ${err?.message || err}`);
+      }
     }
 
     const recTypeSelect = document.getElementById('recType');
@@ -1586,7 +1678,7 @@
           }
         }
 
-        const canEditDuration = isTrial || hasPermissionFromSession(PERMISSIONS.EDIT_LESSON_DURATION);
+        const canEditDuration = isDurationEditable(isTrial);
         // حماية من تكرار الحصة التعويضية: لو الحصة المؤجلة مربوطة بتعويضية بالفعل لا ننشئ أخرى
         const existingDelayedRecord = activeExistingSessionIdForRecording
           ? sessionsCached.find(s => s.id === activeExistingSessionIdForRecording)

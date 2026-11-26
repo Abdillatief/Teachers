@@ -23,6 +23,8 @@ android/local.properties
 android/.idea/
 *.apk
 *.aab
+# استثناء: الـAPK المنشور اللي صفحة التحميل بتقدّمه لازم يفضل متتبَّع في git
+!public/downloads/*.apk
 
 # temp git push workspace
 .gh-push-tmp/

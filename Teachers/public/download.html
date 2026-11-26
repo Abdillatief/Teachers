@@ -142,6 +142,7 @@
           <span>Android 7+</span>
           <span>تثبيت مباشر APK</span>
           <span>يعمل بنفس حسابك</span>
+          <span id="metaVersion">آخر إصدار متاح</span>
         </div>
       </div>
 
@@ -196,6 +197,8 @@
         <div><strong>افتح التطبيق وسجّل دخولك</strong><p>استخدم نفس حساب أكاديمية سبيل المعتاد.</p></div>
       </div>
     </section>
+
+    <div class="note">لو التطبيق مثبّت عندك بالفعل، حمّل النسخة الجديدة وثبّتها فوق القديمة — التحديث بيحل مكان القديم وبياناتك وحسابك زي ما هي.</div>
 
     <div class="footer">أكاديمية سبيل © 2026 — صفحة تحميل التطبيق</div>
   </div>
@@ -275,6 +278,23 @@
 
       btn.addEventListener('click', startDownload);
       retryBtn && retryBtn.addEventListener('click', startDownload);
+
+      // الإصدار الحالي المنشور من ملف version.json (يتم توليده مع كل بناء APK)
+      (async function syncVersionMeta() {
+        const el = document.getElementById('metaVersion');
+        if (!el) return;
+        try {
+          const res = await fetch('/version.json', { cache: 'no-store' });
+          if (!res.ok) return;
+          const data = await res.json();
+          if (!data || !data.versionName) return;
+          const date = data.releasedAt ? new Date(data.releasedAt) : null;
+          const dateText = date && !Number.isNaN(date.getTime())
+            ? ' — ' + date.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })
+            : '';
+          el.textContent = 'الإصدار ' + data.versionName + dateText;
+        } catch (_) { /* keep fallback text */ }
+      })();
 
       // اقرأ الحجم الحقيقي من السيرفر بدل رقم ثابت ممكن يقدم مع كل إصدار
       (async function syncFileMeta() {

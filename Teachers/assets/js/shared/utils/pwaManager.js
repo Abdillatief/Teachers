@@ -25,7 +25,94 @@ try {
 
 import './jsonShield.js';
 import { Toast } from './toast.js';
-import { isMedianApp } from './medianBridge.js';
+import { isMedianApp, isNativeApp, openExternalUrl } from './medianBridge.js';
+import { initAppUpdateChecker } from './appUpdate.js';
+
+/**
+ * أي خطأ داخل createIcons كان يوقف تنفيذ باقي السكربت، فتظهر الأزرار
+ * في الشاشة وهي غير مربوطة بأي هاندلر (تعمل في المتصفح ولا تعمل في التطبيق).
+ * نغلّفها مرة واحدة هنا حتى لا يسقط أي هاندلر بعدها.
+ */
+function installSafeLucideWrapper() {
+  if (typeof window === 'undefined' || window.__sabeelLucideSafe) return;
+  const lucide = window.lucide;
+  if (!lucide || typeof lucide.createIcons !== 'function') return;
+  const original = lucide.createIcons.bind(lucide);
+  lucide.createIcons = (...args) => {
+    try {
+      return original(...args);
+    } catch (err) {
+      console.warn('[lucide] createIcons failed:', err);
+    }
+  };
+  window.__sabeelLucideSafe = true;
+}
+
+/**
+ * داخل تطبيق الموبايل أخطاء JavaScript صامتة تماماً، فيبدو الزر
+ * «مش شغال» بدون سبب. نوضّح أول 3 أخطاء للمستخدم حتى يمكن تشخيصها من الجهاز.
+ */
+function installNativeDiagnostics() {
+  if (typeof window === 'undefined' || !isNativeApp() || window.__sabeelNativeDiag) return;
+  window.__sabeelNativeDiag = true;
+  const shown = new Set();
+  const report = (rawMessage) => {
+    const message = String(rawMessage || '').trim().slice(0, 180);
+    if (!message || shown.has(message) || shown.size >= 3) return;
+    shown.add(message);
+    try {
+      Toast.danger(`خطأ في التطبيق: ${message}`);
+    } catch (e) {}
+  };
+  window.addEventListener('error', (event) => report(event?.message));
+  window.addEventListener('unhandledrejection', (event) => {
+    const reason = event?.reason;
+    report(reason?.message || (typeof reason === 'string' ? reason : ''));
+  });
+}
+
+/**
+ * داخل التطبيق، أي رابط خارجي (target="_blank" / window.open) لا يفتح لأن
+ * WebView لا يدعم النوافذ المفردودة. نوجّهه لمتصفح النظام بدل ما يبدو الزر ميتاً.
+ */
+function installNativeLinkHandler() {
+  if (typeof window === 'undefined' || !isNativeApp() || window.__sabeelLinkHandler) return;
+  window.__sabeelLinkHandler = true;
+  window.__sabeelOpenExternal = openExternalUrl;
+
+  document.addEventListener('click', (event) => {
+    const anchor = event.target?.closest?.('a[href]');
+    if (!anchor) return;
+    const href = anchor.getAttribute('href') || '';
+    if (!/^https?:\/\//i.test(href)) return;
+
+    let isExternal = false;
+    try {
+      isExternal = new URL(href).host !== window.location.host;
+    } catch (e) {
+      return;
+    }
+    if (!isExternal) return;
+
+    event.preventDefault();
+    openExternalUrl(href);
+  }, true);
+}
+
+installSafeLucideWrapper();
+if (typeof window !== 'undefined') {
+  window.__sabeelOpenExternal = window.__sabeelOpenExternal || openExternalUrl;
+}
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', () => {
+    installSafeLucideWrapper();
+    installNativeLinkHandler();
+    initAppUpdateChecker();
+  });
+} else {
+  installNativeLinkHandler();
+  initAppUpdateChecker();
+}
 
 let deferredPrompt = null;
 let pwaInitialized = false;
@@ -112,6 +199,10 @@ function initConnectivityListener() {
 export function initPWA() {
   if (pwaInitialized) return;
   pwaInitialized = true;
+
+  installNativeDiagnostics();
+  installNativeLinkHandler();
+  initAppUpdateChecker();
 
   if (isMedianApp()) {
     console.log('[PWA] Running inside Median Native App Wrapper. PWA installation prompt disabled.');

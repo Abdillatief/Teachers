@@ -10,3 +10,8 @@
 # اسم ملف الـAPK ثابت، فلازم نتحقق منه كل مرة بدل ما المتصفح/Kاش يقدّم نسخة قديمة
 /downloads/*
   Cache-Control: public, max-age=0, must-revalidate
+
+# فحص التحديث من داخل التطبيق يقرأ الملف ده من دومين الموقع (طلب cross-origin)
+/version.json
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=0, must-revalidate

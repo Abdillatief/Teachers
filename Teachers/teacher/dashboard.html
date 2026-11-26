@@ -565,7 +565,8 @@
           if (startBtn) {
             startBtn.onclick = () => {
               if (upcomingItem.meetingLink) {
-                window.open(upcomingItem.meetingLink, '_blank');
+                if (window.__sabeelOpenExternal) window.__sabeelOpenExternal(upcomingItem.meetingLink);
+                else window.open(upcomingItem.meetingLink, '_blank');
               } else {
                 window.location.href = `today-sessions.html?studentId=${upcomingItem.id}&type=${upcomingItem.type}`;
               }
