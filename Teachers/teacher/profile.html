@@ -146,6 +146,25 @@
             </form>
           </div>
 
+          <!-- بطاقة إصدار التطبيق وفحص التحديثات -->
+          <div class="card" style="max-width: 750px; margin-top: 1.25rem; border-top: 4px solid var(--primary-color); box-shadow: var(--shadow-sm);">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+              <div style="display: flex; align-items: center; gap: 0.85rem;">
+                <div style="width: 44px; height: 44px; background: var(--primary-light); color: var(--primary-color); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                  <i data-lucide="smartphone" style="width: 22px; height: 22px;"></i>
+                </div>
+                <div>
+                  <h4 style="font-size: 1.05rem; font-weight: 800; color: var(--text-primary); margin: 0;">إصدار التطبيق والتحديثات</h4>
+                  <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0.2rem 0 0 0;" id="appVersionLabel">جارٍ قراءة الإصدار...</p>
+                </div>
+              </div>
+              <button type="button" id="btnCheckAppUpdate" class="btn btn-secondary" style="font-weight: 800; gap: 0.5rem; padding: 0.7rem 1.3rem; border-radius: 8px; border-color: var(--primary-color); color: var(--primary-color);">
+                <i data-lucide="refresh-cw" style="width: 17px; height: 17px;"></i>
+                <span id="btnCheckAppUpdateText">تحقق من التحديثات</span>
+              </button>
+            </div>
+          </div>
+
           <!-- بطاقة تسجيل الخروج والأمان المخصصة للمعلم (خاصة لشاشات الهاتف والأجهزة اللوحية) -->
           <div class="card" style="max-width: 750px; margin-top: 1.25rem; border-top: 4px solid #ef4444; box-shadow: var(--shadow-sm); background: var(--bg-primary);">
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
@@ -700,6 +719,37 @@
 
     document.getElementById('btnTeacherHeaderLogout')?.addEventListener('click', handleTeacherLogout);
     document.getElementById('btnTeacherProfileLogout')?.addEventListener('click', handleTeacherLogout);
+  </script>
+
+  <script type="module">
+    // زر «تحقق من التحديثات»: يشغّل فحص الإصدار فورًا بدل انتظار الفحص التلقائي
+    import { getAppVersionInfo, checkForAppUpdateNow } from '../assets/js/shared/utils/appUpdate.js';
+
+    const versionLabel = document.getElementById('appVersionLabel');
+    const checkBtn = document.getElementById('btnCheckAppUpdate');
+    const checkBtnText = document.getElementById('btnCheckAppUpdateText');
+
+    getAppVersionInfo()
+      .then((info) => {
+        if (!info || !versionLabel) return;
+        versionLabel.textContent = `الإصدار الحالي ${info.versionName || info.versionCode} (${info.versionCode})`;
+      })
+      .catch(() => {});
+
+    checkBtn?.addEventListener('click', async () => {
+      if (checkBtn.disabled) return;
+      checkBtn.disabled = true;
+      const originalText = checkBtnText ? checkBtnText.textContent : '';
+      if (checkBtnText) checkBtnText.textContent = 'جارٍ التحقق...';
+      try {
+        await checkForAppUpdateNow();
+      } catch (error) {
+        console.warn('[AppUpdate] manual check failed:', error);
+      } finally {
+        checkBtn.disabled = false;
+        if (checkBtnText) checkBtnText.textContent = originalText || 'تحقق من التحديثات';
+      }
+    });
   </script>
 </body>
 </html>

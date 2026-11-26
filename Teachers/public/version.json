@@ -1,9 +1,9 @@
 {
-  "versionCode": 7,
-  "versionName": "1.6",
+  "versionCode": 8,
+  "versionName": "1.7",
   "downloadPage": "/download.html",
   "downloadUrl": "/downloads/sabeel-academy.apk",
-  "releasedAt": "2026-11-26T16:11:55.111Z",
-  "sizeBytes": 9008608,
-  "sha256": "1ad37af949d991e5f5a0f7c22d1fe966f3e02c00fa095e6566d5097f05567028"
+  "releasedAt": "2026-11-26T16:20:07.972Z",
+  "sizeBytes": 9009688,
+  "sha256": "16da253637811fc2102e0f6c80b7d66deda8cf66e430b0e60eef2f831cede61f"
 }

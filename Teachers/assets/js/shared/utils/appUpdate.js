@@ -15,6 +15,7 @@
  */
 
 import { isCapacitorNative, openExternalUrl } from './medianBridge.js';
+import { Toast } from './toast.js';
 
 const VERSION_FILE = '/version.json';
 const LAST_CHECK_KEY = 'sabeel_update_last_check';
@@ -64,6 +65,18 @@ async function fetchJson(url) {
 /** رقم الإصدار المضمّن مع هذه النسخة من التطبيق/الموقع */
 async function readCurrentVersion() {
   return fetchJson(VERSION_FILE);
+}
+
+/**
+ * بيانات الإصدار الحالي المثبّت (لعرضها في الملف الشخصي).
+ * @returns {Promise<{versionCode: number, versionName: string}|null>}
+ */
+export async function getAppVersionInfo() {
+  try {
+    return await readCurrentVersion();
+  } catch (_) {
+    return null;
+  }
 }
 
 /** أحدث إصدار منشور على دومين الموقع (أو null لو الشبكة/الملف غير متاح) */
@@ -212,7 +225,8 @@ export async function checkForAppUpdate(options = {}) {
     } catch (_) {}
 
     if (!isNewerVersion(current.versionCode, latest.versionCode)) return result;
-    if (wasDismissed(latest.versionCode)) return result;
+    // الفحص اليدوي من الملف الشخصي يتخطى «لاحقاً» لأن المستخدم طلبه بنفسه
+    if (!options.manual && wasDismissed(latest.versionCode)) return result;
 
     const downloadUrl = absoluteUrl(
       latest.downloadPage || latest.downloadUrl || '/download.html',
@@ -229,6 +243,39 @@ export async function checkForAppUpdate(options = {}) {
     if (!options.silent) console.warn('[AppUpdate] check failed:', error?.message || error);
     return result;
   }
+}
+
+/**
+ * فحص فوري عند ضغط زر «تحقق من التحديثات»:
+ * يعرض رسالة واضحة إما بتوفر تحديث أو بأن النسخة الحالية هي الأحدث.
+ * @returns {Promise<{status: 'update'|'latest'|'error', current?: object, latest?: object}>}
+ */
+export async function checkForAppUpdateNow() {
+  let result = { updateAvailable: false };
+  try {
+    result = await checkForAppUpdate({ silent: false, manual: true });
+  } catch (_) {
+    return { status: 'error' };
+  }
+
+  if (!result.current) {
+    Toast.danger('تعذر قراءة إصدار التطبيق الحالي. أعد فتح التطبيق وحاول مرة أخرى.');
+    return { status: 'error', current: result.current };
+  }
+
+  if (!result.latest) {
+    Toast.danger('تعذر الوصول لسيرفر التحديثات. تأكد من اتصال الإنترنت وحاول مرة أخرى.');
+    return { status: 'error', current: result.current };
+  }
+
+  if (result.updateAvailable) {
+    const latestName = result.latest.versionName || result.latest.versionCode;
+    Toast.info(`يتوفر تحديث جديد: الإصدار ${latestName}. اضغط «تحديث الآن» في الشريط بالأسفل.`);
+    return { status: 'update', current: result.current, latest: result.latest };
+  }
+
+  Toast.success(`أنت على آخر إصدار (${result.current.versionName || result.current.versionCode}).`);
+  return { status: 'latest', current: result.current, latest: result.latest };
 }
 
 function shouldCheckAgain() {

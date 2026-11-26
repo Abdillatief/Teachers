@@ -70,6 +70,17 @@
                 <i data-lucide="key-round" style="width: 16px; height: 16px;"></i>
                 إرسال رابط تغيير كلمة المرور للبريد
               </button>
+
+              <div style="padding: 0.85rem; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <div>
+                  <div style="font-weight: 700; font-size: 0.86rem;">إصدار التطبيق والتحديثات</div>
+                  <div style="font-size: 0.75rem; color: var(--text-muted);" id="appVersionLabel">جارٍ قراءة الإصدار...</div>
+                </div>
+                <button type="button" id="btnCheckAppUpdate" class="btn btn-secondary btn-sm">
+                  <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
+                  <span id="btnCheckAppUpdateText">تحقق من التحديثات</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -168,6 +179,37 @@
         countBadge.textContent = `${enabledCount} من ${PERMISSION_CATALOG.length}`;
       }
     }
+  </script>
+
+  <script type="module">
+    // زر «تحقق من التحديثات»: يشغّل فحص الإصدار فورًا بدل انتظار الفحص التلقائي
+    import { getAppVersionInfo, checkForAppUpdateNow } from '../assets/js/shared/utils/appUpdate.js';
+
+    const versionLabel = document.getElementById('appVersionLabel');
+    const checkBtn = document.getElementById('btnCheckAppUpdate');
+    const checkBtnText = document.getElementById('btnCheckAppUpdateText');
+
+    getAppVersionInfo()
+      .then((info) => {
+        if (!info || !versionLabel) return;
+        versionLabel.textContent = `الإصدار الحالي ${info.versionName || info.versionCode} (${info.versionCode})`;
+      })
+      .catch(() => {});
+
+    checkBtn?.addEventListener('click', async () => {
+      if (checkBtn.disabled) return;
+      checkBtn.disabled = true;
+      const originalText = checkBtnText ? checkBtnText.textContent : '';
+      if (checkBtnText) checkBtnText.textContent = 'جارٍ التحقق...';
+      try {
+        await checkForAppUpdateNow();
+      } catch (error) {
+        console.warn('[AppUpdate] manual check failed:', error);
+      } finally {
+        checkBtn.disabled = false;
+        if (checkBtnText) checkBtnText.textContent = originalText || 'تحقق من التحديثات';
+      }
+    });
   </script>
 </body>
 </html>
