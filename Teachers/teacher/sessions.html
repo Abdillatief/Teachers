@@ -494,7 +494,7 @@
     import { writeAuditLog } from '../assets/js/features/audit/auditService.js';
     import { quranSurahs, getNextHomeworkSuggestion } from '../assets/js/shared/utils/quranData.js';
     import { populateGroupSelect, renderGroupSessionUI, executeGroupSessionSubmit } from '../assets/js/features/groups/groupSessionHandler.js';
-    import { buildSessionReportText, formatSessionReportDate, normalizeWhatsAppGroupLink, showSessionReportModal } from '../assets/js/shared/utils/sessionReport.js';
+    import { formatSessionReportDate, normalizeWhatsAppGroupLink, showStudentReportsModal } from '../assets/js/shared/utils/sessionReport.js';
     import { notifyAdminSessionRecorded } from '../assets/js/shared/utils/adminNotificationService.js';
     import { deductSessionCredit } from '../assets/js/shared/utils/creditManager.js';
     import { checkDuplicateSession, promptDuplicateSessionConfirm, createSystemWarning } from '../assets/js/features/sessions/sessionRecordService.js';
@@ -1226,28 +1226,33 @@
 
           Toast.success(`تم تسجيل الحصة الجماعية بنجاح! (حضر: ${groupRes.presentCount} - غاب: ${groupRes.absentCount})`);
 
-          // تجهيز تقرير المجموعة وإرساله لجروب واتساب
+          // تجهيز تقرير لكل طالب حاضر وإرساله لجروبه الخاص
           try {
             const reportDate = formatSessionReportDate(recDateVal);
-            const reportBlocks = attendanceRecords
+            const reportItems = attendanceRecords
               .filter(r => r.isPresent)
-              .map(r => buildSessionReportText({
-                studentName: r.studentName,
-                circleNumber: selectedGroup.name || '',
-                date: reportDate,
-                memorization: r.memorization || '',
-                review: r.review || ''
-              }));
+              .map(r => {
+                const cachedStudent = studentsCached.find(s => s.id === r.studentId) || {};
+                return {
+                  studentId: r.studentId,
+                  studentName: r.studentName,
+                  circleNumber: cachedStudent.circleNumber || selectedGroup.name || '',
+                  date: reportDate,
+                  memorization: r.memorization || '',
+                  review: r.review || '',
+                  groupLink: cachedStudent.whatsappGroupLink || ''
+                };
+              });
 
-            if (reportBlocks.length > 0) {
-              showSessionReportModal({
-                text: reportBlocks.join('\n\n━━━━━━━━━━━━━━━━━━━━\n\n'),
-                groupLink: selectedGroup.whatsappGroupLink || '',
-                groupName: selectedGroup.name || '',
-                onSaveLink: async (link) => {
+            if (reportItems.length > 0) {
+              showStudentReportsModal({
+                items: reportItems,
+                title: `${selectedGroup.name || 'المجموعة'} — ${reportItems.length} طالب`,
+                onSaveLink: async (item, link) => {
                   const normalized = normalizeWhatsAppGroupLink(link);
-                  await updateDoc(doc(db, 'groups', selectedGroup.id), { whatsappGroupLink: normalized });
-                  selectedGroup.whatsappGroupLink = normalized;
+                  await updateDoc(doc(db, 'students', item.studentId), { whatsappGroupLink: normalized });
+                  const cachedStudent = studentsCached.find(s => s.id === item.studentId);
+                  if (cachedStudent) cachedStudent.whatsappGroupLink = normalized;
                 }
               });
             }
@@ -1490,38 +1495,28 @@
           Toast.success("تم تسجيل الحصة وتحديث الأرشيف وسجل التشغيل بنجاح.");
         }
 
-        // تجهيز تقرير الحصة الفردية وإرساله لجروب واتساب
+        // تجهيز تقرير الحصة الفردية وإرساله لجروب الطالب الخاص
         try {
           const memorizationText = document.getElementById('recMemorization')?.value.trim() || '';
           const reviewText = document.getElementById('recReview')?.value.trim() || '';
-          let waGroupLink = (activeStudent.whatsappGroupLink || '').trim();
-          let circleNumber = (activeStudent.circleNumber || activeStudent.groupName || '').trim();
+          const circleNumber = (activeStudent.circleNumber || activeStudent.groupName || '').trim();
 
-          if (activeStudent.groupId && (!waGroupLink || !circleNumber)) {
-            const groupSnap = await getDoc(doc(db, 'groups', activeStudent.groupId));
-            if (groupSnap.exists()) {
-              const groupData = groupSnap.data();
-              waGroupLink = waGroupLink || (groupData.whatsappGroupLink || '');
-              circleNumber = circleNumber || groupData.name || '';
-            }
-          }
-
-          showSessionReportModal({
-            text: buildSessionReportText({
+          showStudentReportsModal({
+            items: [{
+              studentId: activeStudent.id,
               studentName: activeStudent.name || studentName,
               circleNumber,
               date: formatSessionReportDate(recDateVal),
               memorization: memorizationText,
-              review: reviewText
-            }),
-            groupLink: normalizeWhatsAppGroupLink(waGroupLink),
-            groupName: circleNumber || activeStudent.name || studentName,
-            onSaveLink: async (link) => {
+              review: reviewText,
+              groupLink: activeStudent.whatsappGroupLink || ''
+            }],
+            title: activeStudent.name || studentName,
+            onSaveLink: async (item, link) => {
               const normalized = normalizeWhatsAppGroupLink(link);
-              if (!isTrial && activeStudent.groupId) {
-                await updateDoc(doc(db, 'groups', activeStudent.groupId), { whatsappGroupLink: normalized });
-              } else if (!isTrial && activeStudent.id) {
-                await updateDoc(doc(db, 'students', activeStudent.id), { whatsappGroupLink: normalized });
+              if (!isTrial && item.studentId) {
+                await updateDoc(doc(db, 'students', item.studentId), { whatsappGroupLink: normalized });
+                activeStudent.whatsappGroupLink = normalized;
               }
             }
           });

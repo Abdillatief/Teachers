@@ -288,6 +288,14 @@
           </div>
         </div>
 
+        <div class="form-group" style="margin-top: 1rem;">
+          <label for="editStudentWhatsAppGroup">رابط جروب واتساب الطالب</label>
+          <input type="url" id="editStudentWhatsAppGroup" class="form-control" placeholder="https://chat.whatsapp.com/XXXXXXXX" style="direction: ltr; text-align: left;">
+          <small style="display: block; font-size: 0.72rem; color: var(--text-muted); margin-top: 0.25rem;">
+            يُنسخ تقرير كل حصة ويُفتح هذا الجروب تلقائياً بعد تسجيل الحصة.
+          </small>
+        </div>
+
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
           <div class="form-group">
             <label for="editStudentStatus">حالة القيد الدراسية</label>
@@ -1056,6 +1064,7 @@
       document.getElementById('editStudentTime').value = student.schedule?.uniformTime || student.sessionTime || student.time || "";
       document.getElementById('editStudentNotes').value = student.notes || "";
       document.getElementById('editStudentStatus').value = student.status || "active";
+      document.getElementById('editStudentWhatsAppGroup').value = student.whatsappGroupLink || "";
 
       // تحديد الأيام المختارة
       const scheduleDays = student.schedule?.days || student.sessionDays || [];
@@ -1092,6 +1101,7 @@
       const updatedTime = document.getElementById('editStudentTime').value.trim();
       const updatedNotes = document.getElementById('editStudentNotes').value.trim();
       const updatedStatus = document.getElementById('editStudentStatus').value;
+      const updatedWhatsAppGroup = document.getElementById('editStudentWhatsAppGroup').value.trim();
 
       // تجميع الأيام المختارة
       const checkboxes = document.getElementById('editStudentDaysContainer').querySelectorAll('input[type="checkbox"]');
@@ -1123,6 +1133,7 @@
           age: updatedAge,
           notes: updatedNotes,
           status: updatedStatus,
+          whatsappGroupLink: updatedWhatsAppGroup,
           sessionDays: updatedDays,
           sessionTime: mainTime,
           time: mainTime,

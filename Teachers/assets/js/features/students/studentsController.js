@@ -827,6 +827,8 @@ function openEditModal(id) {
   document.getElementById('editStudentAge').value = s.age || '';
   const phoneEl = document.getElementById('editStudentPhone');
   if (phoneEl) phoneEl.value = s.phone || s.whatsapp || s.parentPhone || '';
+  const waGroupEl = document.getElementById('editStudentWhatsAppGroup');
+  if (waGroupEl) waGroupEl.value = s.whatsappGroupLink || '';
   document.getElementById('editStudentStatus').value = s.status || 'active';
   document.getElementById('editStudentTeacher').value = s.teacherId || '';
   document.getElementById('editStudentTime').value = s.schedule?.uniformTime || s.time || s.sessionTime || '';
@@ -1301,6 +1303,7 @@ function setupEventListeners() {
       const name = document.getElementById('editStudentName').value.trim();
       const age = parseInt(document.getElementById('editStudentAge').value) || 0;
       const phone = document.getElementById('editStudentPhone')?.value.trim() || '';
+      const whatsappGroupLink = document.getElementById('editStudentWhatsAppGroup')?.value.trim() || '';
       const status = document.getElementById('editStudentStatus').value;
       const teacherId = document.getElementById('editStudentTeacher').value;
       const time = document.getElementById('editStudentTime').value.trim();
@@ -1356,6 +1359,7 @@ function setupEventListeners() {
           phone,
           whatsapp: phone,
           parentPhone: phone,
+          whatsappGroupLink,
           status,
           teacherId,
           ...(teacherName ? { teacherName } : {}),
