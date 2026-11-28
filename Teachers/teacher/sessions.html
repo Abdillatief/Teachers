@@ -1292,6 +1292,12 @@
             return;
           }
 
+          // نثبّت رقم حلقة كل طالب قبل خصم الرصيد (الخصم يخفض المتبقي فتزيد الحلقة خطأً)
+          const groupCircleNumbers = new Map(attendanceRecords.map(r => [
+            r.studentId,
+            buildCircleNumberLabel(studentsCached.find(s => s.id === r.studentId) || {})
+          ]));
+
           const groupRes = await executeGroupSessionSubmit({
             group: selectedGroup,
             teacherId: currentTeacher.uid,
@@ -1316,7 +1322,7 @@
                 return {
                   studentId: r.studentId,
                   studentName: r.studentName,
-                  circleNumber: buildCircleNumberLabel(cachedStudent) || selectedGroup.name || '',
+                  circleNumber: groupCircleNumbers.get(r.studentId) || selectedGroup.name || '',
                   date: reportDate,
                   memorization: r.memorization || '',
                   review: r.review || '',
@@ -1444,6 +1450,9 @@
         const finalNotes = status === "compensatory"
           ? [rawNotes, compensatoryNotes].filter(Boolean).join(' — ')
           : rawNotes;
+
+        // رقم الحلقة يُثبّت قبل الحفظ/الخصم حتى يعكس الباقة الحالية صح
+        const reportCircleNumber = buildCircleNumberLabel(activeStudent);
 
         const savedSession = await recordLessonWithWorkflow({
           studentId: activeStudent.id,
@@ -1574,7 +1583,7 @@
         try {
           const memorizationText = currentReportMemorization;
           const reviewText = currentReportReview;
-          const circleNumber = buildCircleNumberLabel(activeStudent);
+          const circleNumber = reportCircleNumber;
 
           showStudentReportsModal({
             items: [{

@@ -1672,6 +1672,12 @@
             return;
           }
 
+          // نثبّت رقم حلقة كل طالب قبل خصم الرصيد (الخصم يخفض المتبقي فتزيد الحلقة خطأً)
+          const groupCircleNumbers = new Map(attendanceRecords.map(r => [
+            r.studentId,
+            buildCircleNumberLabel(studentsCached.find(s => s.id === r.studentId) || {})
+          ]));
+
           const groupRes = await executeGroupSessionSubmit({
             group: selectedGroup,
             teacherId: currentTeacher.uid,
@@ -1695,7 +1701,7 @@
                 return {
                   studentId: r.studentId,
                   studentName: r.studentName,
-                  circleNumber: buildCircleNumberLabel(cachedStudent) || selectedGroup.name || '',
+                  circleNumber: groupCircleNumbers.get(r.studentId) || selectedGroup.name || '',
                   date: formatSessionReportDate(todayStr),
                   memorization: r.memorization || '',
                   review: r.review || '',
@@ -1811,6 +1817,9 @@
         const hasCompensatoryLink = Boolean(existingDelayedRecord?.compensatedBySessionId) ||
           sessionsCached.some(s => s.status === 'compensatory' && existingDelayedRecord && s.originalLessonId === existingDelayedRecord.id);
 
+        // رقم الحلقة يُثبّت قبل الحفظ/الخصم حتى يعكس الباقة الحالية صح
+        const reportCircleNumber = buildCircleNumberLabel(activeStudentForRecording || {});
+
         const savedLesson = await recordLessonWithWorkflow({
           existingSessionId: existingSessId,
           studentId: targetStudentId,
@@ -1913,7 +1922,7 @@
         try {
           const memorizationText = currentReportMemorization;
           const reviewText = currentReportReview;
-          const circleNumber = buildCircleNumberLabel(activeStudentForRecording || {});
+          const circleNumber = reportCircleNumber;
 
           showStudentReportsModal({
             items: [{

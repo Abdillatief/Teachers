@@ -61,21 +61,24 @@ export function normalizeWhatsAppGroupLink(rawLink) {
 }
 
 /**
- * رقم الحلقة حسب باقة الطالب:
- * الحلقة الرابعة في الباقة تُكتب 4، ولو تجاوز الطالب رصيد الباقة تُكتب مثل «4 -1»
- * (رقم الحلقة ثم عدد الحصص المدينة بعد هذه الحصة).
+ * رقم الحلقة داخل الباقة الحالية (وليس إجمالي حصص الطالب):
+ * (إجمالي حصص الباقة - المتبقي) + 1، فالحلقة الثالثة في الباقة تُكتب 3.
+ * ولو تجاوز الطالب رصيد الباقة تُكتب مثل «4 -1» (رقم الحلقة ثم عدد الحصص المدينة بعدها).
  */
 export function buildCircleNumberLabel(student = {}) {
-  const totalLessons = parseInt(student.totalLessons ?? student.totalSessions ?? 0, 10) || 0;
-  const remainingRaw = parseInt(student.remainingLessons, 10);
+  const totalLessons = parseInt(student.totalLessons ?? student.totalPackageLessons ?? student.totalSessions ?? 0, 10) || 0;
+  const remainingRaw = parseInt(student.remainingLessons ?? student.remainingSessions, 10);
   const hasRemaining = Number.isFinite(remainingRaw);
+  const usedRaw = parseInt(student.usedLessons ?? student.usedPackageLessons, 10);
 
-  let usedLessons = parseInt(student.usedLessons, 10);
-  if (!Number.isFinite(usedLessons) && hasRemaining && totalLessons > 0) {
+  // الباقة الحالية هي المرجع: المستخدم = إجمالي الباقة - المتبقي،
+  // وأرقام الطالب المباشرة احتياطي لو كانت بيانات الباقة غير متسقة
+  let usedLessons = Number.isFinite(usedRaw) ? Math.max(0, usedRaw) : null;
+  if (hasRemaining && totalLessons > 0 && (remainingRaw <= totalLessons || remainingRaw < 0)) {
     usedLessons = Math.max(0, totalLessons - remainingRaw);
   }
 
-  if (totalLessons > 0 && Number.isFinite(usedLessons)) {
+  if (totalLessons > 0 && usedLessons !== null) {
     const sessionNumber = usedLessons + 1;
     const remainingAfterSession = hasRemaining ? remainingRaw - 1 : totalLessons - sessionNumber;
     const debt = remainingAfterSession < 0 ? Math.abs(remainingAfterSession) : 0;
