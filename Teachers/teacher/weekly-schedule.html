@@ -285,6 +285,7 @@
     import { protectRoute } from '../assets/js/features/auth/authService.js';
     import { renderSidebar } from '../assets/js/shared/components/sidebar.js';
     import { renderNavbar } from '../assets/js/shared/components/navbar.js';
+    import { translateStudentType } from '../assets/js/shared/utils/helpers.js';
 
     // حماية الصفحة والتحقق من الصلاحية
     protectRoute('teacher');
@@ -401,7 +402,7 @@
                   id: s.id,
                   name: s.name,
                   time: dayTime,
-                  type: s.type || 'فردي',
+                  type: translateStudentType(s.type || s.subscriptionType) || 'فردي',
                   duration: s.sessionDuration || 30,
                   isGroup: false
                 });

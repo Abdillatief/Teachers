@@ -7,6 +7,7 @@ import { doc, getDoc, getDocs, collection, query, where, orderBy, startAfter, li
 import { reconcileTeacherCurrentSalary } from '../payroll/payrollReconciliationEngine.js';
 import { Toast } from '../../shared/utils/toast.js';
 import { softDeleteToTrash } from '../trash/trashService.js';
+import { translateStudentType } from '../../shared/utils/helpers.js';
 
 protectRoute('admin');
 const $ = id => document.getElementById(id);
@@ -260,7 +261,8 @@ function renderStudentsTable(){
   const statusLabel = { active:'نشط', approved:'نشط', suspended:'موقوف', archived:'مؤرشف', pending:'قيد المراجعة', trial:'تجريبي' };
   tb.innerHTML = students.slice(0,100).map(s=>{
     const delivered = deliveredSessionsForStudent(s);
-    return `<tr><td>${esc(s.name||'-')}</td><td>${esc(s.packageName||s.activePackageName||s.subscriptionType||'-')}</td><td>${esc(String(s.remainingLessons ?? s.remainingSessions ?? s.balance ?? '-'))}</td><td><span style="font-weight:800;color:var(--primary-color)">${fmt(delivered)}</span> <span style="color:var(--text-muted);font-size:0.78rem">حصة</span></td><td>${esc(statusLabel[s.status]||s.status||'نشط')}</td><td><a href="students.html?q=${encodeURIComponent(s.name||'')}" class="btn btn-sm btn-secondary">فتح</a></td></tr>`;
+    const packageLabel = s.packageName || s.activePackageName || translateStudentType(s.subscriptionType) || '-';
+    return `<tr><td>${esc(s.name||'-')}</td><td>${esc(packageLabel)}</td><td>${esc(String(s.remainingLessons ?? s.remainingSessions ?? s.balance ?? '-'))}</td><td><span style="font-weight:800;color:var(--primary-color)">${fmt(delivered)}</span> <span style="color:var(--text-muted);font-size:0.78rem">حصة</span></td><td>${esc(statusLabel[s.status]||s.status||'نشط')}</td><td><a href="students.html?q=${encodeURIComponent(s.name||'')}" class="btn btn-sm btn-secondary">فتح</a></td></tr>`;
   }).join('');
 }
 

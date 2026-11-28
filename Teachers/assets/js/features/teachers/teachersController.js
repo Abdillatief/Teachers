@@ -370,7 +370,9 @@ export async function checkAndAutoArchivePreviousMonth(teacher = null, force = f
         const roundedSalary = Math.round(netSalary);
 
         if (roundedSalary > 0 && !alreadyArchived) {
-          const archiveRef = doc(collection(db, "salaryArchive"));
+          // معرّف ثابت لكل (معلم + شهر): لو المهمة اشتغلت مرتين في نفس اللحظة أو اتقطعت وأعيدت،
+          // بتكتب على نفس المستند بدل ما تنشئ طلبين صرف لنفس الشهر (صرف مزدوج).
+          const archiveRef = doc(db, "salaryArchive", `${teacherId}_${ym}`);
           
           const paymentMethod = teacherData.paymentPreferred 
             || teacherData.paymentVodafone 
@@ -519,7 +521,8 @@ export async function checkAndAutoArchivePreviousMonth(teacher = null, force = f
               || teacherData.paymentVodafone
               || teacherData.paymentInstapay
               || "فودافون كاش / انستاباي";
-            const extraRef = doc(collection(db, "salaryArchive"));
+            // معرّف ثابت للدفعة الإضافية لنفس (معلم + شهر) يمنع تكرار المطالبة مرتين.
+            const extraRef = doc(db, "salaryArchive", `${teacherId}_${ym}_supplement`);
 
             batch.set(extraRef, {
               teacherId: teacherId,

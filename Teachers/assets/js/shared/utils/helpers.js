@@ -121,6 +121,18 @@ export function formatDateTime(dateObjOrString) {
  * مفتاح الشهر بالتوقيت المحلي للجهاز بصيغة YYYY-MM.
  * toISOString() بيحوّل لتوقيت UTC، فمن 12 ص لـ 2 ص يوم أول الشهر كان بيرجّع الشهر السابق.
  */
+/**
+ * ترجمة نوع اشتراك/نوع حصة الطالب للعرض بالعربي الموحّد (فردي / جماعي)
+ * بدل ما تظهر القيم الخام بالإنجليزي زي individual أو group.
+ */
+export function translateStudentType(value) {
+  const raw = String(value || '').trim().toLowerCase();
+  if (!raw) return '';
+  if (['group', 'group_session', 'grouped', 'groups'].includes(raw)) return 'جماعي';
+  if (['individual', 'private', 'solo', 'one_to_one', 'one-to-one'].includes(raw)) return 'فردي';
+  return String(value).trim();
+}
+
 export function localMonthKey(date = new Date()) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
