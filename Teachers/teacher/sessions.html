@@ -308,6 +308,11 @@
                     <p id="smartQuranSuggestionText" style="font-size: 0.82rem; color: var(--text-primary); margin: 0; line-height: 1.5; font-weight: 600;"></p>
                   </div>
 
+                  <div class="form-group" style="margin: 0 0 0.65rem 0;">
+                    <label for="recReview" style="font-size: 0.78rem; font-weight: 800; color: var(--text-secondary); margin-bottom: 0.25rem;">📌 الماضي (المراجعة المقررة) — يُقترح تلقائياً ويقدر المعلم يعدّله</label>
+                    <input type="text" id="recReview" class="form-control" placeholder="مثال: مراجعة سورة فاطر من الآية ١ إلى ١٠" style="font-size: 0.8rem; font-weight: 600;">
+                  </div>
+
                   <!-- تقرير الواتساب يُشتق من نفس الاقتراح الذكي — مصدر واحد فقط -->
                   <div style="background: var(--bg-card); border: 1px dashed var(--border-color); border-radius: 6px; padding: 0.55rem 0.7rem; margin-bottom: 0.65rem;">
                     <div style="font-size: 0.72rem; font-weight: 800; color: var(--text-secondary); margin-bottom: 0.3rem; display: flex; align-items: center; gap: 0.3rem;">
@@ -621,6 +626,14 @@
       if (!preview) return;
       preview.innerHTML = `☘️ <strong>الحفظ:</strong> ${currentReportMemorization || '—'}<br>☘️ <strong>الماضي:</strong> ${currentReportReview || '—'}`;
     }
+
+    // خانة الماضي داخل الاقتراح الذكي: تُقترح تلقائياً، ولو عدّلها المعلم نحترم تعديله
+    const reviewInputEl = document.getElementById('recReview');
+    reviewInputEl?.addEventListener('input', () => {
+      reviewInputEl.dataset.manual = 'true';
+      currentReportReview = reviewInputEl.value.trim();
+      renderSmartReportPreview();
+    });
 
     function getStudentDefaultDuration(student) {
       if (!student) return "30";
@@ -973,13 +986,17 @@
 
       // احتساب الاقتراح الذكي داخل تقرير الواتساب + توقّع الماضي تلقائياً
       currentReportMemorization = autoWrittenText;
-      currentReportReview = getReviewSuggestionText({
+      const predictedReview = getReviewSuggestionText({
         surahId,
         lastVerse: isFullSurah ? surah.verses : currentVerse,
         verseIncrement: suggestion.verseIncrement,
         isFullSurah,
         direction
       });
+      if (reviewInputEl && reviewInputEl.dataset.manual !== 'true') {
+        reviewInputEl.value = predictedReview;
+      }
+      currentReportReview = (reviewInputEl?.value || predictedReview).trim();
       renderSmartReportPreview();
 
       // كتابة الواجب والملاحظات تلقائياً في حقل الملاحظات
@@ -1162,6 +1179,11 @@
       if (actualSurahSelect) actualSurahSelect.value = prediction ? prediction.surahId : surahId;
       if (smartActualVerse) smartActualVerse.value = prediction ? prediction.endVerse : '';
       if (smartFullSurahCheckbox) smartFullSurahCheckbox.checked = false;
+      // طالب جديد ⇒ رجّع خانة الماضي للاقتراح التلقائي بدل تعديل الطالب السابق
+      if (reviewInputEl) {
+        reviewInputEl.dataset.manual = 'false';
+        reviewInputEl.value = '';
+      }
 
       // حساب الاقتراح وكتابة الملاحظات فورياً
       recalculateSmartQuranSuggestionAndAutoWrite();
