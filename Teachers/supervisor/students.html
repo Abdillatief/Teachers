@@ -322,9 +322,19 @@
         const duration = getStudentDefaultDuration(st);
         const total = Number(st.totalLessons || 0);
         const remaining = Number(st.remainingLessons ?? st.remainingSessions ?? 0);
-        const used = Number(st.usedLessons || 0);
+        // المستهلك من الباقة الحالية (الإجمالي − المتبقي) بدل العدّاد التراكمي
+        // اللي كان يطلع أرقام غلط بعد تجديد الباقة (مثال: مستهلك 20 من 8).
+        const used = total > 0 ? Math.max(0, total - remaining) : Number(st.usedLessons || 0);
         const daysList = Array.isArray(st.schedule?.days) && st.schedule.days.length > 0 ? st.schedule.days : (st.days || []);
-        const timeStr = st.schedule?.uniformTime || st.sessionTime || 'غير محدد';
+        // لو الجدول بأوقات مختلفة لكل يوم، نعرض أوقات الأيام الفعلية بدل "غير محدد"
+        let timeStr = st.schedule?.uniformTime || st.sessionTime || '';
+        if (!timeStr && st.schedule?.differentTimes && st.schedule?.times) {
+          timeStr = Object.entries(st.schedule.times)
+            .filter(([, v]) => v)
+            .map(([d, v]) => `${d} ${v}`)
+            .join(' • ');
+        }
+        if (!timeStr) timeStr = 'غير محدد';
         const phone = st.whatsapp || st.parentPhone || 'غير مسجل';
 
         return `

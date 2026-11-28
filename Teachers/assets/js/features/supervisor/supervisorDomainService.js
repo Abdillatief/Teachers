@@ -152,8 +152,14 @@ export function extractNonFinancialStudentSummary(studentId, s = {}) {
   const days = scheduleObj?.days || s.sessionDays || s.days || [];
   const uniformTime = scheduleObj?.uniformTime || s.sessionTime || s.time || '';
   const totalLessons = Number(s.totalLessons ?? s.totalPackageLessons ?? s.totalSessions ?? s.packageSessions ?? 0) || 0;
-  const remainingLessons = Number(s.remainingSessions ?? s.remainingLessons ?? 0) || 0;
-  const usedLessons = Number(s.usedLessons ?? s.usedPackageLessons ?? s.completedSessions ?? Math.max(0, totalLessons - remainingLessons)) || 0;
+  // نفس ترتيب الحقول المستخدم في لوحة الأدمن وcreditManager (remainingLessons هو المصدر الرسمي)،
+  // وإلا ممكن المتبقي يظهر عند المشرف بقيمة قديمة/مختلفة عن الأدمن.
+  const remainingLessons = Number(s.remainingLessons ?? s.remainingSessions ?? 0) || 0;
+  // "المستهلك" بيتحسب من الباقة الحالية نفسها: الإجمالي − المتبقي،
+  // بدل العدّاد التراكمي usedLessons اللي بيطلع أرقام غلط بعد تجديد الباقة.
+  const usedLessons = totalLessons > 0
+    ? Math.max(0, totalLessons - remainingLessons)
+    : (Number(s.usedLessons ?? s.usedPackageLessons ?? s.completedSessions ?? 0) || 0);
 
   return {
     studentId,
@@ -167,7 +173,7 @@ export function extractNonFinancialStudentSummary(studentId, s = {}) {
     teacherId: s.teacherId || '',
     teacherName: s.teacherName || '',
     status: s.status || 'active',
-    packageName: s.packageName || s.planName || '',
+    packageName: s.packageName || s.activePackageName || s.planName || '',
     sessionDuration: Number(getStudentDefaultDuration(s)) || 60,
     totalLessons,
     usedLessons,
