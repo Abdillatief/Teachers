@@ -320,19 +320,24 @@
                 let sessionsCount = 0;
                 let totalHours = 0;
 
+                // نحسب المبلغ المؤكد بنفس منطق المرتب، وبنعلّم "مدفوعة" الحصص المستحقة بس.
+                // قبل كده كان كل حصص الشهر (حتى الملغاة) بتتعلم مدفوعة، والحصص المرحّلة اللي
+                // داخلة في المبلغ كانت بتفضل غير مؤرشفة فتتطالب تاني من مهمة الأرشفة = صرف مزدوج.
+                const monthSessions = [];
                 sessionsSnap.forEach(docSnap => {
                   const data = docSnap.data();
-                  if (data.date && data.date.startsWith(monthKey)) {
-                    batch.update(docSnap.ref, { archived: true, paid: true });
-                    
-                    const isCompleted = data.status === "completed";
-                    const isUnexcusedAbsent = data.status === "student_absent" && data.absenceType === "unexcused";
-                    const isApproved = data.approved === true;
-                    if (isApproved && (isCompleted || isUnexcusedAbsent)) {
-                      sessionsCount++;
-                      totalHours += (parseInt(data.duration) || 0) / 60;
-                    }
-                  }
+                  if (data.date && data.date.startsWith(monthKey)) monthSessions.push({ id: docSnap.id, ...data });
+                });
+                const monthCalc = calculateTeacherSalaryAdvanced(monthSessions, currentTeacher, "month", monthKey);
+                const paidIds = new Set((monthCalc.approvedSessions || []).map(s => s.id));
+
+                sessionsSnap.forEach(docSnap => {
+                  const data = docSnap.data();
+                  if (!data.date || !data.date.startsWith(monthKey)) return;
+                  if (!paidIds.has(docSnap.id)) return;
+                  batch.update(docSnap.ref, { archived: true, paid: true, salaryCalculated: true });
+                  sessionsCount++;
+                  totalHours += (parseInt(data.duration) || 0) / 60;
                 });
 
                 // تطبيق التعديل في Firestore
@@ -353,19 +358,36 @@
                   currentSalaryStatus: "paid"
                 });
 
-                // 3. كتابة وثيقة في أرشيف الرواتب العام
-                await addDoc(collection(db, "salaryArchive"), {
-                  teacherId: currentTeacher.uid,
-                  teacherName: currentTeacher.name,
-                  month: monthKey,
-                  amount: amountVal,
-                  method: currentTeacher.paymentPreferred || "حوالة إلكترونية",
-                  notes: proof.transactionNumber ? `تم التأكيد من المعلم. رقم المعاملة: ${proof.transactionNumber}` : "تم التأكيد والموافقة من المعلم",
-                  sessionsCount: sessionsCount,
-                  totalHours: totalHours,
-                  adminName: proof.adminName || "مشرف الإدارة",
-                  createdAt: serverTimestamp()
-                });
+                // 3. أرشيف الرواتب: لو الشهر عنده سجل بالفعل (من مهمة الأرشفة أو الإدارة)
+                // بنحدّث حالته بدل إنشاء سجل صرف ثانٍ لنفس الشهر (تكرار سجلات/مطالبات).
+                const existingArchive = await getDocs(query(
+                  collection(db, "salaryArchive"),
+                  where("teacherId", "==", currentTeacher.uid),
+                  where("month", "==", monthKey)
+                ));
+                if (existingArchive.empty) {
+                  await addDoc(collection(db, "salaryArchive"), {
+                    teacherId: currentTeacher.uid,
+                    teacherName: currentTeacher.name,
+                    month: monthKey,
+                    amount: amountVal,
+                    method: currentTeacher.paymentPreferred || "حوالة إلكترونية",
+                    notes: proof.transactionNumber ? `تم التأكيد من المعلم. رقم المعاملة: ${proof.transactionNumber}` : "تم التأكيد والموافقة من المعلم",
+                    sessionsCount: sessionsCount,
+                    totalHours: totalHours,
+                    adminName: proof.adminName || "مشرف الإدارة",
+                    status: "paid",
+                    confirmedByTeacher: true,
+                    paidAt: serverTimestamp(),
+                    createdAt: serverTimestamp()
+                  });
+                } else {
+                  await updateDoc(doc(db, "salaryArchive", existingArchive.docs[0].id), {
+                    status: "paid",
+                    confirmedByTeacher: true,
+                    paidAt: serverTimestamp()
+                  });
+                }
 
                 Toast.success("تم تأكيد استلام الراتب وتصفير مستحقات الشهر الجاري بنجاح! تم نقل المعاملة للأرشيف المالي. ✅");
                 

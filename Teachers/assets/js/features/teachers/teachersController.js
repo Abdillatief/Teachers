@@ -521,8 +521,10 @@ export async function checkAndAutoArchivePreviousMonth(teacher = null, force = f
               || teacherData.paymentVodafone
               || teacherData.paymentInstapay
               || "فودافون كاش / انستاباي";
-            // معرّف ثابت للدفعة الإضافية لنفس (معلم + شهر) يمنع تكرار المطالبة مرتين.
-            const extraRef = doc(db, "salaryArchive", `${teacherId}_${ym}_supplement`);
+            // معرّف ثابت مبني على محتوى الدفعة (معلم + شهر + عدد الحصص + المبلغ):
+            // إعادة تشغيل نفس الدفعة بتكتب على نفس المستند (مفيش مطالبة مكررة)،
+            // ودفعة جديدة بحصص مختلفة بتاخد مستند مستقل (مفيش مسح لسجل قديم مدفوع).
+            const extraRef = doc(db, "salaryArchive", `${teacherId}_${ym}_supplement_${extraSessions.length}_${extraRounded}`);
 
             batch.set(extraRef, {
               teacherId: teacherId,
