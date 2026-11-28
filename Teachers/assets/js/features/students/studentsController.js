@@ -6,7 +6,7 @@ import { resolveEffectiveRole, ROLES } from '../rbac/rbacService.js';
 import { renderSidebar } from '../../shared/components/sidebar.js';
 import { renderNavbar } from '../../shared/components/navbar.js';
 import { Toast } from '../../shared/utils/toast.js';
-import { showCustomConfirm } from '../../shared/utils/helpers.js';
+import { showCustomConfirm, localMonthKey } from '../../shared/utils/helpers.js';
 import { softDeleteToTrash } from '../trash/trashService.js';
 import { writeAuditLog } from '../audit/auditService.js';
 import { openStudentReportModal } from '../../shared/utils/studentReportCard.js';
@@ -706,7 +706,7 @@ function setupApproveStudentModalHandlers() {
         }
 
         // 2. تفعيل باقة الحصص المعتمدة وحساب الرصيد (Credits) للدارس
-        const currentMonthKey = new Date().toISOString().substring(0, 7);
+        const currentMonthKey = localMonthKey();
         const subscriptionRef = doc(collection(db, "subscriptions"));
         const subscriptionId = subscriptionRef.id;
         const paidRaw = currentApprovingStudent.paidAmount ?? currentApprovingStudent.paymentAmount ?? currentApprovingStudent.amount;

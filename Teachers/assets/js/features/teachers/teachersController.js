@@ -10,7 +10,7 @@ import {
   serverTimestamp, 
   doc 
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-import { animateTextCounter } from '../../shared/utils/helpers.js';
+import { animateTextCounter, localMonthKey } from '../../shared/utils/helpers.js';
 import { sendPushNotification } from '../../shared/utils/pushService.js';
 
 /**
@@ -24,7 +24,7 @@ export function loadTeacherDashboardStats(teacher) {
   if (teacher.role === 'teacher' && teacher.status && teacher.status !== 'approved') return null;
 
   const teacherId = teacher.uid;
-  const currentYearMonth = new Date().toISOString().substring(0, 7); // "YYYY-MM"
+  const currentYearMonth = localMonthKey(); // "YYYY-MM" بتوقيت الجهاز المحلي
 
   let teacherData = { ...teacher };
   let cachedStudents = [];
@@ -240,7 +240,7 @@ export async function checkAndAutoArchivePreviousMonth(teacher = null, force = f
     }
   } catch {}
   
-  const currentYearMonth = new Date().toISOString().substring(0, 7); // "YYYY-MM"
+  const currentYearMonth = localMonthKey(); // "YYYY-MM" بتوقيت الجهاز المحلي
   const sessionCheckKey = `sabeel_auto_archived_checked_${currentYearMonth}_${teacher?.uid || 'all'}`;
   
   // Skip if checked in this session within the last 30 minutes, unless force is true
@@ -470,13 +470,100 @@ export async function checkAndAutoArchivePreviousMonth(teacher = null, force = f
             data: { notifId: teacherNotifRef.id, month: ym, amount: roundedSalary }
           }).catch(e => console.warn(e));
         } else if (alreadyArchived) {
-          // If already archived (e.g. deposited or closed early on day 30), do NOT discard sessions!
-          // Carry them over to the active new month under note "مرحّلة من شهر X" so no session is ever lost!
+          // أرشيف الشهر موجود (اتقفل أو اتصرف قبل تسجيل/اعتماد الحصص دي).
+          // قبل كده كانت بترجع "مرحّلة" وتفضل تتعرض في راتب المعلم كل شهر من غير صرف أبداً،
+          // وكانت لوحة الإدارة بإستبعادها. الصح: تُصرف كدفعة إضافية مربوطة بأرشيف نفس الشهر،
+          // وغير المستحقة فقط (غير معتمدة/تجريبية بدون اشتراك) هي اللي تفضل مرحّلة لحد ما تتعالج.
+          const extraSessions = [];
+          const extraGroupIds = new Set();
+          let extraSalary = 0;
+          let extraHours = 0;
+
           sessions.forEach(sess => {
-            const sessRef = doc(db, "sessions", sess.id);
-            batch.update(sessRef, {
+            if (!sess || sess.archived === true || sess.paid === true) return;
+            if (sess.isStudentRecordOnly === true || sess.isSalaryRecord === false) return;
+
+            const isGroup = sess.type === "group" || sess.sessionType === "group";
+            const gId = sess.groupSessionId || sess.groupBatchId;
+            if (isGroup && gId) {
+              if (extraGroupIds.has(gId)) return;
+              extraGroupIds.add(gId);
+            }
+
+            const isTrial = sess.type === "trial" || sess.sessionType === "trial" || sess.isTrial === true;
+            if (isTrial && (sess.approved !== true || sess.trialSubscribed !== true)) return;
+            if (sess.approved !== true) return;
+
+            const isCompleted = sess.status === "completed";
+            const isUnexcusedAbsent = sess.status === "student_absent" && sess.absenceType === "unexcused";
+            if (!isCompleted && !isUnexcusedAbsent) return;
+
+            const duration = parseInt(sess.duration) || 0;
+            if (duration <= 0) return;
+
+            let rate = isGroup
+              ? parseFloat(teacherData.hourlyRateGroup || 0)
+              : parseFloat(teacherData.hourlyRateIndividual || teacherData.hourlyRate || 0);
+            if (!rate || rate <= 0) rate = isGroup ? 120 : 100;
+
+            extraHours += duration / 60;
+            extraSalary += (duration / 60) * rate;
+            extraSessions.push(sess);
+          });
+
+          const extraRounded = Math.round(extraSalary);
+          const extraIds = new Set(extraSessions.map(s => s.id));
+
+          if (extraRounded > 0) {
+            const paymentMethodExtra = teacherData.paymentPreferred
+              || teacherData.paymentVodafone
+              || teacherData.paymentInstapay
+              || "فودافون كاش / انستاباي";
+            const extraRef = doc(collection(db, "salaryArchive"));
+
+            batch.set(extraRef, {
+              teacherId: teacherId,
+              teacherName: teacherData.name || "معلم",
+              month: ym,
+              amount: extraRounded,
+              sessionsCount: extraSessions.length,
+              totalHours: parseFloat(extraHours.toFixed(1)),
+              method: paymentMethodExtra,
+              notes: `دفعة إضافية عن حصص سُجلت أو اعتُمدت بعد إغلاق أرشيف شهر ${ym}.`,
+              adminName: "النظام التلقائي",
+              status: "pending_admin_transfer",
+              isSupplement: true,
+              createdAt: serverTimestamp()
+            });
+
+            extraSessions.forEach(sess => {
+              batch.update(doc(db, "sessions", sess.id), {
+                archived: true,
+                paid: false,
+                salaryCalculated: true,
+                salaryClaimId: extraRef.id,
+                isCarriedOver: false
+              });
+            });
+
+            grandTotalSalary += extraRounded;
+            adminSummaryList.push({
+              teacherName: teacherData.name || "معلم",
+              amount: extraRounded,
+              totalHours: extraHours.toFixed(1),
+              sessionsCount: extraSessions.length,
+              method: paymentMethodExtra,
+              phone: teacherData.paymentVodafone || teacherData.phone || "-"
+            });
+          }
+
+          sessions.forEach(sess => {
+            if (!sess || extraIds.has(sess.id)) return;
+            if (sess.archived === true || sess.paid === true) return;
+            batch.update(doc(db, "sessions", sess.id), {
               archived: false,
               paid: false,
+              salaryCalculated: false,
               salaryClaimId: null,
               isCarriedOver: true,
               carriedOverFromMonth: ym,

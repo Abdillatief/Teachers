@@ -16,6 +16,14 @@ import {
   doc 
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
+// مفتاح الشهر/التاريخ بالتوقيت المحلي (بدل UTC اللي كان يرجّع الشهر السابق من 12 لـ 2 ص)
+function localMonthKey(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+function localDateKey(date = new Date()) {
+  return `${localMonthKey(date)}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 class CentralDataStore {
   constructor() {
     this.cache = {
@@ -176,7 +184,7 @@ class CentralDataStore {
         return;
       }
       if (collectionKey === 'sessions' && effectiveOptions.currentMonthOnly) {
-        const startOfMonth = effectiveOptions.startOfMonth || new Date().toISOString().substring(0, 7) + '-01';
+        const startOfMonth = effectiveOptions.startOfMonth || localMonthKey() + '-01';
         q = query(collection(db, "sessions"), where("teacherId", "==", currentUid), where("date", ">=", startOfMonth));
       } else {
         q = query(collection(db, targetCollection), where("teacherId", "==", currentUid));
@@ -184,13 +192,13 @@ class CentralDataStore {
     } else if (collectionKey === 'sessions' && (effectiveOptions.currentMonthOnly || effectiveOptions.monthsBack || effectiveOptions.startDate)) {
       let startDate = effectiveOptions.startDate;
       if (!startDate && effectiveOptions.currentMonthOnly) {
-        startDate = effectiveOptions.startOfMonth || new Date().toISOString().substring(0, 7) + '-01';
+        startDate = effectiveOptions.startOfMonth || localMonthKey() + '-01';
       }
       if (!startDate && effectiveOptions.monthsBack) {
         const d = new Date();
         d.setDate(1);
         d.setMonth(d.getMonth() - Number(effectiveOptions.monthsBack));
-        startDate = d.toISOString().split('T')[0];
+        startDate = localDateKey(d);
       }
       if (startDate) {
         q = query(collection(db, "sessions"), where("date", ">=", startDate));
@@ -281,7 +289,7 @@ class CentralDataStore {
           const d = new Date();
           d.setDate(1);
           d.setMonth(d.getMonth() - Number(options.monthsBack));
-          startDate = d.toISOString().split('T')[0];
+          startDate = localDateKey(d);
         }
         if (startDate) q = query(collection(db, 'sessions'), where('date', '>=', startDate));
       } else if (collectionKey === 'supervisorRequests' && (options.supervisorId || sessionRole === 'supervisor')) {

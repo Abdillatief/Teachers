@@ -11,7 +11,7 @@ import {
   addDoc, 
   serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-import { calculateExpectedTeacherSalary } from '../../shared/utils/helpers.js';
+import { calculateExpectedTeacherSalary, localMonthKey } from '../../shared/utils/helpers.js';
 
 export const EXCLUSION_REASONS = {
   NOT_APPROVED: {
@@ -151,12 +151,14 @@ export async function fetchReconciliationRawData() {
  */
 export function reconcileTeacherCurrentSalary(teacher, allSessions, groups, students, targetYearMonth) {
   const teacherId = teacher.id || teacher.uid;
-  const ym = targetYearMonth || new Date().toISOString().substring(0, 7);
+  const ym = targetYearMonth || localMonthKey();
 
+  // نفس أجر الساعة المستخدم فعلياً في الأرشفة والصرف (بدل 0 اللي كان بيخلي المستحق صفر
+  // ويختلف عن رقم صفحة المعلم والأرشيف).
   const rateIndRaw = parseFloat(teacher.hourlyRateIndividual ?? teacher.hourlyRate);
   const rateGrpRaw = parseFloat(teacher.hourlyRateGroup ?? teacher.hourlyRateIndividual ?? teacher.hourlyRate);
-  const rateInd = Number.isFinite(rateIndRaw) && rateIndRaw > 0 ? rateIndRaw : 0;
-  const rateGrp = Number.isFinite(rateGrpRaw) && rateGrpRaw > 0 ? rateGrpRaw : 0;
+  const rateInd = Number.isFinite(rateIndRaw) && rateIndRaw > 0 ? rateIndRaw : 100;
+  const rateGrp = Number.isFinite(rateGrpRaw) && rateGrpRaw > 0 ? rateGrpRaw : (Number.isFinite(rateIndRaw) && rateIndRaw > 0 ? rateIndRaw : 120);
   const bonuses = parseFloat(teacher.salaryBonuses || 0);
   const deductions = parseFloat(teacher.salaryDeductions || 0);
 
@@ -376,7 +378,7 @@ export function reconcileTeacherCurrentSalary(teacher, allSessions, groups, stud
     month: ym,
     rateInd,
     rateGrp,
-    rateConfigured: rateInd > 0,
+    rateConfigured: Number.isFinite(rateIndRaw) && rateIndRaw > 0,
     bonuses,
     deductions,
     totalRecordedSessions,
@@ -448,8 +450,8 @@ export function reconcileArchiveRecord(archiveDoc, allSessions, teacher) {
 
   const rateIndRaw = teacher ? parseFloat(teacher.hourlyRateIndividual ?? teacher.hourlyRate) : NaN;
   const rateGrpRaw = teacher ? parseFloat(teacher.hourlyRateGroup ?? teacher.hourlyRateIndividual ?? teacher.hourlyRate) : NaN;
-  const rateInd = Number.isFinite(rateIndRaw) && rateIndRaw > 0 ? rateIndRaw : 0;
-  const rateGrp = Number.isFinite(rateGrpRaw) && rateGrpRaw > 0 ? rateGrpRaw : 0;
+  const rateInd = Number.isFinite(rateIndRaw) && rateIndRaw > 0 ? rateIndRaw : 100;
+  const rateGrp = Number.isFinite(rateGrpRaw) && rateGrpRaw > 0 ? rateGrpRaw : (Number.isFinite(rateIndRaw) && rateIndRaw > 0 ? rateIndRaw : 120);
 
   // Query raw sessions from the archive month for this teacher
   const matchingSessions = (allSessions || []).filter(s => {
@@ -648,7 +650,7 @@ export async function logReconciliationAudit({
     const docRef = await addDoc(collection(db, "payrollReconciliationLogs"), {
       teacherId: teacherId || 'all',
       teacherName: teacherName || 'فحص شامل لجميع المعلمين',
-      month: month || new Date().toISOString().substring(0, 7),
+      month: month || localMonthKey(),
       status: status || 'balanced',
       calculatedSalary: calculatedSalary || 0,
       targetSalary: targetSalary || 0,

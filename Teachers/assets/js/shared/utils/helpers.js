@@ -118,6 +118,14 @@ export function formatDateTime(dateObjOrString) {
 }
 
 /**
+ * مفتاح الشهر بالتوقيت المحلي للجهاز بصيغة YYYY-MM.
+ * toISOString() بيحوّل لتوقيت UTC، فمن 12 ص لـ 2 ص يوم أول الشهر كان بيرجّع الشهر السابق.
+ */
+export function localMonthKey(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/**
  * Calculates advanced teacher salary based on sessions and rate parameters.
  * @param {Array} sessions - List of session logs
  * @param {Object} teacher - Teacher profile containing rates
@@ -154,7 +162,7 @@ export function calculateTeacherSalaryAdvanced(sessions, teacher, rangeType = 'a
 
   if (!teacher) return result;
 
-  const currentYearMonth = targetYearMonth || new Date().toISOString().substring(0, 7);
+  const currentYearMonth = targetYearMonth || localMonthKey();
   const processedGroupSessions = new Set();
 
   (sessions || []).forEach(session => {
@@ -625,7 +633,7 @@ export function calculateExpectedTeacherSalary(teacher, students = [], groups = 
 
   if (!teacher) return result;
 
-  const yearMonth = targetYearMonth || new Date().toISOString().substring(0, 7);
+  const yearMonth = targetYearMonth || localMonthKey();
   const parts = yearMonth.split('-');
   const year = parseInt(parts[0], 10);
   const monthIndex = parseInt(parts[1], 10) - 1; // 0-indexed
@@ -933,7 +941,7 @@ export function calculateExpectedTeacherSalary(teacher, students = [], groups = 
  * @returns {Object} Academy earnings analytics
  */
 export function calculateAcademyEarningsOverview(teachers = [], students = [], groups = [], sessions = [], payments = [], targetYearMonth = null, subscriptions = []) {
-  const currentYm = targetYearMonth || new Date().toISOString().substring(0, 7);
+  const currentYm = targetYearMonth || localMonthKey();
 
   const overview = {
     targetYearMonth: currentYm,

@@ -17,7 +17,7 @@ import {
   EXCLUSION_REASONS 
 } from './payrollReconciliationEngine.js';
 import { carryOverPostArchiveSessions } from '../teachers/teachersController.js';
-import { showCustomConfirm } from '../../shared/utils/helpers.js';
+import { showCustomConfirm, localMonthKey } from '../../shared/utils/helpers.js';
 import { Toast } from '../../shared/utils/toast.js';
 
 let rawData = null;
@@ -32,7 +32,7 @@ let filterArchiveSearch = '';
 let filterArchiveStatus = 'all';
 let filterArchiveMonth = 'all';
 
-let selectedMonth = new Date().toISOString().substring(0, 7); // "YYYY-MM"
+let selectedMonth = localMonthKey(); // "YYYY-MM" بتوقيت الجهاز المحلي
 
 export async function initPayrollReconciliation() {
   setupTabs();
@@ -89,7 +89,7 @@ function setupMonthSelector() {
     prevMonthBtn.addEventListener('click', async () => {
       const d = new Date(selectedMonth + "-01");
       d.setMonth(d.getMonth() - 1);
-      selectedMonth = d.toISOString().substring(0, 7);
+      selectedMonth = localMonthKey(d);
       if (monthInput) monthInput.value = selectedMonth;
       await loadAndRunReconciliation();
     });
@@ -99,7 +99,7 @@ function setupMonthSelector() {
     nextMonthBtn.addEventListener('click', async () => {
       const d = new Date(selectedMonth + "-01");
       d.setMonth(d.getMonth() + 1);
-      selectedMonth = d.toISOString().substring(0, 7);
+      selectedMonth = localMonthKey(d);
       if (monthInput) monthInput.value = selectedMonth;
       await loadAndRunReconciliation();
     });
