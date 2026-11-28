@@ -13,6 +13,7 @@ import {
   arrayRemove, 
   serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { syncStudentOperationalSummary } from '../supervisor/supervisorDomainService.js';
 
 /**
  * New Independent Group Management Service for Sabeel Academy
@@ -117,7 +118,10 @@ export async function updateGroup(groupId, updateData) {
     const snap = await getDocs(studentsQuery);
 
     const studentUpdates = [];
+    const affectedStudentIds = [];
     snap.forEach(docSnap => {
+      affectedStudentIds.push(docSnap.id);
+      const existingData = docSnap.data() || {};
       const payload = {};
       if (cleanData.name) payload.groupName = cleanData.name;
       if (cleanData.teacherId) payload.teacherId = cleanData.teacherId;
@@ -130,6 +134,23 @@ export async function updateGroup(groupId, updateData) {
         payload.time = cleanData.time;
         payload.sessionTime = cleanData.time;
       }
+      // لازم نحدّث كائن الجدول نفسه؛ لأن حساب «وقت الحصة» عند المشرف يقرأ schedule.uniformTime أولاً
+      if (cleanData.day || cleanData.time) {
+        const nextDays = cleanData.day
+          ? [cleanData.day]
+          : (Array.isArray(existingData.days) ? existingData.days : (existingData.schedule?.days || []));
+        const nextTime = cleanData.time
+          || existingData.schedule?.uniformTime
+          || existingData.sessionTime
+          || existingData.time
+          || '';
+        payload.schedule = {
+          days: nextDays,
+          uniformTime: nextTime,
+          differentTimes: false,
+          times: {}
+        };
+      }
 
       if (Object.keys(payload).length > 0) {
         studentUpdates.push(updateDoc(doc(db, "students", docSnap.id), payload));
@@ -137,6 +158,8 @@ export async function updateGroup(groupId, updateData) {
     });
 
     await Promise.all(studentUpdates);
+    // حدّث الملخص التشغيلي فوراً حتى تظهر الأيام والوقت الجديد عند المشرف
+    await Promise.allSettled(affectedStudentIds.map(sid => syncStudentOperationalSummary(sid)));
   } catch (syncErr) {
     console.warn("Notice: Error syncing group updates to student records:", syncErr);
   }
@@ -163,12 +186,14 @@ export async function deleteGroup(groupId) {
       }).catch(() => {});
     });
     await Promise.all(resets);
+    await Promise.allSettled(studentIds.map(sid => syncStudentOperationalSummary(sid)));
   }
 
   // Also query students with matching groupId
   try {
     const q = query(collection(db, "students"), where("groupId", "==", groupId));
     const snap = await getDocs(q);
+    const detachedIds = snap.docs.map(docSnap => docSnap.id);
     const queryResets = snap.docs.map(docSnap => {
       return updateDoc(doc(db, "students", docSnap.id), {
         subscriptionType: 'individual',
@@ -177,6 +202,7 @@ export async function deleteGroup(groupId) {
       }).catch(() => {});
     });
     await Promise.all(queryResets);
+    await Promise.allSettled(detachedIds.map(sid => syncStudentOperationalSummary(sid)));
   } catch (e) {}
 
   await deleteDoc(doc(db, "groups", groupId));
@@ -217,8 +243,15 @@ export async function addStudentToGroup(groupId, studentId) {
     days: groupData.day ? [groupData.day] : ['السبت'],
     sessionDays: groupData.day ? [groupData.day] : ['السبت'],
     time: groupData.time || '05:30 مساءً',
-    sessionTime: groupData.time || '05:30 مساءً'
+    sessionTime: groupData.time || '05:30 مساءً',
+    schedule: {
+      days: groupData.day ? [groupData.day] : ['السبت'],
+      uniformTime: groupData.time || '05:30 مساءً',
+      differentTimes: false,
+      times: {}
+    }
   });
+  await syncStudentOperationalSummary(studentId);
 }
 
 /**
@@ -239,6 +272,7 @@ export async function removeStudentFromGroup(groupId, studentId) {
     groupId: '',
     groupName: ''
   });
+  await syncStudentOperationalSummary(studentId);
 }
 
 /**
@@ -286,8 +320,15 @@ export async function transferStudentBetweenGroups(fromGroupId, toGroupId, stude
     days: targetData.day ? [targetData.day] : ['السبت'],
     sessionDays: targetData.day ? [targetData.day] : ['السبت'],
     time: targetData.time || '05:30 مساءً',
-    sessionTime: targetData.time || '05:30 مساءً'
+    sessionTime: targetData.time || '05:30 مساءً',
+    schedule: {
+      days: targetData.day ? [targetData.day] : ['السبت'],
+      uniformTime: targetData.time || '05:30 مساءً',
+      differentTimes: false,
+      times: {}
+    }
   });
+  await syncStudentOperationalSummary(studentId);
 }
 
 /**

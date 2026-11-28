@@ -472,6 +472,7 @@
     import { Toast } from '../assets/js/shared/utils/toast.js';
     import { quranSurahs } from '../assets/js/shared/utils/quranData.js';
     import { openStudentReportModal } from '../assets/js/shared/utils/studentReportCard.js';
+    import { syncStudentOperationalSummary } from '../assets/js/features/supervisor/supervisorDomainService.js';
 
     protectRoute('teacher');
 
@@ -1144,6 +1145,9 @@
             times: perDayTimes
           }
         });
+
+        // مزامنة الملخص التشغيلي حتى يظهر التعديل فوراً عند المشرف
+        await syncStudentOperationalSummary(selectedStudentForEdit.id).catch((e) => console.warn('Summary sync skipped:', e));
 
         Toast.success("تم تحديث جميع بيانات ومواعيد الدارس بنجاح في قاعدة البيانات ✅");
         closeEditStudentModal();

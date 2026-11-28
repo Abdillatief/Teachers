@@ -154,6 +154,7 @@
     import { renderNavbar } from '../assets/js/shared/components/navbar.js';
     import { Toast } from '../assets/js/shared/utils/toast.js';
     import { showCustomConfirm } from '../assets/js/shared/utils/helpers.js';
+    import { syncStudentOperationalSummary } from '../assets/js/features/supervisor/supervisorDomainService.js';
 
     protectRoute('admin');
 
@@ -309,6 +310,8 @@
               transferredAt: new Date().toISOString(),
               previousTeacherName: sourceTeacher.name
             });
+            // مزامنة الملخص التشغيلي ليظهر المعلم الجديد فوراً عند المشرف
+            await syncStudentOperationalSummary(studentId).catch((e) => console.warn('Summary sync skipped:', e));
           }
 
           // 2. تسجيل سجل إجراءات (Audit Log)

@@ -151,9 +151,9 @@ export function extractNonFinancialStudentSummary(studentId, s = {}) {
   const scheduleObj = s.schedule || null;
   const days = scheduleObj?.days || s.sessionDays || s.days || [];
   const uniformTime = scheduleObj?.uniformTime || s.sessionTime || s.time || '';
-  const totalLessons = Number(s.totalLessons ?? s.totalSessions ?? s.packageSessions ?? 0) || 0;
+  const totalLessons = Number(s.totalLessons ?? s.totalPackageLessons ?? s.totalSessions ?? s.packageSessions ?? 0) || 0;
   const remainingLessons = Number(s.remainingSessions ?? s.remainingLessons ?? 0) || 0;
-  const usedLessons = Number(s.usedLessons ?? s.completedSessions ?? Math.max(0, totalLessons - remainingLessons)) || 0;
+  const usedLessons = Number(s.usedLessons ?? s.usedPackageLessons ?? s.completedSessions ?? Math.max(0, totalLessons - remainingLessons)) || 0;
 
   return {
     studentId,

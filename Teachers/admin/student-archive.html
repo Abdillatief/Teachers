@@ -73,6 +73,7 @@
     import { collection, onSnapshot, doc, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
     import { Toast } from '../assets/js/shared/utils/toast.js';
     import { showCustomConfirm } from '../assets/js/shared/utils/helpers.js';
+    import { syncStudentOperationalSummary } from '../assets/js/features/supervisor/supervisorDomainService.js';
 
     protectRoute('admin');
 
@@ -142,6 +143,7 @@
           showCustomConfirm("هل تريد استعادة الطالب من الأرشيف وإرجاعه للقائمة النشطة بالدراسة؟", async () => {
             try {
               await updateDoc(doc(db, "students", id), { status: "active" });
+              await syncStudentOperationalSummary(id).catch((e) => console.warn('Summary sync skipped:', e));
               Toast.success("تم استعادة الطالب بنجاح وتنشيط ملفه التعليمي.");
             } catch (err) {
               console.error(err);

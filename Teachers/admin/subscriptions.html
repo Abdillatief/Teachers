@@ -1211,6 +1211,7 @@
     } from '../assets/js/shared/utils/creditManager.js';
     import { openWhatsAppReminderWidget, renderWarningCountBadge, generateWhatsAppMessage } from '../assets/js/shared/utils/whatsappWidget.js';
     import { logAuditLog } from '../assets/js/shared/utils/activityLogger.js';
+    import { syncStudentOperationalSummary } from '../assets/js/features/supervisor/supervisorDomainService.js';
 
     protectRoute('admin');
 
@@ -2368,6 +2369,8 @@
             });
           }
           await syncStudentBalance(pkg.studentId);
+          // مزامنة عدد الحصص والرصيد مع ملخص المشرف
+          await syncStudentOperationalSummary(pkg.studentId).catch((e) => console.warn('Summary sync skipped:', e));
         }
       }
 
@@ -2455,6 +2458,8 @@
             });
           }
           await syncStudentBalance(pkg.studentId);
+          // مزامنة عدد الحصص والرصيد مع ملخص المشرف
+          await syncStudentOperationalSummary(pkg.studentId).catch((e) => console.warn('Summary sync skipped:', e));
         }
       }
 
@@ -3266,6 +3271,8 @@
               });
             }
             await syncStudentBalance(studentId);
+            // مزامنة عدد الحصص ومدة الحصة الجديدة مع ملخص المشرف
+            await syncStudentOperationalSummary(studentId).catch((e) => console.warn('Summary sync skipped:', e));
           }
 
           Toast.success("تم تحديث بيانات باقة الطالب بنجاح! ✅");
