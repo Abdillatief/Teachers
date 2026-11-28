@@ -145,6 +145,10 @@
     }
 
     /* Proof Image Preview Modal */
+    .img-preview-modal.active {
+      display: flex;
+    }
+
     .img-preview-modal {
       display: none;
       position: fixed;
@@ -174,17 +178,11 @@
   <link rel="stylesheet" href="../assets/css/components.css">
 </head>
 <body>
-  <nav id="appNavbar"></nav>
   <div class="app-container">
-    <aside id="appSidebar"></aside>
-    <div class="main-wrapper">
-      <div class="content-body">
-  <div id="sidebar-container"></div>
-
-  <div class="main-content">
-    <div id="navbar-container"></div>
-
-    <div class="content-body">
+    <aside class="sidebar" id="appSidebar"></aside>
+    <div class="main-wrapper" id="mainWrapper">
+      <nav class="navbar" id="appNavbar"></nav>
+      <main class="content-body">
       <!-- Top Breadcrumb & Return Link -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
         <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: var(--text-secondary); font-weight: 700;">
@@ -203,7 +201,7 @@
       <!-- Main Teacher Profile Card Header -->
       <div class="teacher-header-card">
         <div class="teacher-header-info">
-          <img id="headerAvatar" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=120" class="teacher-header-avatar" alt="Avatar">
+          <div id="headerAvatar" class="teacher-header-avatar" style="display: flex; align-items: center; justify-content: center; background: var(--primary-light, rgba(14,165,233,.12)); color: var(--primary-color); font-size: 2rem; font-weight: 900;">م</div>
           <div>
             <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem;">
               <h2 id="headerName" style="font-size: 1.4rem; font-weight: 900; color: var(--text-primary); margin: 0;">-</h2>
@@ -213,8 +211,8 @@
               <span><i data-lucide="mail" style="width: 15px; height: 15px; vertical-align: middle; color: var(--primary-color);"></i> <span id="headerEmail">-</span></span>
               <span><i data-lucide="phone" style="width: 15px; height: 15px; vertical-align: middle; color: var(--primary-color);"></i> <span id="headerPhone">-</span></span>
               <span><i data-lucide="book-open" style="width: 15px; height: 15px; vertical-align: middle; color: var(--primary-color);"></i> <span id="headerSubject">-</span></span>
-              <span><i data-lucide="target" style="width: 15px; height: 15px; vertical-align: middle; color: #8b5cf6;"></i> الهدف الشهري: <strong id="headerTargetHours">40 ساعة</strong></span>
-              <span><i data-lucide="clock" style="width: 15px; height: 15px; vertical-align: middle; color: var(--primary-color);"></i> آخر دخول: <span id="headerLastLogin">-</span></span>
+              <span><i data-lucide="target" style="width: 15px; height: 15px; vertical-align: middle; color: #8b5cf6;"></i> <strong id="headerTargetHours">الهدف الشهري: -</strong></span>
+              <span><i data-lucide="clock" style="width: 15px; height: 15px; vertical-align: middle; color: var(--primary-color);"></i> <span id="headerLastLogin">آخر دخول: -</span></span>
             </div>
           </div>
         </div>
@@ -583,12 +581,14 @@
                 <thead>
                   <tr>
                     <th>اسم الطالب</th>
-                    <th>إجمالي الحصص</th>
-                    <th>حصص الشهر الحالي</th>
+                    <th>الباقة</th>
+                    <th>الرصيد المتبقي</th>
+                    <th>الحالة</th>
+                    <th>إجراء</th>
                   </tr>
                 </thead>
                 <tbody id="tblAssignedStudents">
-                  <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">جاري التحميل...</td></tr>
+                  <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">جاري التحميل...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -687,10 +687,7 @@
           </div>
         </div>
       </div>
-
-    </div>
-  </div>
-      </div>
+      </main>
     </div>
   </div>
 

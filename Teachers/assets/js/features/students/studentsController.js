@@ -1202,6 +1202,14 @@ function setupEventListeners() {
       currentStudentsPage = 1;
       renderStudentsTable(e.target.value);
     }, 250));
+
+    // دعم الوصول من صفحة تفاصيل المعلم: students.html?q=اسم الطالب
+    const presetSearch = new URLSearchParams(location.search).get('q');
+    if (presetSearch) {
+      searchInput.value = presetSearch;
+      currentStudentsPage = 1;
+      renderStudentsTable(presetSearch);
+    }
   }
 
   // Delegated action handlers for table & grid

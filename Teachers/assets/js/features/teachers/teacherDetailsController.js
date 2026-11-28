@@ -18,19 +18,26 @@ let teacher = null, sessions = [], students = [], payouts = [], groups = [];
 init();
 
 async function init(){
-  renderSidebar('teachers','admin');
-  renderNavbar('تفاصيل المعلم', {name:'الإدارة', roleName:'مدير الأكاديمية'});
+  try { renderSidebar('teachers','admin'); } catch(e){ console.warn('Sidebar render failed:', e); }
+  try { renderNavbar('تفاصيل المعلم', {name:'الإدارة', roleName:'مدير الأكاديمية'}); } catch(e){ console.warn('Navbar render failed:', e); }
   bindUI();
   if(!teacherId){ Toast.error('لم يتم تحديد المعلم.'); setText('headerName','معلم غير محدد'); return; }
-  await loadTeacher();
-  await Promise.all([loadStudents(), loadSessions(), loadPayouts(), loadGroups()]);
+  try {
+    await loadTeacher();
+  } catch (err) {
+    console.error('[TeacherDetails] loadTeacher failed', err);
+    if (String(err?.message || '') === 'teacher-not-found') return;
+    Toast.error('تعذر تحميل بيانات المعلم، تحقق من الاتصال والصلاحيات.');
+    return;
+  }
+  await Promise.allSettled([loadStudents(), loadSessions(), loadPayouts(), loadGroups()]);
   renderAll();
   if(window.lucide) try{window.lucide.createIcons();}catch{}
 }
 
-function getTabBtns(){ return [...document.querySelectorAll('.nav-tab, .tab-item-btn, [data-tab], [data-tab-id]')]; }
-function getTabId(btn){ return btn?.dataset?.tab || btn?.dataset?.tabId || ''; }
-function getTabPanes(){ return [...document.querySelectorAll('.tab-content, .tab-pane, .tab-section, [id^="tab-"]')].filter(el=>el.id && /^tab-/.test(el.id)); }
+function getTabBtns(){ return [...document.querySelectorAll('.tab-item-btn, .nav-tab, [data-tab-id], [data-tab]')]; }
+function getTabId(btn){ return btn?.dataset?.tabId || btn?.dataset?.tab || ''; }
+function getTabPanes(){ return [...document.querySelectorAll('.tab-section, .tab-pane, .tab-content')].filter(el=>el.id && /^tab-/.test(el.id)); }
 
 function bindUI(){
   getTabBtns().forEach(btn=>btn.addEventListener('click',()=>switchTab(getTabId(btn))));
@@ -45,7 +52,11 @@ function bindUI(){
   $('btnClearSessionMonth')?.addEventListener('click', ()=>{ const m=$('filterSessionMonth'); if(m) m.value=''; renderSessions(); });
   $('searchAuditInput')?.addEventListener('input', renderAuditPlaceholder);
   $('filterAuditCategory')?.addEventListener('change', renderAuditPlaceholder);
-  window.closeImgModal = ()=>{ const m=$('imgPreviewModal'); if(m) m.classList.remove('active'); };
+  window.closeImgModal = ()=>{
+    const m=$('imgPreviewModal');
+    if(m){ m.classList.remove('active'); m.style.display='none'; }
+    const img=$('imgPreviewTarget'); if(img) img.src='';
+  };
   const initialTab = new URLSearchParams(location.search).get('tab');
   if (initialTab) switchTab(initialTab);
 }
@@ -53,12 +64,15 @@ function bindUI(){
 function switchTab(tab){
   if(!tab) return;
   const normalized = tab.startsWith('tab-') ? tab : 'tab-' + tab;
-  getTabBtns().forEach(b=>{
-    const id=getTabId(b);
-    b.classList.toggle('active', id===tab || id===normalized || id===tab.replace(/^tab-/, ''));
+  const btns = getTabBtns();
+  const panes = getTabPanes();
+  const paneExists = panes.some(c => c.id === normalized || c.id === tab);
+  if(!paneExists) return;
+  btns.forEach(b=>{
+    b.classList.toggle('active', getTabId(b) === normalized);
   });
-  getTabPanes().forEach(c=>{
-    const match = c.id===tab || c.id===normalized;
+  panes.forEach(c=>{
+    const match = c.id === normalized || c.id === tab;
     c.classList.toggle('active', match);
     c.style.display = match ? '' : 'none';
   });
@@ -70,7 +84,7 @@ function val(id,v){ const el=$(id); if(el) el.value = v ?? ''; }
 
 async function loadTeacher(){
   const snap = await getDoc(doc(db,'users',teacherId));
-  if(!snap.exists()){ Toast.error('المعلم غير موجود.'); return; }
+  if(!snap.exists()){ Toast.error('المعلم غير موجود أو تم حذفه.'); setText('headerName','معلم غير موجود'); throw new Error('teacher-not-found'); }
   teacher = { id:snap.id, uid:snap.id, ...snap.data() };
 }
 
@@ -157,7 +171,11 @@ function renderAll(){
   setText('cardUid', teacher.id);
   setText('cardStudentsCount', String(students.length));
   val('profName', teacher.name||''); val('profEmail', teacher.email||''); val('profPhone', teacher.phone||''); val('profSubject', teacher.subject||''); val('profNotes', teacher.notes||'');
-  renderFinance(); renderChannels(); renderStudentsTable(); renderSessions(); renderPayouts(); renderAuditPlaceholder();
+  // كل قسم يُرسم مستقلًا حتى لا يوقف خطأ واحد بقية الصفحة
+  [renderFinance, renderChannels, renderStudentsTable, renderSessions, renderPayouts, renderAuditPlaceholder]
+    .forEach((render) => {
+      try { render(); } catch (err) { console.error(`[TeacherDetails] ${render.name} failed`, err); }
+    });
 }
 
 function renderFinance(){
@@ -201,7 +219,8 @@ function renderChannels(){
 function renderStudentsTable(){
   const tb=$('tblAssignedStudents'); if(!tb) return;
   if(!students.length){ tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:1rem;color:var(--text-muted)">لا يوجد طلاب.</td></tr>'; return; }
-  tb.innerHTML = students.slice(0,100).map(s=>`<tr><td>${esc(s.name||'-')}</td><td>${esc(s.packageName||s.subscriptionType||'-')}</td><td>${esc(String(s.remainingSessions??s.balance??'-'))}</td><td>${esc(s.status||'active')}</td><td><a href="students.html?search=${encodeURIComponent(s.name||'')}" class="btn btn-sm btn-secondary">فتح</a></td></tr>`).join('');
+  const statusLabel = { active:'نشط', approved:'نشط', suspended:'موقوف', archived:'مؤرشف', pending:'قيد المراجعة', trial:'تجريبي' };
+  tb.innerHTML = students.slice(0,100).map(s=>`<tr><td>${esc(s.name||'-')}</td><td>${esc(s.packageName||s.activePackageName||s.subscriptionType||'-')}</td><td>${esc(String(s.remainingLessons ?? s.remainingSessions ?? s.balance ?? '-'))}</td><td>${esc(statusLabel[s.status]||s.status||'نشط')}</td><td><a href="students.html?q=${encodeURIComponent(s.name||'')}" class="btn btn-sm btn-secondary">فتح</a></td></tr>`).join('');
 }
 
 function renderSessions(){
@@ -210,19 +229,24 @@ function renderSessions(){
   const list = month ? sessions.filter(s=>String(s.date||'').startsWith(month)) : sessions;
   if(!list.length){ tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:1rem;color:var(--text-muted)">لا توجد حصص.</td></tr>'; return; }
   const sBy=Object.fromEntries(students.map(s=>[s.id,s]));
-  tb.innerHTML = list.slice(0,100).map(s=>`<tr><td>${esc(s.date||'-')}</td><td>${esc(sBy[s.studentId]?.name||s.groupName||'-')}</td><td>${esc(String(s.duration||'-'))} د</td><td>${esc(s.status||'-')}</td><td>${s.approved?'معتمدة':'قيد المراجعة'}</td><td>-</td></tr>`).join('');
+  const typeLabel = { individual:'فردية', group:'جماعية', trial:'تجريبية' };
+  const statusLabel = { completed:'مكتملة', student_absent:'غياب الطالب', delayed:'مؤجلة', cancelled:'ملغاة', compensatory:'تعويضية', scheduled:'مجدولة' };
+  tb.innerHTML = list.slice(0,100).map(s=>`<tr><td>${esc(sBy[s.studentId]?.name||s.studentName||s.groupName||'-')}</td><td>${esc(s.date||'-')}</td><td>${esc(String(s.duration||'-'))} د</td><td>${esc(typeLabel[s.type]||s.type||'-')}</td><td>${s.approved?'معتمدة':'قيد المراجعة'}</td><td>${esc(statusLabel[s.status]||s.status||'-')}</td></tr>`).join('');
 }
 
 function renderPayouts(){
   const tb=$('tblTeacherSalaryArchive'); if(!tb) return;
-  if(!payouts.length){ tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:1rem;color:var(--text-muted)">لا توجد عمليات صرف.</td></tr>'; return; }
-  tb.innerHTML=payouts.map(p=>`<tr><td>${esc(p.month||'-')}</td><td>${fmt(p.amount)} ج.م</td><td>${esc(p.method||'-')}</td><td>${esc(p.note||p.notes||'-')}</td><td>${p.proofUrl?`<a href="${esc(p.proofUrl)}" target="_blank">عرض</a>`:'-'}</td></tr>`).join('');
+  if(!payouts.length){ tb.innerHTML='<tr><td colspan="7" style="text-align:center;padding:1rem;color:var(--text-muted)">لا توجد عمليات صرف.</td></tr>'; return; }
+  tb.innerHTML=payouts.map(p=>`<tr><td>${esc(p.month||'-')}</td><td>${fmt(p.amount)} ج.م</td><td>${esc(p.sessionsCount!=null?`${p.sessionsCount} حصة`:'-')}${p.hoursCount!=null?` / ${esc(p.hoursCount)} س`:''}</td><td>${esc(p.method||'-')}</td><td>${esc(p.status||'مسجّل')}</td><td>${p.proofUrl?`<a href="${esc(p.proofUrl)}" target="_blank" rel="noopener">عرض</a>`:'-'}</td><td>${esc(p.createdAt?.toDate?p.createdAt.toDate().toLocaleDateString('ar-EG'):String(p.date||p.month||'-'))}</td></tr>`).join('');
 }
 
 function renderAuditPlaceholder(){
   const tb=$('tblAuditLogs'); if(!tb) return;
-  tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:1rem;color:var(--text-muted)">سجل التدقيق التفصيلي سيظهر هنا عند توفر بيانات audit logs.</td></tr>';
-  setText('auditStatHoursChange','--'); setText('auditStatAbsenceChange','--'); setText('auditStatGroupsChange','--'); setText('auditStatMaxConsecAbsence','--');
+  tb.innerHTML='<tr><td colspan="4" style="text-align:center;padding:1rem;color:var(--text-muted)">سجل التدقيق التفصيلي سيظهر هنا عند توفر بيانات audit logs.</td></tr>';
+  setText('auditStatTotal', String(sessions.length));
+  setText('auditStatSessions', String(sessions.length));
+  setText('auditStatAttendance', '--');
+  setText('auditStatSystem', '--');
 }
 
 async function toggleStatus(){
@@ -290,9 +314,13 @@ async function saveChannels(e){
 
 async function uploadPayoutProof(e){
   e.preventDefault(); if(!teacher) return;
-  const file=$('payoutFile')?.files?.[0];
-  try{
-    let proofUrl='';
+      const file=$('payoutFile')?.files?.[0];
+    if(file && file.size > 900 * 1024){
+      Toast.error('حجم الصورة أكبر من 900 كيلوبايت، اضغطها ثم أعد المحاولة.');
+      return;
+    }
+    try{
+      let proofUrl='';
     if(file){ proofUrl = await fileToDataUrl(file); }
     await addDoc(collection(db,'payouts'), { teacherId:teacher.id, month:$('payoutMonth').value, amount:parseFloat($('payoutAmount').value)||0, proofUrl, notes:$('payoutNotes').value.trim(), createdAt:serverTimestamp(), status:'recorded' });
     Toast.success('تم تسجيل إثبات الصرف.'); e.target.reset(); await loadPayouts(); renderPayouts();
