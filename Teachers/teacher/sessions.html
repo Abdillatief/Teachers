@@ -634,10 +634,25 @@
       preview.innerHTML = `☘️ <strong>الحفظ:</strong> ${currentReportMemorization || '—'}<br>☘️ <strong>الماضي:</strong> ${currentReportReview || '—'}`;
     }
 
+    // الملاحظات تُبنى من الاختيارات، وأي كتابة يدوية من المعلم لا تُمسح
+    let currentNotesMemorization = '';
+    const notesInputEl = document.getElementById('recNotes');
+    notesInputEl?.addEventListener('input', () => {
+      notesInputEl.dataset.manual = 'true';
+    });
+
+    function buildNotesText(memorizationText = currentNotesMemorization) {
+      if (!memorizationText) return '';
+      return currentReportReview ? `${memorizationText} | الماضي: ${currentReportReview}` : memorizationText;
+    }
+
     // خانة الماضي داخل الاقتراح الذكي: اختيار السورة وآخر آية، والاقتراح لا يمسح تعديل المعلم
     const reviewPicker = createReviewPicker(() => {
       currentReportReview = reviewPicker.getText();
       renderSmartReportPreview();
+      if (notesInputEl && notesInputEl.dataset.manual !== 'true') {
+        notesInputEl.value = buildNotesText();
+      }
     });
 
     function getStudentDefaultDuration(student) {
@@ -970,10 +985,16 @@
           `;
         }
       } else if (currentVerse > 0) {
-        autoWrittenText = `حفظ سورة ${surah.name} (حتى الآية ${currentVerse}) | الواجب المقترح: ${suggestion.text}`;
+        // بداية الحفظ اليوم: تكملة من آخر آية محفوظة للطالب، وإلا آخر قدر مقترح
+        const previousEnd = parseInt(activeStudent?.lastMemorizedVerse) || 0;
+        const previousSurahId = parseInt(activeStudent?.lastMemorizedSurahId) || 0;
+        const startVerse = (previousSurahId === surahId && previousEnd > 0 && previousEnd < currentVerse)
+          ? previousEnd + 1
+          : Math.max(1, currentVerse - (suggestion.verseIncrement || 1) + 1);
+        autoWrittenText = `حفظ سورة ${surah.name} من الآية ${startVerse} إلى ${currentVerse} | الواجب المقترح: ${suggestion.text}`;
         if (smartQuranSuggestionText) {
           smartQuranSuggestionText.innerHTML = `
-            📖 <strong>المنجز اليوم:</strong> سورة <strong style="color: var(--primary-color);">${surah.name}</strong> حتى الآية <strong style="color: var(--primary-color);">${currentVerse}</strong>.<br>
+            📖 <strong>المنجز اليوم:</strong> سورة <strong style="color: var(--primary-color);">${surah.name}</strong> من الآية <strong style="color: var(--primary-color);">${startVerse}</strong> إلى <strong style="color: var(--primary-color);">${currentVerse}</strong>.<br>
             ✨ <strong>الواجب والمنهج المقترح التالي:</strong> <strong style="color: var(--success);">${suggestion.text}</strong><br>
             <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">المسار المحدد: ${dirLabel}</span>
           `;
@@ -1002,10 +1023,11 @@
       currentReportReview = reviewPicker.getText() || reviewSuggestion.text;
       renderSmartReportPreview();
 
-      // كتابة الواجب والملاحظات تلقائياً في حقل الملاحظات
-      const notesEl = document.getElementById('recNotes');
-      if (notesEl) {
-        notesEl.value = autoWrittenText;
+      // الملاحظات تُكتب من الاختيارات الفعلية: الحفظ + الماضي + الواجب المقترح
+      currentNotesMemorization = autoWrittenText;
+      const notesAutoText = buildNotesText();
+      if (notesInputEl && notesInputEl.dataset.manual !== 'true') {
+        notesInputEl.value = notesAutoText;
       }
 
       if (smartRateBadge) {
@@ -1016,7 +1038,10 @@
       if (btnApplySmartSuggestion) {
         btnApplySmartSuggestion.onclick = (e) => {
           e.preventDefault();
-          if (notesEl) notesEl.value = autoWrittenText;
+          if (notesInputEl) {
+            notesInputEl.dataset.manual = 'false';
+            notesInputEl.value = notesAutoText;
+          }
           Toast.success("تم إدراج الواجب والمنهج التلقائي في حقل الملاحظات! ✨");
         };
       }
@@ -1182,8 +1207,9 @@
       if (actualSurahSelect) actualSurahSelect.value = prediction ? prediction.surahId : surahId;
       if (smartActualVerse) smartActualVerse.value = prediction ? prediction.endVerse : '';
       if (smartFullSurahCheckbox) smartFullSurahCheckbox.checked = false;
-      // طالب جديد ⇒ رجّع خانة الماضي للاقتراح التلقائي بدل تعديل الطالب السابق
+      // طالب جديد ⇒ رجّع خانة الماضي والملاحظات للاقتراح التلقائي بدل تعديل الطالب السابق
       reviewPicker.resetManual();
+      if (notesInputEl) notesInputEl.dataset.manual = 'false';
 
       // حساب الاقتراح وكتابة الملاحظات فورياً
       recalculateSmartQuranSuggestionAndAutoWrite();
