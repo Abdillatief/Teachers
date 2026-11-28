@@ -223,6 +223,36 @@ export async function syncStudentOperationalSummary(studentId, studentOverride =
       if (!snap.exists()) return;
       studentData = snap.data();
     }
+    // الباقة النشطة هي المصدر الرسمي لعدد الحصص الكلي والمتبقي. بعض شاشات الأدمن
+    // (تعديل الباقة من صفحة الاشتراكات، تعديل الرصيد اليدوي) بتحدّث الباقة فقط
+    // وبتسيب الحقول القديمة على مستند الطالب، فكان المشرف يفضل ببيانات قديمة.
+    try {
+      const pkgSnap = await getDocs(query(collection(db, 'studentPackages'), where('studentId', '==', studentId)));
+      const packages = pkgSnap.docs
+        .map((d) => ({ id: d.id, ...(d.data() || {}) }))
+        .filter((p) => p.status !== 'archived' && p.status !== 'cancelled')
+        .sort((a, b) => Number(b.updatedAt?.seconds || 0) - Number(a.updatedAt?.seconds || 0));
+      const activePkg = packages.find((p) => p.status === 'active')
+        || packages.find((p) => p.status === 'overdraft')
+        || packages[0];
+      if (activePkg) {
+        const pkgTotal = Number(activePkg.totalLessons);
+        if (Number.isFinite(pkgTotal) && pkgTotal >= 0) {
+          studentData.totalLessons = pkgTotal;
+          studentData.totalPackageLessons = pkgTotal;
+        }
+        if (activePkg.remainingLessons !== undefined && activePkg.remainingLessons !== null) {
+          const pkgRemaining = Number(activePkg.remainingLessons);
+          if (Number.isFinite(pkgRemaining)) studentData.remainingLessons = pkgRemaining;
+        }
+        if (activePkg.packageName && !studentData.activePackageName) {
+          studentData.activePackageName = activePkg.packageName;
+        }
+      }
+    } catch (pkgErr) {
+      // لو قراءة الباقات فشلت، منكمل ببيانات مستند الطالب زي الأول
+      console.warn('syncStudentOperationalSummary package lookup skipped:', pkgErr?.message || pkgErr);
+    }
     const payload = extractNonFinancialStudentSummary(studentId, studentData);
     await setDoc(doc(db, 'studentOperationalSummaries', studentId), payload, { merge: true });
   } catch (err) {

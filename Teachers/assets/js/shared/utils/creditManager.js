@@ -903,15 +903,22 @@ export async function adjustStudentCredits({
   // Update student doc
   try {
     const sRef = doc(db, "students", studentId);
-    await updateDoc(sRef, {
+    const studentUpdates = {
       remainingLessons: newCredits,
       subscriptionStatus: newCredits < 0 ? 'overdraft' : (newCredits === 0 ? 'expired' : 'active'),
       paymentStatus: isExhausted ? 'unpaid' : 'paid',
-      paymentStatusReason: newCredits < 0 
+      paymentStatusReason: newCredits < 0
         ? `عجز رصيد الحصص (${Math.abs(newCredits)} حصة)`
         : (newCredits === 0 ? 'انتهاء رصيد الحصص بالكامل' : ''),
       updatedAt: serverTimestamp()
-    });
+    };
+    // التعديل الموجب بيزوّد إجمالي الباقة، فلازم إجمالي مستند الطالب يتحدّث معاه
+    if (pkg) {
+      const newTotalForStudent = (pkg.totalLessons || 0) + (adj > 0 ? adj : 0);
+      studentUpdates.totalLessons = newTotalForStudent;
+      studentUpdates.totalPackageLessons = newTotalForStudent;
+    }
+    await updateDoc(sRef, studentUpdates);
   } catch (e) {
     console.warn("Could not update student doc on manual credit adjustment:", e);
   }

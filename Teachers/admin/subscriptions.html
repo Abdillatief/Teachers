@@ -3260,6 +3260,8 @@
               await updateDoc(studentRef, {
                 activePackageName: packageName,
                 remainingLessons: remainingLessons,
+                // الحقلين بيتقروا في أماكن مختلفة، فبنحدّثهم مع بعض عشان يفضلوا متسقين
+                totalLessons: totalLessons,
                 totalPackageLessons: totalLessons,
                 usedPackageLessons: usedLessons,
                 packageDuration: lessonDuration,
