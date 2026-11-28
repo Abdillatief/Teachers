@@ -63,7 +63,7 @@ export function normalizeWhatsAppGroupLink(rawLink) {
 /**
  * رقم الحلقة داخل الباقة الحالية (وليس إجمالي حصص الطالب):
  * (إجمالي حصص الباقة - المتبقي) + 1، فالحلقة الثالثة في الباقة تُكتب 3.
- * ولو تجاوز الطالب رصيد الباقة تُكتب مثل «4 -1» (رقم الحلقة ثم عدد الحصص المدينة بعدها).
+ * الرقم لا يتجاوز حجم الباقة أبدًا: طالب باقته 4 ومدين بحصتين تُكتب «4 -2».
  */
 export function buildCircleNumberLabel(student = {}) {
   const totalLessons = parseInt(student.totalLessons ?? student.totalPackageLessons ?? student.totalSessions ?? 0, 10) || 0;
@@ -79,9 +79,9 @@ export function buildCircleNumberLabel(student = {}) {
   }
 
   if (totalLessons > 0 && usedLessons !== null) {
-    const sessionNumber = usedLessons + 1;
-    const remainingAfterSession = hasRemaining ? remainingRaw - 1 : totalLessons - sessionNumber;
-    const debt = remainingAfterSession < 0 ? Math.abs(remainingAfterSession) : 0;
+    // الرقم محصور في نطاق الباقة، والدين يظهر بعده كعدد الحصص المدينة
+    const sessionNumber = Math.min(usedLessons + 1, totalLessons);
+    const debt = hasRemaining ? Math.max(0, -remainingRaw) : Math.max(0, usedLessons + 1 - totalLessons);
     return debt > 0 ? `${sessionNumber} -${debt}` : String(sessionNumber);
   }
 
