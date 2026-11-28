@@ -311,7 +311,15 @@
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; padding: 0.65rem 0.85rem; margin-bottom: 0.65rem;">
             <p id="smartQuranSuggestionText" style="font-size: 0.82rem; color: var(--text-primary); margin: 0; line-height: 1.5; font-weight: 600;"></p>
           </div>
-          
+
+          <!-- تقرير الواتساب يُشتق من نفس الاقتراح الذكي — مصدر واحد فقط -->
+          <div style="background: var(--bg-card); border: 1px dashed var(--border-color); border-radius: 6px; padding: 0.55rem 0.7rem; margin-bottom: 0.65rem;">
+            <div style="font-size: 0.72rem; font-weight: 800; color: var(--text-secondary); margin-bottom: 0.3rem; display: flex; align-items: center; gap: 0.3rem;">
+              <i data-lucide="message-circle" style="width: 14px; height: 14px; color: #25D366;"></i> تقرير الحصة المرسل لجروب الطالب (يُجهّز تلقائياً)
+            </div>
+            <div id="smartReportPreview" style="font-size: 0.78rem; line-height: 1.65; color: var(--text-primary); font-weight: 600;"></div>
+          </div>
+
           <button type="button" id="btnApplySmartSuggestion" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.35rem 0.75rem; border-color: var(--success); color: var(--success); font-weight: 700; width: 100%; justify-content: center; display: flex; align-items: center; gap: 0.25rem; background: transparent; cursor: pointer;">
             <i data-lucide="check" style="width: 14px; height: 14px;"></i> كتابة / تطبيق الاقتراح التلقائي في الملاحظات والواجب
           </button>
@@ -322,26 +330,6 @@
           <input type="text" id="recNotes" class="form-control" placeholder="اكتب الآيات المنجزة أو الواجب المدرسي...">
         </div>
 
-        <!-- بيانات تقرير الحصة المرسل لجروب الطالب على واتساب -->
-        <div id="recReportFields" style="margin-top: 0.9rem; padding: 0.85rem; background: var(--bg-primary); border: 1px dashed var(--border-color); border-radius: 8px;">
-          <div style="font-size: 0.82rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.35rem;">
-            <i data-lucide="message-circle" style="width: 15px; height: 15px; color: #25D366;"></i>
-            بيانات تقرير الحصة (تُرسل لجروب الطالب على واتساب)
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-            <div class="form-group" style="margin: 0;">
-              <label for="recReview" style="font-weight: 700; font-size: 0.85rem; display: block; margin-bottom: 0.3rem;">📌 الماضي المقرر (المراجعة السابقة)</label>
-              <input type="text" id="recReview" class="form-control" placeholder="مثال: مراجعة سورة القلم من ١ إلى ١٠" style="font-weight: 600;">
-            </div>
-            <div class="form-group" style="margin: 0;">
-              <label for="recMemorization" style="font-weight: 700; font-size: 0.85rem; display: block; margin-bottom: 0.3rem;">📖 السورة المقررة على الطالب (الحفظ الجديد)</label>
-              <input type="text" id="recMemorization" class="form-control" placeholder="مثال: سورة الملك من ١ إلى ٥" style="font-weight: 600;">
-            </div>
-          </div>
-          <p style="font-size: 0.72rem; color: var(--text-muted); margin: 0.4rem 0 0 0;">
-            بعد حفظ الحصة يُجهّز التطبيق التقرير تلقائياً من هذه البيانات وينسخه ويفتح جروب الطالب.
-          </p>
-        </div>
 
         <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem; position: sticky; bottom: -1.75rem; background: var(--bg-secondary); padding: 1rem 0 0.5rem 0; border-top: 1px solid var(--border-color); z-index: 10;">
           <button type="button" class="btn btn-secondary" id="btnCancelModalBtn">إلغاء</button>
@@ -962,21 +950,15 @@
     const btnApplySmartSuggestion = document.getElementById('btnApplySmartSuggestion');
     const smartActualVerse = document.getElementById('smartActualVerse');
 
-    // حقول تقرير الواتساب تُعبأ تلقائياً من الاقتراح الذكي،
-    // وما يكتبه المعلم بيده لا يُمسح أثناء إعادة الحساب.
-    function setAutoReportField(fieldId, value) {
-      const field = document.getElementById(fieldId);
-      if (!field) return;
-      if (field.value.trim() && field.dataset.autoFilled !== 'true') return;
-      field.value = value || '';
-      field.dataset.autoFilled = 'true';
-    }
+    // بيانات تقرير الواتساب تُشتق من الاقتراح الذكي نفسه — مصدر واحد فقط
+    let currentReportMemorization = '';
+    let currentReportReview = '';
 
-    ['recMemorization', 'recReview'].forEach(fieldId => {
-      document.getElementById(fieldId)?.addEventListener('input', (e) => {
-        e.target.dataset.autoFilled = 'false';
-      });
-    });
+    function renderSmartReportPreview() {
+      const preview = document.getElementById('smartReportPreview');
+      if (!preview) return;
+      preview.innerHTML = `☘️ <strong>الحفظ:</strong> ${currentReportMemorization || '—'}<br>☘️ <strong>الماضي:</strong> ${currentReportReview || '—'}`;
+    }
 
     function getStudentDefaultDuration(student) {
       if (!student) return "30";
@@ -1320,14 +1302,15 @@
       }
 
       // احتساب الاقتراح الذكي داخل تقرير الواتساب + توقّع الماضي تلقائياً
-      setAutoReportField('recMemorization', autoWrittenText);
-      setAutoReportField('recReview', getReviewSuggestionText({
+      currentReportMemorization = autoWrittenText;
+      currentReportReview = getReviewSuggestionText({
         surahId,
         lastVerse: isFullSurah ? surah.verses : currentVerse,
         verseIncrement: suggestion.verseIncrement,
         isFullSurah,
         direction
-      }));
+      });
+      renderSmartReportPreview();
 
       // كتابة الواجب والملاحظات تلقائياً في حقل الملاحظات
       const notesEl = document.getElementById('recNotes');
@@ -1404,8 +1387,18 @@
       const surahId = parseInt(student.lastMemorizedSurahId) || defaultSurah;
       const lastVerse = parseInt(student.lastMemorizedVerse) || 0;
 
-      if (actualSurahSelect) actualSurahSelect.value = surahId;
-      if (smartActualVerse) smartActualVerse.value = lastVerse > 0 ? lastVerse : '';
+      // توقّع ذكي: تُعبأ نهاية الحصة المتوقعة (حسب معدل الطالب) بدل كتابتها كل مرة
+      const studentHistory = sessionsCached.filter(s => s.studentId === student.id);
+      const prediction = lastVerse > 0
+        ? getNextHomeworkSuggestion({
+          lastMemorizedSurahId: surahId,
+          lastMemorizedVerse: lastVerse,
+          memorizationDirection: studentDir
+        }, studentHistory, studentDir)
+        : null;
+
+      if (actualSurahSelect) actualSurahSelect.value = prediction ? prediction.surahId : surahId;
+      if (smartActualVerse) smartActualVerse.value = prediction ? prediction.endVerse : '';
       if (smartFullSurahCheckbox) smartFullSurahCheckbox.checked = false;
 
       // حساب الاقتراح وكتابة الملاحظات فورياً
@@ -1870,8 +1863,8 @@
 
         // تجهيز تقرير الحصة وإرساله لجروب الطالب الخاص
         try {
-          const memorizationText = document.getElementById('recMemorization')?.value.trim() || '';
-          const reviewText = document.getElementById('recReview')?.value.trim() || '';
+          const memorizationText = currentReportMemorization;
+          const reviewText = currentReportReview;
           const circleNumber = buildCircleNumberLabel(activeStudentForRecording || {});
 
           showStudentReportsModal({
