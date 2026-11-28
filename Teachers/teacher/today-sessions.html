@@ -427,9 +427,9 @@
     import { collection, onSnapshot, query, where, getDoc, doc, setDoc, serverTimestamp, updateDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
     import { Toast } from '../assets/js/shared/utils/toast.js';
     import { writeAuditLog } from '../assets/js/features/audit/auditService.js';
-    import { quranSurahs, getNextHomeworkSuggestion } from '../assets/js/shared/utils/quranData.js';
+    import { quranSurahs, getNextHomeworkSuggestion, getReviewSuggestionText } from '../assets/js/shared/utils/quranData.js';
     import { populateGroupSelect, renderGroupSessionUI, executeGroupSessionSubmit } from '../assets/js/features/groups/groupSessionHandler.js';
-    import { formatSessionReportDate, showStudentReportsModal } from '../assets/js/shared/utils/sessionReport.js';
+    import { formatSessionReportDate, showStudentReportsModal, buildCircleNumberLabel } from '../assets/js/shared/utils/sessionReport.js';
     import { openRecordGroupSessionModal, openGroupSessionDetailsModal } from '../assets/js/features/groups/groupSessionModal.js';
     import { notifyAdminSessionRecorded } from '../assets/js/shared/utils/adminNotificationService.js';
     import { DraftManager } from '../assets/js/shared/utils/draftManager.js';
@@ -962,6 +962,22 @@
     const btnApplySmartSuggestion = document.getElementById('btnApplySmartSuggestion');
     const smartActualVerse = document.getElementById('smartActualVerse');
 
+    // حقول تقرير الواتساب تُعبأ تلقائياً من الاقتراح الذكي،
+    // وما يكتبه المعلم بيده لا يُمسح أثناء إعادة الحساب.
+    function setAutoReportField(fieldId, value) {
+      const field = document.getElementById(fieldId);
+      if (!field) return;
+      if (field.value.trim() && field.dataset.autoFilled !== 'true') return;
+      field.value = value || '';
+      field.dataset.autoFilled = 'true';
+    }
+
+    ['recMemorization', 'recReview'].forEach(fieldId => {
+      document.getElementById(fieldId)?.addEventListener('input', (e) => {
+        e.target.dataset.autoFilled = 'false';
+      });
+    });
+
     function getStudentDefaultDuration(student) {
       if (!student) return "30";
       if (student.sessionDuration) return String(student.sessionDuration);
@@ -1303,6 +1319,16 @@
         }
       }
 
+      // احتساب الاقتراح الذكي داخل تقرير الواتساب + توقّع الماضي تلقائياً
+      setAutoReportField('recMemorization', autoWrittenText);
+      setAutoReportField('recReview', getReviewSuggestionText({
+        surahId,
+        lastVerse: isFullSurah ? surah.verses : currentVerse,
+        verseIncrement: suggestion.verseIncrement,
+        isFullSurah,
+        direction
+      }));
+
       // كتابة الواجب والملاحظات تلقائياً في حقل الملاحظات
       const notesEl = document.getElementById('recNotes');
       if (notesEl) {
@@ -1628,7 +1654,7 @@
                 return {
                   studentId: r.studentId,
                   studentName: r.studentName,
-                  circleNumber: cachedStudent.circleNumber || selectedGroup.name || '',
+                  circleNumber: buildCircleNumberLabel(cachedStudent) || selectedGroup.name || '',
                   date: formatSessionReportDate(todayStr),
                   memorization: r.memorization || '',
                   review: r.review || '',
@@ -1846,7 +1872,7 @@
         try {
           const memorizationText = document.getElementById('recMemorization')?.value.trim() || '';
           const reviewText = document.getElementById('recReview')?.value.trim() || '';
-          const circleNumber = (activeStudentForRecording?.circleNumber || activeStudentForRecording?.groupName || '').trim();
+          const circleNumber = buildCircleNumberLabel(activeStudentForRecording || {});
 
           showStudentReportsModal({
             items: [{

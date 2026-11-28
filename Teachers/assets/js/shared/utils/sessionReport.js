@@ -60,6 +60,31 @@ export function normalizeWhatsAppGroupLink(rawLink) {
   return `https://${raw.replace(/^https?:\/\//i, '').replace(/^www\./i, '')}`.replace(/\/+$/, '');
 }
 
+/**
+ * رقم الحلقة حسب باقة الطالب:
+ * الحلقة الرابعة في الباقة تُكتب 4، ولو تجاوز الطالب رصيد الباقة تُكتب مثل «4 -1»
+ * (رقم الحلقة ثم عدد الحصص المدينة بعد هذه الحصة).
+ */
+export function buildCircleNumberLabel(student = {}) {
+  const totalLessons = parseInt(student.totalLessons ?? student.totalSessions ?? 0, 10) || 0;
+  const remainingRaw = parseInt(student.remainingLessons, 10);
+  const hasRemaining = Number.isFinite(remainingRaw);
+
+  let usedLessons = parseInt(student.usedLessons, 10);
+  if (!Number.isFinite(usedLessons) && hasRemaining && totalLessons > 0) {
+    usedLessons = Math.max(0, totalLessons - remainingRaw);
+  }
+
+  if (totalLessons > 0 && Number.isFinite(usedLessons)) {
+    const sessionNumber = usedLessons + 1;
+    const remainingAfterSession = hasRemaining ? remainingRaw - 1 : totalLessons - sessionNumber;
+    const debt = remainingAfterSession < 0 ? Math.abs(remainingAfterSession) : 0;
+    return debt > 0 ? `${sessionNumber} -${debt}` : String(sessionNumber);
+  }
+
+  return String(student.circleNumber || student.groupName || '').trim();
+}
+
 /** نسخ النص للحافظة مع بديل يعمل داخل WebView التطبيق. */
 export async function copyReportText(text) {
   try {
