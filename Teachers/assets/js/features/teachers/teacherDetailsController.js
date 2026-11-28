@@ -216,22 +216,86 @@ function renderChannels(){
   val('chnVodafone', teacher.vodafoneCash||teacher.vodafone||''); val('chnInstapay', teacher.instapay||teacher.instaPay||''); val('chnBankAccount', teacher.bankAccount||''); val('chnPreferred', teacher.paymentMethod||''); setText('chnLastTeacherUpdate', teacher.channelsUpdatedAt?String(teacher.channelsUpdatedAt).slice(0,16):'--');
 }
 
+// حصة تجريبية؟
+function isTrialSession(s){
+  return s.type === 'trial' || s.sessionType === 'trial' || s.isTrial === true;
+}
+
+// هل المعلم أعطى الحصة فعلاً؟ (الحصص المؤجلة/الملغاة/المجدولة لا تُحتسب)
+function isDeliveredSession(s){
+  return s.status === 'completed' || s.status === 'compensatory' || (s.status === 'student_absent' && s.absenceType === 'unexcused');
+}
+
+// عدد الحصص الفعلية التي أعطاها المعلم لطالب معيّن
+function deliveredSessionsForStudent(student){
+  const sid = student.id;
+  const name = String(student.name || '').trim();
+  return sessions.filter(s=>{
+    if(!isDeliveredSession(s)) return false;
+    if(s.studentId) return s.studentId === sid;
+    return !!name && String(s.studentName || '').trim() === name;
+  }).length;
+}
+
+// هل الحصة محتسبة في مرتب المعلم؟ (نفس شروط محرك مطابقة الرواتب)
+function salaryInclusion(s){
+  if(s.isStudentRecordOnly === true || s.isSalaryRecord === false) return { ok:false, reason:'سجل طالب فقط وليست حصة مرتب' };
+  if(s.archived === true || s.paid === true) return { ok:false, reason:'مرحّلة/مدفوعة في شهر سابق' };
+  if(isTrialSession(s) && (s.approved !== true || s.trialSubscribed !== true)) return { ok:false, reason: s.approved !== true ? 'حصة تجريبية غير معتمدة' : 'حصة تجريبية بدون اشتراك' };
+  if(s.approved !== true) return { ok:false, reason:'غير معتمدة من الإدارة' };
+  if(s.status === 'delayed') return { ok:false, reason:'مؤجلة' };
+  if(s.status === 'cancelled') return { ok:false, reason:'ملغاة' };
+  if(s.status === 'teacher_absent') return { ok:false, reason:'غياب المعلم' };
+  if(s.status === 'student_absent' && s.absenceType === 'excused') return { ok:false, reason:'غياب طالب مبرر' };
+  if(s.status === 'scheduled') return { ok:false, reason:'مجدولة ولم تُنفّذ' };
+  if(s.status !== 'completed' && s.status !== 'compensatory' && !(s.status === 'student_absent' && s.absenceType === 'unexcused')) {
+    return { ok:false, reason:'الحالة غير مكتملة' };
+  }
+  return { ok:true, reason:'' };
+}
+
 function renderStudentsTable(){
   const tb=$('tblAssignedStudents'); if(!tb) return;
-  if(!students.length){ tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:1rem;color:var(--text-muted)">لا يوجد طلاب.</td></tr>'; return; }
+  if(!students.length){ tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:1rem;color:var(--text-muted)">لا يوجد طلاب.</td></tr>'; return; }
   const statusLabel = { active:'نشط', approved:'نشط', suspended:'موقوف', archived:'مؤرشف', pending:'قيد المراجعة', trial:'تجريبي' };
-  tb.innerHTML = students.slice(0,100).map(s=>`<tr><td>${esc(s.name||'-')}</td><td>${esc(s.packageName||s.activePackageName||s.subscriptionType||'-')}</td><td>${esc(String(s.remainingLessons ?? s.remainingSessions ?? s.balance ?? '-'))}</td><td>${esc(statusLabel[s.status]||s.status||'نشط')}</td><td><a href="students.html?q=${encodeURIComponent(s.name||'')}" class="btn btn-sm btn-secondary">فتح</a></td></tr>`).join('');
+  tb.innerHTML = students.slice(0,100).map(s=>{
+    const delivered = deliveredSessionsForStudent(s);
+    return `<tr><td>${esc(s.name||'-')}</td><td>${esc(s.packageName||s.activePackageName||s.subscriptionType||'-')}</td><td>${esc(String(s.remainingLessons ?? s.remainingSessions ?? s.balance ?? '-'))}</td><td><span style="font-weight:800;color:var(--primary-color)">${fmt(delivered)}</span> <span style="color:var(--text-muted);font-size:0.78rem">حصة</span></td><td>${esc(statusLabel[s.status]||s.status||'نشط')}</td><td><a href="students.html?q=${encodeURIComponent(s.name||'')}" class="btn btn-sm btn-secondary">فتح</a></td></tr>`;
+  }).join('');
 }
 
 function renderSessions(){
   const tb=$('tblTeacherSessions'); if(!tb) return;
   const month=$('filterSessionMonth')?.value||'';
   const list = month ? sessions.filter(s=>String(s.date||'').startsWith(month)) : sessions;
-  if(!list.length){ tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:1rem;color:var(--text-muted)">لا توجد حصص.</td></tr>'; return; }
+  if(!list.length){ tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:1rem;color:var(--text-muted)">لا توجد حصص.</td></tr>'; return; }
   const sBy=Object.fromEntries(students.map(s=>[s.id,s]));
   const typeLabel = { individual:'فردية', group:'جماعية', trial:'تجريبية' };
-  const statusLabel = { completed:'مكتملة', student_absent:'غياب الطالب', delayed:'مؤجلة', cancelled:'ملغاة', compensatory:'تعويضية', scheduled:'مجدولة' };
-  tb.innerHTML = list.slice(0,100).map(s=>`<tr><td>${esc(sBy[s.studentId]?.name||s.studentName||s.groupName||'-')}</td><td>${esc(s.date||'-')}</td><td>${esc(String(s.duration||'-'))} د</td><td>${esc(typeLabel[s.type]||s.type||'-')}</td><td>${s.approved?'معتمدة':'قيد المراجعة'}</td><td>${esc(statusLabel[s.status]||s.status||'-')}</td></tr>`).join('');
+  const statusLabel = { completed:'مكتملة', student_absent:'غياب الطالب', delayed:'مؤجلة', cancelled:'ملغاة', compensatory:'تعويضية', scheduled:'مجدولة', teacher_absent:'غياب المعلم' };
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const badge = (text, color, bg, title) => `<span title="${esc(title||'')}" style="display:inline-block;padding:0.15rem 0.5rem;border-radius:999px;font-size:0.75rem;font-weight:800;color:${color};background:${bg};white-space:nowrap">${esc(text)}</span>`;
+  tb.innerHTML = list.slice(0,100).map(s=>{
+    const trial = isTrialSession(s);
+    const approved = s.approved === true;
+    const inc = salaryInclusion(s);
+    const sMonth = String(s.date||'').slice(0,7);
+    const isPastMonth = !!sMonth && sMonth < currentMonth;
+    const settled = s.archived === true || s.paid === true;
+    let salaryCell;
+    if(settled){
+      salaryCell = badge('احتسبت', 'var(--success)', 'var(--success-light)', `مؤرشفة/مدفوعة ضمن مرتب شهر ${sMonth || 'سابق'}`);
+    } else if(isPastMonth){
+      salaryCell = inc.ok
+        ? badge('احتسبت', 'var(--success)', 'var(--success-light)', `مستحقة في مرتب شهر ${sMonth}`)
+        : badge('لم تُحتسب', 'var(--danger)', 'var(--danger-light)', `${inc.reason} — شهر ${sMonth}`);
+    } else {
+      salaryCell = inc.ok
+        ? badge('محتسبة', 'var(--success)', 'var(--success-light)', 'محتسبة في مرتب الشهر الحالي')
+        : badge('غير محتسبة', 'var(--danger)', 'var(--danger-light)', inc.reason);
+    }
+    return `<tr><td>${esc(sBy[s.studentId]?.name||s.studentName||s.groupName||'-')}</td><td>${esc(s.date||'-')}</td><td>${esc(String(s.duration||'-'))} د</td><td>${esc(typeLabel[s.type]||s.type||'-')}</td><td>${trial ? badge('تجريبية','#b45309','#fef3c7') : '<span style="color:var(--text-muted)">لا</span>'}</td><td>${approved ? badge('معتمدة','var(--success)','var(--success-light)') : badge('غير معتمدة','var(--text-secondary)','var(--bg-primary)')}</td><td>${salaryCell}</td><td>${esc(statusLabel[s.status]||s.status||'-')}</td></tr>`;
+  }).join('');
 }
 
 function renderPayouts(){
