@@ -308,9 +308,15 @@
                     <p id="smartQuranSuggestionText" style="font-size: 0.82rem; color: var(--text-primary); margin: 0; line-height: 1.5; font-weight: 600;"></p>
                   </div>
 
-                  <div class="form-group" style="margin: 0 0 0.65rem 0;">
-                    <label for="recReview" style="font-size: 0.78rem; font-weight: 800; color: var(--text-secondary); margin-bottom: 0.25rem;">📌 الماضي (المراجعة المقررة) — يُقترح تلقائياً ويقدر المعلم يعدّله</label>
-                    <input type="text" id="recReview" class="form-control" placeholder="مثال: مراجعة سورة فاطر من الآية ١ إلى ١٠" style="font-size: 0.8rem; font-weight: 600;">
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.65rem;">
+                    <div class="form-group" style="margin: 0;">
+                      <label for="reviewSurahId" style="font-size: 0.72rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.25rem;">📌 سورة الماضي (المراجعة)</label>
+                      <select id="reviewSurahId" class="form-control" style="font-size: 0.78rem; height: auto; padding: 0.4rem; font-weight: 700;"></select>
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                      <label for="reviewVerse" style="font-size: 0.72rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.25rem;">آخر آية في الماضي</label>
+                      <input type="number" id="reviewVerse" class="form-control" style="font-size: 0.78rem; height: auto; padding: 0.4rem; font-weight: 700;" placeholder="مثال: 10" min="1">
+                    </div>
                   </div>
 
                   <!-- تقرير الواتساب يُشتق من نفس الاقتراح الذكي — مصدر واحد فقط -->
@@ -491,7 +497,8 @@
     import { collection, onSnapshot, query, where, getDoc, doc, setDoc, updateDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
     import { Toast } from '../assets/js/shared/utils/toast.js';
     import { writeAuditLog } from '../assets/js/features/audit/auditService.js';
-    import { quranSurahs, getNextHomeworkSuggestion, getReviewSuggestionText } from '../assets/js/shared/utils/quranData.js';
+    import { quranSurahs, getNextHomeworkSuggestion, getReviewSuggestion } from '../assets/js/shared/utils/quranData.js';
+    import { createReviewPicker } from '../assets/js/shared/utils/quranReviewPicker.js';
     import { populateGroupSelect, renderGroupSessionUI, executeGroupSessionSubmit } from '../assets/js/features/groups/groupSessionHandler.js';
     import { formatSessionReportDate, showStudentReportsModal, buildCircleNumberLabel } from '../assets/js/shared/utils/sessionReport.js';
     import { notifyAdminSessionRecorded } from '../assets/js/shared/utils/adminNotificationService.js';
@@ -627,11 +634,9 @@
       preview.innerHTML = `☘️ <strong>الحفظ:</strong> ${currentReportMemorization || '—'}<br>☘️ <strong>الماضي:</strong> ${currentReportReview || '—'}`;
     }
 
-    // خانة الماضي داخل الاقتراح الذكي: تُقترح تلقائياً، ولو عدّلها المعلم نحترم تعديله
-    const reviewInputEl = document.getElementById('recReview');
-    reviewInputEl?.addEventListener('input', () => {
-      reviewInputEl.dataset.manual = 'true';
-      currentReportReview = reviewInputEl.value.trim();
+    // خانة الماضي داخل الاقتراح الذكي: اختيار السورة وآخر آية، والاقتراح لا يمسح تعديل المعلم
+    const reviewPicker = createReviewPicker(() => {
+      currentReportReview = reviewPicker.getText();
       renderSmartReportPreview();
     });
 
@@ -986,17 +991,15 @@
 
       // احتساب الاقتراح الذكي داخل تقرير الواتساب + توقّع الماضي تلقائياً
       currentReportMemorization = autoWrittenText;
-      const predictedReview = getReviewSuggestionText({
+      const reviewSuggestion = getReviewSuggestion({
         surahId,
         lastVerse: isFullSurah ? surah.verses : currentVerse,
         verseIncrement: suggestion.verseIncrement,
         isFullSurah,
         direction
       });
-      if (reviewInputEl && reviewInputEl.dataset.manual !== 'true') {
-        reviewInputEl.value = predictedReview;
-      }
-      currentReportReview = (reviewInputEl?.value || predictedReview).trim();
+      reviewPicker.applySuggestion(reviewSuggestion);
+      currentReportReview = reviewPicker.getText() || reviewSuggestion.text;
       renderSmartReportPreview();
 
       // كتابة الواجب والملاحظات تلقائياً في حقل الملاحظات
@@ -1180,10 +1183,7 @@
       if (smartActualVerse) smartActualVerse.value = prediction ? prediction.endVerse : '';
       if (smartFullSurahCheckbox) smartFullSurahCheckbox.checked = false;
       // طالب جديد ⇒ رجّع خانة الماضي للاقتراح التلقائي بدل تعديل الطالب السابق
-      if (reviewInputEl) {
-        reviewInputEl.dataset.manual = 'false';
-        reviewInputEl.value = '';
-      }
+      reviewPicker.resetManual();
 
       // حساب الاقتراح وكتابة الملاحظات فورياً
       recalculateSmartQuranSuggestionAndAutoWrite();

@@ -122,37 +122,55 @@ export const quranJuzs = Array.from({ length: 30 }, (_, i) => ({
   name: `الجزء ${i + 1}`
 }));
 
-/**
- * اقتراح «الماضي» للمراجعة تلقائياً: الجزء السابق مباشرة للجزء الذي حُفظ اليوم،
- * بنفس عدد آيات الحصة المقترح (مثال: حفظ اليوم حتى الآية 40 بمعدل 10 آيات ← المراجعة 21 إلى 30).
- * في حالة إكمال السورة كاملة يُقترح آخر آيات السورة السابقة حسب المسار.
- */
-export function getReviewSuggestionText({ surahId, lastVerse, verseIncrement = 6, isFullSurah = false, direction = 'ascending' } = {}) {
+/** نص الماضي من اختيار المعلم: سورة + آخر آية. */
+export function buildReviewSuggestionText({ surahId, endVerse } = {}) {
   const surah = quranSurahs.find(s => s.id === (parseInt(surahId, 10) || 0));
   if (!surah) return '';
+  const verse = parseInt(endVerse, 10) || 0;
+  if (verse <= 0) return `مراجعة سورة ${surah.name}`;
+  return `مراجعة سورة ${surah.name} حتى الآية ${Math.min(verse, surah.verses)}`;
+}
+
+/**
+ * اقتراح «الماضي» تلقائياً: الجزء السابق مباشرة للجزء الذي حُفظ اليوم،
+ * بنفس عدد آيات الحصة المقترح (مثال: حفظ اليوم حتى الآية 40 بمعدل 10 آيات ← المراجعة حتى الآية 30).
+ * في حالة إكمال السورة كاملة يُقترح آخر آيات السورة السابقة حسب المسار.
+ *
+ * @returns {{ surahId: number, surahName: string, endVerse: number, text: string }}
+ */
+export function getReviewSuggestion({ surahId, lastVerse, verseIncrement = 6, isFullSurah = false, direction = 'ascending' } = {}) {
+  const empty = { surahId: 0, surahName: '', endVerse: 0, text: '' };
+  const surah = quranSurahs.find(s => s.id === (parseInt(surahId, 10) || 0));
+  if (!surah) return empty;
 
   const increment = Math.max(1, parseInt(verseIncrement, 10) || 6);
   const isDescending = direction === 'descending';
+
+  let reviewSurah;
+  let reviewEnd;
 
   if (isFullSurah) {
     const prevSurahId = isDescending
       ? (surah.id < 114 ? surah.id + 1 : 1)
       : (surah.id > 1 ? surah.id - 1 : 114);
-    const prevSurah = quranSurahs.find(s => s.id === prevSurahId);
-    if (!prevSurah) return '';
-    const startVerse = Math.max(1, prevSurah.verses - increment + 1);
-    return `مراجعة سورة ${prevSurah.name} من الآية ${startVerse} إلى ${prevSurah.verses}`;
+    reviewSurah = quranSurahs.find(s => s.id === prevSurahId);
+    if (!reviewSurah) return empty;
+    reviewEnd = reviewSurah.verses;
+  } else {
+    const endVerse = parseInt(lastVerse, 10) || 0;
+    if (endVerse <= 1) return empty;
+    const todayStart = Math.max(1, endVerse - increment + 1);
+    reviewEnd = todayStart - 1;
+    if (reviewEnd < 1) return empty;
+    reviewSurah = surah;
   }
 
-  const endVerse = parseInt(lastVerse, 10) || 0;
-  if (endVerse <= 1) return '';
-
-  const todayStart = Math.max(1, endVerse - increment + 1);
-  const reviewEnd = todayStart - 1;
-  if (reviewEnd < 1) return '';
-
-  const reviewStart = Math.max(1, reviewEnd - increment + 1);
-  return `مراجعة سورة ${surah.name} من الآية ${reviewStart} إلى ${reviewEnd}`;
+  return {
+    surahId: reviewSurah.id,
+    surahName: reviewSurah.name,
+    endVerse: reviewEnd,
+    text: buildReviewSuggestionText({ surahId: reviewSurah.id, endVerse: reviewEnd })
+  };
 }
 
 export function getNextHomeworkSuggestion(studentProgress, studentSessionsHistory = [], directionOverride = null) {
